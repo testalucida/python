@@ -18,9 +18,7 @@
       "editwidget": {
         "class": "mycalendar.DateEntry",
         "choice_values": null,
-        "set": "setDate($)",
         "init_value": null,
-        "delete": "clear()",
         "width": 12,
         "wstretch": false,
         "height": -1
@@ -33,11 +31,9 @@
       "width": -1,
       "dbname": "rg_nr",
       "editwidget": {
-        "class": "tkinter.ttk.Entry",
+        "class": "mywidgets.TextEntry",
         "choice_values": null,
-        "set": "insert(0, $)",
         "init_value": null,
-        "delete": "delete(0, 'end')",
         "width": 15,
         "wstretch": true,
         "height": -1
@@ -52,9 +48,7 @@
       "editwidget": {
         "class": "mywidgets.FloatEntry",
         "choice_values": null,
-        "set": "setFloat($)",
         "init_value": 121.34,
-        "delete": "clear()",
         "width": 8,
         "wstretch": false,
         "height": -1
@@ -67,11 +61,9 @@
       "width": -1,
       "dbname": "firma",
       "editwidget": {
-        "class": "tkinter.ttk.Entry",
+        "class": "mywidgets.TextEntry",
         "choice_values": null,
-        "set": "insert(0, $)",
         "init_value": null,
-        "delete": "delete(0, 'end')",
         "width": 20,
         "wstretch": true,
         "height": -1
@@ -84,7 +76,7 @@
       "width": -1,
       "dbname": "verteilung_jahre",
       "editwidget": {
-        "class": "tkinter.ttk.Combobox",
+        "class": "mywidgets.MyCombobox",
         "choice_values": [
           1,
           2,
@@ -102,9 +94,7 @@
           14,
           15
         ],
-        "set": "set($)",
         "init_value": 1,
-        "delete": null,
         "width": 4,
         "wstretch": false,
         "height": -1
@@ -117,11 +107,9 @@
       "width": -1,
       "dbname": "bemerkung",
       "editwidget": {
-        "class": "tkinter.scrolledtext.ScrolledText",
+        "class": "mywidgets.MyText",
         "choice_values": null,
-        "set": "insert('1.0', $)",
         "init_value": null,
-        "delete": "delete('1.0', 'end')",
         "width": 35,
         "wstretch": true,
         "height": 2
@@ -136,9 +124,7 @@
       "editwidget": {
         "class": "mycalendar.DateEntry",
         "choice_values": null,
-        "set": "setDate($)",
         "init_value": null,
-        "delete": "clear()",
         "width": 12,
         "wstretch": false,
         "height": -1

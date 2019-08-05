@@ -1,6 +1,6 @@
 from tkinter import *
-from tkinter import ttk
-from mywidgets import TableView, ToolTip
+from tkinter import ttk, messagebox
+from mywidgets import TableView, ToolTip, MyText
 #from dataclasses import dataclass #comes with python 3.7
 
 #xxxdefinition.json
@@ -204,6 +204,7 @@ class GenericEditableTable(ttk.Frame):
                 self._tv.setColumnWidth(col['heading'], width)
 
         self._tv.registerSelectionCallback(self.tvselectionCallback)
+        self._edit.registerActionCallback(self.editRowCallback)
 
     def _createGui(self, widgets: list) -> None:
         """
@@ -217,6 +218,8 @@ class GenericEditableTable(ttk.Frame):
 
         self._edit = GenericEditRow(self, widgets)
         self._edit.grid(column=0, row=1, sticky='nswe', padx=3, pady=3)
+
+        self._edit.setValue('bemerkung', 'das kann warten')
 
     def appendRows(self, data: list) -> None:
         #data contains one or more dictionaries using dbcolumn-names for keys.
@@ -260,19 +263,28 @@ class GenericEditableTable(ttk.Frame):
         transfer values of selected row into the edit fields of the
         assigned GenericEditRow
         :param evt: Select event
-        :param row: data of selected row
+        :param rowdata: data of selected row: list of lists containing column headers and values
         :return: None
         """
-        for dic in rowdata:
-            dbname = self._mappings.getDbColumnName(dic['columnname'])
-            self._edit.setValue(dbname, dic['cellvalue'])
+        for col in rowdata:
+            dbname = self._mappings.getDbColumnName(col[0])
+            self._edit.setValue(dbname, col[1])
 
+    def editRowCallback(self, action: int, values: dict) -> None:
+        if action == self._edit.OK:
+            pass
+        elif action == self._edit.DELETE:
+            pass
+        else: #reset
+            pass
 
 #+++++++++++++++++++++++++++++++++++++++++++++++
 
 class GenericEditRow(ttk.Frame):
     def __init__(self, parent, widgetDefs: list):
         ttk.Frame.__init__(self, parent)
+        self._actionCallback = None
+        self.OK, self.DELETE, self.RESET = 0, 1, 2
         self._createUI(widgetDefs)
         for col in range(len(widgetDefs)):
             if widgetDefs[col]['wstretch'] == True:
@@ -290,35 +302,21 @@ class GenericEditRow(ttk.Frame):
             lbl = ttk.Label(self, text=labeltext)
             lbl.grid(column=col, row=0, sticky='nwe', padx=mypadx, pady=mypady)
 
-            #instantiate the desired class for input and store a reference in itself:
+            #instantiate the desired class for editing
             inst = self._createInstance(self, w['class'])
 
             #set instance's myId (custom attribute):
-            inst.myId = w['dbname'] # w.myId
+            inst.setMyId( w['dbname'])
 
             #if we have a Combobox check for choice_values:
             choice_values = w['choice_values']
             if choice_values:
                 inst['values'] = choice_values
 
-            #set-method:
-            #inst.setmethod = "".join((w['set'], '(', w['set_args'], ')'))
-            inst.setmethod = w['set']
-            #looks like so: 'insert(0, $)'
-            # Note: only one $ may be given
-            # Note: string args must be given in quotes
-
             #set initial value?
             initValue = w['init_value']
             if initValue:
-                setmeth = inst.setmethod.replace('$', str(initValue))
-                invocation_code = ''.join(('inst.', setmeth ))
-                eval(invocation_code)
-
-            #delete-method (to clear widget's input)
-            deletemethod = w['delete']
-            if deletemethod:
-                inst.deletemethod = deletemethod
+                inst.setValue(initValue)
 
             width = w['width']
             if width > -1:
@@ -330,8 +328,6 @@ class GenericEditRow(ttk.Frame):
 
             inst.grid(column=col, row=1, sticky='nwe', padx=mypadx, pady=mypady)
             col += 1
-
-            inst.inst = inst # w.inst
 
         self._createButtons(col, mypadx, mypady)
 
@@ -350,19 +346,22 @@ class GenericEditRow(ttk.Frame):
 
         # Button "Übernehmen"
         self.okpng = PhotoImage(file="/home/martin/Projects/python/mywidgets/images/ok_25x25.png")
-        self.okBtn = ttk.Button(btnFrame, image=self.okpng, style="My.TButton")
+        self.okBtn = ttk.Button(btnFrame, image=self.okpng, style="My.TButton",
+                                command=self._onOk)
         self.okBtn.grid(column=0, row=0, sticky=(N, W))
         ToolTip(self.okBtn, 'Werte in Tabelle übernehmen')
 
         # Button "Reset"
         self.resetpng = PhotoImage(file="/home/martin/Projects/python/mywidgets/images/reset_25x25.png")
-        self.resetBtn = ttk.Button(btnFrame, image=self.resetpng, style="My.TButton")
+        self.resetBtn = ttk.Button(btnFrame, image=self.resetpng, style="My.TButton",
+                                   command=self._onReset)
         self.resetBtn.grid(column=1, row=0, sticky=(N, W))
         ToolTip(self.resetBtn, 'Änderungen zurücksetzen')
 
         # Button "Löschen"
         self.binpng = PhotoImage(file="/home/martin/Projects/python/mywidgets/images/bin_25x25_3.png")
-        self.deleteBtn = ttk.Button(btnFrame, image=self.binpng, style="My.TButton")
+        self.deleteBtn = ttk.Button(btnFrame, image=self.binpng, style="My.TButton",
+                                    command=self._onDelete)
         self.deleteBtn.grid(column=2, row=0, sticky=(N, W))
         ToolTip(self.deleteBtn, 'Diesen Satz aus der Tabelle löschen')
 
@@ -374,32 +373,42 @@ class GenericEditRow(ttk.Frame):
             m = getattr(m, comp)
         return m(parent)
 
-    def getValues(self) -> list:
+    def _onOk(self):
+        self._callback(self.OK)
+
+    def _onDelete(self):
+        self._callback(self.DELETE)
+
+    def _onReset(self):
+        self._callback(self.RESET)
+
+    def _callback(self, action):
+        if self._actionCallback:
+            self._actionCallback(action, self.getValues())
+
+    def registerActionCallback(self, actionCallback) -> None:
         """
-        :return: a list of dictionaries. Each dictionary represents an
-        edit field. Its keys are 'myId' and 'value'.
+        register a method or function to be called when one of the three
+        action buttons (ok, delete, reset) is pressed
+        :param actionCallback:
+        :return:
         """
-        retlist = list()
+        self._actionCallback = actionCallback
+
+    def getValues(self) -> dict:
+        """
+        :return: A dictionary with key = myID and its corresponding value.
+        Each edit field is represented by an dictionary item.
+        """
         dic = dict()
         for obj in self.children.values():
-                if hasattr(obj, 'myId'):
-                    dic['myId'] = obj.myId
-                    dic['value'] = obj.getValue()
-
+                if hasattr(obj, 'getMyId'):
+                    dic[obj.getMyId()] = obj.getValue()
+        return dic
 
     def setValue(self, widgetId: str, newValue: any) -> None:
         for obj in self.children.values():
-                if hasattr(obj, 'myId'): # and obj.myId == widgetId:
-                    if obj.myId == widgetId:
-                        # do we have to delete the old value?
-                        if hasattr(obj, 'delete'):
-                            invocation_code = ''.join(('obj.', obj.deletemethod))
-                            eval(invocation_code)
-                        newValue = ''.join(("'", newValue, "'"))
-                        setmeth = obj.setmethod.replace('$', newValue)
-                        invocation_code = ''.join(('obj.', setmeth))
-                        try:
-                            eval(invocation_code)
-                        except:
-                            print("Exception on eval(", invocation_code, "): ",
-                                  sys.exc_info()[0], sys.exc_info()[1])
+                if hasattr(obj, 'getMyId'): # and obj.myId == widgetId:
+                    if obj.getMyId() == widgetId:
+                        obj.setValue(newValue)
+                        return

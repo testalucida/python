@@ -5,6 +5,7 @@
 import requests
 import json
 from abc import ABC, abstractmethod
+import datehelper
 
 # def testRequests():
 #     s = requests.Session() #create a persistent session
@@ -157,6 +158,9 @@ class DataProvider:
                 str( whg_id ) + '&user=' + self.__user)
         self._checkException(resp, ServiceException)
         rg_list = json.loads(resp.content)
+        for rg in rg_list:
+            rg['rg_datum'] = datehelper.convertIsoToEur(rg['rg_datum'])
+            rg['rg_bezahlt_am'] = datehelper.convertIsoToEur(rg['rg_bezahlt_am'])
         return rg_list
 
     def getMieteData(self, whg_id ):

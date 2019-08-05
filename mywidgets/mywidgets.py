@@ -1,5 +1,5 @@
 from tkinter import *
-from tkinter import ttk, scrolledtext
+from tkinter import ttk, scrolledtext, Text
 from tkinter import font
 from abc import ABC, abstractmethod
 
@@ -38,6 +38,8 @@ class ToolTip(object):
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 class GetterSetter(ABC):
+    _myId: str
+
     @abstractmethod
     def getValue(self) -> any:
         pass
@@ -50,9 +52,18 @@ class GetterSetter(ABC):
     def clear(self) -> None:
         pass
 
+    def getMyId(self) -> str:
+        return  self._myId
+
+    def setMyId(self, myId: str) -> None:
+        self._myId = myId
+
  #+++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 class TextEntry(ttk.Entry, GetterSetter):
+    def __init__(self, parent):
+        ttk.Entry.__init__(self, parent)
+
     def getValue(self) -> any:
         return self.get()
 
@@ -65,9 +76,13 @@ class TextEntry(ttk.Entry, GetterSetter):
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-class ScrollableText(scrolledtext.ScrolledText, GetterSetter):
+class MyText(Text, GetterSetter):
+    def __init__(self, parent):
+        Text.__init__(self, parent)
+        self._myId = None
+
     def getValue(self) -> any:
-        return self.get()
+        return self.get('1.0', 'end')
 
     def setValue(self, val: str) -> None:
         self.clear()
@@ -116,7 +131,9 @@ class FloatEntry(ttk.Entry, GetterSetter):
     def getValue(self) -> any:
         return self.get()
 
-    def setValue(self, val: float) -> None:
+    def setValue(self, val: float or str) -> None:
+        if type(val) == str: #might be '123.45'
+            val = float(val)
         self.setFloat(val)
 
     def clear(self) -> None:
@@ -159,7 +176,9 @@ class IntEntry(ttk.Entry, GetterSetter):
     def getValue(self) -> any:
         return self.get()
 
-    def setValue(self, val: int) -> None:
+    def setValue(self, val: int or str) -> None:
+        if type(val) == str: #might be '123'
+            val = int(val)
         self.setInt(val)
 
     def clear(self) -> None:
@@ -331,38 +350,37 @@ class TableView(ttk.Treeview):
     def _onTableRowSelected(self, evt: Event) -> None:
         """
         called when a row has been selected.
-        creates a list of dictionaries with keys 'columnname' and 'cellvalue'
-        and values provided with the selected row's column values.
+        creates a list of lists containing columnnames and cell values
         Invokes the registered SelectionCallback method.
         :param evt:  select event
         :return:  list of dictionaries
         """
-        colnames = self.getColumnNames()
         iid = self.identify('item', evt.x, evt.y)
         if iid == '': #column header clicked
             return
 
-        rowvalues = self.getRowValues(iid)
-        if len(colnames) != len(rowvalues):
-            pass
-        li = list()
-        dic = dict()
-        for c in range(len(colnames)):
-            dic['columnname'] = colnames[c]
-            dic['cellvalue'] = rowvalues[c]
-            li.append(dic)
+        valuelist = list(zip(self.getColumnNames(), self.getRowValues(iid)))
+
         if self._selectionCallback:
-            self._selectionCallback(evt, li)
+            self._selectionCallback(evt, valuelist)
 
 #++++++++++++++++++++++++++++++++++++++++++++++++
 
-class Kannweg:
-    def __init__(self):
-        print("Kannweg instance created.")
 
-    def setVal(self, val: str) -> None:
-        self._val = val
-        print("Kannweg instance set to: ", val)
+def main():
+    root = Tk()
 
-    def getVal(self):
-        return self._val
+    txt = MyText(root)
+    txt.setMyId('v_bla')
+    txt.grid(column=0, row=0, sticky='nswe')
+
+    txt.setValue('bac')
+    txt.clear()
+    txt.insert('1.0', 'abcde')
+    txt.setValue('the old brown fox jumps over the lazy dog.')
+    print('myId: ', txt.getMyId())
+
+    root.mainloop()
+
+if __name__ == '__main__':
+    main()

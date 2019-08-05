@@ -2,7 +2,8 @@ from tkinter import *
 from tkinter import ttk
 import datetime
 import calendar
-
+import datehelper
+from mywidgets import GetterSetter
 #+++++++++++++++++++++++++++++++++++++++++++++++
 
 class MonthCalendarProvider:
@@ -257,7 +258,7 @@ class CalendarDialog(Toplevel):
 
 #+++++++++++++++++++++++++++++++++++++++++++++++
 
-class DateEntry(ttk.Entry):
+class DateEntry(ttk.Entry, GetterSetter):
     #Widget to display a date in german format dd.mm.yyyy
     #It's a composed widget consisting of an ttk.Entry field and
     #a Calendar Dialog that opens when user left clicks in the entry field.
@@ -282,6 +283,23 @@ class DateEntry(ttk.Entry):
              ['n', 'n', '.', 'n', '.', 'n', 'n', 'n', 'n'],
              ['n', '.', 'n', 'n', '.', 'n', 'n', 'n', 'n'],
              ['n', 'n', '.', 'n', 'n', '.', 'n', 'n', 'n', 'n']]
+
+    @classmethod
+    def fromIsoDatestring(cls, parent, datestring: str):
+        return(cls(parent, datehelper.convertIsoToEur(datestring)))
+
+    # @staticmethod
+    # def convertIsoToEur(isostring: str) -> str:
+    #     """
+    #     converts an isodatestring into an eur datestring
+    #     (2019-08-05 into 05.08.2019)
+    #     :param isostring:
+    #     :return:
+    #     """
+    #     iso = isostring.split('-')
+    #     eur = ''.join(iso[2], '.', iso[1], '.', iso[0])
+    #     return eur
+
 
     def _onKeyHit(self, evt):
         if evt.state == 20 and evt.keycode == 65: #Ctrl+space
@@ -378,6 +396,12 @@ class DateEntry(ttk.Entry):
                              "needed format (d)d.(m)m.yyyy")
         self.clear()
         self.insert(0, datestring)
+
+    def getValue(self) -> any:
+        return self.get()
+
+    def setValue(self, val: str) -> None:
+        self.setDate(val)
 
     def clear(self):
         self.delete(0, 'end')
