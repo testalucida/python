@@ -1,0 +1,121 @@
+{
+  "_comment": "check json using https://jsonformatter.curiousconcept.com/",
+  "columns":[
+    {
+      "_comment": "ID des Satzes in der Tabelle mtl_ein_aus",
+      "heading": "ID",
+      "isvisible": false,
+      "width": -1,
+      "dbname": "mea_id",
+      "editwidget": null
+    },
+    {
+      "_comment": "Gültig-Ab-Datum dieses Satzes",
+      "heading": "Gültig ab",
+      "isvisible": true,
+      "width": -1,
+      "dbname": "gueltig_ab",
+      "editwidget":
+        {
+          "class": "mycalendar.DateEntry",
+          "choice_values": null,
+          "set": "setDate($)",
+          "init_value": null,
+          "delete": "clear()",
+          "width": 12,
+          "wstretch": false,
+          "height": -1
+        }
+    },
+    {
+      "_comment": "Netto-Miete",
+      "heading": "Netto-Miete",
+      "isvisible": true,
+      "width": -1,
+      "dbname": "miete_netto",
+      "editwidget":
+        {
+          "class": "mywidgets.FloatEntry",
+          "choice_values": null,
+          "set": "setFloat($)",
+          "init_value": null,
+          "delete": "clear()",
+          "width": 8,
+          "wstretch": false,
+          "height": -1
+        }
+    },
+    {
+      "_comment": "Nebenkosten-Abschlag",
+      "heading": "NK-Abschlag",
+      "isvisible": true,
+      "width": -1,
+      "dbname": "nk_abschlag",
+      "editwidget":
+        {
+          "class": "mywidgets.FloatEntry",
+          "choice_values": null,
+          "set": "setFloat($)",
+          "init_value": null,
+          "delete": "clear()",
+          "width": 8,
+          "wstretch": false,
+          "height": -1
+        }
+    },
+    {
+      "_comment": "Hausgeld-Abschlag netto - ohne Zuführung Rücklage (Zahlung Vermieter an Verwalter)",
+      "heading": "HG-Abschl.netto",
+      "isvisible": true,
+      "width": -1,
+      "dbname": "hg_netto_abschlag",
+      "editwidget":
+        {
+          "class": "mywidgets.FloatEntry",
+          "choice_values": null,
+          "set": "setFloat($)",
+          "init_value": null,
+          "delete": "clear()",
+          "width": 8,
+          "wstretch": false,
+          "height": -1
+        }
+    },
+    {
+      "_comment": "Zuführung Rücklage (Zahlung Vermieter an Verwalter)",
+      "heading": "Rücklage",
+      "isvisible": true,
+      "width": -1,
+      "dbname": "ruecklage_zufuehr",
+      "editwidget":
+        {
+          "class": "mywidgets.FloatEntry",
+          "choice_values": null,
+          "set": "setFloat($)",
+          "init_value": null,
+          "delete": "clear()",
+          "width": 8,
+          "wstretch": false,
+          "height": -1
+        }
+    },
+    {
+      "_comment": "Bemerkung",
+      "heading": "Bemerkung",
+      "isvisible": true,
+      "width": -1,
+      "dbname": "bemerkung",
+      "editwidget":
+        {
+          "class": "tkinter.scrolledtext.ScrolledText",
+          "choice_values": null,
+          "set": "insert(0, $)",
+          "init_value": null,
+          "delete": "delete('1.0', 'end')",
+          "width": 35,
+          "wstretch": true,
+          "height": 2
+        }
+    }
+  ]
+}

@@ -1,0 +1,148 @@
+{
+  "_comment": "check json using https://jsonformatter.curiousconcept.com/",
+  "columns": [
+    {
+      "_comment": "ID der Rechnung in der Tabelle rechnung",
+      "heading": "ID",
+      "isvisible": false,
+      "width": -1,
+      "dbname": "rg_id",
+      "editwidget": null
+    },
+    {
+      "_comment": "Rechnungsdatum",
+      "heading": "Rechnungsdatum",
+      "isvisible": true,
+      "width": -1,
+      "dbname": "rg_datum",
+      "editwidget": {
+        "class": "mycalendar.DateEntry",
+        "choice_values": null,
+        "set": "setDate($)",
+        "init_value": null,
+        "delete": "clear()",
+        "width": 12,
+        "wstretch": false,
+        "height": -1
+      }
+    },
+    {
+      "_comment": "Rechnungsnummer",
+      "heading": "Rechnung-Nr.",
+      "isvisible": true,
+      "width": -1,
+      "dbname": "rg_nr",
+      "editwidget": {
+        "class": "tkinter.ttk.Entry",
+        "choice_values": null,
+        "set": "insert(0, $)",
+        "init_value": null,
+        "delete": "delete(0, 'end')",
+        "width": 15,
+        "wstretch": true,
+        "height": -1
+      }
+    },
+    {
+      "_comment": "Rechnungsbetrag",
+      "heading": "Betrag",
+      "isvisible": true,
+      "width": -1,
+      "dbname": "betrag",
+      "editwidget": {
+        "class": "mywidgets.FloatEntry",
+        "choice_values": null,
+        "set": "setFloat($)",
+        "init_value": 121.34,
+        "delete": "clear()",
+        "width": 8,
+        "wstretch": false,
+        "height": -1
+      }
+    },
+    {
+      "_comment": "Firma",
+      "heading": "Firma",
+      "isvisible": true,
+      "width": -1,
+      "dbname": "firma",
+      "editwidget": {
+        "class": "tkinter.ttk.Entry",
+        "choice_values": null,
+        "set": "insert(0, $)",
+        "init_value": null,
+        "delete": "delete(0, 'end')",
+        "width": 20,
+        "wstretch": true,
+        "height": -1
+      }
+    },
+    {
+      "_comment": "Dauer AfA in Jahren",
+      "heading": "Jhre AfA",
+      "isvisible": true,
+      "width": -1,
+      "dbname": "verteilung_jahre",
+      "editwidget": {
+        "class": "tkinter.ttk.Combobox",
+        "choice_values": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15
+        ],
+        "set": "set($)",
+        "init_value": 1,
+        "delete": null,
+        "width": 4,
+        "wstretch": false,
+        "height": -1
+      }
+    },
+    {
+      "_comment": "Bemerkung zur Rechnung",
+      "heading": "Bemerkung",
+      "isvisible": true,
+      "width": -1,
+      "dbname": "bemerkung",
+      "editwidget": {
+        "class": "tkinter.scrolledtext.ScrolledText",
+        "choice_values": null,
+        "set": "insert('1.0', $)",
+        "init_value": null,
+        "delete": "delete('1.0', 'end')",
+        "width": 35,
+        "wstretch": true,
+        "height": 2
+      }
+    },
+    {
+      "_comment": "Rechnung bezahlt am",
+      "heading": "bezahlt am",
+      "isvisible": true,
+      "width": -1,
+      "dbname": "rg_bezahlt_am",
+      "editwidget": {
+        "class": "mycalendar.DateEntry",
+        "choice_values": null,
+        "set": "setDate($)",
+        "init_value": null,
+        "delete": "clear()",
+        "width": 12,
+        "wstretch": false,
+        "height": -1
+      }
+    }
+  ]
+}

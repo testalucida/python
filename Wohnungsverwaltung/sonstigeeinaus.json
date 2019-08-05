@@ -1,0 +1,115 @@
+{
+  "_comment": "check json using https://jsonformatter.curiousconcept.com/",
+  "columns": [
+    {
+      "_comment": "ID der Satzes in der Tabelle sonstige_ein_aus",
+      "heading": "ID",
+      "isvisible": false,
+      "width": -1,
+      "dbname": "sea_id",
+      "editwidget": null
+    },
+    {
+      "_comment": "Jahr, in dem diese Ein-/Auszahlung veranlagt wird",
+      "heading": "VJ",
+      "isvisible": true,
+      "width": 4,
+      "dbname": "vj",
+      "editwidget": {
+        "class": "tkinter.ttk.Combobox",
+        "choice_values": [
+          2018,
+          2019,
+          2020,
+          2021,
+          2022
+        ],
+        "set": "set($)",
+        "init_value": 2019,
+        "delete": null,
+        "width": 5,
+        "wstretch": false,
+        "height": -1
+      }
+    },
+    {
+      "_comment": "Betrag",
+      "heading": "Betrag",
+      "isvisible": true,
+      "width": -1,
+      "dbname": "betrag",
+      "editwidget": {
+        "class": "mywidgets.FloatEntry",
+        "choice_values": null,
+        "set": "setFloat($)",
+        "init_value": null,
+        "delete": "clear()",
+        "width": 8,
+        "wstretch": false,
+        "height": -1
+      }
+    },
+    {
+      "_comment": "Art der Ein-/Auszahlung",
+      "heading": "Art",
+      "isvisible": true,
+      "width": -1,
+      "dbname": "art",
+      "editwidget": {
+        "class": "tkinter.ttk.Combobox",
+        "choice_values": [
+          "Grundsteuer",
+          "Hausgeldnachzahlung (Eigentümer->Verw.)",
+          "Hausgeldrückzahlung (Verw.->Eigentümer)",
+          "Nebenkostennachzahlung (Mieter->Verm.)",
+          "Nebenkostenrückzahlung (Verm.->Mieter)",
+          "Sonderumlage",
+          "Ablöse"
+        ],
+        "set": "set($)",
+        "init_value": "'Nebenkostennachzahlung (Mieter->Verm.)'",
+        "delete": null,
+        "width": 41,
+        "wstretch": false,
+        "height": -1
+      }
+    },
+    {
+      "_comment": "Zyklus der Ein-/Auszahlung",
+      "heading": "Zyklus",
+      "isvisible": true,
+      "width": -1,
+      "dbname": "zyklus",
+      "editwidget": {
+        "class": "tkinter.ttk.Combobox",
+        "choice_values": [
+          "einmalig",
+          "jährlich"
+        ],
+        "set": "set($)",
+        "init_value": "'einmalig'",
+        "delete": null,
+        "width": 16,
+        "wstretch": false,
+        "height": -1
+      }
+    },
+    {
+      "_comment": "Bemerkung zur Ein-/Auszahlung",
+      "heading": "Bemerkung",
+      "isvisible": true,
+      "width": -1,
+      "dbname": "bemerkung",
+      "editwidget": {
+        "class": "tkinter.scrolledtext.ScrolledText",
+        "choice_values": null,
+        "set": "insert('1.0', $)",
+        "init_value": null,
+        "delete": "delete('1.0', 'end')",
+        "width": 35,
+         "wstretch": true,
+        "height": 2
+      }
+    }
+  ]
+}
