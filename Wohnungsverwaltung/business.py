@@ -151,13 +151,13 @@ class DataProvider:
                 self.__user )
         return resp
 
-
     def getRechnungsUebersicht( self, whg_id: int ) -> list:
         resp = self.__session. \
             get('http://localhost/kendelweb/dev/php/business.php?q=uebersicht_rechnungen&id=' +
                 str( whg_id ) + '&user=' + self.__user)
         self._checkException(resp, ServiceException)
         rg_list = json.loads(resp.content)
+        rg_list = self._getDictEurDate()
         for rg in rg_list:
             rg['rg_datum'] = datehelper.convertIsoToEur(rg['rg_datum'])
             rg['rg_bezahlt_am'] = datehelper.convertIsoToEur(rg['rg_bezahlt_am'])
@@ -241,12 +241,26 @@ class DataProvider:
     insert new rechnung
     '''
     def insertRechnung(self, rg_dict):
+        rgdictcopy = self._getDictCopyIsoDate(rg_dict, 'rg_datum', 'rg_bezahlt_am')
         resp = self.__session. \
-            post('http://localhost/kendelweb/dev/php/business.php?q=insert_rechnung&user=' + self.__user, data=rg_dict)
+            post('http://localhost/kendelweb/dev/php/business.php?q=insert_rechnung&user=' + self.__user, data=rgdictcopy)
 
         retval = self.__getWriteRetValOrRaiseException(resp)
 
         return retval
+
+    def _getDictCopyIsoDate(self, orig: dict, *keys) -> dict:
+        copy = dict(orig)
+        for key in keys:
+            copy[key] = datehelper.convertEurToIso(copy[key])
+        return copy
+
+    def _getDictEurDate(self, origList: list, *keys) -> dict:
+        for rgdict in origList:
+            for key in keys:
+                rgdict[key] = datehelper.convertIsoToEur(rgdict[key])
+        return origList
+
 
     '''
     delete rechnung
@@ -263,7 +277,7 @@ class DataProvider:
 
     def __getWriteRetValOrRaiseException(self, resp):
         if resp.status_code != 200:
-            serviceError = ServiceError( resp.status_code, resp.text )
+            serviceError = ServiceException( resp.status_code, resp.text )
             print(serviceError.toString())
             raise serviceError
 
@@ -275,7 +289,7 @@ class DataProvider:
                        "\nresp.content:\n" + resp.content + \
                        "\n+++++++++++++++++++++++++++++++++++\n"
             print(msg)
-            raise ServiceError(self.JSONERROR, msg)
+            raise ServiceException(self.JSONERROR, msg)
 
         if dic['rc'] != 0:
             dataError = DataError(dic)

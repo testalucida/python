@@ -196,8 +196,8 @@ class WV(ttk.Frame):
     def setStatusText(self, text: str):
         self._statusbar['text'] = text
 
-    def configureRechnungenTable(self, columnDefs: list) -> None:
-        self._rechnungTableView.configureTable(columnDefs)
+    # def configureRechnungenTable(self, columnDefs: list) -> None:
+    #     self._rechnungTableView.configureTable(columnDefs)
 
     def configureMieteTable(self, columnDefs: list) -> None:
         self._monatlicheTableView.configureTable(columnDefs)
@@ -205,34 +205,33 @@ class WV(ttk.Frame):
     def configureSonstigeTable(self, columnDefs: list) -> None:
         self._sonstigeTableView.configureTable(columnDefs)
 
-    def setRechnungen(self, rg_list: list) -> None:
-        """
-        sets the rechnung data for rechnungTableView
-        :param rg_list:
-            a list of dictionaries.
-            Each dictionary looks like so:
-            {
-              'whg_id': '1',
-              'rg_id': '11',
-              'rg_datum': '2019-02-02',
-              'rg_nr': '11',
-              'betrag': '44.00',
-              'verteilung_jahre': '1',
-              'firma': 'superfirma',
-              'bemerkung': 'gggg',
-              'rg_bezahlt_am': '2019-02-02'
-            }
-        :return:
-        """
-        self._rechnungTableView.appendRows(rg_list)
-        self._rechnungTableView.alignColumn('Betrag', 'e')
-        self._rechnungTableView.alignColumn('Jhre AfA', 'e')
+    def getRechnungTableView(self) -> GenericEditableTable:
+        return self._rechnungTableView
 
-        self._rechnungTableView.makeColumnWidthFit('Jhre AfA')
+    # def setRechnungen(self, rg_list: list) -> None:
+    #     """
+    #     sets the rechnung data for rechnungTableView
+    #     :param rg_list:
+    #         a list of dictionaries.
+    #         Each dictionary looks like so:
+    #         {
+    #           'whg_id': '1',
+    #           'rg_id': '11',
+    #           'rg_datum': '2019-02-02',
+    #           'rg_nr': '11',
+    #           'betrag': '44.00',
+    #           'verteilung_jahre': '1',
+    #           'firma': 'superfirma',
+    #           'bemerkung': 'gggg',
+    #           'rg_bezahlt_am': '2019-02-02'
+    #         }
+    #     :return:
+    #     """
+    #     self._rechnungTableView.appendRows(rg_list)
+    #     self._rechnungTableView.alignColumn('Betrag', 'e')
+    #     self._rechnungTableView.alignColumn('Jhre AfA', 'e')
 
-    def appendRechnung(self, data: list) -> None:
-        #self._rechnungTableView.appendRow(data)
-        pass
+        # self._rechnungTableView.makeColumnWidthFit('Jhre AfA')
 
     def exitProgram(self):
         exit()
@@ -248,7 +247,7 @@ def main():
         style.theme_use('clam')
 
     ctrl = WvController(wv)
-    ctrl.start()
+    ctrl.startWork()
 
     wv.setStatusText("Bereit")
 

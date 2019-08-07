@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk, messagebox
 from mywidgets import TableView, ToolTip, MyText
+from actions import Action
 #from dataclasses import dataclass #comes with python 3.7
 
 #xxxdefinition.json
@@ -10,122 +11,106 @@ The file's ending must be .json
 ------------------------------------------------------------------
 {
   "_comment": "check json using https://jsonformatter.curiousconcept.com/",
-  "columns":[
+  "columns": [
     {
-      "_comment": "ID des Satzes in der Tabelle mtl_ein_aus",
+      "_comment": "ID der Satzes in der Tabelle sonstige_ein_aus",
       "heading": "ID",
       "isvisible": false,
       "width": -1,
-      "dbname": "mea_id",
+      "dbname": "sea_id",
       "editwidget": null
     },
     {
-      "_comment": "Gültig-Ab-Datum dieses Satzes",
-      "heading": "Gültig ab",
+      "_comment": "Jahr, in dem diese Ein-/Auszahlung veranlagt wird",
+      "heading": "VJ",
       "isvisible": true,
-      "width": -1,
-      "dbname": "gueltig_ab",
-      "editwidget":
-        {
-          "class": "mycalendar.DateEntry",
-          "choice_values": null,
-          "set": "setDate($)",
-          "init_value": null,
-          "delete": "clear()",
-          "width": 12,
-          "wstretch": false,
-          "height": -1
-        }
+      "width": 4,
+      "dbname": "vj",
+      "editwidget": {
+        "class": "mywidgets.MyCombobox",
+        "choice_values": [
+          2018,
+          2019,
+          2020,
+          2021,
+          2022
+        ],
+        "init_value": 2019,
+        "width": 5,
+        "wstretch": false,
+        "height": -1
+      }
     },
     {
-      "_comment": "Netto-Miete",
-      "heading": "Netto-Miete",
+      "_comment": "Betrag",
+      "heading": "Betrag",
       "isvisible": true,
       "width": -1,
-      "dbname": "miete_netto",
-      "editwidget":
-        {
-          "class": "mywidgets.FloatEntry",
-          "choice_values": null,
-          "set": "setFloat($)",
-          "init_value": null,
-          "delete": "clear()",
-          "width": 8,
-          "wstretch": false,
-          "height": -1
-        }
+      "dbname": "betrag",
+      "editwidget": {
+        "class": "mywidgets.FloatEntry",
+        "choice_values": null,
+        "init_value": null,
+        "width": 8,
+        "wstretch": false,
+        "height": -1
+      }
     },
     {
-      "_comment": "Nebenkosten-Abschlag",
-      "heading": "NK-Abschlag",
+      "_comment": "Art der Ein-/Auszahlung",
+      "heading": "Art",
       "isvisible": true,
       "width": -1,
-      "dbname": "nk_abschlag",
-      "editwidget":
-        {
-          "class": "mywidgets.FloatEntry",
-          "choice_values": null,
-          "set": "setFloat($)",
-          "init_value": null,
-          "delete": "clear()",
-          "width": 8,
-          "wstretch": false,
-          "height": -1
-        }
+      "dbname": "art",
+      "editwidget": {
+        "class": "mywidgets.MyCombobox",
+        "choice_values": [
+          "Grundsteuer",
+          "Hausgeldnachzahlung (Eigentümer->Verw.)",
+          "Hausgeldrückzahlung (Verw.->Eigentümer)",
+          "Nebenkostennachzahlung (Mieter->Verm.)",
+          "Nebenkostenrückzahlung (Verm.->Mieter)",
+          "Sonderumlage",
+          "Ablöse"
+        ],
+        "init_value": "'Nebenkostennachzahlung (Mieter->Verm.)'",
+        "width": 41,
+        "wstretch": false,
+        "height": -1
+      }
     },
     {
-      "_comment": "Hausgeld-Abschlag netto - ohne Zuführung Rücklage (Zahlung Vermieter an Verwalter)",
-      "heading": "HG-Abschl.netto",
+      "_comment": "Zyklus der Ein-/Auszahlung",
+      "heading": "Zyklus",
       "isvisible": true,
       "width": -1,
-      "dbname": "hg_netto_abschlag",
-      "editwidget":
-        {
-          "class": "mywidgets.FloatEntry",
-          "choice_values": null,
-          "set": "setFloat($)",
-          "init_value": null,
-          "delete": "clear()",
-          "width": 8,
-          "wstretch": false,
-          "height": -1
-        }
+      "dbname": "zyklus",
+      "editwidget": {
+        "class": "mywidgets.MyCombobox",
+        "choice_values": [
+          "einmalig",
+          "jährlich"
+        ],
+        "init_value": "'einmalig'",
+        "width": 16,
+        "wstretch": false,
+        "height": -1
+      }
     },
     {
-      "_comment": "Zuführung Rücklage (Zahlung Vermieter an Verwalter)",
-      "heading": "Rücklage",
-      "isvisible": true,
-      "width": -1,
-      "dbname": "ruecklage_zufuehr",
-      "editwidget":
-        {
-          "class": "mywidgets.FloatEntry",
-          "choice_values": null,
-          "set": "setFloat($)",
-          "init_value": null,
-          "delete": "clear()",
-          "width": 8,
-          "wstretch": false,
-          "height": -1
-        }
-    },
-    {
-      "_comment": "Bemerkung",
+      "_comment": "Bemerkung zur Ein-/Auszahlung",
       "heading": "Bemerkung",
       "isvisible": true,
       "width": -1,
       "dbname": "bemerkung",
-      "editwidget":
-        {
-          "class": "tkinter.scrolledtext.ScrolledText",
-          "choice_values": null,
-          "set": "insert(0, $)",
-          "init_value": null,
-          "delete": "delete('1.0', 'end')",
-          "width": 35,
-          "wstretch": true,
-          "height": 2
-        }
+      "editwidget": {
+        "class": "mywidgets.MyText",
+        "choice_values": null,
+        "init_value": null,
+        "width": 35,
+         "wstretch": true,
+        "height": 2
+      }
     }
   ]
 }
@@ -185,6 +170,8 @@ class GenericEditableTable(ttk.Frame):
         self._mappings = Mappings()
         self._tv = None
         self._edit = None
+        self._actionCallback = None
+        self._rowEditingId = None
 
     def configureTable(self, columnDefs: list):
         editwidgetlist = []
@@ -219,7 +206,20 @@ class GenericEditableTable(ttk.Frame):
         self._edit = GenericEditRow(self, widgets)
         self._edit.grid(column=0, row=1, sticky='nswe', padx=3, pady=3)
 
-        self._edit.setValue('bemerkung', 'das kann warten')
+        # self.bind('<FocusIn>', self.onFocus)
+        # self._tv.bind('<FocusIn>', self.onFocus)
+
+    def onFocus(self, evt):
+        print("got focus: ", evt.widget)
+
+    def setRows(self, data: list) -> None:
+        """
+        sets one or more rows. Existing rows will previously be removed.
+        :param data:
+        :return:
+        """
+        self._tv.clear()
+        self.appendRows(data)
 
     def appendRows(self, data: list) -> None:
         #data contains one or more dictionaries using dbcolumn-names for keys.
@@ -236,6 +236,9 @@ class GenericEditableTable(ttk.Frame):
                     pass
             newlist.append(d)
         self._tv.appendRows(newlist)
+
+    def appendRow(self, data: dict) -> None:
+        self._tv.appendRow(data)
 
     def updateRow2(self, itemId: str, colName: str, newVal: any) -> None:
         """
@@ -258,33 +261,73 @@ class GenericEditableTable(ttk.Frame):
     def alignColumn(self, columnName: str, anchor: str) -> None:
         self._tv.alignColumn(columnName, anchor)
 
-    def tvselectionCallback(self, evt: Event, rowdata: list) -> None:
+    def setFocus(self):
+        self._tv.focus()
+
+    def selectRow(self, rownr: int) -> None:
+        #self._tv.focus_set()
+        self._tv.selectRow(rownr)
+
+    def tvselectionCallback(self, evt: Event, trigger: str, iid: str, rowdata: list) -> None:
         """
         transfer values of selected row into the edit fields of the
         assigned GenericEditRow
         :param evt: Select event
+        :param trigger: one of 'leftmousesingle', 'leftmousedouble',
+        'returnkey', 'treeviewselect'
+        iid: identification of selected row
         :param rowdata: data of selected row: list of lists containing column headers and values
         :return: None
         """
-        for col in rowdata:
-            dbname = self._mappings.getDbColumnName(col[0])
-            self._edit.setValue(dbname, col[1])
+        if trigger == 'leftmousedouble' or trigger == 'returnkey':
+            for col in rowdata:
+                dbname = self._mappings.getDbColumnName(col[0])
+                self._edit.setValue(dbname, col[1])
+
+            self._rowEditingId = iid
+
+    def registerActionCallback(self, callbackFnc):
+        self._actionCallback = callbackFnc
 
     def editRowCallback(self, action: int, values: dict) -> None:
-        if action == self._edit.OK:
-            pass
-        elif action == self._edit.DELETE:
-            pass
-        else: #reset
-            pass
+        msg: str = ''
+        if action != Action.CANCEL and self._actionCallback:
+            if action == Action.DELETE:
+                yes: bool = messagebox.askyesno('Sicherheitsabfrage',
+                                      'Diesen Satz wirklich löschen?')
+                if not yes:
+                    return
+
+            msg = self._actionCallback(action, values)
+
+            if not msg:
+                if action == Action.DELETE:
+                    self._tv.delete(self._rowEditingId)
+                else: #Action.OK - Insert or Update
+                    if self._rowEditingId: #it's an update of an existing row
+                        #translate keys (dbname) into column names
+                        transdic = dict()
+                        for dbname, val in values.items():
+                            colName = self._mappings.getHeading(dbname)
+                            transdic[colName] = val
+                            self._tv.updateRow(self._rowEditingId, transdic)
+                    else:
+                        pass #it's a new rechnung. The append will be done
+                             #by the rgcontroller.
+            else:
+                messagebox.showerror('Validierungsfehler', msg)
+
+            if msg == '' or action == Action.CANCEL:
+                self._edit.clear()
+                self._rowEditingId = None
 
 #+++++++++++++++++++++++++++++++++++++++++++++++
 
 class GenericEditRow(ttk.Frame):
     def __init__(self, parent, widgetDefs: list):
         ttk.Frame.__init__(self, parent)
+        self._lostList = list()
         self._actionCallback = None
-        self.OK, self.DELETE, self.RESET = 0, 1, 2
         self._createUI(widgetDefs)
         for col in range(len(widgetDefs)):
             if widgetDefs[col]['wstretch'] == True:
@@ -351,12 +394,12 @@ class GenericEditRow(ttk.Frame):
         self.okBtn.grid(column=0, row=0, sticky=(N, W))
         ToolTip(self.okBtn, 'Werte in Tabelle übernehmen')
 
-        # Button "Reset"
-        self.resetpng = PhotoImage(file="/home/martin/Projects/python/mywidgets/images/reset_25x25.png")
-        self.resetBtn = ttk.Button(btnFrame, image=self.resetpng, style="My.TButton",
-                                   command=self._onReset)
-        self.resetBtn.grid(column=1, row=0, sticky=(N, W))
-        ToolTip(self.resetBtn, 'Änderungen zurücksetzen')
+        # Button "Cancel"
+        self.cancelpng = PhotoImage(file="/home/martin/Projects/python/mywidgets/images/reset_25x25.png")
+        self.cancelBtn = ttk.Button(btnFrame, image=self.cancelpng, style="My.TButton",
+                                   command=self._onCancel)
+        self.cancelBtn.grid(column=1, row=0, sticky=(N, W))
+        ToolTip(self.cancelBtn, 'Änderung abbrechen')
 
         # Button "Löschen"
         self.binpng = PhotoImage(file="/home/martin/Projects/python/mywidgets/images/bin_25x25_3.png")
@@ -374,13 +417,13 @@ class GenericEditRow(ttk.Frame):
         return m(parent)
 
     def _onOk(self):
-        self._callback(self.OK)
+        self._callback(Action.OK)
 
     def _onDelete(self):
-        self._callback(self.DELETE)
+        self._callback(Action.DELETE)
 
-    def _onReset(self):
-        self._callback(self.RESET)
+    def _onCancel(self):
+        self._callback(Action.CANCEL)
 
     def _callback(self, action):
         if self._actionCallback:
@@ -389,7 +432,7 @@ class GenericEditRow(ttk.Frame):
     def registerActionCallback(self, actionCallback) -> None:
         """
         register a method or function to be called when one of the three
-        action buttons (ok, delete, reset) is pressed
+        action buttons (ok, delete, cancel) is pressed
         :param actionCallback:
         :return:
         """
@@ -401,14 +444,24 @@ class GenericEditRow(ttk.Frame):
         Each edit field is represented by an dictionary item.
         """
         dic = dict()
+        for entry in self._lostList:
+            dic[entry[0]] = entry[1]
         for obj in self.children.values():
-                if hasattr(obj, 'getMyId'):
-                    dic[obj.getMyId()] = obj.getValue()
+            if hasattr(obj, 'getMyId'):
+                dic[obj.getMyId()] = obj.getValue()
         return dic
 
     def setValue(self, widgetId: str, newValue: any) -> None:
         for obj in self.children.values():
-                if hasattr(obj, 'getMyId'): # and obj.myId == widgetId:
-                    if obj.getMyId() == widgetId:
-                        obj.setValue(newValue)
-                        return
+            if hasattr(obj, 'getMyId'): # and obj.myId == widgetId:
+                if obj.getMyId() == widgetId:
+                    obj.setValue(newValue)
+                    return
+        #we don't know the given widgetId. We store it and give it back later on.
+        self._lostList.append((widgetId, newValue))
+
+    def clear(self):
+        for obj in self.children.values():
+            if hasattr(obj, 'getMyId'):
+                obj.clear()
+        self._lostList.clear()

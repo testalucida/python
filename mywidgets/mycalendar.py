@@ -380,20 +380,21 @@ class DateEntry(ttk.Entry, GetterSetter):
         pass
 
     def setDate(self, datestring: str) -> None:
-        # datestring: format d.m.yyyy required
-        sep = '.' if datestring.find('.') > 0 else '-'
-        parts = datestring.split(sep)
-        if len(parts) < 3:
-            raise ValueError("The given date string doesn't meet the "
-                             "needed format (d)d.(m)m.yyyy")
-        #if sep == '.':
-        n = (2, 1, 0) if sep == '.' else (0, 1, 2)
+        # datestring: format d.m.yyyy required or empty string
+        if datestring:
+            sep = '.' if datestring.find('.') > 0 else '-'
+            parts = datestring.split(sep)
+            if len(parts) < 3:
+                raise ValueError("The given date string doesn't meet the "
+                                 "needed format (d)d.(m)m.yyyy")
+            #if sep == '.':
+            n = (2, 1, 0) if sep == '.' else (0, 1, 2)
 
-        try:
-            dt = datetime.date(int(parts[n[0]]), int(parts[n[1]]), int(parts[n[2]]))
-        except:
-            raise ValueError("The given date string doesn't meet the "
-                             "needed format (d)d.(m)m.yyyy")
+            try:
+                dt = datetime.date(int(parts[n[0]]), int(parts[n[1]]), int(parts[n[2]]))
+            except:
+                raise ValueError("The given date string doesn't meet the "
+                                 "needed format (d)d.(m)m.yyyy")
         self.clear()
         self.insert(0, datestring)
 

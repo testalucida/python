@@ -16,7 +16,7 @@
       "width": 4,
       "dbname": "vj",
       "editwidget": {
-        "class": "tkinter.ttk.Combobox",
+        "class": "mywidgets.MyCombobox",
         "choice_values": [
           2018,
           2019,
@@ -24,9 +24,7 @@
           2021,
           2022
         ],
-        "set": "set($)",
         "init_value": 2019,
-        "delete": null,
         "width": 5,
         "wstretch": false,
         "height": -1
@@ -41,9 +39,7 @@
       "editwidget": {
         "class": "mywidgets.FloatEntry",
         "choice_values": null,
-        "set": "setFloat($)",
         "init_value": null,
-        "delete": "clear()",
         "width": 8,
         "wstretch": false,
         "height": -1
@@ -56,7 +52,7 @@
       "width": -1,
       "dbname": "art",
       "editwidget": {
-        "class": "tkinter.ttk.Combobox",
+        "class": "mywidgets.MyCombobox",
         "choice_values": [
           "Grundsteuer",
           "Hausgeldnachzahlung (Eigentümer->Verw.)",
@@ -66,9 +62,7 @@
           "Sonderumlage",
           "Ablöse"
         ],
-        "set": "set($)",
         "init_value": "'Nebenkostennachzahlung (Mieter->Verm.)'",
-        "delete": null,
         "width": 41,
         "wstretch": false,
         "height": -1
@@ -81,14 +75,12 @@
       "width": -1,
       "dbname": "zyklus",
       "editwidget": {
-        "class": "tkinter.ttk.Combobox",
+        "class": "mywidgets.MyCombobox",
         "choice_values": [
           "einmalig",
           "jährlich"
         ],
-        "set": "set($)",
         "init_value": "'einmalig'",
-        "delete": null,
         "width": 16,
         "wstretch": false,
         "height": -1
@@ -101,11 +93,9 @@
       "width": -1,
       "dbname": "bemerkung",
       "editwidget": {
-        "class": "tkinter.scrolledtext.ScrolledText",
+        "class": "mywidgets.MyText",
         "choice_values": null,
-        "set": "insert('1.0', $)",
         "init_value": null,
-        "delete": "delete('1.0', 'end')",
         "width": 35,
          "wstretch": true,
         "height": 2

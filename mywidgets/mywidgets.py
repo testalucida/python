@@ -184,7 +184,6 @@ class IntEntry(ttk.Entry, GetterSetter):
     def clear(self) -> None:
         self.delete(0, 'end')
 
-
 #+++++++++++++++++++++++++++++++++++++++++++++++
 
 class MyCombobox(ttk.Combobox, GetterSetter):
@@ -209,7 +208,10 @@ class TableView(ttk.Treeview):
     def __init__(self, parent):
         ttk.Treeview.__init__(self, parent, show='headings')
         self.grid(sticky='nswe')
-        self.bind('<Button-1>', self._onTableRowSelected)
+        self.bind('<Button-1>', self._onLeftMouse)
+        self.bind('<Double-1>', self._onLeftMouseDouble)
+        self.bind('<Return>', self._onReturn)
+        self.bind("<<TreeviewSelect>>", self._onTreeviewSelect, "+")
         self._selectionCallback = None
 
     def setColumns(self, columnNames: list):
@@ -223,8 +225,9 @@ class TableView(ttk.Treeview):
     def registerSelectionCallback(self, callback):
         """
         the function or method to register for callbacks has to have
-        2 arguments: event and list.
+        3 arguments: event, itemId and list.
         event: the select event
+        itemId: identification of selected row
         list: containing dictionaries with keys 'columnname' and 'cellvalue'.
         values are provided with data of selected row
         """
@@ -272,6 +275,10 @@ class TableView(ttk.Treeview):
         #self.column(colnr)['width'] = maxw
         self.setColumnWidth(columnName, maxw)
 
+    def updateRow(self, iid: str, newValues: dict) -> None:
+        for colName, newVal in newValues.items():
+            self.updateRow2( iid, colName, newVal)
+
     def updateRow1(self, row: int, colName: str, newVal: any) -> None:
         """
         changes the value of a given column's cell. The cell will be identified
@@ -304,22 +311,29 @@ class TableView(ttk.Treeview):
         """
         self.set(itemId, colName, newVal)
 
-    def appendRows(self, data: list) -> None:
+    def appendRows(self, rowlist: list) -> None:
         """
         provides this tableview with one or more rows of data.
-        :param data: contains one or more dictionaries, each
+        :param rowlist: contains one or more dictionaries, each
             representing the data for one table row.
             The key values correspond to tableview's headings.
         :return:
         """
-        #first delete all previous items:
-        self.clear()
         cols = self['columns'] #list of headings of this TableView
-        for dic in data:
+        for dic in rowlist:
             values = list()
             for col in cols:
                 values.append(dic[col])
             self.appendRow(values)
+
+    # def appendRow(self, data: dict) -> None:
+    # DUPLICATE!!!
+    #     """
+    #     append one row to the rows of this TableView
+    #     :param data: column values
+    #     :return: None
+    #     """
+    #     self.appendRows(list(data))
 
     def clear(self) -> None:
         #delete all rows
@@ -327,7 +341,7 @@ class TableView(ttk.Treeview):
         for child in children:
             self.delete(child)
 
-    def appendRow(self, data: list):
+    def appendRow(self, data: list) -> None:
         rowNr = self.getRowCount() + 1
         self.insert('', 'end', text=str(rowNr), values=data)
 
@@ -340,29 +354,54 @@ class TableView(ttk.Treeview):
     def getRowCount(self) -> int:
         return len(self.getAllRows())
 
+    def getRowIid(self, rownr: int) -> str:
+        children = self.get_children()
+        return children[rownr]
+
     def getRowValues(self, iid: str) -> list:
         row = self.item(iid)
         return row['values']
 
+    def selectRow(self, rownr: int) -> None:
+        iid = self.getRowIid(rownr)
+        self.selection_set(iid)
+        self.focus(iid) #that will usually not work
+
     def getColumnNames(self) -> list:
         return self['columns']
 
-    def _onTableRowSelected(self, evt: Event) -> None:
+    def _onLeftMouse(self, evt: Event) -> None:
+        self._onTableRowSelected(evt, 'leftmousesingle')
+
+    def _onLeftMouseDouble(self, evt: Event) -> None:
+        self._onTableRowSelected(evt, 'leftmousedouble')
+
+    def _onTreeviewSelect(self, evt: Event) -> None:
+        self._onTableRowSelected(evt, 'treeviewselect')
+
+    def _onReturn(self, evt: Event) -> None:
+        self._onTableRowSelected(evt, 'returnkey')
+
+    def _onTableRowSelected(self, evt: Event, trigger: str) -> None:
         """
         called when a row has been selected.
         creates a list of lists containing columnnames and cell values
         Invokes the registered SelectionCallback method.
         :param evt:  select event
+        :param trigger: one of 'leftmousesingle', 'leftmousedouble',
+        'returnkey', 'treeviewselect'
         :return:  list of dictionaries
         """
-        iid = self.identify('item', evt.x, evt.y)
-        if iid == '': #column header clicked
-            return
+        iid = self.identify('item', evt.x, evt.y) #row or column header clicked
+        if iid == '': #column header clicked or selection by arrow keys
+            iid = self.focus() #selection changed by arrow keys
+            if iid == '': #column header clicked
+                return
 
         valuelist = list(zip(self.getColumnNames(), self.getRowValues(iid)))
 
         if self._selectionCallback:
-            self._selectionCallback(evt, valuelist)
+            self._selectionCallback(evt, trigger, iid, valuelist)
 
 #++++++++++++++++++++++++++++++++++++++++++++++++
 
