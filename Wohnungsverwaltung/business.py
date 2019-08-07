@@ -157,10 +157,7 @@ class DataProvider:
                 str( whg_id ) + '&user=' + self.__user)
         self._checkException(resp, ServiceException)
         rg_list = json.loads(resp.content)
-        rg_list = self._getDictEurDate()
-        for rg in rg_list:
-            rg['rg_datum'] = datehelper.convertIsoToEur(rg['rg_datum'])
-            rg['rg_bezahlt_am'] = datehelper.convertIsoToEur(rg['rg_bezahlt_am'])
+        rg_list = self._getDictEurDate(rg_list, 'rg_datum', 'rg_bezahlt_am')
         return rg_list
 
     def getMieteData(self, whg_id ):
@@ -230,8 +227,9 @@ class DataProvider:
         return retval
 
     def updateRechnung(self, rg_dict):
+        rgdictcopy = self._getDictCopyIsoDate(rg_dict, 'rg_datum', 'rg_bezahlt_am')
         resp = self.__session. \
-            post('http://localhost/kendelweb/dev/php/business.php?q=update_rechnung&user=' + self.__user, data=rg_dict)
+            post('http://localhost/kendelweb/dev/php/business.php?q=update_rechnung&user=' + self.__user, data=rgdictcopy)
 
         retval = self.__getWriteRetValOrRaiseException(resp)
 

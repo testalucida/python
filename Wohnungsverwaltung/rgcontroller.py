@@ -29,13 +29,13 @@ class RechnungController:
             else:
                 return 'Rechnungssatz muss erst gespeichert werden,\n' \
                        'bevor er gelöscht werden kann!'
-        elif action == Action.OK:
+        elif action == Action.OK: #update or insert
             #provide whg_id
             valuescopy = dict(values)
             valuescopy['whg_id'] = self._whg_id
             if 'rg_id' in values and values['rg_id'] > 0:
                 #update an existing rechnung; first validate
-                if self._validate(values):
+                if not self._validate(values):
                     self._dataProvider.updateRechnung(valuescopy)
             else:
                 #insert a new rechnung; first validate
