@@ -226,6 +226,15 @@ class DataProvider:
 
         return retval
 
+    def deleteMtlEinAus(self, mea_id):
+        d = {'mea_id': mea_id}
+        resp = self.__session. \
+            post('http://localhost/kendelweb/dev/php/business.php?q=delete_mtleinaus&user=' + self.__user, data=d)
+
+        retval = self.__getWriteRetValOrRaiseException(resp)
+
+        return retval
+
     def updateRechnung(self, rg_dict):
         rgdictcopy = self._getDictCopyIsoDate(rg_dict, 'rg_datum', 'rg_bezahlt_am')
         resp = self.__session. \

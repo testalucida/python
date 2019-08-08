@@ -5,6 +5,9 @@
       "_comment": "ID der Satzes in der Tabelle sonstige_ein_aus",
       "heading": "ID",
       "isvisible": false,
+      "align": null,
+      "fit": null,
+      "stretch": null,
       "width": -1,
       "dbname": "sea_id",
       "editwidget": null
@@ -13,6 +16,9 @@
       "_comment": "Jahr, in dem diese Ein-/Auszahlung veranlagt wird",
       "heading": "VJ",
       "isvisible": true,
+      "align": "left",
+      "fit": true,
+      "stretch": false,
       "width": 4,
       "dbname": "vj",
       "editwidget": {
@@ -34,6 +40,9 @@
       "_comment": "Betrag",
       "heading": "Betrag",
       "isvisible": true,
+      "align": "right",
+      "fit": true,
+      "stretch": false,
       "width": -1,
       "dbname": "betrag",
       "editwidget": {
@@ -49,6 +58,9 @@
       "_comment": "Art der Ein-/Auszahlung",
       "heading": "Art",
       "isvisible": true,
+      "align": "left",
+      "fit": true,
+      "stretch": true,
       "width": -1,
       "dbname": "art",
       "editwidget": {
@@ -72,6 +84,9 @@
       "_comment": "Zyklus der Ein-/Auszahlung",
       "heading": "Zyklus",
       "isvisible": true,
+      "align": "left",
+      "fit": true,
+      "stretch": false,
       "width": -1,
       "dbname": "zyklus",
       "editwidget": {
@@ -90,6 +105,9 @@
       "_comment": "Bemerkung zur Ein-/Auszahlung",
       "heading": "Bemerkung",
       "isvisible": true,
+      "align": "left",
+      "fit": false,
+      "stretch": true,
       "width": -1,
       "dbname": "bemerkung",
       "editwidget": {

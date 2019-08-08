@@ -5,6 +5,9 @@
       "_comment": "ID des Satzes in der Tabelle mtl_ein_aus",
       "heading": "ID",
       "isvisible": false,
+      "align": null,
+      "fit": null,
+      "stretch": null,
       "width": -1,
       "dbname": "mea_id",
       "editwidget": null
@@ -13,6 +16,9 @@
       "_comment": "Gültig-Ab-Datum dieses Satzes",
       "heading": "Gültig ab",
       "isvisible": true,
+      "align": "left",
+      "fit": true,
+      "stretch": false,
       "width": -1,
       "dbname": "gueltig_ab",
       "editwidget":
@@ -29,6 +35,9 @@
       "_comment": "Netto-Miete",
       "heading": "Netto-Miete",
       "isvisible": true,
+      "align": "right",
+      "fit": true,
+      "stretch": false,
       "width": -1,
       "dbname": "miete_netto",
       "editwidget":
@@ -45,6 +54,9 @@
       "_comment": "Nebenkosten-Abschlag",
       "heading": "NK-Abschlag",
       "isvisible": true,
+      "align": "right",
+      "fit": true,
+      "stretch": false,
       "width": -1,
       "dbname": "nk_abschlag",
       "editwidget":
@@ -61,6 +73,9 @@
       "_comment": "Hausgeld-Abschlag netto - ohne Zuführung Rücklage (Zahlung Vermieter an Verwalter)",
       "heading": "HG-Abschl.netto",
       "isvisible": true,
+      "align": "right",
+      "fit": true,
+      "stretch": false,
       "width": -1,
       "dbname": "hg_netto_abschlag",
       "editwidget":
@@ -77,6 +92,9 @@
       "_comment": "Zuführung Rücklage (Zahlung Vermieter an Verwalter)",
       "heading": "Rücklage",
       "isvisible": true,
+      "align": "right",
+      "fit": true,
+      "stretch": false,
       "width": -1,
       "dbname": "ruecklage_zufuehr",
       "editwidget":
@@ -93,6 +111,9 @@
       "_comment": "Bemerkung",
       "heading": "Bemerkung",
       "isvisible": true,
+      "align": "left",
+      "fit": false,
+      "stretch": true,
       "width": -1,
       "dbname": "bemerkung",
       "editwidget":

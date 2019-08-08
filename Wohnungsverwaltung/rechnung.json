@@ -4,7 +4,10 @@
     {
       "_comment": "ID der Rechnung in der Tabelle rechnung",
       "heading": "ID",
-      "isvisible": false,
+      "isvisible": false,"align": "right",
+      "align": null,
+      "fit": null,
+      "stretch": null,
       "width": -1,
       "dbname": "rg_id",
       "editwidget": null
@@ -13,6 +16,9 @@
       "_comment": "Rechnungsdatum",
       "heading": "Rechnungsdatum",
       "isvisible": true,
+      "align": "left",
+      "fit": true,
+      "stretch": false,
       "width": -1,
       "dbname": "rg_datum",
       "editwidget": {
@@ -28,6 +34,9 @@
       "_comment": "Rechnungsnummer",
       "heading": "Rechnung-Nr.",
       "isvisible": true,
+      "align": "left",
+      "fit": true,
+      "stretch": true,
       "width": -1,
       "dbname": "rg_nr",
       "editwidget": {
@@ -43,6 +52,9 @@
       "_comment": "Rechnungsbetrag",
       "heading": "Betrag",
       "isvisible": true,
+      "align": "right",
+      "fit": true,
+      "stretch": false,
       "width": -1,
       "dbname": "betrag",
       "editwidget": {
@@ -58,6 +70,9 @@
       "_comment": "Firma",
       "heading": "Firma",
       "isvisible": true,
+      "align": "left",
+      "fit": false,
+      "stretch": true,
       "width": -1,
       "dbname": "firma",
       "editwidget": {
@@ -73,6 +88,9 @@
       "_comment": "Dauer AfA in Jahren",
       "heading": "Jhre AfA",
       "isvisible": true,
+      "align": "center",
+      "fit": true,
+      "stretch": false,
       "width": -1,
       "dbname": "verteilung_jahre",
       "editwidget": {
@@ -104,6 +122,9 @@
       "_comment": "Bemerkung zur Rechnung",
       "heading": "Bemerkung",
       "isvisible": true,
+      "align": "left",
+      "fit": false,
+      "stretch": true,
       "width": -1,
       "dbname": "bemerkung",
       "editwidget": {
@@ -119,6 +140,9 @@
       "_comment": "Rechnung bezahlt am",
       "heading": "bezahlt am",
       "isvisible": true,
+      "align": "left",
+      "fit": true,
+      "stretch": false,
       "width": -1,
       "dbname": "rg_bezahlt_am",
       "editwidget": {

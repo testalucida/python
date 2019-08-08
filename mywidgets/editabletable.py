@@ -172,23 +172,38 @@ class GenericEditableTable(ttk.Frame):
         self._edit = None
         self._actionCallback = None
         self._rowEditingId = None
+        self._fitlist = list()
 
     def configureTable(self, columnDefs: list):
         editwidgetlist = []
         for col in columnDefs:
             editwidget = col['editwidget']
             isEditable = False if editwidget is None else True
-            self._mappings.add(col['heading'], col['dbname'], col['isvisible'], isEditable)
+            self._mappings.add(col['heading'], col['dbname'],
+                               col['isvisible'], isEditable)
             if editwidget:
                 editwidget['label'] = col['heading']
                 editwidget['dbname'] = col['dbname']
                 editwidgetlist.append(editwidget)
-
+        #create TableView and EditRow:
         self._createGui(editwidgetlist)
+
         for col in columnDefs:
+            heading = col['heading']
             width = col['width']
             if width > 0:
-                self._tv.setColumnWidth(col['heading'], width)
+                self._tv.setColumnWidth(heading, width)
+            align = col['align']
+            if align: #translate from align to 'anchor'
+                if align == 'left': align = 'w'
+                elif align == 'right': align = 'e'
+                self._tv.alignColumn(heading, align)
+            fit = col['fit']
+            if fit:
+                self._fitlist.append(heading)
+            stretch = col['stretch']
+            if stretch:
+                self._tv.setColumnStretch(heading, stretch)
 
         self._tv.registerSelectionCallback(self.tvselectionCallback)
         self._edit.registerActionCallback(self.editRowCallback)
@@ -223,7 +238,7 @@ class GenericEditableTable(ttk.Frame):
 
     def appendRows(self, data: list) -> None:
         #data contains one or more dictionaries using dbcolumn-names for keys.
-        #we have to create a copy of list using dictionaries whose keys are
+        #we have to create a copy of that list using dictionaries whose keys are
         #tvcolumn-names.
         mapped = self._mappings.getMappings()
         newlist = list()
@@ -236,9 +251,15 @@ class GenericEditableTable(ttk.Frame):
                     pass
             newlist.append(d)
         self._tv.appendRows(newlist)
+        self._checkFitlist()
 
     def appendRow(self, data: dict) -> None:
         self._tv.appendRow(data)
+        self._checkFitlist()
+
+    def _checkFitlist(self):
+        for colName in self._fitlist:
+            self._tv.makeColumnWidthFit(colName)
 
     def updateRow2(self, itemId: str, colName: str, newVal: any) -> None:
         """
