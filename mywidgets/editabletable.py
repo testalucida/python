@@ -272,6 +272,9 @@ class GenericEditableTable(ttk.Frame):
         for colName in self._fitlist:
             self._tv.makeColumnWidthFit(colName)
 
+    def getRowValues(self, itemId: str) -> list:
+        return self._tv.getRowValues(itemId)
+
     def updateRow2(self, itemId: str, colName: str, newVal: any) -> None:
         """
         see TableView.updateRow2()

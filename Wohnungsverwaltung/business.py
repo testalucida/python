@@ -160,9 +160,18 @@ class DataProvider:
         rg_list = self._getDictEurDate(rg_list, 'rg_datum', 'rg_bezahlt_am')
         return rg_list
 
-    def getMtlEinAusData(self, whg_id ):
+    def getMtlEinAusData(self, whg_id: int):
         resp = self.__session. \
             get('http://localhost/kendelweb/dev/php/business.php?q=mtl_ein_aus_data&id=' +
+                str(whg_id) + '&user=' + self.__user)
+        self._checkException(resp, ServiceException)
+        mea_data = json.loads(resp.content)
+        mea_data = self._getDictEurDate(mea_data, 'gueltig_ab', 'gueltig_bis')
+        return mea_data
+
+    def getCurrentAndFutureMtlEinAus(self, whg_id:int) -> list:
+        resp = self.__session. \
+            get('http://localhost/kendelweb/dev/php/business.php?q=current_future_mtl_ein_aus&id=' +
                 str(whg_id) + '&user=' + self.__user)
         self._checkException(resp, ServiceException)
         mea_data = json.loads(resp.content)
@@ -190,6 +199,19 @@ class DataProvider:
         resp = self.__session. \
             post('http://localhost/kendelweb/dev/php/business.php?q=update_mtl_ein_aus&user=' + self.__user,
                  data=meadictcopy)
+
+        retval = self.__getWriteRetValOrRaiseException(resp)
+
+        return retval
+
+    '''
+    terminate mtl ein_aus
+    '''
+    def terminateMtlEinAus(self, mea_id, gueltig_bis):
+        d = {'mea_id': mea_id, 'gueltig_bis': gueltig_bis}
+        resp = self.__session. \
+            post('http://localhost/kendelweb/dev/php/business.php?q=terminate_mtl_ein_aus&user=' + self.__user,
+                 data=d)
 
         retval = self.__getWriteRetValOrRaiseException(resp)
 

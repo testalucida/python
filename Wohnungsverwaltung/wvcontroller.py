@@ -33,5 +33,10 @@ class WvController:
         self._wv.registerWohnungClickCallback(self._onWohnungClicked)
 
     def _onWohnungClicked(self, whg_id:int) -> None:
+        root = self._wv.master
+        root.config(cursor='clock')
+        root.update()
         self._rgcontroller.wohnungSelected(whg_id)
         self._mtleacontroller.wohnungSelected(whg_id)
+        root.configure(cursor='')
+        root.update()

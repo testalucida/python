@@ -37,27 +37,54 @@ class MtlEinAusController:
                                    'Datensatz muss erst gespeichert werden,\n' \
                                    'bevor er gelöscht werden kann!')
         elif action == Action.OK: #update or insert
+            #first simple validation
             msg = self._validate(values)
             if msg: #validate provides complaint
                 tv.showError('Validierungsfehler', msg)
-            else: #validation ok
-                #provide whg_id
-                valuescopy = dict(values)
-                valuescopy['whg_id'] = self._whg_id
-                if 'mea_id' in values and values['mea_id'] > 0:
-                    #update an existing mtlEinAus;
-                    try:
-                        self._dataProvider.updateMtlEinAus(valuescopy)
-                        self._loadMeaDaten()
-                    except DataError as e:
-                        tv.showError('DB-Fehler', e.toString())
+
+            else: #simple validation ok
+                #update or insert?
+                isUpdate: bool = \
+                    True if ('mea_id' in values and values['mea_id'] > 0) \
+                        else False
+                #extended validation: check periods of payment are not intersecting
+                #first get current mtlea records from database
+                mea_list = self._dataProvider.getCurrentAndFutureMtlEinAus(self._whg_id)
+                #in case of update we remove the relating dictionary from mea_list:
+                if isUpdate:
+                    for mea in mea_list:
+                        if int(mea['mea_id']) == int(values['mea_id']):
+                            mea_list.remove(mea)
+                            break
+                    if len(mea_list) == 0:
+                        return
+
+                msg = self._periodsOverlapping(
+                                            values['gueltig_ab'],
+                                            values['gueltig_bis'],
+                                            mea_list)
+                if msg:
+                    tv.showError('Fachlicher Feher',
+                                 ''.join(('Zahlungszeiträume dürfen sich nicht überschneiden:',
+                                          msg)))
                 else:
-                    #insert a new mtlEinAus;
-                    try:
-                        retVal = self._dataProvider.insertMtlEinAus(valuescopy)
-                        self._loadMeaDaten()
-                    except DataError as e:
-                        tv.showError('DB-Fehler', e.toString())
+                    #provide whg_id
+                    valuescopy = dict(values)
+                    valuescopy['whg_id'] = self._whg_id
+                    if isUpdate:
+                        #update an existing mtlEinAus;
+                        try:
+                            self._dataProvider.updateMtlEinAus(valuescopy)
+                            self._loadMeaDaten()
+                        except DataError as e:
+                            tv.showError('DB-Fehler', e.toString())
+                    else:
+                        #insert a new mtlEinAus;
+                        try:
+                            retVal = self._dataProvider.insertMtlEinAus(valuescopy)
+                            self._loadMeaDaten()
+                        except DataError as e:
+                            tv.showError('DB-Fehler', e.toString())
 
     def _validate(self, meadaten: dict) -> str or None:
         if not meadaten['netto_miete']:
@@ -76,6 +103,17 @@ class MtlEinAusController:
             if rc > 0:
                 return 'Wenn ein Gültig-Bis-Datum angegeben ist, ' \
                        'muss es größer sein als das Gültig-Ab-Datum.'
+        return ''
+
+    def _periodsOverlapping(gueltig_ab: str, gueltig_bis: str, datelist: list) -> str:
+        """
+        checks if a given period overlaps with other periods in a datelist.
+        All dates in eur formatted strings expected ('21.08.2018')
+        :param gueltig_bis:
+        :param datelist: a list of dictionaries containing the key 'gueltig_ab' and 'gueltig_bis'
+        :return: '' if nothing overlaps otherwise a message containing the faulty period
+        """
+
         return ''
 
     def wohnungSelected(self, whg_id: int) -> None:
