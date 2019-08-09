@@ -277,7 +277,7 @@ class TableView(ttk.Treeview):
 
     def updateRow(self, iid: str, newValues: dict) -> None:
         for colName, newVal in newValues.items():
-            self.updateRow2( iid, colName, newVal)
+            self.updateRow2(iid, colName, newVal)
 
     def updateRow1(self, row: int, colName: str, newVal: any) -> None:
         """

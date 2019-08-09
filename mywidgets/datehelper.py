@@ -1,3 +1,4 @@
+from datetime import datetime
 
 def convertIsoToEur(isostring: str) -> str:
     """
@@ -26,3 +27,25 @@ def convertEurToIso(eurstring: str) -> str:
     eur = eurstring.split('.')
     iso = ''.join((eur[2], '-', eur[1], '-', eur[0]))
     return iso
+
+def compareEurDates(eurstring1: str, eurstring2: str) -> int:
+    """
+    compare 2 dates given in eur strings ('mm.dd.yyyy').
+    :param eurstring1:
+    :param eurstring2:
+    :return:    -1 if eurstring1 < eurstring2 (earlier)
+                 0 if eurstring1 == eurstring2
+                 1 if eurstring1 > eurstring2
+    """
+    eur1 = eurstring1.split('.')
+    eur2 = eurstring2.split('.')
+    date1 = datetime(int(eur1[2]), int(eur1[1]), int(eur1[0]))
+    date2 = datetime(int(eur2[2]), int(eur2[1]), int(eur2[0]))
+    if date1 > date2: return 1
+    if date1 == date2: return 0
+    return -1
+
+
+# d1 = '23.04.1988'
+# d2 = '12.03.2999'
+# rc = compareEurDates(d1, d2)

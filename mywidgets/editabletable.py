@@ -159,6 +159,17 @@ class Mappings:
             mapped[mapping['dbname']] = mapping['heading']
         return mapped
 
+# #+++++++++++++++++++++++++++++++++++++++++++++++
+#
+# class ActionCallbackResponse:
+#     def __init__(self, title: str, msg: str):
+#         self._title = title
+#         self._msg = msg
+#
+#     def getTitle(self): return self._title
+#
+#     def getMessage(self): return self._msg
+#
 #+++++++++++++++++++++++++++++++++++++++++++++++
 
 class GenericEditableTable(ttk.Frame):
@@ -233,7 +244,7 @@ class GenericEditableTable(ttk.Frame):
         :param data:
         :return:
         """
-        self._tv.clear()
+        self.clear()
         self.appendRows(data)
 
     def appendRows(self, data: list) -> None:
@@ -311,36 +322,61 @@ class GenericEditableTable(ttk.Frame):
         self._actionCallback = callbackFnc
 
     def editRowCallback(self, action: int, values: dict) -> None:
-        msg: str = ''
-        if action != Action.CANCEL and self._actionCallback:
-            if action == Action.DELETE:
-                yes: bool = messagebox.askyesno('Sicherheitsabfrage',
-                                      'Diesen Satz wirklich löschen?')
-                if not yes:
-                    return
+        if self._actionCallback:
+            self._actionCallback(action, self._rowEditingId, values)
+        #
+        # msg: str = ''
+        # if action != Action.CANCEL and self._actionCallback:
+        #     if action == Action.DELETE:
+        #         yes: bool = messagebox.askyesno('Sicherheitsabfrage',
+        #                               'Diesen Satz wirklich löschen?')
+        #         if not yes:
+        #             return
+        #
+        #     msg = self._actionCallback(action, self._rowEditingId, values)
+        #
+        #     if not msg:
+        #         if action == Action.DELETE:
+        #             self._tv.delete(self._rowEditingId)
+        #         else: #Action.OK - Insert or Update
+        #             if self._rowEditingId: #it's an update of an existing row
+        #                 #translate keys (dbname) into column names
+        #                 transdic = dict()
+        #                 for dbname, val in values.items():
+        #                     colName = self._mappings.getHeading(dbname)
+        #                     transdic[colName] = val
+        #                     self._tv.updateRow(self._rowEditingId, transdic)
+        #             else:
+        #                 pass #it's a new rechnung. The append will be done
+        #                      #by the rgcontroller.
+        #     else:
+        #         messagebox.showerror('Validierungsfehler', msg)
+        #
+        #     if msg == '' or action == Action.CANCEL:
+        #         self._edit.clear()
+        #         self._rowEditingId = None
 
-            msg = self._actionCallback(action, values)
+    def askyesno(self, title: str, msg: str, withWarnIcon: bool = False) -> bool:
+        if withWarnIcon:
+            return messagebox.askyesno(title, msg, icon='warning')
+        else:
+            return messagebox.askyesno(title, msg)
 
-            if not msg:
-                if action == Action.DELETE:
-                    self._tv.delete(self._rowEditingId)
-                else: #Action.OK - Insert or Update
-                    if self._rowEditingId: #it's an update of an existing row
-                        #translate keys (dbname) into column names
-                        transdic = dict()
-                        for dbname, val in values.items():
-                            colName = self._mappings.getHeading(dbname)
-                            transdic[colName] = val
-                            self._tv.updateRow(self._rowEditingId, transdic)
-                    else:
-                        pass #it's a new rechnung. The append will be done
-                             #by the rgcontroller.
-            else:
-                messagebox.showerror('Validierungsfehler', msg)
+    def showInfo(self, title: str, msg: str):
+        messagebox.showinfo(title, msg)
 
-            if msg == '' or action == Action.CANCEL:
-                self._edit.clear()
-                self._rowEditingId = None
+    def showError(self, title: str, msg: str):
+        messagebox.showerror(title, msg)
+
+    def clear(self):
+        self._tv.clear()
+        self._edit.clear()
+        self._rowEditingId = None
+
+    def deleteRow(self, itemId: str):
+        self._tv.delete(self._rowEditingId)
+        self._edit.clear()
+        self._rowEditingId = None
 
 #+++++++++++++++++++++++++++++++++++++++++++++++
 

@@ -19,40 +19,45 @@ class RechnungController:
         self._tv.configureTable(columnDefs)
         self._tv.registerActionCallback(self._onEditRowAction)
 
-    def _onEditRowAction(self, action: int, values: dict) -> str:
+    def _onEditRowAction(self, action: int, rowItemId: str, values: dict):
+        tv = self._tv
         if action == Action.DELETE:
             if 'rg_id' in values and values['rg_id'] > 0:
-                try:
-                    self._dataProvider.deleteRechnung(values['rg_id'])
-                except:
-                    return 'Fehler beim Löschen der Rechnung.'
+                yes: bool = tv.askyesno('Sicherheitsabfrage',
+                                        'Diesen Satz wirklich löschen?')
+                if yes:
+                    try:
+                        self._dataProvider.deleteRechnung(values['rg_id'])
+                        tv.deleteRow(rowItemId)
+                    except:
+                        tv.showError('DB-Fehler',
+                                     'Fehler beim Löschen der Rechnung.')
             else:
-                return 'Rechnungssatz muss erst gespeichert werden,\n' \
-                       'bevor er gelöscht werden kann!'
+                self._tv.showError('Bedienungsfehler',
+                                   'Rechnung muss erst gespeichert werden,\n' \
+                                   'bevor sie gelöscht werden kann!')
         elif action == Action.OK: #update or insert
-            #provide whg_id
-            valuescopy = dict(values)
-            valuescopy['whg_id'] = self._whg_id
-            if 'rg_id' in values and values['rg_id'] > 0:
-                #update an existing rechnung; first validate
-                if not self._validate(values):
-                    self._dataProvider.updateRechnung(valuescopy)
-            else:
-                #insert a new rechnung; first validate
-                msg = self._validate(values)
-                if not msg:
+            msg = self._validate(values)
+            if msg:  # validate provides complaint
+                tv.showError('Validierungsfehler', msg)
+            else: #validation ok
+                #provide whg_id
+                valuescopy = dict(values)
+                valuescopy['whg_id'] = self._whg_id
+                if 'rg_id' in values and values['rg_id'] > 0:
+                    #update an existing rechnung; first validate
+                    try:
+                        self._dataProvider.updateRechnung(valuescopy)
+                        self._loadRechnungDaten()
+                    except DataError as e:
+                        tv.showError('DB-Fehler', e.toString())
+                else:
+                    #insert a new rechnung; first validate
                     try:
                         retVal = self._dataProvider.insertRechnung(valuescopy)
-                        values['rg_id'] = retVal.object_id()
-                        li = list()
-                        li.append(values)
-                        self._tv.appendRows(li)
+                        self._loadRechnungDaten()
                     except DataError as e:
-                        return e.toString()
-                else: #validate provides complaint
-                    return msg
-
-        return ''
+                        tv.showError('DB-Fehler', e.toString())
 
     def _validate(self, rgdaten: dict) -> str or None:
         if not rgdaten['rg_datum']:
@@ -66,8 +71,10 @@ class RechnungController:
         return ''
 
     def wohnungSelected(self, whg_id: int) -> None:
-        rg_list = self._dataProvider.getRechnungsUebersicht(whg_id)
         self._whg_id = whg_id
+        self._loadRechnungDaten()
+
+    def _loadRechnungDaten(self):
         """
         rg_list:
             a list of dictionaries.
@@ -83,9 +90,5 @@ class RechnungController:
               'rg_bezahlt_am': '2019-02-02'
             }
         """
+        rg_list = self._dataProvider.getRechnungsUebersicht(self._whg_id)
         self._tv.setRows(rg_list)
-        self._tv.alignColumn('Betrag', 'e')
-        self._tv.alignColumn('Jhre AfA', 'e')
-        self._tv.makeColumnWidthFit('Rechnung-Nr.')
-        self._tv.makeColumnWidthFit('Betrag')
-        self._tv.makeColumnWidthFit('Jhre AfA')

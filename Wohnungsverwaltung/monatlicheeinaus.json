@@ -32,6 +32,25 @@
         }
     },
     {
+      "_comment": "Gültig-Bis-Datum dieses Satzes",
+      "heading": "Gültig bis",
+      "isvisible": true,
+      "align": "left",
+      "fit": true,
+      "stretch": false,
+      "width": -1,
+      "dbname": "gueltig_bis",
+      "editwidget":
+        {
+          "class": "mycalendar.DateEntry",
+          "choice_values": null,
+          "init_value": null,
+          "width": 12,
+          "wstretch": false,
+          "height": -1
+        }
+    },
+    {
       "_comment": "Netto-Miete",
       "heading": "Netto-Miete",
       "isvisible": true,
@@ -39,7 +58,7 @@
       "fit": true,
       "stretch": false,
       "width": -1,
-      "dbname": "miete_netto",
+      "dbname": "netto_miete",
       "editwidget":
         {
           "class": "mywidgets.FloatEntry",
@@ -68,6 +87,17 @@
           "wstretch": false,
           "height": -1
         }
+    },
+    {
+      "_comment": "Brutto-Miete - kein DB-Feld, aber serverseitig errechnet",
+      "heading": "Brutto-Miete",
+      "isvisible": true,
+      "align": "right",
+      "fit": true,
+      "stretch": false,
+      "width": -1,
+      "dbname": "brutto_miete",
+      "editwidget": null
     },
     {
       "_comment": "Hausgeld-Abschlag netto - ohne Zuführung Rücklage (Zahlung Vermieter an Verwalter)",
@@ -106,6 +136,28 @@
           "wstretch": false,
           "height": -1
         }
+    },
+    {
+      "_comment": "Summe Hausgeld - kein DB-Feld, aber serverseitig errechnet",
+      "heading": "Hausgeld ges.",
+      "isvisible": true,
+      "align": "right",
+      "fit": true,
+      "stretch": false,
+      "width": -1,
+      "dbname": "hg_brutto",
+      "editwidget": null
+    },
+    {
+      "_comment": "Überschuss - kein DB-Feld, aber serverseitig errechnet",
+      "heading": "Überschuss",
+      "isvisible": true,
+      "align": "right",
+      "fit": true,
+      "stretch": false,
+      "width": -1,
+      "dbname": "ueberschuss",
+      "editwidget": null
     },
     {
       "_comment": "Bemerkung",

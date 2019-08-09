@@ -160,85 +160,48 @@ class DataProvider:
         rg_list = self._getDictEurDate(rg_list, 'rg_datum', 'rg_bezahlt_am')
         return rg_list
 
-    def getMieteData(self, whg_id ):
+    def getMtlEinAusData(self, whg_id ):
         resp = self.__session. \
-            get('http://localhost/kendelweb/dev/php/business.php?q=miete_data&id=' +
+            get('http://localhost/kendelweb/dev/php/business.php?q=mtl_ein_aus_data&id=' +
                 str(whg_id) + '&user=' + self.__user)
-        miete_data = json.loads(resp.content)
-        return miete_data
+        self._checkException(resp, ServiceException)
+        mea_data = json.loads(resp.content)
+        mea_data = self._getDictEurDate(mea_data, 'gueltig_ab', 'gueltig_bis')
+        return mea_data
 
-    def getHausgeldData(self, whg_id: str ) :
+    '''
+    insert mtl ein_aus
+    '''
+    def insertMtlEinAus(self, mea_dict):
+        meadictcopy = self._getDictCopyIsoDate(mea_dict, 'gueltig_ab', 'gueltig_bis')
         resp = self.__session. \
-            get('http://localhost/kendelweb/dev/php/business.php?q=hausgeld_data&id=' +
-                str(whg_id) + '&user=' + self.__user)
-        return resp
-
-    def insertHausgeld(self, hausgeld: dict):
-        resp = self.__session. \
-            post('http://localhost/kendelweb/dev/php/business.php?q=insert_hausgeld&user=' + self.__user,
-                 data=hausgeld)
+            post('http://localhost/kendelweb/dev/php/business.php?q=insert_mtl_ein_aus&user=' + self.__user,
+                 data=meadictcopy)
 
         retval = self.__getWriteRetValOrRaiseException(resp)
 
         return retval
 
-    def updateHausgeld(self, hausgeld: dict):
+    '''
+    update mtl ein_aus
+    '''
+    def updateMtlEinAus(self, mea_dict):
+        meadictcopy = self._getDictCopyIsoDate(mea_dict, 'gueltig_ab', 'gueltig_bis')
         resp = self.__session. \
-            post('http://localhost/kendelweb/dev/php/business.php?q=update_hausgeld&user=' + self.__user,
-                 data=hausgeld)
+            post('http://localhost/kendelweb/dev/php/business.php?q=update_mtl_ein_aus&user=' + self.__user,
+                 data=meadictcopy)
 
         retval = self.__getWriteRetValOrRaiseException(resp)
 
         return retval
 
-    def deleteHausgeld(self, hausgeld_id: str):
-        d = {'hausgeld_id': hausgeld_id}
-        resp = self.__session. \
-            post('http://localhost/kendelweb/dev/php/business.php?q=delete_hausgeld&user=' + self.__user, data=d)
-
-        retval = self.__getWriteRetValOrRaiseException(resp)
-
-        return retval
-
-    def insertMiete(self, miete: dict):
-        resp = self.__session. \
-            post('http://localhost/kendelweb/dev/php/business.php?q=insert_miete&user=' + self.__user,
-                 data=miete)
-
-        retval = self.__getWriteRetValOrRaiseException(resp)
-
-        return retval
-
-    def updateMiete(self, miete_dict):
-        resp = self.__session. \
-            post('http://localhost/kendelweb/dev/php/business.php?q=update_miete&user=' + self.__user, data=miete_dict)
-
-        retval = self.__getWriteRetValOrRaiseException(resp)
-
-        return retval
-
-    def deleteMiete(self, miete_id):
-        d = {'miete_id': miete_id}
-        resp = self.__session. \
-            post('http://localhost/kendelweb/dev/php/business.php?q=delete_miete&user=' + self.__user, data=d)
-
-        retval = self.__getWriteRetValOrRaiseException(resp)
-
-        return retval
-
+    '''
+    delete mtl ein_aus
+    '''
     def deleteMtlEinAus(self, mea_id):
         d = {'mea_id': mea_id}
         resp = self.__session. \
-            post('http://localhost/kendelweb/dev/php/business.php?q=delete_mtleinaus&user=' + self.__user, data=d)
-
-        retval = self.__getWriteRetValOrRaiseException(resp)
-
-        return retval
-
-    def updateRechnung(self, rg_dict):
-        rgdictcopy = self._getDictCopyIsoDate(rg_dict, 'rg_datum', 'rg_bezahlt_am')
-        resp = self.__session. \
-            post('http://localhost/kendelweb/dev/php/business.php?q=update_rechnung&user=' + self.__user, data=rgdictcopy)
+            post('http://localhost/kendelweb/dev/php/business.php?q=delete_mtl_ein_aus&user=' + self.__user, data=d)
 
         retval = self.__getWriteRetValOrRaiseException(resp)
 
@@ -256,18 +219,18 @@ class DataProvider:
 
         return retval
 
-    def _getDictCopyIsoDate(self, orig: dict, *keys) -> dict:
-        copy = dict(orig)
-        for key in keys:
-            copy[key] = datehelper.convertEurToIso(copy[key])
-        return copy
+    '''
+    update rechnung
+    '''
+    def updateRechnung(self, rg_dict):
+        rgdictcopy = self._getDictCopyIsoDate(rg_dict, 'rg_datum', 'rg_bezahlt_am')
+        resp = self.__session. \
+            post('http://localhost/kendelweb/dev/php/business.php?q=update_rechnung&user=' + self.__user,
+                 data=rgdictcopy)
 
-    def _getDictEurDate(self, origList: list, *keys) -> dict:
-        for rgdict in origList:
-            for key in keys:
-                rgdict[key] = datehelper.convertIsoToEur(rgdict[key])
-        return origList
+        retval = self.__getWriteRetValOrRaiseException(resp)
 
+        return retval
 
     '''
     delete rechnung
@@ -281,6 +244,18 @@ class DataProvider:
         retval = self.__getWriteRetValOrRaiseException(resp)
 
         return retval
+
+    def _getDictCopyIsoDate(self, orig: dict, *keys) -> dict:
+        copy = dict(orig)
+        for key in keys:
+            copy[key] = datehelper.convertEurToIso(copy[key])
+        return copy
+
+    def _getDictEurDate(self, origList: list, *keys) -> dict:
+        for rgdict in origList:
+            for key in keys:
+                rgdict[key] = datehelper.convertIsoToEur(rgdict[key])
+        return origList
 
     def __getWriteRetValOrRaiseException(self, resp):
         if resp.status_code != 200:
