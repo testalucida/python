@@ -45,6 +45,23 @@ def compareEurDates(eurstring1: str, eurstring2: str) -> int:
     if date1 == date2: return 0
     return -1
 
+def isWithin(datestring2check: str, startdatestring: str, enddatestring: str) -> bool:
+    """
+    checks if datestring2check is part of the given interval.
+    datestring2check being equal startdatestring or enddatestring means it is
+    part of the interval
+    :param datestring2check: date in eur string format
+    :param startdatestring: date in eur string format
+    :param enddatestring: date in eur string format
+    :return:
+    """
+    if compareEurDates(datestring2check, startdatestring) < 0:
+
+        return False
+    if compareEurDates(datestring2check, enddatestring) > 0:
+        return False
+    return True
+
 
 # d1 = '23.04.1988'
 # d2 = '12.03.2999'

@@ -59,8 +59,7 @@ class MtlEinAusController:
                     if len(mea_list) == 0:
                         return
 
-                msg = self._periodsOverlapping(
-                                            values['gueltig_ab'],
+                msg = self._periodsOverlapping(values['gueltig_ab'],
                                             values['gueltig_bis'],
                                             mea_list)
                 if msg:
@@ -105,7 +104,7 @@ class MtlEinAusController:
                        'muss es größer sein als das Gültig-Ab-Datum.'
         return ''
 
-    def _periodsOverlapping(gueltig_ab: str, gueltig_bis: str, datelist: list) -> str:
+    def _periodsOverlapping(self, gueltig_ab: str, gueltig_bis: str, periodlist: list) -> str:
         """
         checks if a given period overlaps with other periods in a datelist.
         All dates in eur formatted strings expected ('21.08.2018')
@@ -113,8 +112,18 @@ class MtlEinAusController:
         :param datelist: a list of dictionaries containing the key 'gueltig_ab' and 'gueltig_bis'
         :return: '' if nothing overlaps otherwise a message containing the faulty period
         """
-
+        gueltig_bis_cpy = '31.12.2999' if gueltig_bis == '' else gueltig_bis
+        for period in periodlist:
+            period_bis = '31.12.2999' if period['gueltig_bis'] == '' else period['gueltig_bis']
+            if datehelper.isWithin(gueltig_ab, period['gueltig_ab'], period_bis) or \
+                    datehelper.isWithin(gueltig_ab, period['gueltig_ab'], period_bis):
+                return ''.join(('Der Zeitraum ', gueltig_ab, ' bis ', gueltig_bis,
+                                ' überschneidet sich mit dem Zeitraum ',
+                                period['gueltig_ab'], ' bis ', period['gueltig_bis']))
         return ''
+
+    def _createSortKey(self, period: dict):
+        return datehelper.convertEurToIso(period['gueltig_ab'])
 
     def wohnungSelected(self, whg_id: int) -> None:
         self._whg_id = whg_id
@@ -142,3 +151,18 @@ class MtlEinAusController:
         mea_list = self._dataProvider.getMtlEinAusData(self._whg_id)
         self._tv.setRows(mea_list)
 
+def test():
+    gueltig_ab = '01.01.2020'
+    gueltig_bis = ''
+    p1 = {'gueltig_ab': '08.10.2016', 'gueltig_bis': '31.10.2019' }
+    p2 = {'gueltig_ab': '01.11.2019', 'gueltig_bis': '31.12.2020'}
+    l = list()
+    l.append(p1)
+    l.append(p2)
+    ctrl = MtlEinAusController(None, None)
+    msg = ctrl._periodsOverlapping(gueltig_ab, gueltig_bis, l)
+    print('overlapping: ', msg)
+
+if __name__ == '__main__':
+    #messagebox.askokcancel("Title", "Message", icon='warning')
+    test()
