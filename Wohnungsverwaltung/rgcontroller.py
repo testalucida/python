@@ -19,7 +19,8 @@ class RechnungController:
         self._tv.configureTable(columnDefs)
         self._tv.registerActionCallback(self._onEditRowAction)
 
-    def _onEditRowAction(self, action: int, rowItemId: str, values: dict):
+    def _onEditRowAction(self, action: int, rowItemId: str,
+                         values: dict, origvalues: dict):
         tv = self._tv
         if action == Action.DELETE:
             if 'rg_id' in values and values['rg_id'] > 0:

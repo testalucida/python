@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 
 def convertIsoToEur(isostring: str) -> str:
     """
@@ -61,6 +61,16 @@ def isWithin(datestring2check: str, startdatestring: str, enddatestring: str) ->
     if compareEurDates(datestring2check, enddatestring) > 0:
         return False
     return True
+
+def compareToToday(eurstring: str) -> int:
+    """
+    compares a given date in eur string format with today's date.
+    :param eurstring:  the date to check
+    :return: -1 if eurstring is in the past, 0 if eurstring == today,
+    +1 if eurstring is in the future.
+    """
+    eurtoday = date.today().strftime('%d.%m.%Y')
+    return compareEurDates(eurstring, eurtoday)
 
 
 # d1 = '23.04.1988'

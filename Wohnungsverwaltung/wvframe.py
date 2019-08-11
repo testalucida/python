@@ -89,7 +89,8 @@ class WV(ttk.Frame):
         tree['columns'] = ('whg_id')
         tree['displaycolumns'] = []
         tree.heading('#0', text='Übersicht', anchor=W)
-        tree.bind("<Button-1>", self._onTreeItemClicked)
+        #tree.bind("<Button-1>", self._onTreeItemClicked)
+        tree.bind('<<TreeviewSelect>>', self._onTreeItemClicked)
         tree.grid(column=0, row=0, sticky='nswe')
         self._tree = tree
 
@@ -176,8 +177,9 @@ class WV(ttk.Frame):
 
         self._openBranches(tree, tree.get_children())
 
-    def _onTreeItemClicked(self, event):
-        item = self._tree.identify('item', event.x, event.y)
+    def _onTreeItemClicked(self, event):  #bound to virtual TreeviewSelect event
+        #item = self._tree.identify('item', event.x, event.y)
+        item = self._tree.selection()
         dic = self._tree.item(item)
         try:
             whg_id: int = dic['values'][0]

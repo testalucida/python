@@ -19,8 +19,13 @@ class MtlEinAusController:
         self._tv.configureTable(columnDefs)
         self._tv.registerActionCallback(self._onEditRowAction)
 
-    def _onEditRowAction(self, action: int, rowItemId: str, values: dict):
+    def _onEditRowAction(self, action: int, rowItemId: str,
+                         values: dict, origvalues: dict):
         tv = self._tv
+        if action == Action.CANCEL:
+            tv.cancelEditing()
+            return
+
         if action == Action.DELETE:
             if 'mea_id' in values and values['mea_id'] > 0:
                 yes: bool = tv.askyesno('Sicherheitsabfrage',
@@ -56,31 +61,44 @@ class MtlEinAusController:
                         if int(mea['mea_id']) == int(values['mea_id']):
                             mea_list.remove(mea)
                             break
-                    if len(mea_list) == 0:
-                        return
-
-                msg = self._periodsOverlapping(values['gueltig_ab'],
+                msg: str = ''
+                if len(mea_list) > 0:
+                    msg = self._periodsOverlapping(values['gueltig_ab'],
                                             values['gueltig_bis'],
                                             mea_list)
                 if msg:
-                    tv.showError('Fachlicher Feher',
-                                 ''.join(('Zahlungszeiträume dürfen sich nicht überschneiden:',
+                    tv.showError('Inkonsistente Zahlungszeiträume',
+                                 ''.join(('Zahlungszeiträume dürfen sich nicht überschneiden:\n',
                                           msg)))
                 else:
                     #provide whg_id
-                    valuescopy = dict(values)
-                    valuescopy['whg_id'] = self._whg_id
+                    values['whg_id'] = self._whg_id
                     if isUpdate:
                         #update an existing mtlEinAus;
                         try:
-                            self._dataProvider.updateMtlEinAus(valuescopy)
+                            #if we have a change in payment, show a warning as to tax impact
+                            if values['gueltig_ab'] == origvalues['gueltig_ab'] and \
+                                    datehelper.compareToToday(values['gueltig_ab']) < 0:
+                                if values['netto_miete'] != origvalues['netto_miete'] or \
+                                    values['nk_abschlag'] != origvalues['nk_abschlag'] or \
+                                    values['hg_netto_abschlag'] != origvalues['hg_netto_abschlag'] or \
+                                    values['ruecklage_zufuehr'] != origvalues['ruecklage_zufuehr']:
+                                    yes = tv.askyesno('Achtung',
+                                                ''.join(('Die Änderung der Zahlung wirkt ab dem ',
+                                                         values['gueltig_ab'],
+                                                         ', \nalso auf einen schon vergangenen Zeitraum.',
+                                                         '\nDies kann steuerliche Auswirkungen haben.\n',
+                                                         '\nTrotzdem ändern?')), True)
+                                    if not yes: return
+
+                            self._dataProvider.updateMtlEinAus(values)
                             self._loadMeaDaten()
                         except DataError as e:
                             tv.showError('DB-Fehler', e.toString())
                     else:
                         #insert a new mtlEinAus;
                         try:
-                            retVal = self._dataProvider.insertMtlEinAus(valuescopy)
+                            retVal = self._dataProvider.insertMtlEinAus(values)
                             self._loadMeaDaten()
                         except DataError as e:
                             tv.showError('DB-Fehler', e.toString())
@@ -116,10 +134,16 @@ class MtlEinAusController:
         for period in periodlist:
             period_bis = '31.12.2999' if period['gueltig_bis'] == '' else period['gueltig_bis']
             if datehelper.isWithin(gueltig_ab, period['gueltig_ab'], period_bis) or \
-                    datehelper.isWithin(gueltig_ab, period['gueltig_ab'], period_bis):
-                return ''.join(('Der Zeitraum ', gueltig_ab, ' bis ', gueltig_bis,
-                                ' überschneidet sich mit dem Zeitraum ',
-                                period['gueltig_ab'], ' bis ', period['gueltig_bis']))
+               datehelper.isWithin(gueltig_bis_cpy, period['gueltig_ab'], period_bis) or \
+               datehelper.isWithin(period['gueltig_ab'], gueltig_ab, gueltig_bis_cpy) or \
+               datehelper.isWithin(period_bis, gueltig_ab, gueltig_bis_cpy):
+                gueltig_bis_cpy = '<unbegrenzt>' \
+                    if gueltig_bis_cpy == '31.12.2999' else gueltig_bis_cpy
+                period_bis = '<unbegrenzt>' \
+                    if period_bis == '31.12.2999' else period['gueltig_bis']
+                return ''.join(('Der Zeitraum\n', gueltig_ab, ' bis ', gueltig_bis_cpy,
+                                '\nüberschneidet sich mit dem Zeitraum\n',
+                                period['gueltig_ab'], ' bis ', period_bis))
         return ''
 
     def _createSortKey(self, period: dict):

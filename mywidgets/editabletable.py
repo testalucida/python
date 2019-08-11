@@ -272,8 +272,20 @@ class GenericEditableTable(ttk.Frame):
         for colName in self._fitlist:
             self._tv.makeColumnWidthFit(colName)
 
-    def getRowValues(self, itemId: str) -> list:
-        return self._tv.getRowValues(itemId)
+    def getRowValuesAsDict(self, itemId: str) -> dict:
+        """
+        get values of the table row (as opposite of the edit row)
+        :param itemId: identification of row
+        :return: a dictionary with columns's dbname as key and
+        its appropriate value.
+        """
+        colnames = self._tv.getColumnNames()
+        rowvalues = self._tv.getRowValues(itemId)
+        dic = dict()
+        for n in range(len(colnames)):
+            dbname = self._mappings.getDbColumnName(colnames[n])
+            dic[dbname] = rowvalues[n]
+        return dic
 
     def updateRow2(self, itemId: str, colName: str, newVal: any) -> None:
         """
@@ -325,39 +337,16 @@ class GenericEditableTable(ttk.Frame):
         self._actionCallback = callbackFnc
 
     def editRowCallback(self, action: int, values: dict) -> None:
+        """
+        callback controller
+        :param action: OK, Cancel, Delete
+        :param values: values of the edit fields in the edit row
+        :return: None
+        """
         if self._actionCallback:
-            self._actionCallback(action, self._rowEditingId, values)
-        #
-        # msg: str = ''
-        # if action != Action.CANCEL and self._actionCallback:
-        #     if action == Action.DELETE:
-        #         yes: bool = messagebox.askyesno('Sicherheitsabfrage',
-        #                               'Diesen Satz wirklich löschen?')
-        #         if not yes:
-        #             return
-        #
-        #     msg = self._actionCallback(action, self._rowEditingId, values)
-        #
-        #     if not msg:
-        #         if action == Action.DELETE:
-        #             self._tv.delete(self._rowEditingId)
-        #         else: #Action.OK - Insert or Update
-        #             if self._rowEditingId: #it's an update of an existing row
-        #                 #translate keys (dbname) into column names
-        #                 transdic = dict()
-        #                 for dbname, val in values.items():
-        #                     colName = self._mappings.getHeading(dbname)
-        #                     transdic[colName] = val
-        #                     self._tv.updateRow(self._rowEditingId, transdic)
-        #             else:
-        #                 pass #it's a new rechnung. The append will be done
-        #                      #by the rgcontroller.
-        #     else:
-        #         messagebox.showerror('Validierungsfehler', msg)
-        #
-        #     if msg == '' or action == Action.CANCEL:
-        #         self._edit.clear()
-        #         self._rowEditingId = None
+            self._actionCallback(action, self._rowEditingId,
+                                 values,
+                                 self.getRowValuesAsDict(self._rowEditingId))
 
     def askyesno(self, title: str, msg: str, withWarnIcon: bool = False) -> bool:
         if withWarnIcon:
@@ -373,6 +362,10 @@ class GenericEditableTable(ttk.Frame):
 
     def clear(self):
         self._tv.clear()
+        self._edit.clear()
+        self._rowEditingId = None
+
+    def cancelEditing(self):
         self._edit.clear()
         self._rowEditingId = None
 
