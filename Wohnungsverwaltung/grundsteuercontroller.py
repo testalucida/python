@@ -5,15 +5,15 @@ from actions import Action
 import datehelper
 #++++++++++++++++++++++++++++++++++++++++++++++++
 
-class SonstEinAusController:
+class GrundsteuerController:
     def __init__(self, dataProvider: DataProvider,
-                 seaTableView: GenericEditableTable):
+                 gsTableView: GenericEditableTable):
         self._dataProvider = dataProvider
-        self._tv = seaTableView
+        self._tv = gsTableView
         self._whg_id = None
 
     def startWork(self) -> None:
-        columnDefs = ColumnDefsProvider.getSonstigeEinAusDefs()
+        columnDefs = ColumnDefsProvider.getGrundsteuerDefs()
         self._tv.configureTable(columnDefs)
         self._tv.registerActionCallback(self._onEditRowAction)
 
@@ -50,15 +50,15 @@ class SonstEinAusController:
                 if ('sea_id' in values and values['sea_id'] > 0):
                     #update an existing sea record
                     try:
-                        self._dataProvider.updateSonstigeEinAus(values)
-                        self._loadSeaDaten()
+                        self._dataProvider.updateGrundsteuer(values)
+                        self._loadGrundsteuerDaten()
                     except DataError as e:
                         tv.showError('DB-Fehler', e.toString())
                 else:
                     #insert a new sea record;
                     try:
-                        retVal = self._dataProvider.insertSonstigeEinAus(values)
-                        self._loadSeaDaten()
+                        retVal = self._dataProvider.insertGrundsteuer(values)
+                        self._loadGrundsteuerDaten()
                     except DataError as e:
                         tv.showError('DB-Fehler', e.toString())
 
@@ -67,23 +67,23 @@ class SonstEinAusController:
 
     def wohnungSelected(self, whg_id: int) -> None:
         self._whg_id = whg_id
-        self._loadSeaDaten()
+        self._loadGrundsteuerDaten()
 
-    def _loadSeaDaten(self) -> None:
+    def _loadGrundsteuerDaten(self) -> None:
         """
-        sea_list:
+        gs_list:
             a list of dictionaries.
             Each dictionary looks like so:
             {
 
             }
         """
-        sea_list = self._dataProvider.getSonstigeEinAusData(self._whg_id)
-        self._tv.setRows(sea_list)
+        gs_list = self._dataProvider.getGrundsteuerData(self._whg_id)
+        self._tv.setRows(gs_list)
 
 def test():
 
-    ctrl = SonstEinAusController(None, None)
+    ctrl = GrundsteuerController(None, None)
 
 if __name__ == '__main__':
     #messagebox.askokcancel("Title", "Message", icon='warning')

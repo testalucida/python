@@ -1,5 +1,3 @@
-#from tkinter import *
-#from tkinter import ttk
 from editabletable import GenericEditableTable
 from business import DataProvider, DataError, ServiceException
 from columndefsprovider import ColumnDefsProvider

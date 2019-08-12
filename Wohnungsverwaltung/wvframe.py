@@ -20,6 +20,7 @@ class WV(ttk.Frame):
         self._rechnungTableView: GenericEditableTable = None
         self._monatlicheTableView: GenericEditableTable = None
         self._sonstigeTableView: GenericEditableTable = None
+        self._grundsteuerTableView: GenericEditableTable = None
         self._wohnungClickedCallback = None
         self.createUI(root)
         self.rowconfigure(0, weight=1)
@@ -140,12 +141,26 @@ class WV(ttk.Frame):
         mietePage.columnconfigure(0, weight=1)
 
     def _createSonstigeTab(self, sonstigePage: ttk.Frame):
-        # Miete-Tabelle
+        # sonstige payments and grundsteuer
+
+        lbl = ttk.Label(sonstigePage, text='Einmalige Ein- und Auszahlungen')
+        lbl.configure(anchor="center", background='lightyellow')
+        lbl.grid(column=0, row=0, sticky='we', pady=(20,2))
+
         et = GenericEditableTable(sonstigePage)
-        et.grid(column=0, row=0, sticky='nswe')
+        et.grid(column=0, row=1, sticky='nswe')
         self._sonstigeTableView = et
 
-        sonstigePage.rowconfigure(0, weight=1)
+        lbl = ttk.Label(sonstigePage, text='Grundsteuer')
+        lbl.configure(anchor="center", background='lightyellow')
+        lbl.grid(column=0, row=2, sticky='we', pady=(20,2))
+
+        gset = GenericEditableTable(sonstigePage)
+        gset.grid(column=0, row=3, sticky='nswe')
+        self._grundsteuerTableView = gset
+
+        sonstigePage.rowconfigure(1, weight=1)
+        sonstigePage.rowconfigure(3, weight=1)
         sonstigePage.columnconfigure(0, weight=1)
 
     def _createEditRow(self, column: int, row: int):
@@ -198,14 +213,22 @@ class WV(ttk.Frame):
     def setStatusText(self, text: str):
         self._statusbar['text'] = text
 
-    def configureMieteTable(self, columnDefs: list) -> None:
-        self._monatlicheTableView.configureTable(columnDefs)
-
-    def configureSonstigeTable(self, columnDefs: list) -> None:
-        self._sonstigeTableView.configureTable(columnDefs)
+    # def configureMieteTable(self, columnDefs: list) -> None:
+    #     self._monatlicheTableView.configureTable(columnDefs)
+    #
+    # def configureSonstigeTable(self, sonstigeColumnDefs: list,
+    #                            grundsteuerColumnDefs: list) -> None:
+    #     self._sonstigeTableView.configureTable(sonstigeColumnDefs)
+    #     self._grundsteuerTableView.configureTable(grundsteuerColumnDefs)
 
     def getRechnungTableView(self) -> GenericEditableTable:
         return self._rechnungTableView
+
+    def getSonstigeTableView(self) -> GenericEditableTable:
+        return self._sonstigeTableView
+
+    def getGrundsteuerTableView(self) -> GenericEditableTable:
+        return self._grundsteuerTableView
 
     def getMonatlicheTableView(self) -> GenericEditableTable:
         return self._monatlicheTableView

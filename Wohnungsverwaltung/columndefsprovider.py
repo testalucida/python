@@ -9,20 +9,26 @@ class ColumnDefsProvider:
         return widgetDefs
 
     @staticmethod
-    def getRechnungDefs() -> None:
+    def getRechnungDefs() -> list:
         columnsDefs = ColumnDefsProvider._getWidgetDefs(
             "/home/martin/Projects/python/Wohnungsverwaltung/rechnung.json")
         return columnsDefs
 
     @staticmethod
-    def getMonatlicheEinAusDefs() -> None:
+    def getMonatlicheEinAusDefs() -> list:
         columnsDefs = ColumnDefsProvider._getWidgetDefs(
             "/home/martin/Projects/python/Wohnungsverwaltung/monatlicheeinaus.json")
         return columnsDefs
 
     @staticmethod
-    def getSonstigeEinAusDefs() -> None:
+    def getSonstigeEinAusDefs() -> list:
         columnsDefs = ColumnDefsProvider._getWidgetDefs(
             "/home/martin/Projects/python/Wohnungsverwaltung/sonstigeeinaus.json")
+        return columnsDefs
+
+    @staticmethod
+    def getGrundsteuerDefs() -> list:
+        columnsDefs = ColumnDefsProvider._getWidgetDefs(
+            "/home/martin/Projects/python/Wohnungsverwaltung/grundsteuer.json")
         return columnsDefs
 

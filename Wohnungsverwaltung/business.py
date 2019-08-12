@@ -25,7 +25,7 @@ import datehelper
 #     r = s.get('http://localhost/kendelweb/dev/php/business.php?q=uebersicht_wohnungen&user=martin' )
 #     return r
 
-class AbstractWvException(Exception):
+class WvException(Exception):
     def __init__(self, rc: str, msg: str):
         Exception.__init__(self, rc, msg)
         self.__rc = rc
@@ -37,37 +37,20 @@ class AbstractWvException(Exception):
     def message(self):
         return self.__msg
 
-    # @abstractmethod
-    # def toString(self):
-    #     pass
+    def toString(self):
+        return ''.join(('RC= ', str(self.__rc), '\nMessage=', self.__msg))
 
 #+++++++++++++++++++++++++++++++++++++++++++++
 
-class ConnectException(AbstractWvException):
-    def __init__(self, rc: str, msg: str):
-        Exception.__init__(self, rc, msg)
-        self.__rc = rc
-        self.__msg = msg
-
-    # def message(self):
-    #     return self.__msg
-    #
-
-    # def toString(self):
-    #     pass
-
-#+++++++++++++++++++++++++++++++++++++++++++++
-
-class ServiceException(AbstractWvException):
+class ServiceException(WvException):
     def __init__(self, rc, msg):
-        AbstractWvException.__init__(self, rc, msg)
-
+        WvException.__init__(self, rc, msg)
 
 #+++++++++++++++++++++++++++++++++++++++++++++
 
-class DataError(AbstractWvException):
+class DataError(WvException):
     def __init__(self, retVal: dict):
-        AbstractWvException.__init__(self, retVal['rc'], retVal['errormsg'])
+        WvException.__init__(self, retVal['rc'], retVal['errormsg'])
         self.__retVal = retVal
 
     def toString(self):
@@ -75,15 +58,6 @@ class DataError(AbstractWvException):
         for k, v in self.__retVal.items():
             s = s + k + ': ' + str(v) + '\n'
         return s
-
-#+++++++++++++++++++++++++++++++++++++++++++++
-
-class ValidationError(AbstractWvException):
-    def __init__(self, msg: str):
-        AbstractWvException.__init__(self, '-1', msg)
-
-    def toString(self):
-        return self.message()
 
 #+++++++++++++++++++++++++++++++++++++++++++++
 
@@ -111,19 +85,21 @@ class DataProvider:
         self.__session = requests.Session()
         self.__user = ''
 
-    def _checkException(self, resp, cls: type, additionalText: str = None) -> None:
-        if resp.status_code != 200:
+    def _checkException(self, resp, additionalText: str = None) -> None:
+        if resp.status_code != 200 or not resp.content:
             msg = resp.text
             if additionalText:
                 msg = ''.join((msg, '\n', additionalText))
-            ex = cls(resp.status_code, msg)
+            ex = ServiceException(resp.status_code, msg)
             raise ex
 
     def connect(self, user, pwd) -> None:
         self.__user = user
         d = {'user':user, 'password':pwd}
         resp = self.__session.post('http://localhost/kendelweb/dev/php/login.php', data=d )
-        self._checkException(resp, ConnectException, ''.join(('user: ', user)))
+        if resp.status_code != 200:
+            msg = ''.join(('Error on connecting user ', user, '\nServer says: ', resp.text))
+            raise ServiceException(resp.status_code, msg)
 
     def getWohnungsUebersicht(self) -> list:
         """
@@ -135,8 +111,9 @@ class DataProvider:
         resp = self.__session.\
             get('http://localhost/kendelweb/dev/php/business.php?q=uebersicht_wohnungen&' +
                 'user=' + self.__user)
-        self._checkException(resp, ServiceException)
-        whg_list = json.loads(resp.content)
+        whg_list = self._getReadRetValOrRaiseException(resp)
+        #self._checkException(resp)
+        #whg_list = json.loads(resp.content)
         return whg_list
 
     def getWohnungDetails(self, whg_id ):
@@ -155,8 +132,9 @@ class DataProvider:
         resp = self.__session. \
             get('http://localhost/kendelweb/dev/php/business.php?q=uebersicht_rechnungen&id=' +
                 str( whg_id ) + '&user=' + self.__user)
-        self._checkException(resp, ServiceException)
-        rg_list = json.loads(resp.content)
+        # self._checkException(resp)
+        # rg_list = json.loads(resp.content)
+        rg_list = self._getReadRetValOrRaiseException(resp)
         rg_list = self._getDictEurDate(rg_list, 'rg_datum', 'rg_bezahlt_am')
         return rg_list
 
@@ -164,19 +142,36 @@ class DataProvider:
         resp = self.__session. \
             get('http://localhost/kendelweb/dev/php/business.php?q=mtl_ein_aus_data&id=' +
                 str(whg_id) + '&user=' + self.__user)
-        self._checkException(resp, ServiceException)
-        mea_data = json.loads(resp.content)
+        # self._checkException(resp)
+        # mea_data = json.loads(resp.content)
+        mea_data = self._getReadRetValOrRaiseException(resp)
         mea_data = self._getDictEurDate(mea_data, 'gueltig_ab', 'gueltig_bis')
         return mea_data
+
+    def getSonstigeEinAusData(self, whg_id: int):
+        resp = self.__session. \
+            get('http://localhost/kendelweb/dev/php/business.php?q=sonst_ein_aus_data&id=' +
+                str(whg_id) + '&user=' + self.__user)
+        # self._checkException(resp)
+        # sea_data = json.loads(resp.content)
+        sea_data = self._getReadRetValOrRaiseException(resp)
+        return sea_data
 
     def getCurrentAndFutureMtlEinAus(self, whg_id:int) -> list:
         resp = self.__session. \
             get('http://localhost/kendelweb/dev/php/business.php?q=current_future_mtl_ein_aus&id=' +
                 str(whg_id) + '&user=' + self.__user)
-        self._checkException(resp, ServiceException)
+        self._checkException(resp)
         mea_data = json.loads(resp.content)
         mea_data = self._getDictEurDate(mea_data, 'gueltig_ab', 'gueltig_bis')
         return mea_data
+
+    def getGrundsteuerData(self, whg_id: int):
+        resp = self.__session. \
+            get('http://localhost/kendelweb/dev/php/business.php?q=grundsteuer_data&id=' +
+                str(whg_id) + '&user=' + self.__user)
+        gs_data = self._getReadRetValOrRaiseException(resp)
+        return gs_data
 
     '''
     insert mtl ein_aus
@@ -187,7 +182,7 @@ class DataProvider:
             post('http://localhost/kendelweb/dev/php/business.php?q=insert_mtl_ein_aus&user=' + self.__user,
                  data=meadictcopy)
 
-        retval = self.__getWriteRetValOrRaiseException(resp)
+        retval = self._getWriteRetValOrRaiseException(resp)
 
         return retval
 
@@ -200,7 +195,7 @@ class DataProvider:
             post('http://localhost/kendelweb/dev/php/business.php?q=update_mtl_ein_aus&user=' + self.__user,
                  data=meadictcopy)
 
-        retval = self.__getWriteRetValOrRaiseException(resp)
+        retval = self._getWriteRetValOrRaiseException(resp)
 
         return retval
 
@@ -213,7 +208,7 @@ class DataProvider:
             post('http://localhost/kendelweb/dev/php/business.php?q=terminate_mtl_ein_aus&user=' + self.__user,
                  data=d)
 
-        retval = self.__getWriteRetValOrRaiseException(resp)
+        retval = self._getWriteRetValOrRaiseException(resp)
 
         return retval
 
@@ -225,7 +220,7 @@ class DataProvider:
         resp = self.__session. \
             post('http://localhost/kendelweb/dev/php/business.php?q=delete_mtl_ein_aus&user=' + self.__user, data=d)
 
-        retval = self.__getWriteRetValOrRaiseException(resp)
+        retval = self._getWriteRetValOrRaiseException(resp)
 
         return retval
 
@@ -237,7 +232,7 @@ class DataProvider:
         resp = self.__session. \
             post('http://localhost/kendelweb/dev/php/business.php?q=insert_rechnung&user=' + self.__user, data=rgdictcopy)
 
-        retval = self.__getWriteRetValOrRaiseException(resp)
+        retval = self._getWriteRetValOrRaiseException(resp)
 
         return retval
 
@@ -250,7 +245,7 @@ class DataProvider:
             post('http://localhost/kendelweb/dev/php/business.php?q=update_rechnung&user=' + self.__user,
                  data=rgdictcopy)
 
-        retval = self.__getWriteRetValOrRaiseException(resp)
+        retval = self._getWriteRetValOrRaiseException(resp)
 
         return retval
 
@@ -263,7 +258,7 @@ class DataProvider:
         resp = self.__session. \
             post('http://localhost/kendelweb/dev/php/business.php?q=delete_rechnung&user=' + self.__user, data=delData)
 
-        retval = self.__getWriteRetValOrRaiseException(resp)
+        retval = self._getWriteRetValOrRaiseException(resp)
 
         return retval
 
@@ -273,13 +268,38 @@ class DataProvider:
             copy[key] = datehelper.convertEurToIso(copy[key])
         return copy
 
-    def _getDictEurDate(self, origList: list, *keys) -> dict:
+    def _getDictEurDate(self, origList: list, *keys) -> list:
         for rgdict in origList:
             for key in keys:
                 rgdict[key] = datehelper.convertIsoToEur(rgdict[key])
         return origList
 
-    def __getWriteRetValOrRaiseException(self, resp):
+    def _getReadRetValOrRaiseException(self, resp) -> any:
+        if resp.status_code != 200:
+            serviceError = None
+            if resp.status_code == 500:
+                serviceError = ServiceException(500, 'Requested service not found.')
+            else:
+                serviceError = ServiceException( resp.status_code, resp.text )
+            print(serviceError.toString())
+            raise serviceError
+
+        ret = None
+        try:
+            ret = json.loads(resp.content)
+        except ValueError as e:
+            print(e)
+            msg: str = ''.join((str(type(e)), ': ', e.args[0]))
+            print(msg)
+            raise ServiceException(str(self.JSONERROR), msg)
+
+        except Exception as x:
+            dataError = DataError(resp.status_code, resp.content)
+            raise dataError
+
+        return ret
+
+    def _getWriteRetValOrRaiseException(self, resp):
         if resp.status_code != 200:
             serviceError = ServiceException( resp.status_code, resp.text )
             print(serviceError.toString())
@@ -293,7 +313,7 @@ class DataProvider:
                        "\nresp.content:\n" + resp.content + \
                        "\n+++++++++++++++++++++++++++++++++++\n"
             print(msg)
-            raise ServiceException(self.JSONERROR, msg)
+            raise ServiceException(str(self.JSONERROR), msg)
 
         if dic['rc'] != 0:
             dataError = DataError(dic)
