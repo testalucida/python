@@ -344,9 +344,10 @@ class GenericEditableTable(ttk.Frame):
         :return: None
         """
         if self._actionCallback:
+            rowvalues = None if self._rowEditingId is None \
+                else self.getRowValuesAsDict(self._rowEditingId)
             self._actionCallback(action, self._rowEditingId,
-                                 values,
-                                 self.getRowValuesAsDict(self._rowEditingId))
+                                 values, rowvalues)
 
     def askyesno(self, title: str, msg: str, withWarnIcon: bool = False) -> bool:
         if withWarnIcon:

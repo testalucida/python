@@ -46,6 +46,7 @@ class GrundsteuerController:
                 tv.showError('Validierungsfehler', msg)
 
             else: #validation ok
+                values['whg_id'] = self._whg_id
                 #update or insert?
                 if ('sea_id' in values and values['sea_id'] > 0):
                     #update an existing sea record

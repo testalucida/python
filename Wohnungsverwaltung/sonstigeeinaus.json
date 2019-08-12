@@ -65,16 +65,8 @@
       "dbname": "art",
       "editwidget": {
         "class": "mywidgets.MyCombobox",
-        "choice_values": [
-          "Grundsteuer",
-          "Hausgeldnachzahlung (Eigentümer->Verw.)",
-          "Hausgeldrückzahlung (Verw.->Eigentümer)",
-          "Nebenkostennachzahlung (Mieter->Verm.)",
-          "Nebenkostenrückzahlung (Verm.->Mieter)",
-          "Sonderumlage",
-          "Ablöse"
-        ],
-        "init_value": "'Nebenkostennachzahlung (Mieter->Verm.)'",
+        "choice_values": null,
+        "init_value": null,
         "width": 41,
         "wstretch": false,
         "height": -1

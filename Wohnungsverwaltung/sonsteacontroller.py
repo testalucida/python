@@ -10,11 +10,13 @@ class SonstEinAusController:
                  seaTableView: GenericEditableTable):
         self._dataProvider = dataProvider
         self._tv = seaTableView
+        self._sea_arten = None
         self._whg_id = None
 
     def startWork(self) -> None:
         columnDefs = ColumnDefsProvider.getSonstigeEinAusDefs()
         self._tv.configureTable(columnDefs)
+        self._sea_arten = self._dataProvider.getSonstigeEinAusArten()
         self._tv.registerActionCallback(self._onEditRowAction)
 
     def _onEditRowAction(self, action: int, rowItemId: str,
@@ -46,18 +48,19 @@ class SonstEinAusController:
                 tv.showError('Validierungsfehler', msg)
 
             else: #validation ok
+                values['whg_id'] = self._whg_id
                 #update or insert?
                 if ('sea_id' in values and values['sea_id'] > 0):
                     #update an existing sea record
                     try:
-                        self._dataProvider.updateSonstigeEinAus(values)
+                        self._dataProvider.updateSonstEinAus(values)
                         self._loadSeaDaten()
                     except DataError as e:
                         tv.showError('DB-Fehler', e.toString())
                 else:
                     #insert a new sea record;
                     try:
-                        retVal = self._dataProvider.insertSonstigeEinAus(values)
+                        retVal = self._dataProvider.insertSonstEinAus(values)
                         self._loadSeaDaten()
                     except DataError as e:
                         tv.showError('DB-Fehler', e.toString())

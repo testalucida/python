@@ -157,6 +157,13 @@ class DataProvider:
         sea_data = self._getReadRetValOrRaiseException(resp)
         return sea_data
 
+    def getSonstigeEinAusArten(self):
+        resp = self.__session. \
+            get('http://localhost/kendelweb/dev/php/business.php?q=sonst_ein_aus_data' +
+                '&user=' + self.__user)
+        art_data = self._getReadRetValOrRaiseException(resp)
+        return art_data
+
     def getCurrentAndFutureMtlEinAus(self, whg_id:int) -> list:
         resp = self.__session. \
             get('http://localhost/kendelweb/dev/php/business.php?q=current_future_mtl_ein_aus&id=' +
@@ -219,6 +226,81 @@ class DataProvider:
         d = {'mea_id': mea_id}
         resp = self.__session. \
             post('http://localhost/kendelweb/dev/php/business.php?q=delete_mtl_ein_aus&user=' + self.__user, data=d)
+
+        retval = self._getWriteRetValOrRaiseException(resp)
+
+        return retval
+
+    '''
+    insert sonstige ein_aus
+    '''
+    def insertSonstEinAus(self, sea_dict: dict):
+        resp = self.__session. \
+            post('http://localhost/kendelweb/dev/php/business.php?q=insert_sonst_ein_aus&user=' + self.__user,
+                 data=sea_dict)
+
+        retval = self._getWriteRetValOrRaiseException(resp)
+
+        return retval
+
+    '''
+     update sonstige ein_aus
+     '''
+    def updateSonstEinAus(self, sea_dict):
+        resp = self.__session. \
+            post('http://localhost/kendelweb/dev/php/business.php?q=update_sonst_ein_aus&user=' + self.__user,
+                 data=sea_dict)
+
+        retval = self._getWriteRetValOrRaiseException(resp)
+
+        return retval
+
+    '''
+    delete sonstige ein_aus
+    '''
+    def deleteSonstEinAus(self, sea_id):
+        delData = {}
+        delData['sea_id'] = str(sea_id)
+        resp = self.__session. \
+            post('http://localhost/kendelweb/dev/php/business.php?q=delete_sonst_ein_aus&user=' + self.__user, data=delData)
+
+        retval = self._getWriteRetValOrRaiseException(resp)
+
+        return retval
+
+    '''
+    insert grundsteuer
+    '''
+    def insertGrundsteuer(self, gs_dict: dict):
+        resp = self.__session. \
+            post('http://localhost/kendelweb/dev/php/business.php?q=insert_grundsteuer&user=' + self.__user,
+                 data=gs_dict)
+
+        retval = self._getWriteRetValOrRaiseException(resp)
+
+        return retval
+
+    '''
+     update grundsteuer
+     '''
+    def updateGrundsteuer(self, gs_dict):
+        resp = self.__session. \
+            post('http://localhost/kendelweb/dev/php/business.php?q=update_grundsteuer&user=' + self.__user,
+                 data=gs_dict)
+
+        retval = self._getWriteRetValOrRaiseException(resp)
+
+        return retval
+
+    '''
+    delete grundsteuer
+    '''
+    def deleteGrundsteuer(self, gs_id):
+        delData = {}
+        delData['gs_id'] = str(gs_id)
+        resp = self.__session. \
+            post('http://localhost/kendelweb/dev/php/business.php?q=delete_grundsteuer&user=' + self.__user,
+                 data=delData)
 
         retval = self._getWriteRetValOrRaiseException(resp)
 
@@ -309,9 +391,8 @@ class DataProvider:
         try:
             dic = json.loads(resp.content)
         except ValueError as e:
-            msg: str = "+++++++++JSON Decode Error+++++++++\n" + e + \
-                       "\nresp.content:\n" + resp.content + \
-                       "\n+++++++++++++++++++++++++++++++++++\n"
+            print(e)
+            msg: str = ''.join((str(type(e)), ': ', e.args[0]))
             print(msg)
             raise ServiceException(str(self.JSONERROR), msg)
 
