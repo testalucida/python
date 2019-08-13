@@ -25,12 +25,12 @@ class GrundsteuerController:
             return
 
         if action == Action.DELETE:
-            if 'sea_id' in values and values['sea_id'] > 0:
+            if 'gs_id' in values and values['gs_id'] > 0:
                 yes: bool = tv.askyesno('Sicherheitsabfrage',
                                               'Diesen Satz wirklich löschen?')
                 if yes:
                     try:
-                        self._dataProvider.deleteMtlEinAus(values['sea_id'])
+                        self._dataProvider.deleteGrundsteuer(values['gs_id'])
                         tv.deleteRow(rowItemId)
                     except:
                         tv.showError('DB-Fehler',
@@ -48,7 +48,7 @@ class GrundsteuerController:
             else: #validation ok
                 values['whg_id'] = self._whg_id
                 #update or insert?
-                if ('sea_id' in values and values['sea_id'] > 0):
+                if ('gs_id' in values and values['gs_id'] > 0):
                     #update an existing sea record
                     try:
                         self._dataProvider.updateGrundsteuer(values)
@@ -63,7 +63,27 @@ class GrundsteuerController:
                     except DataError as e:
                         tv.showError('DB-Fehler', e.toString())
 
-    def _validate(self, meadaten: dict) -> str or None:
+    def _validate(self, gsdaten: dict) -> str or None:
+        tv = self._tv
+        if not gsdaten['vj_ab']:
+            return 'Veranlagungszeitraum fehlt.'
+        currentyear = datehelper.getCurrentYear()
+        try:
+            year = int(gsdaten['vj_ab'])
+        except:
+            return ''.join(('Ungültiger Eintrag: ', gsdaten['vj_ab'],
+                            '\n\nGib eine vierstellige Jahreszahl > ',
+                            str(currentyear - 3), ' ein.'))
+
+        if int(gsdaten['vj_ab']) < (currentyear - 1):
+            if not tv.askyesno('Veranlagungszeitraum',
+                              'Der Veranlagungszeitraum liegt mehr als '
+                              'ein Jahr zurück. \nTrotzdem speichern?', True):
+                return 'Grundsteuersatz wird nicht gespeichert.'
+
+        if not gsdaten['betrag']:
+            return 'Betrag fehlt.'
+        
         return ''
 
     def wohnungSelected(self, whg_id: int) -> None:
@@ -76,15 +96,44 @@ class GrundsteuerController:
             a list of dictionaries.
             Each dictionary looks like so:
             {
-
+                'gs_id': '1',
+                'vj_ab': '2018',
+                'betrag': '300',
+                'bemerkung': 'ohne Grund'
             }
         """
         gs_list = self._dataProvider.getGrundsteuerData(self._whg_id)
         self._tv.setRows(gs_list)
 
 def test():
+    from tkinter import  Tk
+    from tkinter import ttk
+    import sys
+    sys.path.append('/home/martin/Projects/python/mywidgets')
+    try:
+        from editabletable import GenericEditableTable, Mappings
+    except ImportError:
+        print("couldn't import editabletable.")
 
-    ctrl = GrundsteuerController(None, None)
+    dp = DataProvider()
+    dp.connect('martin', 'fuenf55')
+    root = root = Tk()
+
+    tv = GenericEditableTable(root)
+    tv.grid(column=0, row=0, sticky='nswe')
+    ctrl = GrundsteuerController(dp, tv)
+    ctrl.startWork()
+    ctrl.wohnungSelected(1)
+
+    values = {
+        'vj_ab': '2018',
+        'betrag': '300',
+        'bemerkung': 'ohne Grund',
+        'whg_id': 1
+    }
+    #ctrl._onEditRowAction(Action.OK, '', values, None)
+
+    root.mainloop()
 
 if __name__ == '__main__':
     #messagebox.askokcancel("Title", "Message", icon='warning')

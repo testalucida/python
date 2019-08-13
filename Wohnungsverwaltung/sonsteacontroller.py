@@ -17,6 +17,13 @@ class SonstEinAusController:
         columnDefs = ColumnDefsProvider.getSonstigeEinAusDefs()
         self._tv.configureTable(columnDefs)
         self._sea_arten = self._dataProvider.getSonstigeEinAusArten()
+        artcbo = self._tv.getWidget('art')
+        artcbo.clear()
+        itemlist = [x['art'] for x in self._sea_arten]
+        #itemlist.insert(0, '')
+        artcbo.setItems(itemlist)
+        #artcbo.setIndex(0)
+
         self._tv.registerActionCallback(self._onEditRowAction)
 
     def _onEditRowAction(self, action: int, rowItemId: str,
@@ -32,7 +39,7 @@ class SonstEinAusController:
                                               'Diesen Satz wirklich löschen?')
                 if yes:
                     try:
-                        self._dataProvider.deleteMtlEinAus(values['sea_id'])
+                        self._dataProvider.deleteSonstEinAus(values['sea_id'])
                         tv.deleteRow(rowItemId)
                     except:
                         tv.showError('DB-Fehler',
@@ -122,7 +129,7 @@ def test():
         'bemerkung': 'ohne Grund',
         'whg_id': 2
     }
-    ctrl._onEditRowAction(Action.OK, '', values, None)
+    #ctrl._onEditRowAction(Action.OK, '', values, None)
 
     root.mainloop()
 

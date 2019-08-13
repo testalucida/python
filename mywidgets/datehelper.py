@@ -72,6 +72,9 @@ def compareToToday(eurstring: str) -> int:
     eurtoday = date.today().strftime('%d.%m.%Y')
     return compareEurDates(eurstring, eurtoday)
 
+def getCurrentYear() -> int:
+    return date.today().year
+
 
 # d1 = '23.04.1988'
 # d2 = '12.03.2999'

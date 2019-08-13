@@ -122,11 +122,9 @@ class FloatEntry(ttk.Entry, GetterSetter):
             return False
 
     def setFloat(self, floatvalue: float) -> None:
-        if not isinstance(floatvalue, float):
-            raise ValueError("".join(str(floatvalue),
-                                     " is not a valid float value"))
+        f = float(floatvalue) #could be int as well
         self.clear()
-        self.insert(0, str(floatvalue))
+        self.insert(0, str(f))
 
     def getValue(self) -> any:
         return self.get()
@@ -200,7 +198,10 @@ class MyCombobox(ttk.Combobox, GetterSetter):
         self.set(val)
 
     def clear(self) -> None:
-        self.set(0)
+        self.set('')
+
+    def setItems(self, itemlist:list) -> None:
+        self['values'] = itemlist
 
 #+++++++++++++++++++++++++++++++++++++++++++++++
 

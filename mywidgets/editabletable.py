@@ -375,6 +375,9 @@ class GenericEditableTable(ttk.Frame):
         self._edit.clear()
         self._rowEditingId = None
 
+    def getWidget(self, dbname: str) -> Widget:
+        return self._edit.getWidget(dbname)
+
 #+++++++++++++++++++++++++++++++++++++++++++++++
 
 class GenericEditRow(ttk.Frame):
@@ -523,3 +526,10 @@ class GenericEditRow(ttk.Frame):
             if hasattr(obj, 'getMyId'):
                 obj.clear()
         self._lostList.clear()
+
+    def getWidget(self, myId: str):
+        for w in self.children.values():
+            if hasattr(w, 'getMyId'):
+                if w.getMyId() == myId:
+                    return w
+        raise ValueError('There is no widget with myId = ' + myId)

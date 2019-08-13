@@ -2,14 +2,25 @@
   "_comment": "check json using https://jsonformatter.curiousconcept.com/",
   "columns": [
     {
+      "_comment": "ID des Satzes in der Tabelle grundsteuer",
+      "heading": "ID",
+      "isvisible": false,
+      "align": null,
+      "fit": null,
+      "stretch": null,
+      "width": -1,
+      "dbname": "gs_id",
+      "editwidget": null
+    },
+    {
       "_comment": "Jahr, ab dem dieser Grundsteuerbetrag veranlagt wird",
-      "heading": "VJ",
+      "heading": "gültig ab VJ",
       "isvisible": true,
       "align": "left",
       "fit": true,
       "stretch": false,
       "width": 4,
-      "dbname": "vj",
+      "dbname": "vj_ab",
       "editwidget": {
         "class": "mywidgets.MyCombobox",
         "choice_values": [
