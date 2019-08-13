@@ -48,6 +48,13 @@ class SonstEinAusController:
                 tv.showError('Validierungsfehler', msg)
 
             else: #validation ok
+                # values dictionary: complement 'art_id' using 'art'
+                for k in self._sea_arten:
+                    if k['art'] == values['art']:
+                        values['art_id'] = k['art_id']
+                        break
+
+                #complement whg_id
                 values['whg_id'] = self._whg_id
                 #update or insert?
                 if ('sea_id' in values and values['sea_id'] > 0):
@@ -78,15 +85,46 @@ class SonstEinAusController:
             a list of dictionaries.
             Each dictionary looks like so:
             {
-
+                'sea_id': '2',
+                'vj': '2020',
+                'betrag': '112.00',
+                'art': 'Ablöse',
+                'bemerkung': 'dfdf\n'
             }
         """
         sea_list = self._dataProvider.getSonstigeEinAusData(self._whg_id)
         self._tv.setRows(sea_list)
 
 def test():
+    from tkinter import  Tk
+    from tkinter import ttk
+    import sys
+    sys.path.append('/home/martin/Projects/python/mywidgets')
+    try:
+        from editabletable import GenericEditableTable, Mappings
+    except ImportError:
+        print("couldn't import editabletable.")
 
-    ctrl = SonstEinAusController(None, None)
+    dp = DataProvider()
+    dp.connect('martin', 'fuenf55')
+    root = root = Tk()
+
+    tv = GenericEditableTable(root)
+    tv.grid(column=0, row=0, sticky='nswe')
+    ctrl = SonstEinAusController(dp, tv)
+    ctrl.startWork()
+    ctrl.wohnungSelected(1)
+
+    values = {
+        'vj': '2019',
+        'betrag': '500',
+        'art': 'Sonderumlage',
+        'bemerkung': 'ohne Grund',
+        'whg_id': 2
+    }
+    ctrl._onEditRowAction(Action.OK, '', values, None)
+
+    root.mainloop()
 
 if __name__ == '__main__':
     #messagebox.askokcancel("Title", "Message", icon='warning')

@@ -415,6 +415,10 @@ class GenericEditRow(ttk.Frame):
             if initValue:
                 inst.setValue(initValue)
 
+            if 'readonly' in w:
+                if w['readonly']:
+                    inst['state'] = 'readonly'
+
             width = w['width']
             if width > -1:
                 inst['width'] = width

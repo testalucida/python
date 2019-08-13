@@ -67,6 +67,7 @@
         "class": "mywidgets.MyCombobox",
         "choice_values": null,
         "init_value": null,
+        "readonly": true,
         "width": 41,
         "wstretch": false,
         "height": -1

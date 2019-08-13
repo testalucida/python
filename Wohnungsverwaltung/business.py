@@ -157,11 +157,19 @@ class DataProvider:
         sea_data = self._getReadRetValOrRaiseException(resp)
         return sea_data
 
-    def getSonstigeEinAusArten(self):
+    def getSonstigeEinAusArten(self) -> list:
         resp = self.__session. \
-            get('http://localhost/kendelweb/dev/php/business.php?q=sonst_ein_aus_data' +
+            get('http://localhost/kendelweb/dev/php/business.php?q=sonst_ein_aus_arten' +
                 '&user=' + self.__user)
         art_data = self._getReadRetValOrRaiseException(resp)
+        """
+        art_data is a list of suchlike dictionaries: 
+            {
+                'art_id': '1', 
+                'art': 'Hausgeldnachzahlung (Eigentümer->Verw.)', 
+                'ein_aus': 'a'
+            }
+        """
         return art_data
 
     def getCurrentAndFutureMtlEinAus(self, whg_id:int) -> list:
