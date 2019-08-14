@@ -105,14 +105,15 @@ class WV(ttk.Frame):
     def _createNotebook(self, parent):
         book = ttk.Notebook(parent)
         book.grid(column=0, row=0, sticky=(N,S,W,E))
-        pages = (ttk.Frame(book), ttk.Frame(), ttk.Frame(),
-                 ttk.Frame(), ttk.Frame())
+        pages = (ttk.Frame(), ttk.Frame(), ttk.Frame(),
+                 ttk.Frame(), ttk.Frame(), ttk.Frame())
 
         book.add(pages[0], text='Wohnung')
         book.add(pages[1], text='Rechnungen')
         book.add(pages[2], text='Monatliche Ein-/Auszahlungen')
         book.add(pages[3], text='Sonstige Ein-/Auszahlungen')
         book.add(pages[4], text='Mietverhältnis')
+        book.add(pages[5], text='Steuerliche Angaben')
         book.columnconfigure(0, weight = 1)
         book.rowconfigure(0, weight=1)
 
@@ -121,6 +122,7 @@ class WV(ttk.Frame):
         self._createRechnungenTab(pages[1])
         self._createMonatlicheTab(pages[2])
         self._createSonstigeTab(pages[3])
+        self._createSteuerTab(pages[5])
 
     def _createRechnungenTab(self, rechnungPage:ttk.Frame):
         #Rechnung-Tabelle
@@ -162,6 +164,12 @@ class WV(ttk.Frame):
         sonstigePage.rowconfigure(1, weight=1)
         sonstigePage.rowconfigure(3, weight=1)
         sonstigePage.columnconfigure(0, weight=1)
+
+    def _createSteuerTab(self, steuerPage:ttk.Frame):
+
+
+        steuerPage.rowconfigure(0, weight=1)
+        steuerPage.columnconfigure(0, weight=1)
 
     def _createEditRow(self, column: int, row: int):
         pass

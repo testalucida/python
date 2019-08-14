@@ -83,7 +83,7 @@ class GrundsteuerController:
 
         if not gsdaten['betrag']:
             return 'Betrag fehlt.'
-        
+
         return ''
 
     def wohnungSelected(self, whg_id: int) -> None:
