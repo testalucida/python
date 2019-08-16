@@ -4,8 +4,9 @@ import sys
 sys.path.append('/home/martin/Projects/python/mywidgets')
 try:
     from editabletable import GenericEditableTable, Mappings
+    from steuerdatenview import SteuerdatenView
 except ImportError:
-    print("couldn't import editabletable.")
+    print("couldn't import either editabletable or steuerdatenview.")
 
 class WV(ttk.Frame):
 
@@ -166,7 +167,7 @@ class WV(ttk.Frame):
         sonstigePage.columnconfigure(0, weight=1)
 
     def _createSteuerTab(self, steuerPage:ttk.Frame):
-
+        stv = SteuerdatenView(steuerPage)
 
         steuerPage.rowconfigure(0, weight=1)
         steuerPage.columnconfigure(0, weight=1)

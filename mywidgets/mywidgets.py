@@ -58,11 +58,96 @@ class GetterSetter(ABC):
     def setMyId(self, myId: str) -> None:
         self._myId = myId
 
- #+++++++++++++++++++++++++++++++++++++++++++++++++++++
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-class TextEntry(ttk.Entry, GetterSetter):
-    def __init__(self, parent):
+class ConvenianceMethods:
+
+    def setWidth(self, w: int) -> None:
+        self['width'] = w
+
+    def setBackground(self, name: str, color: str) -> None:
+        style = ttk.Style()
+        style.configure(name, fieldbackground=color)
+        self['style'] = name
+
+    def setFont(self, font: str) -> None:
+        """
+        sets the font of this widget
+        :param font: font given in a string like so: 'Helvetica 18 bold'
+        :return: None
+        """
+        self.configure(font=font)
+
+    def setReadonly(self, readonly: bool):
+        state = 'readonly' if readonly else 'normal'
+        self['state'] = state
+
+    def setTextPadding(self, name: str, *pads) -> None:
+        """
+        sets the padding around the text
+        :param name: name of the style, e.g. 'My.TCombobox'
+        :param pads: first arg: pad left, secnd arg: pad top and so on.
+        if only one pad arg is given it will be used for all 4 sides.
+        if two pad args are given the first one will be used for pad left
+        and pad right, the second for pad top and pad bottom.
+        if three pad args are given, the first and the third will be used for pad left
+        and pad right, the second will be used for pad top and pad bottom.
+        :return: None
+        """
+        padlist = list()
+        for pad in pads:
+            padlist.append(pad)
+        style = ttk.Style()
+        style.configure(name, padding = padlist)
+        self['style'] = name
+
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+class MyLabel(ttk.Label, ConvenianceMethods):
+    def __init__(self, parent,
+                 text: str = None,
+                 column: int = None, row: int = None,
+                 sticky: str = None, anchor: str = None,
+                 padx:int = None, pady: int = None ):
+        ttk.Label.__init__(self, parent, text=text)
+        ConvenianceMethods.__init__(self)
+        if not column is None and column >= 0:
+            self.grid(column=column)
+        if not row is None and row >= 0:
+            self.grid(row=row)
+        if sticky:
+            self.grid(sticky=sticky)
+        if anchor:
+            self['anchor'] = anchor
+        if padx:
+            self.grid(padx=padx)
+        if pady:
+            self.grid(pady=pady)
+
+    def setBackground(self, color: str) -> None:
+        ttk.Style().configure('Background.TLabel', background=color)
+        self['style'] = 'Background.TLabel'
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+class TextEntry(ttk.Entry, GetterSetter, ConvenianceMethods):
+    def __init__(self, parent,
+                 column: int = None, row: int = None,
+                 sticky: str = None,
+                 padx:int = None, pady: int = None ):
         ttk.Entry.__init__(self, parent)
+        ConvenianceMethods.__init__(self)
+        if not column is None and column >= 0:
+            self.grid(column=column)
+        if not row is None and row >= 0:
+            self.grid(row=row)
+        if sticky:
+            self.grid(sticky=sticky)
+        if padx:
+            self.grid(padx=padx)
+        if pady:
+            self.grid(pady=pady)
 
     def getValue(self) -> any:
         return self.get()
@@ -93,9 +178,10 @@ class MyText(Text, GetterSetter):
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-class FloatEntry(ttk.Entry, GetterSetter):
+class FloatEntry(ttk.Entry, GetterSetter, ConvenianceMethods):
     def __init__(self, parent):
         ttk.Entry.__init__(self, parent, validate="key")
+        ConvenianceMethods.__init__(self)
         vcmd = (self.register(self.onValidate), '%P', '%S')
         # valid percent substitutions (from the Tk entry man page)
         # note: you only have to register the ones you need; this
@@ -111,6 +197,8 @@ class FloatEntry(ttk.Entry, GetterSetter):
         #      (key, focusin, focusout, forced)
         # %W = the tk name of the widget
         self['validatecommand'] = vcmd
+        self.setAlign('right')
+        self.setTextPadding('Float.TEntry', 1, 1, 3, 1)
 
     def onValidate(self, P, S):
         if S >= '0' and S <= '9':
@@ -120,6 +208,14 @@ class FloatEntry(ttk.Entry, GetterSetter):
             return True
         except:
             return False
+
+    def setAlign(self, alignment: str):
+        """
+        sets the text alignment. Default is 'right'
+        :param alignment: one of ('left', 'center', 'right')
+        :return: None
+        """
+        self['justify'] = alignment
 
     def setFloat(self, floatvalue: float) -> None:
         f = float(floatvalue) #could be int as well
@@ -184,7 +280,11 @@ class IntEntry(ttk.Entry, GetterSetter):
 
 #+++++++++++++++++++++++++++++++++++++++++++++++
 
-class MyCombobox(ttk.Combobox, GetterSetter):
+class MyCombobox(ttk.Combobox, GetterSetter, ConvenianceMethods):
+    def __init__(self, parent):
+        ttk.Combobox.__init__(self, parent)
+        ConvenianceMethods.__init__(self)
+
     def getCurrentIndex(self) -> int:
         return self.current()
 

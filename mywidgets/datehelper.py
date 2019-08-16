@@ -75,6 +75,12 @@ def compareToToday(eurstring: str) -> int:
 def getCurrentYear() -> int:
     return date.today().year
 
+def getLastYears(cnt: int) -> list:
+    current = date.today().year
+    yearlist = []
+    for n in range(cnt):
+        yearlist.append(current - n)
+    return yearlist
 
 # d1 = '23.04.1988'
 # d2 = '12.03.2999'

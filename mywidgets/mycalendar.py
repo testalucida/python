@@ -3,7 +3,7 @@ from tkinter import ttk
 import datetime
 import calendar
 import datehelper
-from mywidgets import GetterSetter
+from mywidgets import GetterSetter, ConvenianceMethods
 #+++++++++++++++++++++++++++++++++++++++++++++++
 
 class MonthCalendarProvider:
@@ -258,7 +258,7 @@ class CalendarDialog(Toplevel):
 
 #+++++++++++++++++++++++++++++++++++++++++++++++
 
-class DateEntry(ttk.Entry, GetterSetter):
+class DateEntry(ttk.Entry, GetterSetter, ConvenianceMethods):
     #Widget to display a date in german format dd.mm.yyyy
     #It's a composed widget consisting of an ttk.Entry field and
     #a Calendar Dialog that opens when user left clicks in the entry field.
@@ -266,6 +266,7 @@ class DateEntry(ttk.Entry, GetterSetter):
     #will be provided into the entry field.
     def __init__(self, parent):
         ttk.Entry.__init__(self, parent,  validate="key")
+        ConvenianceMethods.__init__(self)
         vcmd = (self.register(self.onValidate), '%P', '%S')
         self['validatecommand'] = vcmd
         self.bind("<Button-1>", self.openCalendarDialog)
@@ -275,6 +276,7 @@ class DateEntry(ttk.Entry, GetterSetter):
         self._text = StringVar()
         self['textvariable'] = self._text
         self._text.trace('w', self._onTextChange)
+        self._useCalendar = True
         self._date = None
         self._dlg = None
         #validation:
@@ -349,21 +351,25 @@ class DateEntry(ttk.Entry, GetterSetter):
                     return False
         return True
 
+    def setUseCalendar(self, use: bool) -> None:
+        self._useCalendar = use
+
     def openCalendarDialog(self, event):
-        root = self._getRoot()
-        self._dlg = CalendarDialog(root, self._date)
-        #dialog "always on top":
-        self._dlg.attributes('-topmost', 'true')
-        #self._dlg.wm_overrideredirect(True)
-        rootx = root.winfo_x()
-        rooty = root.winfo_y()
-        x = self.winfo_x()
-        y = self.winfo_y()
-        self._dlg.setPosition(rootx + x, rooty + y + 30)
-        #self.wait_window(dlg)
-        self._dlg.setSelectedCallback(self._dateSelected)
-        # when dialog is visible we can set grab:
-        self._dlg.bind('<Visibility>', self.onVisible)
+        if self._useCalendar:
+            root = self._getRoot()
+            self._dlg = CalendarDialog(root, self._date)
+            #dialog "always on top":
+            self._dlg.attributes('-topmost', 'true')
+            #self._dlg.wm_overrideredirect(True)
+            rootx = root.winfo_x()
+            rooty = root.winfo_y()
+            x = self.winfo_x()
+            y = self.winfo_y()
+            self._dlg.setPosition(rootx + x, rooty + y + 30)
+            #self.wait_window(dlg)
+            self._dlg.setSelectedCallback(self._dateSelected)
+            # when dialog is visible we can set grab:
+            self._dlg.bind('<Visibility>', self.onVisible)
 
     def onVisible(self, evt):
         #when dialog is open, we don't want any input into parent frame:
