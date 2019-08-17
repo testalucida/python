@@ -131,13 +131,30 @@ class MyLabel(ttk.Label, ConvenianceMethods):
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-class TextEntry(ttk.Entry, GetterSetter, ConvenianceMethods):
+class ModifyTracer:
+    def __init__(self):
+        self._sv = StringVar()
+        self._sv.trace("w", self._onModify)
+        self['textvariable'] = self._sv
+        self._cbfnc = None
+
+    def registerModifyCallback(self, cbfnc) -> None:
+        self._cbfnc = cbfnc
+
+    def _onModify(self, name, index, mode):
+        #print('TextEntry modified')
+        if self._cbfnc:
+            self._cbfnc(self, name, index, mode)
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+class TextEntry(ttk.Entry, GetterSetter, ConvenianceMethods, ModifyTracer):
     def __init__(self, parent,
                  column: int = None, row: int = None,
                  sticky: str = None,
                  padx:int = None, pady: int = None ):
         ttk.Entry.__init__(self, parent)
         ConvenianceMethods.__init__(self)
+        ModifyTracer.__init__(self)
         if not column is None and column >= 0:
             self.grid(column=column)
         if not row is None and row >= 0:
@@ -154,7 +171,8 @@ class TextEntry(ttk.Entry, GetterSetter, ConvenianceMethods):
 
     def setValue(self, val: str) -> None:
         self.clear()
-        self.insert(0, val)
+        if val:
+            self.insert(0, val)
 
     def clear(self) -> None:
         self.delete(0, 'end')
@@ -171,17 +189,19 @@ class MyText(Text, GetterSetter):
 
     def setValue(self, val: str) -> None:
         self.clear()
-        self.insert('1.0', val)
+        if val:
+            self.insert('1.0', val)
 
     def clear(self) -> None:
         self.delete('1.0', 'end')
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-class FloatEntry(ttk.Entry, GetterSetter, ConvenianceMethods):
+class FloatEntry(ttk.Entry, GetterSetter, ConvenianceMethods, ModifyTracer):
     def __init__(self, parent):
         ttk.Entry.__init__(self, parent, validate="key")
         ConvenianceMethods.__init__(self)
+        ModifyTracer.__init__(self)
         vcmd = (self.register(self.onValidate), '%P', '%S')
         # valid percent substitutions (from the Tk entry man page)
         # note: you only have to register the ones you need; this
@@ -218,9 +238,10 @@ class FloatEntry(ttk.Entry, GetterSetter, ConvenianceMethods):
         self['justify'] = alignment
 
     def setFloat(self, floatvalue: float) -> None:
-        f = float(floatvalue) #could be int as well
         self.clear()
-        self.insert(0, str(f))
+        if floatvalue:
+            f = float(floatvalue) #could be int as well
+            self.insert(0, str(f))
 
     def getValue(self) -> any:
         return self.get()
@@ -235,9 +256,11 @@ class FloatEntry(ttk.Entry, GetterSetter, ConvenianceMethods):
 
 #+++++++++++++++++++++++++++++++++++++++++++++++
 
-class IntEntry(ttk.Entry, GetterSetter):
+class IntEntry(ttk.Entry, GetterSetter, ConvenianceMethods, ModifyTracer):
     def __init__(self, parent):
         ttk.Entry.__init__(self, parent, validate="key")
+        ConvenianceMethods.__init__(self)
+        ModifyTracer.__init__(self)
         vcmd = (self.register(self.onValidate), '%P', '%S')
         # valid percent substitutions (from the Tk entry man page)
         # note: you only have to register the ones you need; this
@@ -271,9 +294,11 @@ class IntEntry(ttk.Entry, GetterSetter):
         return self.get()
 
     def setValue(self, val: int or str) -> None:
-        if type(val) == str: #might be '123'
-            val = int(val)
-        self.setInt(val)
+        self.clear()
+        if val:
+            if type(val) == str: #might be '123'
+                val = int(val)
+            self.setInt(val)
 
     def clear(self) -> None:
         self.delete(0, 'end')

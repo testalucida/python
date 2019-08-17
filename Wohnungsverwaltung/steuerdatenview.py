@@ -29,18 +29,24 @@ class SteuerdatenView(ttk.Frame):
         self._prozent_afa = None
         self._betrag_afa = None
         self._afa_wie_vj = None
+        self._isVermieterModified = False
+        self._isWohnungModified = False
+        self._isAfaModified = False
 
         self._createGui()
         self.columnconfigure(0, weight=1)
 
-    def _onKey(self, evt: Event):
-        print(evt)
+    def _onVermieterModified(self, widget: Widget, name: str, index: str, mode: str):
+        self._isVermieterModified = True
+
+    def _onWohnungModified(self, widget: Widget, name: str, index: str, mode: str):
+        self._isWohnungModified = True
+
+    def _onAfaModified(self, widget: Widget, name: str, index: str, mode: str):
+        self._isAfaModified = True
 
     def _createGui(self):
         padx=pady=5
-
-        f = self._createVjFrame(padx, pady)
-        f.grid(column=0, row=0, pady=pady, stick='nswe')
 
         lf = self._createVermieterLabelframe(padx, pady)
         lf.grid(column=0, row=1, sticky='nswe', pady=(15, pady))
@@ -55,22 +61,6 @@ class SteuerdatenView(ttk.Frame):
         btn['state'] = 'disabled'
         btn.grid(column=0, row=4, sticky='nswe', pady=pady)
 
-    def _createVjFrame(self, padx, pady) -> MyCombobox:
-        f = ttk.Frame(self)
-        l = MyLabel(f, 'Veranlagungsjahr ', 0, 0, 'nswe', 'e', padx, pady)
-        l.setWidth(30)
-
-        c = MyCombobox(f)
-        c.setTextPadding('My.TCombobox', 10, 10, 0)
-        c.setWidth(5)
-        c.setFont('Helvetica 20 bold')
-        c.setItems(datehelper.getLastYears(3))
-        c.setIndex(1)
-        c.setReadonly(True)
-        c.grid(column=1, row=0, pady=pady)
-        self._vj = c
-        return f
-
     def _createVermieterLabelframe(self, padx: int, pady: int) -> ttk.Labelframe:
         lf = ttk.Labelframe(self, text='Vermieterstammdaten')
         lf.columnconfigure(1, weight=1)
@@ -81,7 +71,7 @@ class SteuerdatenView(ttk.Frame):
         MyLabel(lf, 'Vorname: ', 0, 0, 'nswe', 'e', padx, pady)
         self._vorname = TextEntry(lf, 1, 0, 'nswe', padx, pady)
         self._vorname.setBackground('My.TEntry', 'lightyellow')
-        self._vorname.bind('<Key>', self._onKey)
+        self._vorname.registerModifyCallback(self._onVermieterModified)
 
         MyLabel(lf, 'Name: ', 2, 0, 'nswe', 'e', padx, pady)
         self._name = TextEntry(lf, 3, 0, 'nswe', padx, pady)
@@ -145,37 +135,72 @@ class SteuerdatenView(ttk.Frame):
         lf = ttk.Labelframe(self, text='AfA-Daten')
         #lf.columnconfigure(1, weight=1)
 
-        MyLabel(lf, 'Art der Absetzung: ', 0, 0, 'nswe', 'e', padx, pady)
+        f = self._createVjFrame(lf, padx, pady)
+        f.grid(column=0, row=0, columnspan=3, pady=pady, stick='nswe')
+
+        MyLabel(lf, 'Art der Absetzung: ', 0, 1, 'nswe', 'e', padx, pady)
         cb = MyCombobox(lf)
         cb.setBackground('AfA.TCombobox', 'lightyellow')
         cb.setItems(('linear', 'degressiv'))
         cb.setIndex(0)
-        cb.grid(column=1, row=0, sticky='w', padx=padx, pady=pady)
+        cb.grid(column=1, row=1, sticky='w', padx=padx, pady=pady)
         self._art_afa = cb
 
-        MyLabel(lf, 'Prozentsatz:  ', 2, 0, 'nswe', 'e', padx, pady)
+        MyLabel(lf, 'Prozentsatz:  ', 2, 1, 'nswe', 'e', padx, pady)
         f = FloatEntry(lf)
-        f.grid(column=3, row=0, sticky='w', padx=padx, pady=pady)
+        f.grid(column=3, row=1, sticky='w', padx=padx, pady=pady)
         f['width'] = 4
         self._prozent_afa = f
 
-        MyLabel(lf, 'Betrag: ', 0, 1, 'nswe', 'e', padx, pady)
+        MyLabel(lf, 'Betrag: ', 0, 2, 'nswe', 'e', padx, pady)
         f = FloatEntry(lf)
         f.setBackground('My.TEntry', 'lightyellow')
-        f.grid(column=1, row=1, sticky='w', padx=padx, pady=pady)
+        f.grid(column=1, row=2, sticky='w', padx=padx, pady=pady)
         f.setWidth(8)
         self._betrag_afa = f
 
-        MyLabel(lf, 'Wie Vorjahr: ', 2, 1, 'nswe', 'e', padx, pady)
+        MyLabel(lf, 'Wie Vorjahr: ', 2, 2, 'nswe', 'e', padx, pady)
         c = MyCombobox(lf)
         c.setBackground('AfA.TCombobox', 'lightyellow')
         c.setItems(('Ja', 'Nein'))
         c.setIndex(0)
         c.setWidth(4)
-        c.grid(column=3, row=1, sticky='w', padx=padx, pady=pady)
+        c.grid(column=3, row=2, sticky='w', padx=padx, pady=pady)
         self._afa_wie_vj = c
 
         return lf
+
+    def _createVjFrame(self, parent, padx, pady) -> MyCombobox:
+        f = ttk.Frame(parent)
+        l = MyLabel(f, 'Veranlagungsjahr ', 0, 0, 'nswe', 'e', padx, pady)
+        l.setWidth(30)
+
+        c = MyCombobox(f)
+        c.setTextPadding('My.TCombobox', 5, 5, 0)
+        c.setWidth(5)
+        c.setFont('Helvetica 16 bold')
+        c.setItems(datehelper.getLastYears(3))
+        c.setIndex(1)
+        c.setReadonly(True)
+        c.grid(column=1, row=0, pady=pady)
+        self._vj = c
+        return f
+
+    def setVermieterData(self, data: dict) -> None:
+        self._vorname.setValue(data['vorname'])
+        self._name.setValue(data['name'])
+        self._strasse.setValue(data['strasse'])
+        self._plz.setValue(data['plz'])
+        self._ort.setValue(data['ort'])
+        self._steuernummer.setValue(data['steuernummer'])
+
+    def setWohungData(self, data: dict) -> None:
+        self._whg_strasse.setValue(data['strasse'])
+        self._whg_bez.setValue(data['whg_bez'])
+        self._whg_plz.setValue(data['plz'])
+        self._whg_ort.setValue(data['ort'])
+        self._einhwert_az.setValue(data['einhwert_az'])
+        self._angeschafft_am.setValue(data['angeschafft_am'])
 
 def test():
     from business import DataProvider, DataError

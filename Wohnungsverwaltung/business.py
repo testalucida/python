@@ -122,11 +122,15 @@ class DataProvider:
                 self.__user )
         return resp
 
-    def getWohnungIdentifikation(self, whg_id ):
+    def getWohnungIdentifikation(self, whg_id: int ):
         resp = self.__session.\
-            get('http://localhost/kendelweb/dev/php/business.php?q=wohnung_kurz&id=' + whg_id + '&user=' +
+            get('http://localhost/kendelweb/dev/php/business.php?q=wohnung_kurz&id=' +
+                str(whg_id) + '&user=' +
                 self.__user )
-        return resp
+        data: dict = self._getReadRetValOrRaiseException(resp)
+        if data['angeschafft_am']:
+            data['angeschafft_am'] = datehelper.convertIsoToEur(data['angeschafft_am'])
+        return data
 
     def getRechnungsUebersicht( self, whg_id: int ) -> list:
         resp = self.__session. \
@@ -187,6 +191,13 @@ class DataProvider:
                 str(whg_id) + '&user=' + self.__user)
         gs_data = self._getReadRetValOrRaiseException(resp)
         return gs_data
+
+    def getVermieterData(self, whg_id: int):
+        resp = self.__session. \
+            get('http://localhost/kendelweb/dev/php/business.php?q=vermieter_data&id=' +
+                str(whg_id) + '&user=' + self.__user)
+        v_data = self._getReadRetValOrRaiseException(resp)
+        return v_data
 
     '''
     insert mtl ein_aus
@@ -359,9 +370,10 @@ class DataProvider:
         return copy
 
     def _getDictEurDate(self, origList: list, *keys) -> list:
-        for rgdict in origList:
+        for dic in origList:
             for key in keys:
-                rgdict[key] = datehelper.convertIsoToEur(rgdict[key])
+                if dic[key]:
+                    dic[key] = datehelper.convertIsoToEur(dic[key])
         return origList
 
     def _getReadRetValOrRaiseException(self, resp) -> any:

@@ -22,6 +22,7 @@ class WV(ttk.Frame):
         self._monatlicheTableView: GenericEditableTable = None
         self._sonstigeTableView: GenericEditableTable = None
         self._grundsteuerTableView: GenericEditableTable = None
+        self._steuerdatenView: SteuerdatenView = None
         self._wohnungClickedCallback = None
         self.createUI(root)
         self.rowconfigure(0, weight=1)
@@ -169,8 +170,11 @@ class WV(ttk.Frame):
     def _createSteuerTab(self, steuerPage:ttk.Frame):
         stv = SteuerdatenView(steuerPage)
 
+        self._steuerdatenView = stv
+
         steuerPage.rowconfigure(0, weight=1)
         steuerPage.columnconfigure(0, weight=1)
+
 
     def _createEditRow(self, column: int, row: int):
         pass
@@ -241,6 +245,9 @@ class WV(ttk.Frame):
 
     def getMonatlicheTableView(self) -> GenericEditableTable:
         return self._monatlicheTableView
+
+    def getSteuerdatenView(self) -> SteuerdatenView:
+        return self._steuerdatenView
 
     def exitProgram(self):
         exit()
