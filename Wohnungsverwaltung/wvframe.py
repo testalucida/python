@@ -4,9 +4,10 @@ import sys
 sys.path.append('/home/martin/Projects/python/mywidgets')
 try:
     from editabletable import GenericEditableTable, Mappings
-    from steuerdatenview import SteuerdatenView
+    from stammdatenview import StammdatenView
+    from veranlagungview import VeranlagungView
 except ImportError:
-    print("couldn't import either editabletable or steuerdatenview.")
+    print("couldn't import some stuff.")
 
 class WV(ttk.Frame):
 
@@ -22,7 +23,8 @@ class WV(ttk.Frame):
         self._monatlicheTableView: GenericEditableTable = None
         self._sonstigeTableView: GenericEditableTable = None
         self._grundsteuerTableView: GenericEditableTable = None
-        self._steuerdatenView: SteuerdatenView = None
+        self._stammdatenView: StammdatenView = None
+        self._veranlagungView: VeranlagungView = None
         self._wohnungClickedCallback = None
         self.createUI(root)
         self.rowconfigure(0, weight=1)
@@ -108,14 +110,15 @@ class WV(ttk.Frame):
         book = ttk.Notebook(parent)
         book.grid(column=0, row=0, sticky=(N,S,W,E))
         pages = (ttk.Frame(), ttk.Frame(), ttk.Frame(),
-                 ttk.Frame(), ttk.Frame(), ttk.Frame())
+                 ttk.Frame(), ttk.Frame(), ttk.Frame(), ttk.Frame())
 
         book.add(pages[0], text='Wohnung')
         book.add(pages[1], text='Rechnungen')
         book.add(pages[2], text='Monatliche Ein-/Auszahlungen')
         book.add(pages[3], text='Sonstige Ein-/Auszahlungen')
         book.add(pages[4], text='Mietverhältnis')
-        book.add(pages[5], text='Steuerliche Angaben')
+        book.add(pages[5], text='Stammdaten')
+        book.add(pages[6], text='Veranlagung')
         book.columnconfigure(0, weight = 1)
         book.rowconfigure(0, weight=1)
 
@@ -124,7 +127,8 @@ class WV(ttk.Frame):
         self._createRechnungenTab(pages[1])
         self._createMonatlicheTab(pages[2])
         self._createSonstigeTab(pages[3])
-        self._createSteuerTab(pages[5])
+        self._createStammdatenTab(pages[5])
+        self._createVeranlagungTab(pages[6])
 
     def _createRechnungenTab(self, rechnungPage:ttk.Frame):
         #Rechnung-Tabelle
@@ -167,14 +171,18 @@ class WV(ttk.Frame):
         sonstigePage.rowconfigure(3, weight=1)
         sonstigePage.columnconfigure(0, weight=1)
 
-    def _createSteuerTab(self, steuerPage:ttk.Frame):
-        stv = SteuerdatenView(steuerPage)
+    def _createStammdatenTab(self, stammdatenPage:ttk.Frame):
+        stv = StammdatenView(stammdatenPage)
 
-        self._steuerdatenView = stv
+        self._stammdatenView = stv
 
-        steuerPage.rowconfigure(0, weight=1)
-        steuerPage.columnconfigure(0, weight=1)
+        stammdatenPage.rowconfigure(0, weight=1)
+        stammdatenPage.columnconfigure(0, weight=1)
 
+    def _createVeranlagungTab(self, veranlPage: ttk.Frame):
+        self._veranlagungView = VeranlagungView(veranlPage)
+        veranlPage.rowconfigure(0, weight=1)
+        veranlPage.columnconfigure(0, weight=1)
 
     def _createEditRow(self, column: int, row: int):
         pass
@@ -246,8 +254,11 @@ class WV(ttk.Frame):
     def getMonatlicheTableView(self) -> GenericEditableTable:
         return self._monatlicheTableView
 
-    def getSteuerdatenView(self) -> SteuerdatenView:
-        return self._steuerdatenView
+    def getStammdatenView(self) -> StammdatenView:
+        return self._stammdatenView
+
+    def getVeranlagungView(self) -> VeranlagungView:
+        return self._veranlagungView
 
     def exitProgram(self):
         exit()

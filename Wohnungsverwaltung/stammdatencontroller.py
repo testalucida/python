@@ -2,14 +2,14 @@
 from business import DataProvider, DataError, ServiceException
 from mywidgets import TextEntry
 from actions import Action
-from steuerdatenview import SteuerdatenView
+from stammdatenview import StammdatenView
 import datehelper
 
-class SteuerdatenController:
+class StammdatenController:
     def __init__(self, dataProvider: DataProvider,
-                 steuerdatenView: SteuerdatenView):
+                 stammdatenView: StammdatenView):
         self._dataProvider = dataProvider
-        self._view = steuerdatenView
+        self._view = stammdatenView
         self._whg_id = None
         self._vermieterdata = None
         self._wohnungdata = None
@@ -21,9 +21,9 @@ class SteuerdatenController:
 
     def wohnungSelected(self, whg_id: int) -> None:
         self._whg_id = whg_id
-        self._loadVermieterData()
+        self._loadStammdaten()
 
-    def _loadVermieterData(self):
+    def _loadStammdaten(self):
         self._vermieterdata: dict = \
             self._dataProvider.getVermieterData(self._whg_id)
         """
@@ -55,9 +55,9 @@ def test():
     style = ttk.Style()
     style.theme_use('clam')
 
-    tv = SteuerdatenView(root)
+    tv = StammdatenView(root)
     tv.grid(column=0, row=0, sticky='nswe', padx=10, pady=10)
-    ctrl = SteuerdatenController(dp, tv)
+    ctrl = StammdatenController(dp, tv)
     ctrl.startWork()
     ctrl.wohnungSelected(1)
 

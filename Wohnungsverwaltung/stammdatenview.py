@@ -9,10 +9,9 @@ try:
 except ImportError:
     print("couldn't import my widgets.")
 
-class SteuerdatenView(ttk.Frame):
+class StammdatenView(ttk.Frame):
     def __init__(self, parent: ttk.Frame):
         ttk.Frame.__init__(self, parent)
-        self._vj = None
         self._name = None
         self._vorname = None
         self._strasse = None
@@ -25,25 +24,32 @@ class SteuerdatenView(ttk.Frame):
         self._whg_ort = None
         self._einhwert_az = None
         self._angeschafft_am = None
-        self._art_afa = None
-        self._prozent_afa = None
-        self._betrag_afa = None
-        self._afa_wie_vj = None
+        self._isVermieterInitialized = False
         self._isVermieterModified = False
+        self._isWohnungInitialized = False
         self._isWohnungModified = False
-        self._isAfaModified = False
+        self._btnSave = None
 
         self._createGui()
         self.columnconfigure(0, weight=1)
 
+    def isVermieterModified(self) -> bool:
+        return self._isVermieterModified
+
+    def isWohnungModified(self) -> bool:
+        return self._isWohnungModified
+
     def _onVermieterModified(self, widget: Widget, name: str, index: str, mode: str):
-        self._isVermieterModified = True
+        #print('onVermieterModified')
+        if self._isVermieterInitialized:
+            self._isVermieterModified = True
+            self._btnSave['state'] = 'normal'
 
     def _onWohnungModified(self, widget: Widget, name: str, index: str, mode: str):
-        self._isWohnungModified = True
-
-    def _onAfaModified(self, widget: Widget, name: str, index: str, mode: str):
-        self._isAfaModified = True
+        #print('onWohnungModified')
+        if self._isWohnungInitialized:
+            self._isWohnungModified = True
+            self._btnSave['state'] = 'normal'
 
     def _createGui(self):
         padx=pady=5
@@ -54,12 +60,10 @@ class SteuerdatenView(ttk.Frame):
         lf = self._createWohnungLabelframe(padx, pady)
         lf.grid(column=0, row=2, sticky='nswe', pady=(10,pady))
 
-        lf = self._createAfaLabelframe(padx, pady)
-        lf.grid(column=0, row=3, sticky='nswe', pady=(15, pady))
-
         btn = ttk.Button(self, text='Speichern')
         btn['state'] = 'disabled'
         btn.grid(column=0, row=4, sticky='nswe', pady=pady)
+        self._btnSave = btn
 
     def _createVermieterLabelframe(self, padx: int, pady: int) -> ttk.Labelframe:
         lf = ttk.Labelframe(self, text='Vermieterstammdaten')
@@ -77,21 +81,25 @@ class SteuerdatenView(ttk.Frame):
         self._name = TextEntry(lf, 3, 0, 'nswe', padx, pady)
         self._name.setBackground('My.TEntry', 'lightyellow')
         self._name.grid(columnspan=2)
-
+        self._name.registerModifyCallback(self._onVermieterModified)
 
         MyLabel(lf, 'Straße: ', 0, 1, 'nswe', 'e', padx, pady)
         self._strasse = TextEntry(lf, 1, 1, 'nswe', padx, pady)
+        self._strasse.registerModifyCallback(self._onVermieterModified)
 
         l = MyLabel(lf, 'PLZ/Ort: ', 2, 1, 'nswe', 'e', padx, pady)
         self._plz = TextEntry(lf, 3, 1, 'nsw', padx, pady)
         self._plz['width'] = 6
+        self._plz.registerModifyCallback(self._onVermieterModified)
 
         #MyLabel(lf, 'Ort: ', 4, 1, 'nswe', 'e', padx, pady)
         self._ort = TextEntry(lf, 4, 1, 'nswe', padx, pady)
+        self._ort.registerModifyCallback(self._onVermieterModified)
 
         l = MyLabel(lf, 'Steuernummer: ', 0, 2, 'nswe', 'e', padx, pady)
         self._steuernummer = TextEntry(lf, 1, 2, 'nswe', padx, pady)
         self._steuernummer.setBackground('My.TEntry', 'lightyellow')
+        self._steuernummer.registerModifyCallback(self._onVermieterModified)
 
         return lf
 
@@ -105,17 +113,21 @@ class SteuerdatenView(ttk.Frame):
         MyLabel(lf, 'Straße: ', 0, 0, 'nswe', 'e', padx, pady)
         self._whg_strasse = TextEntry(lf, 1, 0, 'nswe', padx, pady)
         self._whg_strasse.setBackground('My.TEntry', 'lightyellow')
+        self._whg_strasse.registerModifyCallback(self._onWohnungModified)
 
         MyLabel(lf, 'PLZ/Ort: ', 2, 0, 'nswe', 'e', padx, pady)
         self._whg_plz = TextEntry(lf, 3, 0, 'nsw', padx, pady)
         self._whg_plz['width'] = 6
         self._whg_plz.setBackground('My.TEntry', 'lightyellow')
+        self._whg_plz.registerModifyCallback(self._onWohnungModified)
 
         self._whg_ort = TextEntry(lf, 4, 0, 'nswe', padx, pady)
         self._whg_ort.setBackground('My.TEntry', 'lightyellow')
+        self._whg_ort.registerModifyCallback(self._onWohnungModified)
 
         MyLabel(lf, 'Etage: ', 0, 1, 'nswe', 'e', padx, pady)
         self._whg_bez = TextEntry(lf, 1, 1, 'nswe', padx, pady)
+        self._whg_bez.registerModifyCallback(self._onWohnungModified)
 
         MyLabel(lf, 'Angeschafft am: ', 0, 2, 'nswe', 'e', padx, pady)
         de = DateEntry(lf)
@@ -124,67 +136,14 @@ class SteuerdatenView(ttk.Frame):
         de['width'] = 10
         de.grid(column=1, row=2, sticky='nw', padx=padx, pady=pady)
         self._angeschafft_am = de
+        self._angeschafft_am.registerModifyCallback(self._onWohnungModified)
 
         MyLabel(lf, 'Einhts.wert-Az: ', 0, 3, 'nswe', 'e', padx, pady)
         self._einhwert_az = TextEntry(lf, 1, 3, 'nswe', padx, pady)
         self._einhwert_az.setBackground('My.TEntry', 'lightyellow')
+        self._einhwert_az.registerModifyCallback(self._onWohnungModified)
 
         return lf
-
-    def _createAfaLabelframe(self, padx: int, pady: int) -> ttk.Labelframe:
-        lf = ttk.Labelframe(self, text='AfA-Daten')
-        #lf.columnconfigure(1, weight=1)
-
-        f = self._createVjFrame(lf, padx, pady)
-        f.grid(column=0, row=0, columnspan=3, pady=pady, stick='nswe')
-
-        MyLabel(lf, 'Art der Absetzung: ', 0, 1, 'nswe', 'e', padx, pady)
-        cb = MyCombobox(lf)
-        cb.setBackground('AfA.TCombobox', 'lightyellow')
-        cb.setItems(('linear', 'degressiv'))
-        cb.setIndex(0)
-        cb.grid(column=1, row=1, sticky='w', padx=padx, pady=pady)
-        self._art_afa = cb
-
-        MyLabel(lf, 'Prozentsatz:  ', 2, 1, 'nswe', 'e', padx, pady)
-        f = FloatEntry(lf)
-        f.grid(column=3, row=1, sticky='w', padx=padx, pady=pady)
-        f['width'] = 4
-        self._prozent_afa = f
-
-        MyLabel(lf, 'Betrag: ', 0, 2, 'nswe', 'e', padx, pady)
-        f = FloatEntry(lf)
-        f.setBackground('My.TEntry', 'lightyellow')
-        f.grid(column=1, row=2, sticky='w', padx=padx, pady=pady)
-        f.setWidth(8)
-        self._betrag_afa = f
-
-        MyLabel(lf, 'Wie Vorjahr: ', 2, 2, 'nswe', 'e', padx, pady)
-        c = MyCombobox(lf)
-        c.setBackground('AfA.TCombobox', 'lightyellow')
-        c.setItems(('Ja', 'Nein'))
-        c.setIndex(0)
-        c.setWidth(4)
-        c.grid(column=3, row=2, sticky='w', padx=padx, pady=pady)
-        self._afa_wie_vj = c
-
-        return lf
-
-    def _createVjFrame(self, parent, padx, pady) -> MyCombobox:
-        f = ttk.Frame(parent)
-        l = MyLabel(f, 'Veranlagungsjahr ', 0, 0, 'nswe', 'e', padx, pady)
-        l.setWidth(30)
-
-        c = MyCombobox(f)
-        c.setTextPadding('My.TCombobox', 5, 5, 0)
-        c.setWidth(5)
-        c.setFont('Helvetica 16 bold')
-        c.setItems(datehelper.getLastYears(3))
-        c.setIndex(1)
-        c.setReadonly(True)
-        c.grid(column=1, row=0, pady=pady)
-        self._vj = c
-        return f
 
     def setVermieterData(self, data: dict) -> None:
         self._vorname.setValue(data['vorname'])
@@ -193,6 +152,7 @@ class SteuerdatenView(ttk.Frame):
         self._plz.setValue(data['plz'])
         self._ort.setValue(data['ort'])
         self._steuernummer.setValue(data['steuernummer'])
+        self._isVermieterInitialized = True
 
     def setWohungData(self, data: dict) -> None:
         self._whg_strasse.setValue(data['strasse'])
@@ -201,6 +161,7 @@ class SteuerdatenView(ttk.Frame):
         self._whg_ort.setValue(data['ort'])
         self._einhwert_az.setValue(data['einhwert_az'])
         self._angeschafft_am.setValue(data['angeschafft_am'])
+        self._isWohnungInitialized = True
 
 def test():
     from business import DataProvider, DataError
@@ -213,7 +174,7 @@ def test():
     style = ttk.Style()
     style.theme_use('clam')
 
-    stv = SteuerdatenView(root)
+    stv = StammdatenView(root)
     stv.grid(column=0, row=0, sticky='nswe', padx=10, pady=10)
     # ctrl = GrundsteuerController(dp, tv)
     # ctrl.startWork()

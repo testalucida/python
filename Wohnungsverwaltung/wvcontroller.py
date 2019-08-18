@@ -7,7 +7,7 @@ from rgcontroller import RechnungController
 from mtleacontroller import MtlEinAusController
 from sonsteacontroller import SonstEinAusController
 from grundsteuercontroller import GrundsteuerController
-from steuerdatencontroller import SteuerdatenController
+from stammdatencontroller import StammdatenController
 
 class WvController:
     def __init__(self, wv: WV):
@@ -17,7 +17,8 @@ class WvController:
         self._mtleacontroller = None
         self._sonsteacontroller = None
         self._grundsteuercontroller = None
-        self._steuerdatencontroller = None
+        self._stammdatencontroller = None
+        self._veranlagungcontroller = None
 
     def startWork(self) -> None:
         self._connect()
@@ -39,8 +40,10 @@ class WvController:
                                                         self._wv.getGrundsteuerTableView())
         self._grundsteuercontroller.startWork()
 
-        self._steuerdatencontroller = SteuerdatenController(self._dataProvider,
-                                                            self._wv.getSteuerdatenView())
+        self._stammdatencontroller = StammdatenController(self._dataProvider,
+                                                          self._wv.getStammdatenView())
+        self._veranlagungcontroller = VeranlagungController(self._dataProvider,
+                                                            self._wv.getVeranlagungView())
 
     def _connect(self):
         #todo: Login-Dialog
@@ -59,6 +62,7 @@ class WvController:
         self._mtleacontroller.wohnungSelected(whg_id)
         self._sonsteacontroller.wohnungSelected(whg_id)
         self._grundsteuercontroller.wohnungSelected(whg_id)
-        self._steuerdatencontroller.wohnungSelected(whg_id)
+        self._stammdatencontroller.wohnungSelected(whg_id)
+        self._veranlagungcontroller.wohnungSelected(whg_id)
         root.configure(cursor='')
         root.update()

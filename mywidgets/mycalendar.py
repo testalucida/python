@@ -3,7 +3,7 @@ from tkinter import ttk
 import datetime
 import calendar
 import datehelper
-from mywidgets import GetterSetter, ConvenianceMethods
+from mywidgets import GetterSetter, ConvenianceMethods, ModifyTracer
 #+++++++++++++++++++++++++++++++++++++++++++++++
 
 class MonthCalendarProvider:
@@ -258,7 +258,7 @@ class CalendarDialog(Toplevel):
 
 #+++++++++++++++++++++++++++++++++++++++++++++++
 
-class DateEntry(ttk.Entry, GetterSetter, ConvenianceMethods):
+class DateEntry(ttk.Entry, GetterSetter, ConvenianceMethods, ModifyTracer):
     #Widget to display a date in german format dd.mm.yyyy
     #It's a composed widget consisting of an ttk.Entry field and
     #a Calendar Dialog that opens when user left clicks in the entry field.
@@ -267,6 +267,7 @@ class DateEntry(ttk.Entry, GetterSetter, ConvenianceMethods):
     def __init__(self, parent):
         ttk.Entry.__init__(self, parent,  validate="key")
         ConvenianceMethods.__init__(self)
+        ModifyTracer.__init__(self)
         vcmd = (self.register(self.onValidate), '%P', '%S')
         self['validatecommand'] = vcmd
         self.bind("<Button-1>", self.openCalendarDialog)
