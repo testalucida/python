@@ -333,7 +333,7 @@ class MyCombobox(ttk.Combobox, GetterSetter, ConvenianceMethods):
     def clear(self) -> None:
         self.set('')
 
-    def setItems(self, itemlist:list) -> None:
+    def setItems(self, itemlist: list or tuple) -> None:
         self['values'] = itemlist
 
 #+++++++++++++++++++++++++++++++++++++++++++++++

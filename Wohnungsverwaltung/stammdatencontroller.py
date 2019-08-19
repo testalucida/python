@@ -41,11 +41,13 @@ class StammdatenController:
 
         self._wohnungdata: dict = \
             self._dataProvider.getWohnungIdentifikation(self._whg_id)
-        self._view.setWohungData(self._wohnungdata)
+        if self._wohnungdata:
+            self._view.setWohungData(self._wohnungdata)
 
         self._verwalterdata: dict = \
             self._dataProvider.getVerwalterData(self._whg_id)
-        self._view.setVerwalterData(self._verwalterdata)
+        if self._verwalterdata:
+            self._view.setVerwalterData(self._verwalterdata)
 
 def test():
     from tkinter import  Tk

@@ -206,6 +206,25 @@ class DataProvider:
         v_data = self._getReadRetValOrRaiseException(resp)
         return v_data
 
+    def getAfaData(self, whg_id: int, vj: int) -> dict:
+        resp = self.__session. \
+            get('http://localhost/kendelweb/dev/php/business.php?q=afa_data&id=' +
+                str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
+        afa_data = self._getReadRetValOrRaiseException(resp)
+        return afa_data
+
+    '''
+    insert afa
+    '''
+    def insertAfaData(self, afa_dict):
+        resp = self.__session. \
+            post('http://localhost/kendelweb/dev/php/business.php?q=insert_afa&user=' + self.__user,
+                 data=afa_dict)
+
+        retval = self._getWriteRetValOrRaiseException(resp)
+
+        return retval
+
     '''
     insert mtl ein_aus
     '''
@@ -433,8 +452,21 @@ class DataProvider:
 
 ######### For testing purposes only ########################
 #
+#
 # prov = DataProvider()
 # prov.connect('martin', 'fuenf55')
+# afa = {
+#     'whg_id': 1,
+#     'vj_ab': 2018,
+#     'betrag': 2345,
+#     'prozent': 2.23,
+#     'lin_deg_knz': 'l'
+# }
+# #data = prov.insertAfaData(afa)
+# data = prov.getAfaData(1, 2018)
+# print(data)
+
+
 # whg_list = prov.getWohnungsUebersicht()
 # print(whg_list)
 #

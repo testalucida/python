@@ -45,6 +45,7 @@ class WvController:
                                                           self._wv.getStammdatenView())
         self._veranlagungcontroller = VeranlagungController(self._dataProvider,
                                                             self._wv.getVeranlagungView())
+        self._veranlagungcontroller.startWork()
 
     def _connect(self):
         #todo: Login-Dialog

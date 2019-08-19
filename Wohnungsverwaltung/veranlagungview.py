@@ -22,10 +22,19 @@ class VeranlagungView(ttk.Frame):
         self._isAfaInitialized = False
         self._isAfaModified = False
 
+        self._vjChange_callback = None
+
         self._createGui()
 
     def isAfaModified(self) -> bool:
         return self._isAfaModified
+
+    def registerVjChangeCallback(self, cbfnc):
+        self._vjChange_callback = cbfnc
+
+    def _onVjSelectionChanged(self, evt):
+        if self._vjChange_callback:
+            self._vjChange_callback(self._vj_combo.getValue())
 
     def _onAfaModified(self, widget: Widget, name: str, index: str, mode: str):
         if self._isAfaInitialized:
@@ -76,10 +85,13 @@ class VeranlagungView(ttk.Frame):
         c.setTextPadding('Vj.TCombobox', 5, 5, 0)
         c.setWidth(5)
         c.setFont('Helvetica 16 bold')
-        c.setItems(datehelper.getLastYears(3))
-        c.setIndex(1)
+        yearlist = datehelper.getLastYears(3)
+        yearlist.insert(0, '')
+        c.setItems(yearlist)
+        c.setIndex(0)
         c.setReadonly(True)
         c.grid(column=2, row=0, sticky='w', pady=pady)
+        c.bind('<<ComboboxSelected>>', self._onVjSelectionChanged)
         self._vj_combo = c
 
         return f
@@ -91,7 +103,7 @@ class VeranlagungView(ttk.Frame):
         MyLabel(lf, 'Art der Absetzung: ', 0, 1, 'nswe', 'e', padx, pady)
         cb = MyCombobox(lf)
         cb.setBackground('AfA.TCombobox', 'lightyellow')
-        cb.setItems(('linear', 'degressiv'))
+        cb.setItems(('', 'linear', 'degressiv'))
         cb.setIndex(0)
         cb.grid(column=1, row=1, sticky='w', padx=padx, pady=pady)
         self._art_afa = cb
@@ -113,7 +125,7 @@ class VeranlagungView(ttk.Frame):
         c = MyCombobox(lf)
         #c.setBackground('AfA.TCombobox', 'red')
         c.setStyle('AfA.TCombobox')
-        c.setItems(('Ja', 'Nein'))
+        c.setItems(('', 'Ja', 'Nein'))
         c.setIndex(0)
         c.setWidth(4)
         c.grid(column=3, row=2, sticky='w', padx=padx, pady=pady)
@@ -131,8 +143,17 @@ class VeranlagungView(ttk.Frame):
         btn.grid(column=1, row=0, pady=pady)
         return f
 
+    def clear(self):
+        self._art_afa.clear()
+        self._prozent_afa.clear()
+        self._afa_wie_vj.clear()
+        self._betrag_afa.clear()
+
     def setAfaData(self, data: dict) -> None:
-        pass
+        self._art_afa.setValue(data['art_afa'])
+        self._prozent_afa.setValue(data['prozent'])
+        self._afa_wie_vj.setValue(data['afa_wie_vorjahr'])
+        self._betrag_afa.setValue(data['betrag'])
 
     def setWohungData(self, data: dict) -> None:
         s = ''.join((data['ort'], ', ', data['strasse'], ', ', data['whg_bez']))

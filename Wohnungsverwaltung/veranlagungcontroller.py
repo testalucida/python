@@ -12,17 +12,45 @@ class VeranlagungController:
         self._view = veranlagungView
         self._whg_id = None
         self._afadata = None
+        self._vj = None
 
     def startWork(self) -> None:
-        #todo: register Save-Callback
-        pass
+        self._view.registerVjChangeCallback(self._onVjChanged)
+
+    def _onVjChanged(self, newVj: str):
+        print('onVjChanged: ', newVj)
+        self._view.clear()
+        self._vj = None
+        try:
+            newVj = int(newVj)
+            self._loadVeranlagungData(newVj)
+            self._vj = newVj
+        except:
+            pass
 
     def wohnungSelected(self, whg_id: int) -> None:
+        print('veranlagungscontroller: wohnungselected: ', whg_id)
         self._whg_id = whg_id
-        self._loadVeranlagungData()
+        self._view.clear()
+        if self._vj:
+            self._loadVeranlagungData(self._vj)
 
-    def _loadVeranlagungData(self):
-        pass
+    def _loadVeranlagungData(self, vj: int):
+        """
+        data = {
+            'afa_id': '2',
+            'betrag': '2345',
+            'prozent': '2.23',
+            'lin_deg_knz': 'l',
+            'afa_wie_vorjahr': 'Ja'
+        }
+        :return:
+        """
+        print('loadVeranlagungsdata: ', self._whg_id, ' ', vj)
+        data = self._dataProvider.getAfaData(self._whg_id, vj)
+        if data:
+            data['art_afa'] = 'linear' if data['lin_deg_knz'] == 'l' else 'degressiv'
+            self._view.setAfaData(data)
 
 def test():
     from tkinter import  Tk
