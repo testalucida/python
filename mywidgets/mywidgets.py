@@ -65,10 +65,18 @@ class ConvenianceMethods:
     def setWidth(self, w: int) -> None:
         self['width'] = w
 
-    def setBackground(self, name: str, color: str) -> None:
+    def setStyle(self, stylename: str) -> None:
+        self['style'] = stylename
+
+    def setBackground(self, stylename: str, color: str) -> None:
         style = ttk.Style()
-        style.configure(name, fieldbackground=color)
-        self['style'] = name
+        style.configure(stylename, fieldbackground=color)
+        self['style'] = stylename
+
+    def setForeground(self, stylename: str, color: str) -> None:
+        style = ttk.Style()
+        style.configure(stylename, foreground=color)
+        self['style'] = stylename
 
     def setFont(self, font: str) -> None:
         """
@@ -125,9 +133,9 @@ class MyLabel(ttk.Label, ConvenianceMethods):
         if pady:
             self.grid(pady=pady)
 
-    def setBackground(self, color: str) -> None:
-        ttk.Style().configure('Background.TLabel', background=color)
-        self['style'] = 'Background.TLabel'
+    def setBackground(self, stylename: str, color: str) -> None:
+        ttk.Style().configure(stylename, background=color)
+        self['style'] = stylename
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

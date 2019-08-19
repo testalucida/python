@@ -199,6 +199,13 @@ class DataProvider:
         v_data = self._getReadRetValOrRaiseException(resp)
         return v_data
 
+    def getVerwalterData(self, whg_id: int):
+        resp = self.__session. \
+            get('http://localhost/kendelweb/dev/php/business.php?q=verwalter_data&id=' +
+                str(whg_id) + '&user=' + self.__user)
+        v_data = self._getReadRetValOrRaiseException(resp)
+        return v_data
+
     '''
     insert mtl ein_aus
     '''

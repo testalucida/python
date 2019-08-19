@@ -107,28 +107,36 @@ class WV(ttk.Frame):
                 self._openBranches(tree, childlist)
 
     def _createNotebook(self, parent):
+        PAGE_WOHNUNG = 0
+        PAGE_STAMMDATEN = 1
+        PAGE_RECHUNGEN = 2
+        PAGE_MTL_EIN_AUS = 3
+        PAGE_SONST_EIN_AUS = 4
+        PAGE_MIETEVERHAELTNIS = 5
+        PAGE_VERANLAGUNG = 6
+
         book = ttk.Notebook(parent)
         book.grid(column=0, row=0, sticky=(N,S,W,E))
         pages = (ttk.Frame(), ttk.Frame(), ttk.Frame(),
                  ttk.Frame(), ttk.Frame(), ttk.Frame(), ttk.Frame())
 
-        book.add(pages[0], text='Wohnung')
-        book.add(pages[1], text='Rechnungen')
-        book.add(pages[2], text='Monatliche Ein-/Auszahlungen')
-        book.add(pages[3], text='Sonstige Ein-/Auszahlungen')
-        book.add(pages[4], text='Mietverhältnis')
-        book.add(pages[5], text='Stammdaten')
-        book.add(pages[6], text='Veranlagung')
+        book.add(pages[PAGE_WOHNUNG], text='Wohnung')
+        book.add(pages[PAGE_STAMMDATEN], text='Stammdaten')
+        book.add(pages[PAGE_RECHUNGEN], text='Rechnungen')
+        book.add(pages[PAGE_MTL_EIN_AUS], text='Monatliche Ein-/Auszahlungen')
+        book.add(pages[PAGE_SONST_EIN_AUS], text='Sonstige Ein-/Auszahlungen')
+        book.add(pages[PAGE_MIETEVERHAELTNIS], text='Mietverhältnis')
+        book.add(pages[PAGE_VERANLAGUNG], text='Veranlagung')
         book.columnconfigure(0, weight = 1)
         book.rowconfigure(0, weight=1)
 
         self._notebook = book
 
-        self._createRechnungenTab(pages[1])
-        self._createMonatlicheTab(pages[2])
-        self._createSonstigeTab(pages[3])
-        self._createStammdatenTab(pages[5])
-        self._createVeranlagungTab(pages[6])
+        self._createRechnungenTab(pages[PAGE_RECHUNGEN])
+        self._createMonatlicheTab(pages[PAGE_MTL_EIN_AUS])
+        self._createSonstigeTab(pages[PAGE_SONST_EIN_AUS])
+        self._createStammdatenTab(pages[PAGE_STAMMDATEN])
+        self._createVeranlagungTab(pages[PAGE_VERANLAGUNG])
 
     def _createRechnungenTab(self, rechnungPage:ttk.Frame):
         #Rechnung-Tabelle
@@ -173,16 +181,21 @@ class WV(ttk.Frame):
 
     def _createStammdatenTab(self, stammdatenPage:ttk.Frame):
         stv = StammdatenView(stammdatenPage)
-
+        stv.grid(column=0, row=0, sticky='nswe', padx=5, pady=5)
         self._stammdatenView = stv
 
         stammdatenPage.rowconfigure(0, weight=1)
         stammdatenPage.columnconfigure(0, weight=1)
 
     def _createVeranlagungTab(self, veranlPage: ttk.Frame):
-        self._veranlagungView = VeranlagungView(veranlPage)
-        veranlPage.rowconfigure(0, weight=1)
+        vv = VeranlagungView(veranlPage)
+        vv.grid(column=1, row=1, sticky='nswe', padx=5, pady=5)
+        self._veranlagungView = vv
+
+        # veranlPage.rowconfigure(0, weight=1)
+        # veranlPage.rowconfigure(2, weight=3)
         veranlPage.columnconfigure(0, weight=1)
+        veranlPage.columnconfigure(2, weight=1)
 
     def _createEditRow(self, column: int, row: int):
         pass
@@ -228,6 +241,9 @@ class WV(ttk.Frame):
         if self._wohnungClickedCallback:
             self._wohnungClickedCallback(whg_id)
 
+    def setNotebookTab(self, idx: int) -> None:
+        self._notebook.select(idx)
+
     def registerWohnungClickCallback(self, callback):
         self._wohnungClickedCallback = callback
 
@@ -268,10 +284,13 @@ def main():
     from wvcontroller import WvController
     print("path: ", sys.path)
     root = Tk()
-    wv = WV(root)
+
     if 'win' not in sys.platform:
         style = ttk.Style()
         style.theme_use('clam')
+
+    wv = WV(root)
+    wv.setNotebookTab(2)
 
     ctrl = WvController(wv)
     ctrl.startWork()

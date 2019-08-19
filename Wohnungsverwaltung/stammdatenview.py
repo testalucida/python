@@ -24,10 +24,18 @@ class StammdatenView(ttk.Frame):
         self._whg_ort = None
         self._einhwert_az = None
         self._angeschafft_am = None
+        self._verwalter_firma = None
+        self._verwalter_strasse = None
+        self._verwalter_plz = None
+        self._verwalter_ort = None
+        self._verwalter_tel = None
+        self._verwalter_email = None
         self._isVermieterInitialized = False
         self._isVermieterModified = False
         self._isWohnungInitialized = False
         self._isWohnungModified = False
+        self._isVerwalterInitialized = False
+        self._isVerwalterModified = False
         self._btnSave = None
 
         self._createGui()
@@ -38,6 +46,9 @@ class StammdatenView(ttk.Frame):
 
     def isWohnungModified(self) -> bool:
         return self._isWohnungModified
+
+    def isVerwalterModified(self) -> bool:
+        return self._isVerwalterModified
 
     def _onVermieterModified(self, widget: Widget, name: str, index: str, mode: str):
         #print('onVermieterModified')
@@ -51,6 +62,12 @@ class StammdatenView(ttk.Frame):
             self._isWohnungModified = True
             self._btnSave['state'] = 'normal'
 
+    def _onVerwalterModified(self, widget: Widget, name: str, index: str, mode: str):
+        #print('onVerwalterModified')
+        if self._isVerwalterInitialized:
+            self._isVerwalterModified = True
+            self._btnSave['state'] = 'normal'
+
     def _createGui(self):
         padx=pady=5
 
@@ -59,6 +76,9 @@ class StammdatenView(ttk.Frame):
 
         lf = self._createWohnungLabelframe(padx, pady)
         lf.grid(column=0, row=2, sticky='nswe', pady=(10,pady))
+
+        lf = self._createVerwalterLabelframe(padx, pady)
+        lf.grid(column=0, row=3, sticky='nswe', pady=(10, pady))
 
         btn = ttk.Button(self, text='Speichern')
         btn['state'] = 'disabled'
@@ -125,7 +145,7 @@ class StammdatenView(ttk.Frame):
         self._whg_ort.setBackground('My.TEntry', 'lightyellow')
         self._whg_ort.registerModifyCallback(self._onWohnungModified)
 
-        MyLabel(lf, 'Etage: ', 0, 1, 'nswe', 'e', padx, pady)
+        MyLabel(lf, 'Whg.-Bez.: ', 0, 1, 'nswe', 'e', padx, pady)
         self._whg_bez = TextEntry(lf, 1, 1, 'nswe', padx, pady)
         self._whg_bez.registerModifyCallback(self._onWohnungModified)
 
@@ -142,6 +162,41 @@ class StammdatenView(ttk.Frame):
         self._einhwert_az = TextEntry(lf, 1, 3, 'nswe', padx, pady)
         self._einhwert_az.setBackground('My.TEntry', 'lightyellow')
         self._einhwert_az.registerModifyCallback(self._onWohnungModified)
+
+        return lf
+
+    def _createVerwalterLabelframe(self, padx: int, pady: int) -> ttk.Labelframe:
+        lf = ttk.Labelframe(self, text='Verwalterstammdaten')
+        lf.columnconfigure(1, weight=1)
+        #lf.columnconfigure(3, weight=1)
+        lf.columnconfigure(4, weight=1)
+        lf.columnconfigure(5, weight=1)
+
+        MyLabel(lf, 'Firma: ', 0, 0, 'nswe', 'e', padx, pady)
+        self._verwalter_firma = TextEntry(lf, 1, 0, 'nswe', padx, pady)
+        self._verwalter_firma.grid(columnspan=4)
+        self._verwalter_firma.registerModifyCallback(self._onVerwalterModified)
+
+        MyLabel(lf, 'Straße: ', 0, 1, 'nswe', 'e', padx, pady)
+        self._verwalter_strasse = TextEntry(lf, 1, 1, 'nswe', padx, pady)
+        self._verwalter_strasse.registerModifyCallback(self._onVerwalterModified)
+
+        l = MyLabel(lf, 'PLZ/Ort: ', 2, 1, 'nswe', 'e', padx, pady)
+        self._verwalter_plz = TextEntry(lf, 3, 1, 'nsw', padx, pady)
+        self._verwalter_plz['width'] = 6
+        self._plz.registerModifyCallback(self._onVerwalterModified)
+
+        self._verwalter_ort = TextEntry(lf, 4, 1, 'nswe', padx, pady)
+        self._verwalter_ort.registerModifyCallback(self._onVerwalterModified)
+
+        l = MyLabel(lf, 'Telefon: ', 0, 2, 'nswe', 'e', padx, pady)
+        self._verwalter_tel = TextEntry(lf, 1, 2, 'nswe', padx, pady)
+        self._verwalter_tel.registerModifyCallback(self._onVerwalterModified)
+
+        l = MyLabel(lf, 'eMail: ', 2, 2, 'nswe', 'e', padx, pady)
+        self._verwalter_email = TextEntry(lf, 3, 2, 'nswe', padx, pady)
+        self._verwalter_email.grid(columnspan=2)
+        self._verwalter_email.registerModifyCallback(self._onVerwalterModified)
 
         return lf
 
@@ -162,6 +217,15 @@ class StammdatenView(ttk.Frame):
         self._einhwert_az.setValue(data['einhwert_az'])
         self._angeschafft_am.setValue(data['angeschafft_am'])
         self._isWohnungInitialized = True
+
+    def setVerwalterData(self, data: dict) -> None:
+        self._verwalter_firma.setValue(data['firma'])
+        self._verwalter_strasse.setValue(data['strasse'])
+        self._verwalter_plz.setValue(data['plz'])
+        self._verwalter_ort.setValue(data['ort'])
+        self._verwalter_tel.setValue(data['telefon'])
+        self._verwalter_email.setValue(data['email'])
+        self._isVerwalterInitialized = True
 
 def test():
     from business import DataProvider, DataError

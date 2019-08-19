@@ -8,6 +8,7 @@ from mtleacontroller import MtlEinAusController
 from sonsteacontroller import SonstEinAusController
 from grundsteuercontroller import GrundsteuerController
 from stammdatencontroller import StammdatenController
+from veranlagungcontroller import VeranlagungController
 
 class WvController:
     def __init__(self, wv: WV):
