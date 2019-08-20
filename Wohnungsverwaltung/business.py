@@ -207,11 +207,48 @@ class DataProvider:
         return v_data
 
     def getAfaData(self, whg_id: int, vj: int) -> dict:
+        """
+        Note: this method will provide afa data
+        whose vj_ab is equal *or earlier* than the given vj
+        :param whg_id:
+        :param vj:
+        :return:
+        """
         resp = self.__session. \
             get('http://localhost/kendelweb/dev/php/business.php?q=afa_data&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         afa_data = self._getReadRetValOrRaiseException(resp)
         return afa_data
+
+    def existsAfaData(self, whg_id: int, vj: int) -> bool:
+        """
+        Note: this methods will check for a vj_ab which is *equal* to the given vj
+        as opposed to method getAfaData
+        :param whg_id:
+        :param vj:
+        :return:
+        """
+
+        resp = self.__session. \
+            get('http://localhost/kendelweb/dev/php/business.php?q=exists_afa_data&id=' +
+                str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
+        exists = self._getReadRetValOrRaiseException(resp)
+        return exists
+
+    def getAfaId(self, whg_id: int, vj: int) -> int:
+        """
+        Note: this methods will check for a record whose vj_ab
+        is *equal* to the given vj as opposed to method getAfaData
+        :param whg_id:
+        :param vj:
+        :return:
+        """
+
+        resp = self.__session. \
+            get('http://localhost/kendelweb/dev/php/business.php?q=afa_id&id=' +
+                str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
+        iddict = self._getReadRetValOrRaiseException(resp)
+        return 0 if iddict is None else int(iddict['afa_id'])
 
     '''
     insert afa
@@ -219,6 +256,18 @@ class DataProvider:
     def insertAfaData(self, afa_dict):
         resp = self.__session. \
             post('http://localhost/kendelweb/dev/php/business.php?q=insert_afa&user=' + self.__user,
+                 data=afa_dict)
+
+        retval = self._getWriteRetValOrRaiseException(resp)
+
+        return retval
+
+    '''
+    update afa
+    '''
+    def updateAfaData(self, afa_dict):
+        resp = self.__session. \
+            post('http://localhost/kendelweb/dev/php/business.php?q=update_afa&user=' + self.__user,
                  data=afa_dict)
 
         retval = self._getWriteRetValOrRaiseException(resp)
@@ -452,26 +501,32 @@ class DataProvider:
 
 ######### For testing purposes only ########################
 #
-#
-# prov = DataProvider()
-# prov.connect('martin', 'fuenf55')
-# afa = {
-#     'whg_id': 1,
-#     'vj_ab': 2018,
-#     'betrag': 2345,
-#     'prozent': 2.23,
-#     'lin_deg_knz': 'l'
-# }
-# #data = prov.insertAfaData(afa)
-# data = prov.getAfaData(1, 2018)
-# print(data)
+if __name__ == '__main__':
+    prov = DataProvider()
+    prov.connect('martin', 'fuenf55')
+    afa = {
+        'afa_id': 1,
+        'betrag': 111,
+        'prozent': 1.23,
+        'lin_deg_knz': 'l',
+        'afa_wie_vorjahr': 'J'
+    }
+    prov.updateAfaData(afa)
+
+    # id = prov.getAfaId(1, 2019)
+    # print(id)
+    #exists: bool = prov.existsAfaData(1, 2018)
+    #print(exists)
+    # #data = prov.insertAfaData(afa)
+    # data = prov.getAfaData(1, 2018)
+    # print(data)
 
 
-# whg_list = prov.getWohnungsUebersicht()
-# print(whg_list)
-#
-# miete_data = prov.getMieteData(2)
-# print(miete_data)
+    # whg_list = prov.getWohnungsUebersicht()
+    # print(whg_list)
+    #
+    # miete_data = prov.getMieteData(2)
+    # print(miete_data)
 
 # def getWohnungsUebersicht( ):
 #     f = urllib.request.urlopen('http://localhost/kendelweb/dev/php/business.php?q=uebersicht_wohnungen')

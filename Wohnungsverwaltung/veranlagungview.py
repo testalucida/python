@@ -18,11 +18,15 @@ class VeranlagungView(ttk.Frame):
         self._prozent_afa = None
         self._betrag_afa = None
         self._afa_wie_vj = None
+        self._btnSave = None
+        self._btnCreateAnlageV = None
 
         self._isAfaInitialized = False
         self._isAfaModified = False
 
         self._vjChange_callback = None
+        self._save_callback = None
+        self._createAnlageV_callback = None
 
         self._createGui()
 
@@ -32,13 +36,30 @@ class VeranlagungView(ttk.Frame):
     def registerVjChangeCallback(self, cbfnc):
         self._vjChange_callback = cbfnc
 
+    def registerSaveCallback(self, cbfnc):
+        self._save_callback = cbfnc
+
+    def registerCreateAnlageVCallback(self, cbfnc):
+        self._createAnlageV_callback = cbfnc
+
     def _onVjSelectionChanged(self, evt):
         if self._vjChange_callback:
             self._vjChange_callback(self._vj_combo.getValue())
 
     def _onAfaModified(self, widget: Widget, name: str, index: str, mode: str):
         if self._isAfaInitialized:
+            print('VeranlagungView._onAfaModified')
             self._isAfaModified = True
+            self.setSaveButtonEnabled(True)
+            self.setCreateAnlageVButtonEnabled(False)
+
+    def _onSavePressed(self):
+        if self._save_callback:
+            self._save_callback(self.getAfaData())
+
+    def _onCreateAnlageVPressed(self):
+        if self._createAnlageV_callback:
+            self._createAnlageV_callback(self.getAfaData())
 
     def _createGui(self):
         padx=pady=5
@@ -73,7 +94,7 @@ class VeranlagungView(ttk.Frame):
         # lbl['style'] = 'whg_short.TLabel'
         return lbl
 
-    def _createVjFrame(self, parent, padx, pady) -> MyCombobox:
+    def _createVjFrame(self, parent, padx, pady) -> ttk.Frame:
         f = ttk.Frame(parent)
         f.columnconfigure(0, weight=1)
         f.columnconfigure(3, weight=2)
@@ -90,6 +111,7 @@ class VeranlagungView(ttk.Frame):
         c.setItems(yearlist)
         c.setIndex(0)
         c.setReadonly(True)
+        c.registerModifyCallback(self._onAfaModified)
         c.grid(column=2, row=0, sticky='w', pady=pady)
         c.bind('<<ComboboxSelected>>', self._onVjSelectionChanged)
         self._vj_combo = c
@@ -105,6 +127,8 @@ class VeranlagungView(ttk.Frame):
         cb.setBackground('AfA.TCombobox', 'lightyellow')
         cb.setItems(('', 'linear', 'degressiv'))
         cb.setIndex(0)
+        cb.setReadonly(True)
+        cb.registerModifyCallback(self._onAfaModified)
         cb.grid(column=1, row=1, sticky='w', padx=padx, pady=pady)
         self._art_afa = cb
 
@@ -112,6 +136,7 @@ class VeranlagungView(ttk.Frame):
         f = FloatEntry(lf)
         f.grid(column=3, row=1, sticky='w', padx=padx, pady=pady)
         f['width'] = 4
+        f.registerModifyCallback(self._onAfaModified)
         self._prozent_afa = f
 
         MyLabel(lf, 'Betrag: ', 0, 2, 'nswe', 'e', padx, pady)
@@ -119,6 +144,7 @@ class VeranlagungView(ttk.Frame):
         f.setBackground('AfA.TEntry', 'lightyellow')
         f.grid(column=1, row=2, sticky='w', padx=padx, pady=pady)
         f.setWidth(8)
+        f.registerModifyCallback(self._onAfaModified)
         self._betrag_afa = f
 
         MyLabel(lf, 'Wie Vorjahr: ', 2, 2, 'nswe', 'e', padx, pady)
@@ -128,6 +154,8 @@ class VeranlagungView(ttk.Frame):
         c.setItems(('', 'Ja', 'Nein'))
         c.setIndex(0)
         c.setWidth(4)
+        c.setReadonly(True)
+        c.registerModifyCallback(self._onAfaModified)
         c.grid(column=3, row=2, sticky='w', padx=padx, pady=pady)
         self._afa_wie_vj = c
 
@@ -135,15 +163,18 @@ class VeranlagungView(ttk.Frame):
 
     def _createButtonFrame(self, parent, padx: int, pady: int) -> ttk.Frame:
         f = ttk.Frame(parent)
-        btn = ttk.Button(f, text='Speichern')
-        btn['state'] = 'disabled'
+        btn = ttk.Button(f, text='Speichern', command=self._onSavePressed)
         btn.grid(column=0, row=0, pady=pady)
+        self._btnSave = btn
 
-        btn = ttk.Button(f, text='Anlage V erstellen')
+        btn = ttk.Button(f, text='Anlage V erstellen',
+                         command=self._onCreateAnlageVPressed)
         btn.grid(column=1, row=0, pady=pady)
+        self._btnCreateAnlageV = btn
         return f
 
     def clear(self):
+        self._isAfaInitialized = False
         self._art_afa.clear()
         self._prozent_afa.clear()
         self._afa_wie_vj.clear()
@@ -154,10 +185,27 @@ class VeranlagungView(ttk.Frame):
         self._prozent_afa.setValue(data['prozent'])
         self._afa_wie_vj.setValue(data['afa_wie_vorjahr'])
         self._betrag_afa.setValue(data['betrag'])
+        self._isAfaInitialized = True
+
+    def getAfaData(self) -> dict:
+        return \
+        {
+            'vj_ab': self._vj_combo.getValue(),
+            'art_afa': self._art_afa.getValue(),
+            'prozent': self._prozent_afa.getValue(),
+            'afa_wie_vorjahr': self._afa_wie_vj.getValue(),
+            'betrag': self._betrag_afa.getValue()
+        }
 
     def setWohungData(self, data: dict) -> None:
         s = ''.join((data['ort'], ', ', data['strasse'], ', ', data['whg_bez']))
         self._whg_short['text'] = s
+
+    def setSaveButtonEnabled(self, enabled: bool):
+        self._btnSave['state'] = 'normal' if enabled else 'disabled'
+
+    def setCreateAnlageVButtonEnabled(self, enabled: bool):
+        self._btnCreateAnlageV['state'] = 'normal' if enabled else 'disabled'
 
 def test():
     from business import DataProvider, DataError

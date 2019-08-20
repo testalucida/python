@@ -90,6 +90,9 @@ class ConvenianceMethods:
         state = 'readonly' if readonly else 'normal'
         self['state'] = state
 
+    def setEnabled(self, enabled: bool):
+        self['state'] = 'normal' if enabled else 'disabled'
+
     def setTextPadding(self, name: str, *pads) -> None:
         """
         sets the padding around the text
@@ -313,10 +316,11 @@ class IntEntry(ttk.Entry, GetterSetter, ConvenianceMethods, ModifyTracer):
 
 #+++++++++++++++++++++++++++++++++++++++++++++++
 
-class MyCombobox(ttk.Combobox, GetterSetter, ConvenianceMethods):
+class MyCombobox(ttk.Combobox, GetterSetter, ConvenianceMethods, ModifyTracer):
     def __init__(self, parent):
         ttk.Combobox.__init__(self, parent)
         ConvenianceMethods.__init__(self)
+        ModifyTracer.__init__(self)
 
     def getCurrentIndex(self) -> int:
         return self.current()
@@ -459,15 +463,6 @@ class TableView(ttk.Treeview):
             for col in cols:
                 values.append(dic[col])
             self.appendRow(values)
-
-    # def appendRow(self, data: dict) -> None:
-    # DUPLICATE!!!
-    #     """
-    #     append one row to the rows of this TableView
-    #     :param data: column values
-    #     :return: None
-    #     """
-    #     self.appendRows(list(data))
 
     def clear(self) -> None:
         #delete all rows

@@ -1,7 +1,6 @@
 
 from business import DataProvider, DataError, ServiceException
-from mywidgets import TextEntry
-from actions import Action
+from tkinter import messagebox
 from veranlagungview import VeranlagungView
 import datehelper
 
@@ -16,6 +15,10 @@ class VeranlagungController:
 
     def startWork(self) -> None:
         self._view.registerVjChangeCallback(self._onVjChanged)
+        self._view.registerSaveCallback(self._onSave)
+        self._view.registerCreateAnlageVCallback(self._onCreateAnlageV)
+        self._view.setSaveButtonEnabled(False)
+        self._view.setCreateAnlageVButtonEnabled(False)
 
     def _onVjChanged(self, newVj: str):
         print('onVjChanged: ', newVj)
@@ -27,6 +30,68 @@ class VeranlagungController:
             self._vj = newVj
         except:
             pass
+
+    def _onSave(self, afa: dict):
+        print('VeranlagungsController._onSave')
+        self._handleSaveAfa(afa)
+        self._view.setSaveButtonEnabled(False)
+
+        msg = self._validate(afa)
+        if msg:
+            messagebox.showerror('Validierungsfehler', msg)
+        else:
+            self._view.setCreateAnlageVButtonEnabled(True)
+
+    def _onCreateAnlageV(self, afa: dict):
+        print('VeranlagungsController._onCreateAnlageV')
+
+    def _validate(self, afa: dict) -> str or None:
+        if not self._vj:
+            return 'Es ist kein Veranlagungsjahr eingestellt.'
+
+        if not afa['art_afa']:
+            return 'Die Art der Abschreibung muss angegeben werden ' \
+                   '(linear/degressiv).'
+
+        if not afa['afa_wie_vorjahr']:
+            return 'Die Angabe fehlt, ' \
+                   'ob die AfA-Angaben die gleichen wie im Vorjahr sind.'
+
+        if not afa['betrag']:
+            return 'Der AfA-Betrag muss angegeben sein.'
+
+        return None
+
+    def _handleSaveAfa(self, afa: dict):
+        """
+        :param afa:
+        <class 'dict'>:
+        {
+            'vj_ab': '2018',
+            'art_afa': 'linear',
+            'prozent': '2.23',
+            'afa_wie_vorjahr': 'Ja',
+            'betrag': '234.0'
+        }
+
+        :return:
+        """
+        afa['lin_deg_knz'] = 'l' if afa['art_afa'] == 'linear' else 'd'
+        afa['afa_wie_vorjahr'] = 'J' if afa['afa_wie_vorjahr'] == 'Ja' else 'N'
+        #check if update or insert
+        id: int = self._dataProvider.getAfaId(self._whg_id, int(afa['vj_ab']))
+        if id > 0:
+            #update existing AfA record
+            afa['afa_id'] = id
+            del afa['vj_ab']  #vj_ab is part of the functional key - never update!
+            self._dataProvider.updateAfaData(afa)
+        else:
+            #insert new AfA record
+            afa['whg_id'] = self._whg_id
+            self._dataProvider.insertAfaData(afa)
+            
+        self._loadVeranlagungData(self._vj)
+
 
     def wohnungSelected(self, whg_id: int) -> None:
         print('veranlagungscontroller: wohnungselected: ', whg_id)
@@ -51,6 +116,12 @@ class VeranlagungController:
         if data:
             data['art_afa'] = 'linear' if data['lin_deg_knz'] == 'l' else 'degressiv'
             self._view.setAfaData(data)
+            self._view.setSaveButtonEnabled(False)
+
+            enabled: bool = True
+            if not self._validate(data):
+                enabled = False
+            self._view.setCreateAnlageVButtonEnabled(enabled)
 
 def test():
     from tkinter import  Tk

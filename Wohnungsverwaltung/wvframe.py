@@ -10,7 +10,6 @@ except ImportError:
     print("couldn't import some stuff.")
 
 class WV(ttk.Frame):
-
     def __init__(self, root):
         ttk.Frame.__init__(self, root)
         root.title("Wohnungsverwaltung")
