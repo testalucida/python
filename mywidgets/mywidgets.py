@@ -140,6 +140,9 @@ class MyLabel(ttk.Label, ConvenianceMethods):
         ttk.Style().configure(stylename, background=color)
         self['style'] = stylename
 
+    def setValue(self, value: str) -> None:
+        self['text'] = value
+
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 class ModifyTracer:

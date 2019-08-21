@@ -22,21 +22,21 @@ class VeranlagungController:
 
     def _onVjChanged(self, newVj: str):
         print('onVjChanged: ', newVj)
-        self._view.clear()
+        self._view.clearAfa()
         self._vj = None
         try:
             newVj = int(newVj)
-            self._loadVeranlagungData(newVj)
+            self._loadAfaData(newVj)
             self._vj = newVj
         except:
             pass
 
-    def _onSave(self, afa: dict):
+    def _onSave(self, veranlagData: dict):
         print('VeranlagungsController._onSave')
-        self._handleSaveAfa(afa)
+        self._handleSave(veranlagData)
         self._view.setSaveButtonEnabled(False)
 
-        msg = self._validate(afa)
+        msg = self._validate(veranlagData)
         if msg:
             messagebox.showerror('Validierungsfehler', msg)
         else:
@@ -62,11 +62,13 @@ class VeranlagungController:
 
         return None
 
-    def _handleSaveAfa(self, afa: dict):
+    def _handleSave(self, data: dict):
         """
-        :param afa:
+        :param data:
         <class 'dict'>:
         {
+            'angeschafft_am': xx.xx.xxxx,
+            'einhwert_az': 343434343434
             'vj_ab': '2018',
             'art_afa': 'linear',
             'prozent': '2.23',
@@ -76,31 +78,84 @@ class VeranlagungController:
 
         :return:
         """
-        afa['lin_deg_knz'] = 'l' if afa['art_afa'] == 'linear' else 'd'
-        afa['afa_wie_vorjahr'] = 'J' if afa['afa_wie_vorjahr'] == 'Ja' else 'N'
+        self._handleSaveAfa(data)
+
+        self._loadVeranlagungData(self._vj)
+
+    def _handleSaveAfa(self, data: dict):
+        data['lin_deg_knz'] = 'l' if data['art_afa'] == 'linear' else 'd'
+        data['afa_wie_vorjahr'] = 'J' if data['afa_wie_vorjahr'] == 'Ja' else 'N'
         #check if update or insert
-        id: int = self._dataProvider.getAfaId(self._whg_id, int(afa['vj_ab']))
+        id: int = self._dataProvider.getAfaId(self._whg_id, int(data['vj_ab']))
         if id > 0:
             #update existing AfA record
-            afa['afa_id'] = id
-            del afa['vj_ab']  #vj_ab is part of the functional key - never update!
-            self._dataProvider.updateAfaData(afa)
+            data['afa_id'] = id
+            del data['vj_ab']  #vj_ab is part of the functional key - never update!
+            self._dataProvider.updateAfaData(data)
         else:
             #insert new AfA record
-            afa['whg_id'] = self._whg_id
-            self._dataProvider.insertAfaData(afa)
-            
-        self._loadVeranlagungData(self._vj)
+            data['whg_id'] = self._whg_id
+            self._dataProvider.insertAfaData(data)
+
+    def _handleSaveWhg(self, data: dict):
+        """
+        :param data:
+        {
+            'angeschafft_am': xx.xx.xxxx or None
+            'einhwert_az':xxxxxxxxxxxxxxx
+        }
+        :return:
+        """
+        angeschafft_am = data['angeschafft_am']
+        if angeschafft_am:
+            angeschafft_am = datehelper.convertEurToIso(angeschafft_am)
 
 
     def wohnungSelected(self, whg_id: int) -> None:
         print('veranlagungscontroller: wohnungselected: ', whg_id)
         self._whg_id = whg_id
-        self._view.clear()
+        #get identifying data for selected flat:
+        d = self._dataProvider.getWohnungIdentifikation(whg_id)
+        """
+        {
+            'plz': '90429', 
+            'ort': 'Nürnberg', 
+            'strasse': 'Mendelstr. 24', 
+            'whg_bez': '3. OG rechts', 
+            'einhwert_az': None, 
+            'angeschafft_am': None
+        }
+        """
+        #set the views top label
+        whgident = ''.join((d['ort'], ', ', d['strasse'], ', ', d['whg_bez']))
+        self._view.setWohnungIdent(whgident)
+
+        #set wohnung data related to Veranlagung
+        angeschafftAm = None
+        if d['angeschafft_am']:
+            angeschafftAm = datehelper.convertIsoToEur(d['angeschafft_am'])
+        self._view.setWohungData(angeschafftAm, d['einhwert_az'])
+        self._view.clearAfa()
+
+        #and if a Vj is set get selected flat's AfA data as well:
         if self._vj:
-            self._loadVeranlagungData(self._vj)
+            self._loadAfaData(self._vj)
 
     def _loadVeranlagungData(self, vj: int):
+        """
+        called after having saved modified data
+        :param vj:
+        :return:
+        """
+        data = self._dataProvider.getVeranlagungsdata(self._whg_id, vj)
+
+    def _loadAfaData(self, vj: int):
+        """
+        called when Vj was changed by user
+        :param vj: changed Vj
+        :return: None
+        """
+        data = self._dataProvider.getAfaData(self._whg_id, vj)
         """
         data = {
             'afa_id': '2',
@@ -109,18 +164,13 @@ class VeranlagungController:
             'lin_deg_knz': 'l',
             'afa_wie_vorjahr': 'Ja'
         }
-        :return:
         """
-        print('loadVeranlagungsdata: ', self._whg_id, ' ', vj)
-        data = self._dataProvider.getAfaData(self._whg_id, vj)
         if data:
             data['art_afa'] = 'linear' if data['lin_deg_knz'] == 'l' else 'degressiv'
             self._view.setAfaData(data)
-            self._view.setSaveButtonEnabled(False)
+            #self._view.setSaveButtonEnabled(False)
 
-            enabled: bool = True
-            if not self._validate(data):
-                enabled = False
+            enabled = True if not self._validate(data) else False
             self._view.setCreateAnlageVButtonEnabled(enabled)
 
 def test():

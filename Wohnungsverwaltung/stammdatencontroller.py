@@ -41,6 +41,16 @@ class StammdatenController:
 
         self._wohnungdata: dict = \
             self._dataProvider.getWohnungIdentifikation(self._whg_id)
+        """
+        {
+            'plz': '90429', 
+            'ort': 'Nürnberg', 
+            'strasse': 'Mendelstr. 24', 
+            'whg_bez': '3. OG rechts', 
+            'einhwert_az': None, 
+            'angeschafft_am': None
+        }
+        """
         if self._wohnungdata:
             self._view.setWohungData(self._wohnungdata)
 

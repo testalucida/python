@@ -12,7 +12,9 @@ except ImportError:
 class VeranlagungView(ttk.Frame):
     def __init__(self, parent: ttk.Frame):
         ttk.Frame.__init__(self, parent)
-        self._whg_short = None
+        self._whg_ident = None
+        self._angeschafft_am = None
+        self._einhwert_az = None
         self._vj_combo = None
         self._art_afa = None
         self._prozent_afa = None
@@ -55,30 +57,33 @@ class VeranlagungView(ttk.Frame):
 
     def _onSavePressed(self):
         if self._save_callback:
-            self._save_callback(self.getAfaData())
+            self._save_callback(self.getVeranlagData())
 
     def _onCreateAnlageVPressed(self):
         if self._createAnlageV_callback:
-            self._createAnlageV_callback(self.getAfaData())
+            self._createAnlageV_callback(self.getVeranlagData())
 
     def _createGui(self):
         padx=pady=5
         #self.columnconfigure(0, weight=1)
 
-        self._whg_short = self._createWohnungShort(self, padx, pady)
-        self._whg_short.grid(column=0, row=0, sticky='nswe')
+        self._whg_ident = self._createWohnungIdent(self, padx, pady)
+        self._whg_ident.grid(column=0, row=0, sticky='nswe')
+
+        f = self._createWohnungLabelFrame(padx, pady)
+        f.grid(column=0, row=1, sticky='nswe', padx=padx, pady=(20,20))
 
         f = self._createVjFrame(self, padx, pady)
-        f.grid(column=0, row=1, sticky='nswe')
+        f.grid(column=0, row=2, sticky='nswe')
 
         lf = self._createAfaLabelframe(padx, pady)
-        lf.grid(column=0, row=2, sticky='nswe', pady=(15, pady))
+        lf.grid(column=0, row=3, sticky='nswe', pady=(15, pady))
 
         f = self._createButtonFrame(self, padx, pady)
-        f.grid(column=0, row=3)
+        f.grid(column=0, row=4)
 
-    def _createWohnungShort(self, parent, padx, pady) -> ttk.Label:
-        lbl = MyLabel(parent, text='Nürnberg, XStraße 22, Whg. 334', column=0, row=0, sticky='nswe',
+    def _createWohnungIdent(self, parent, padx, pady) -> ttk.Label:
+        lbl = MyLabel(parent, text='', column=0, row=0, sticky='nswe',
                       anchor='center', padx=padx, pady=pady)
         lbl.setBackground('whg_short.TLabel', 'gray')
         lbl.setForeground('whg_short.TLabel', 'white')
@@ -118,8 +123,24 @@ class VeranlagungView(ttk.Frame):
 
         return f
 
+    def _createWohnungLabelFrame(self, padx: int, pady: int) -> ttk.Labelframe:
+        lf = ttk.Labelframe(self, text='Wohnung')
+        MyLabel(lf, 'Angeschafft am: ', 0, 0, 'nswe', 'e', padx, pady)
+        de = DateEntry(lf)
+        de.setBackground('Whg.TEntry', 'lightyellow')
+        de.setUseCalendar(False)
+        de['width'] = 10
+        de.grid(column=1,row=0, sticky = 'nswe', padx=padx, pady=pady)
+        self._angeschafft_am = de
+
+        MyLabel(lf, 'Einh.wert-Az: ', 2, 0, 'nswe', 'e', padx, pady)
+        self._einhwert_az = TextEntry(lf, 3, 0, 'nswe', padx, pady)
+        self._einhwert_az.setBackground('Whg.TEntry', 'lightyellow')
+
+        return lf
+
     def _createAfaLabelframe(self, padx: int, pady: int) -> ttk.Labelframe:
-        lf = ttk.Labelframe(self, text='AfA-Daten')
+        lf = ttk.Labelframe(self, text='AfA')
         #lf.columnconfigure(1, weight=1)
 
         MyLabel(lf, 'Art der Absetzung: ', 0, 1, 'nswe', 'e', padx, pady)
@@ -173,7 +194,14 @@ class VeranlagungView(ttk.Frame):
         self._btnCreateAnlageV = btn
         return f
 
-    def clear(self):
+    def clearAll(self):
+        self.clearAfa()
+        self.clearWohnung()
+
+    def clearWohnung(self):
+        pass
+
+    def clearAfa(self):
         self._isAfaInitialized = False
         self._art_afa.clear()
         self._prozent_afa.clear()
@@ -187,6 +215,9 @@ class VeranlagungView(ttk.Frame):
         self._betrag_afa.setValue(data['betrag'])
         self._isAfaInitialized = True
 
+    def setWohnungIdent(self, wohnungIdent: str):
+        self._whg_ident.setValue(wohnungIdent)
+
     def getAfaData(self) -> dict:
         return \
         {
@@ -197,9 +228,26 @@ class VeranlagungView(ttk.Frame):
             'betrag': self._betrag_afa.getValue()
         }
 
-    def setWohungData(self, data: dict) -> None:
-        s = ''.join((data['ort'], ', ', data['strasse'], ', ', data['whg_bez']))
-        self._whg_short['text'] = s
+    def getVeranlagData(self) -> dict:
+        """
+        :return: Wohnung and AfA Data
+        """
+        a = self.getAfaData()
+        w = self.getWohnungData()
+        for k, v in w.items():
+            a[k] = v
+        return a
+
+    def setWohungData(self, angeschafftAm: str, einhwertAz: str) -> None:
+        self._angeschafft_am.setValue(angeschafftAm)
+        self._einhwert_az.setValue(einhwertAz)
+
+    def getWohnungData(self) -> dict:
+        return \
+        {
+            'angeschafft_am': self._angeschafft_am.getValue(),
+            'einhwert_az': self._einhwert_az.getValue()
+        }
 
     def setSaveButtonEnabled(self, enabled: bool):
         self._btnSave['state'] = 'normal' if enabled else 'disabled'
