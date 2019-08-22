@@ -103,17 +103,18 @@ class DataProvider:
 
     def getWohnungsUebersicht(self) -> list:
         """
-        :return: a list of dictionaries, e.g.:
-        <class 'list'>: [{'whg_id': '3', 'plz': '90429', 'ort': 'Nürnberg', 'strasse': 'Austr. 22', 'whg_bez': '2. OG'},
-                         {'whg_id': '2', 'plz': '90429', 'ort': 'Nürnberg', 'strasse': 'Mendelstr. 24', 'whg_bez': '3. OG links'},
-                         {'whg_id': '1', 'plz': '90429', 'ort': 'Nürnberg', 'strasse': 'Mendelstr. 24', 'whg_bez': '3. OG rechts'}]
+        :return: a list of dictionaries of that kind:
+        {
+            'whg_id': '3',
+            'plz': '90429',
+            'ort': 'Nürnberg',
+            'strasse': 'Austr. 22',
+            'whg_bez': '2. OG'
         """
         resp = self.__session.\
             get('http://localhost/kendelweb/dev/php/business.php?q=uebersicht_wohnungen&' +
                 'user=' + self.__user)
         whg_list = self._getReadRetValOrRaiseException(resp)
-        #self._checkException(resp)
-        #whg_list = json.loads(resp.content)
         return whg_list
 
     def getWohnungDetails(self, whg_id ):
@@ -128,6 +129,15 @@ class DataProvider:
                 str(whg_id) + '&user=' +
                 self.__user )
         data: dict = self._getReadRetValOrRaiseException(resp)
+        """
+        {
+            'plz': '90429', 
+            'ort': 'Nürnberg', 
+            'strasse': 'Mendelstr. 24', 
+            'whg_bez': '3. OG rechts', 
+            'einhwert_az': '24106630826488', 
+            'angeschafft_am': None}
+        """
         if data['angeschafft_am']:
             data['angeschafft_am'] = datehelper.convertIsoToEur(data['angeschafft_am'])
         return data
@@ -205,6 +215,13 @@ class DataProvider:
                 str(whg_id) + '&user=' + self.__user)
         v_data = self._getReadRetValOrRaiseException(resp)
         return v_data
+
+    def getVeranlagungData(self, whg_id: int, vj: int) -> dict:
+        resp = self.__session. \
+            get('http://localhost/kendelweb/dev/php/business.php?q=veranl_data&id=' +
+                str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
+        veranl_data = self._getReadRetValOrRaiseException(resp)
+        return veranl_data
 
     def getAfaData(self, whg_id: int, vj: int) -> dict:
         """

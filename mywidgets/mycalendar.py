@@ -274,9 +274,9 @@ class DateEntry(ttk.Entry, GetterSetter, ConvenianceMethods, ModifyTracer):
         self.bind("<Key>", self._onKeyHit)
         self.bind("<FocusOut>", self._onFocusOut)
         self.bind("<FocusIn>", self._onFocusIn)
-        self._text = StringVar()
+        self._text = self._sv #StringVar()
         self['textvariable'] = self._text
-        self._text.trace('w', self._onTextChange)
+        #self._text.trace('w', self._onTextChange)
         self._useCalendar = True
         self._date = None
         self._dlg = None

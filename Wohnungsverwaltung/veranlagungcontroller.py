@@ -22,6 +22,7 @@ class VeranlagungController:
 
     def _onVjChanged(self, newVj: str):
         print('onVjChanged: ', newVj)
+        #todo: check if there are any unsaved changes
         self._view.clearAfa()
         self._vj = None
         try:
@@ -78,9 +79,26 @@ class VeranlagungController:
 
         :return:
         """
-        self._handleSaveAfa(data)
+        #todo: check what kind of data to save: wohnung and/or Afa
+        # if afa: handleSaveAfa
+        # if wohnung: handleSaveWhg
+        # after having saved re-load appropriate parts of data (_loadAfaData /
+        # _loadWhgData)
+        # resp. _loadVeranlagungData if both parts were saved.
+        flags = 0
+        if self._view.isWhgModified():
+            self._handleSaveWhg(data)
+            flags = 1
+        if self._view.isAfaModified():
+            self._handleSaveAfa(data)
+            flags += 2
 
-        self._loadVeranlagungData(self._vj)
+        if flags == 3:
+            self._loadVeranlagungData(self._vj)
+        elif flags == 2:
+            self._loadAfaData(self._vj)
+        elif flags == 1:
+            self._loadWhgData()
 
     def _handleSaveAfa(self, data: dict):
         data['lin_deg_knz'] = 'l' if data['art_afa'] == 'linear' else 'd'
@@ -147,7 +165,19 @@ class VeranlagungController:
         :param vj:
         :return:
         """
-        data = self._dataProvider.getVeranlagungsdata(self._whg_id, vj)
+        data = self._dataProvider.getVeranlagungData(self._whg_id, vj)
+        self._view.setWohungData(data['angeschafft_am'], data['einhwert_az'])
+        self._view.setAfaData(data)
+
+    def _loadWhgData(self):
+        """
+        called when wohnung data (angeschafft_am and einhwert_az) was changed
+        by user
+        :param vj: Vj
+        :return: None
+        """
+        data = self._dataProvider.getWohnungIdentifikation(self._whg_id)
+        self._view.setWohungData(data['angeschafft_am'], data['einhwert_az'])
 
     def _loadAfaData(self, vj: int):
         """

@@ -26,6 +26,9 @@ class VeranlagungView(ttk.Frame):
         self._isAfaInitialized = False
         self._isAfaModified = False
 
+        self._isWhgInitialized = False
+        self._isWhgModified = False
+
         self._vjChange_callback = None
         self._save_callback = None
         self._createAnlageV_callback = None
@@ -34,6 +37,9 @@ class VeranlagungView(ttk.Frame):
 
     def isAfaModified(self) -> bool:
         return self._isAfaModified
+
+    def isWhgModified(self) -> bool:
+        return self._isWhgModified
 
     def registerVjChangeCallback(self, cbfnc):
         self._vjChange_callback = cbfnc
@@ -52,6 +58,13 @@ class VeranlagungView(ttk.Frame):
         if self._isAfaInitialized:
             print('VeranlagungView._onAfaModified')
             self._isAfaModified = True
+            self.setSaveButtonEnabled(True)
+            self.setCreateAnlageVButtonEnabled(False)
+
+    def _onWhgModified(self, widget: Widget, name: str, index: str, mode: str):
+        if self._isWhgInitialized:
+            print('VeranlagungView._onWhgModified')
+            self._isWhgModified = True
             self.setSaveButtonEnabled(True)
             self.setCreateAnlageVButtonEnabled(False)
 
@@ -130,12 +143,15 @@ class VeranlagungView(ttk.Frame):
         de.setBackground('Whg.TEntry', 'lightyellow')
         de.setUseCalendar(False)
         de['width'] = 10
+        de.registerModifyCallback(self._onWhgModified)
         de.grid(column=1,row=0, sticky = 'nswe', padx=padx, pady=pady)
         self._angeschafft_am = de
 
         MyLabel(lf, 'Einh.wert-Az: ', 2, 0, 'nswe', 'e', padx, pady)
-        self._einhwert_az = TextEntry(lf, 3, 0, 'nswe', padx, pady)
-        self._einhwert_az.setBackground('Whg.TEntry', 'lightyellow')
+        te = TextEntry(lf, 3, 0, 'nswe', padx, pady)
+        te.setBackground('Whg.TEntry', 'lightyellow')
+        te.registerModifyCallback(self._onWhgModified)
+        self._einhwert_az = te
 
         return lf
 
@@ -199,7 +215,8 @@ class VeranlagungView(ttk.Frame):
         self.clearWohnung()
 
     def clearWohnung(self):
-        pass
+       self._angeschafft_am.clear()
+       self._einhwert_az.clear()
 
     def clearAfa(self):
         self._isAfaInitialized = False
@@ -241,6 +258,7 @@ class VeranlagungView(ttk.Frame):
     def setWohungData(self, angeschafftAm: str, einhwertAz: str) -> None:
         self._angeschafft_am.setValue(angeschafftAm)
         self._einhwert_az.setValue(einhwertAz)
+        self._isWhgInitialized = True
 
     def getWohnungData(self) -> dict:
         return \
