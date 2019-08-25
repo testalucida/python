@@ -79,7 +79,7 @@ class VeranlagungController:
 
         :return:
         """
-        #todo: check what kind of data to save: wohnung and/or Afa
+        # check what kind of data to save: wohnung and/or Afa
         # if afa: handleSaveAfa
         # if wohnung: handleSaveWhg
         # after having saved re-load appropriate parts of data (_loadAfaData /
