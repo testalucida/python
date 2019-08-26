@@ -32,16 +32,16 @@ class VeranlagungController:
         except:
             pass
 
-    def _onSave(self, veranlagData: dict):
-        print('VeranlagungsController._onSave')
-        self._handleSave(veranlagData)
-        self._view.setSaveButtonEnabled(False)
-
-        msg = self._validate(veranlagData)
-        if msg:
-            messagebox.showerror('Validierungsfehler', msg)
-        else:
-            self._view.setCreateAnlageVButtonEnabled(True)
+    # def _onSaveXXX(self, veranlagData: dict):
+    #     print('VeranlagungsController._onSave')
+    #     self._handleSave(veranlagData)
+    #     self._view.setSaveButtonEnabled(False)
+    #
+    #     msg = self._validate(veranlagData)
+    #     if msg:
+    #         messagebox.showerror('Validierungsfehler', msg)
+    #     else:
+    #         self._view.setCreateAnlageVButtonEnabled(True)
 
     def _onCreateAnlageV(self, afa: dict):
         print('VeranlagungsController._onCreateAnlageV')
@@ -63,8 +63,14 @@ class VeranlagungController:
 
         return None
 
-    def _handleSave(self, data: dict):
+    def _onSave(self, data: dict):
         """
+        check what kind of data to save: wohnung and/or Afa
+        if afa: handleSaveAfa
+        if wohnung: handleSaveWhg
+        after having saved re-load appropriate parts of data (_loadAfaData /
+        _loadWhgData)
+        resp. _loadAllData if both parts were saved.
         :param data:
         <class 'dict'>:
         {
@@ -77,28 +83,47 @@ class VeranlagungController:
             'betrag': '234.0'
         }
 
-        :return:
+        :return: None
         """
-        # check what kind of data to save: wohnung and/or Afa
-        # if afa: handleSaveAfa
-        # if wohnung: handleSaveWhg
-        # after having saved re-load appropriate parts of data (_loadAfaData /
-        # _loadWhgData)
-        # resp. _loadVeranlagungData if both parts were saved.
-        flags = 0
-        if self._view.isWhgModified():
-            self._handleSaveWhg(data)
-            flags = 1
-        if self._view.isAfaModified():
-            self._handleSaveAfa(data)
-            flags += 2
+        #which data to save:
+        isWhgValid = None
+        isWhgModified = self._view.isWhgModified()
+        if isWhgModified:
+            isWhgValid = self._validateWhg(data)
+            if isWhgValid:
+                self._handleSaveWhg(data)
+            else:
+                self._view.setSaveButtonEnabled(True)
+                return
 
-        if flags == 3:
-            self._loadVeranlagungData(self._vj)
-        elif flags == 2:
+        isAfaValid = None
+        isAfaModified = self._view.isAfaModified()
+        if isAfaModified:
+            isAfaValid = self._validateAfa(data)
+            if isAfaValid:
+                self._handleSaveAfa(data)
+            else:
+                self._view.setSaveButtonEnabled(True)
+                return
+
+        self._view.setSaveButtonEnabled(False)
+
+        #which data to load after having saved:
+        if isWhgModified and isAfaModified:
+            self._loadAllData(self._vj)
+        elif isAfaModified:
             self._loadAfaData(self._vj)
-        elif flags == 1:
+        elif isWhgModified:
             self._loadWhgData()
+
+        #check for state of CreateAnlageVButton:
+        if isWhgValid is None:
+            isWhgValid = self._validateWhg(data)
+        if isAfaValid is None:
+            isAfaValid = self._validateAfa(data)
+
+        if isWhgValid and isAfaValid:
+            self._view.setCreateAnlageVButtonEnabled(True)
 
     def _handleSaveAfa(self, data: dict):
         data['lin_deg_knz'] = 'l' if data['art_afa'] == 'linear' else 'd'
@@ -159,7 +184,7 @@ class VeranlagungController:
         if self._vj:
             self._loadAfaData(self._vj)
 
-    def _loadVeranlagungData(self, vj: int):
+    def _loadAllData(self, vj: int):
         """
         called after having saved modified data
         :param vj:
