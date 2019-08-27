@@ -46,7 +46,28 @@ class VeranlagungController:
     def _onCreateAnlageV(self, afa: dict):
         print('VeranlagungsController._onCreateAnlageV')
 
-    def _validate(self, afa: dict) -> str or None:
+    def _validateWhg(self, whg: dict) -> str or None:
+        """
+        :param whg:
+        {
+            'angeschafft_am': xx.xx.xxxx,
+            einhwert_az': 343434343434
+        }
+        :return: str or None
+        """
+        if not whg['angeschafft_am']:
+            return 'Ins Feld "Angeschafft am" muss ein gültiges Datum eingetragen werden.'
+
+        if not datehelper.isValidEurDatestring(whg['angeschafft_am']):
+            return 'Das eingegebene "Angeschafft am"-Datum entspricht nicht ' \
+                   'der Form "tt.mm.jjjj".'
+
+        if not whg['einhwert_az']:
+            return 'Einheitswert-Aktenzeichen fehlt.'
+
+        return None
+
+    def _validateAfa(self, afa: dict) -> str or None:
         if not self._vj:
             return 'Es ist kein Veranlagungsjahr eingestellt.'
 
@@ -85,45 +106,52 @@ class VeranlagungController:
 
         :return: None
         """
-        #which data to save:
-        isWhgValid = None
-        isWhgModified = self._view.isWhgModified()
-        if isWhgModified:
-            isWhgValid = self._validateWhg(data)
-            if isWhgValid:
-                self._handleSaveWhg(data)
-            else:
-                self._view.setSaveButtonEnabled(True)
-                return
+        rcWhg = self._handleWhgData(data)
+        if not rcWhg['isWhgValid']: return
 
-        isAfaValid = None
-        isAfaModified = self._view.isAfaModified()
-        if isAfaModified:
-            isAfaValid = self._validateAfa(data)
-            if isAfaValid:
-                self._handleSaveAfa(data)
-            else:
-                self._view.setSaveButtonEnabled(True)
-                return
-
-        self._view.setSaveButtonEnabled(False)
+        rcAfa = self._handleAfaData(data)
+        if not rcAfa['isAfaValid']: return
 
         #which data to load after having saved:
-        if isWhgModified and isAfaModified:
+        if rcWhg['isWhgModified'] and rcAfa['isAfaModified']:
             self._loadAllData(self._vj)
-        elif isAfaModified:
+        elif rcAfa['isAfaModified']:
             self._loadAfaData(self._vj)
-        elif isWhgModified:
+        elif rcWhg['isWhgModified']:
             self._loadWhgData()
 
-        #check for state of CreateAnlageVButton:
-        if isWhgValid is None:
-            isWhgValid = self._validateWhg(data)
-        if isAfaValid is None:
-            isAfaValid = self._validateAfa(data)
-
-        if isWhgValid and isAfaValid:
+        if rcWhg['isWhgValid'] and rcAfa['isAfaValid']:
             self._view.setCreateAnlageVButtonEnabled(True)
+
+    def _handleWhgData(self, data: dict) -> dict:
+        msg = self._validateWhg(data)
+        rc = {
+            'isWhgModified': self._view.isWhgModified(),
+            'isWhgValid': True if not msg else False
+        }
+
+        if rc['isWhgModified']:
+            if rc['isWhgValid']:
+                self._handleSaveWhg(data)
+            else:
+                messagebox.showerror('Validierungsfehler', msg)
+                #self._view.setSaveButtonEnabled(True)
+        return rc
+
+    def _handleAfaData(self, data:dict) -> dict:
+        msg = self._validateAfa(data)
+        rc = {
+            'isAfaModified': self._view.isAfaModified(),
+            'isAfaValid': True if not msg else False
+        }
+
+        if rc['isAfaModified']:
+            if rc['isAfaValid']:
+                self._handleSaveAfa(data)
+            else:
+                messagebox.showerror('Validierungsfehler', msg)
+                #self._view.setSaveButtonEnabled(True)
+        return rc
 
     def _handleSaveAfa(self, data: dict):
         data['lin_deg_knz'] = 'l' if data['art_afa'] == 'linear' else 'd'
@@ -149,10 +177,9 @@ class VeranlagungController:
         }
         :return:
         """
-        angeschafft_am = data['angeschafft_am']
-        if angeschafft_am:
-            angeschafft_am = datehelper.convertEurToIso(angeschafft_am)
-
+        data['angeschafft_am'] = datehelper.convertEurToIso(data['angeschafft_am'])
+        data['whg_id'] = self._whg_id
+        self._dataProvider.updateWhgVeranlagData(data)
 
     def wohnungSelected(self, whg_id: int) -> None:
         print('veranlagungscontroller: wohnungselected: ', whg_id)
@@ -174,10 +201,7 @@ class VeranlagungController:
         self._view.setWohnungIdent(whgident)
 
         #set wohnung data related to Veranlagung
-        angeschafftAm = None
-        if d['angeschafft_am']:
-            angeschafftAm = datehelper.convertIsoToEur(d['angeschafft_am'])
-        self._view.setWohungData(angeschafftAm, d['einhwert_az'])
+        self._view.setWohungData(d['angeschafft_am'], d['einhwert_az'])
         self._view.clearAfa()
 
         #and if a Vj is set get selected flat's AfA data as well:
@@ -191,8 +215,9 @@ class VeranlagungController:
         :return:
         """
         data = self._dataProvider.getVeranlagungData(self._whg_id, vj)
-        self._view.setWohungData(data['angeschafft_am'], data['einhwert_az'])
-        self._view.setAfaData(data)
+        if data:
+            self._view.setWohungData(data['angeschafft_am'], data['einhwert_az'])
+            self._view.setAfaData(data)
 
     def _loadWhgData(self):
         """
@@ -221,11 +246,10 @@ class VeranlagungController:
         }
         """
         if data:
-            data['art_afa'] = 'linear' if data['lin_deg_knz'] == 'l' else 'degressiv'
             self._view.setAfaData(data)
             #self._view.setSaveButtonEnabled(False)
 
-            enabled = True if not self._validate(data) else False
+            enabled = True if not self._validateAfa(data) else False
             self._view.setCreateAnlageVButtonEnabled(enabled)
 
 def test():

@@ -69,8 +69,11 @@ class VeranlagungView(ttk.Frame):
             self.setCreateAnlageVButtonEnabled(False)
 
     def _onSavePressed(self):
+        self.setSaveButtonEnabled(False)
         if self._save_callback:
             self._save_callback(self.getVeranlagData())
+        self._isWhgModified = False
+        self._isAfaModified = False
 
     def _onCreateAnlageVPressed(self):
         if self._createAnlageV_callback:
@@ -215,22 +218,27 @@ class VeranlagungView(ttk.Frame):
         self.clearWohnung()
 
     def clearWohnung(self):
-       self._angeschafft_am.clear()
-       self._einhwert_az.clear()
+        self._isWhgInitialized = False
+        self._isWhgModified = False
+        self._angeschafft_am.clear()
+        self._einhwert_az.clear()
 
     def clearAfa(self):
         self._isAfaInitialized = False
+        self._isAfaModified = False
         self._art_afa.clear()
         self._prozent_afa.clear()
         self._afa_wie_vj.clear()
         self._betrag_afa.clear()
 
     def setAfaData(self, data: dict) -> None:
+        self._isAfaInitialized = False
         self._art_afa.setValue(data['art_afa'])
         self._prozent_afa.setValue(data['prozent'])
         self._afa_wie_vj.setValue(data['afa_wie_vorjahr'])
         self._betrag_afa.setValue(data['betrag'])
         self._isAfaInitialized = True
+        self._isAfaModified = False
 
     def setWohnungIdent(self, wohnungIdent: str):
         self._whg_ident.setValue(wohnungIdent)
@@ -256,9 +264,11 @@ class VeranlagungView(ttk.Frame):
         return a
 
     def setWohungData(self, angeschafftAm: str, einhwertAz: str) -> None:
+        self._isWhgInitialized = False
         self._angeschafft_am.setValue(angeschafftAm)
         self._einhwert_az.setValue(einhwertAz)
         self._isWhgInitialized = True
+        self._isWhgModified = False
 
     def getWohnungData(self) -> dict:
         return \

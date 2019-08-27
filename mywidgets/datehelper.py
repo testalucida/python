@@ -14,6 +14,13 @@ def convertIsoToEur(isostring: str) -> str:
     eur = ''.join((iso[2], '.', iso[1], '.', iso[0]))
     return eur
 
+def isValidEurDatestring(eurstring: str) -> bool:
+    try:
+        datetime.strptime(eurstring, '%d.%m.%Y')
+        return True
+    except ValueError as err:
+        return False
+
 def convertEurToIso(eurstring: str) -> str:
     """
     converts an eurdatestring int an iso datestring
@@ -21,8 +28,7 @@ def convertEurToIso(eurstring: str) -> str:
     :param eurstring:
     :return: a converted datestring
     """
-    if not eurstring:
-        return ''
+    if not isValidEurDatestring(eurstring): return ''
 
     eur = eurstring.split('.')
     iso = ''.join((eur[2], '-', eur[1], '-', eur[0]))

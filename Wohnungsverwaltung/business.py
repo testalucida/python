@@ -221,6 +221,7 @@ class DataProvider:
             get('http://localhost/kendelweb/dev/php/business.php?q=veranl_data&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         veranl_data = self._getReadRetValOrRaiseException(resp)
+        self._translateVeranlagung(veranl_data)
         return veranl_data
 
     def getAfaData(self, whg_id: int, vj: int) -> dict:
@@ -235,7 +236,15 @@ class DataProvider:
             get('http://localhost/kendelweb/dev/php/business.php?q=afa_data&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         afa_data = self._getReadRetValOrRaiseException(resp)
+        self._translateVeranlagung(afa_data)
         return afa_data
+
+    def _translateVeranlagung(self, data: dict):
+        if data:
+            data['art_afa'] = 'linear' if data['lin_deg_knz'] == 'l' else 'degressiv'
+            if 'angeschafft_am' in data and data['angeschafft_am']:
+                data['angeschafft_am'] = \
+                    datehelper.convertIsoToEur(data['angeschafft_am'])
 
     def existsAfaData(self, whg_id: int, vj: int) -> bool:
         """
@@ -290,6 +299,28 @@ class DataProvider:
         retval = self._getWriteRetValOrRaiseException(resp)
 
         return retval
+
+    '''
+    update whg veranlag data
+    '''
+    def updateWhgVeranlagData(self, data: dict):
+        """
+        :param data:
+        {
+            'whg_id': nnnn
+            'angeschafft_am': yyyy-mm-dd,
+            'einhwert_az': xxxxxxxxxxxxxxx
+        }
+        :return:
+        """
+        resp = self.__session. \
+            post('http://localhost/kendelweb/dev/php/business.php?q=update_whg_veranlag&user=' + self.__user,
+                 data=data)
+
+        retval = self._getWriteRetValOrRaiseException(resp)
+
+        return retval
+
 
     '''
     insert mtl ein_aus
