@@ -84,7 +84,7 @@ class VeranlagungController:
 
         return None
 
-    def _onSave(self, data: dict):
+    def _onSave__(self, data: dict):
         """
         check what kind of data to save: wohnung and/or Afa
         if afa: handleSaveAfa
@@ -122,6 +122,31 @@ class VeranlagungController:
 
         if rcWhg['isWhgValid'] and rcAfa['isAfaValid']:
             self._view.setCreateAnlageVButtonEnabled(True)
+
+    def _onSave(self, data: dict) -> None:
+        #save anything even if it's not valid or not complete.
+        #validation will be performed when the user hits 'createAnlageV'
+        isWhgModified = self._view.isWhgModified()
+        whgMsg = afaMsg = None
+        if isWhgModified:
+            self._handleSaveWhg(data)
+            whgMsg = self._validateWhg(data)
+            if whgMsg:
+                messagebox.showwarning(
+                    'Wohnungsdaten wurden gespeichert, aber...', whgMsg)
+
+        rcAfa = self._handleAfaData(data)
+
+        if isWhgModified and rcAfa['isAfaModified'] and rcAfa['isAfaValid']:
+            self._loadAllData(self._vj)
+        else:
+            if rcAfa['isAfaModified'] and rcAfa['isAfaValid']:
+                self._loadAfaData(self._vj)
+            if isWhgModified:
+                self._loadWhgData()
+
+        self._view.setCreateAnlageVButtonEnabled(
+            (whgMsg is None and rcAfa['isAfaValid']))
 
     def _handleWhgData(self, data: dict) -> dict:
         msg = self._validateWhg(data)
@@ -177,12 +202,13 @@ class VeranlagungController:
         }
         :return:
         """
-        data['angeschafft_am'] = datehelper.convertEurToIso(data['angeschafft_am'])
-        data['whg_id'] = self._whg_id
-        self._dataProvider.updateWhgVeranlagData(data)
+        datacopy = dict(data)
+        datacopy['angeschafft_am'] = datehelper.convertEurToIso(datacopy['angeschafft_am'])
+        datacopy['whg_id'] = self._whg_id
+        self._dataProvider.updateWhgVeranlagData(datacopy)
 
     def wohnungSelected(self, whg_id: int) -> None:
-        print('veranlagungscontroller: wohnungselected: ', whg_id)
+        #print('veranlagungscontroller: wohnungselected: ', whg_id)
         self._whg_id = whg_id
         #get identifying data for selected flat:
         d = self._dataProvider.getWohnungIdentifikation(whg_id)
@@ -245,12 +271,11 @@ class VeranlagungController:
             'afa_wie_vorjahr': 'Ja'
         }
         """
+        self._view.setAfaData(data) #must be done even if data is none
+        enabled = False
         if data:
-            self._view.setAfaData(data)
-            #self._view.setSaveButtonEnabled(False)
-
             enabled = True if not self._validateAfa(data) else False
-            self._view.setCreateAnlageVButtonEnabled(enabled)
+        self._view.setCreateAnlageVButtonEnabled(enabled)
 
 def test():
     from tkinter import  Tk

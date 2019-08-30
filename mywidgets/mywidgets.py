@@ -156,8 +156,8 @@ class ModifyTracer:
         self._cbfnc = cbfnc
 
     def _onModify(self, name, index, mode):
-        #print('TextEntry modified')
         if self._cbfnc:
+            #print('ModifyTracer._onModify: TextEntry modified - performing callback')
             self._cbfnc(self, name, index, mode)
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -549,7 +549,7 @@ def main():
     txt.clear()
     txt.insert('1.0', 'abcde')
     txt.setValue('the old brown fox jumps over the lazy dog.')
-    print('myId: ', txt.getMyId())
+    #print('myId: ', txt.getMyId())
 
     root.mainloop()
 

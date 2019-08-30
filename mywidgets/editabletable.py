@@ -236,7 +236,8 @@ class GenericEditableTable(ttk.Frame):
         # self._tv.bind('<FocusIn>', self.onFocus)
 
     def onFocus(self, evt):
-        print("got focus: ", evt.widget)
+        #print("got focus: ", evt.widget)
+        pass
 
     def setRows(self, data: list) -> None:
         """
