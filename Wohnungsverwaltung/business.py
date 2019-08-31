@@ -283,6 +283,14 @@ class DataProvider:
         data = self._getReadRetValOrRaiseException(resp)
         return data
 
+    def getAnlageVData_9_to_14_mtlEinn(self, whg_id: int, vj: int) -> int:
+        resp = self.__session. \
+            get('http://localhost/kendelweb/dev/php/business.php?q=anlagev_9_to_14_mtl_einn&id=' +
+                str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
+        data = self._getReadRetValOrRaiseException(resp)
+        return data
+
+
     '''
     insert afa
     '''

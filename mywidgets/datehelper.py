@@ -1,4 +1,6 @@
 from datetime import datetime, date
+import dateutil.parser
+from dateutil.relativedelta import relativedelta
 
 def convertIsoToEur(isostring: str) -> str:
     """
@@ -88,6 +90,48 @@ def getLastYears(cnt: int) -> list:
         yearlist.append(current - n)
     return yearlist
 
-# d1 = '23.04.1988'
-# d2 = '12.03.2999'
-# rc = compareEurDates(d1, d2)
+def getNumberOfMonths(d1: str, d2: str, year: int) -> int:
+    """
+    gets the number of months within the period beginning on d1 and
+    ending on d2 which are in the given year
+    NOTE: the day of month will not be considered.
+          If year is 2019 and d1 is '2019-01-31' d1 will be counted.
+          If year is 2019 and d2 is '2019-12-01' d2 will be counted.
+    :param d1: date the period is beginning. Must be given as iso string 'YYYY-MM-DD'
+    :param d2: date the period is ending. Must be given as iso string 'YYYY-MM-DD'
+    :param year: a four digit integer like 2019
+    :return: number of months
+    """
+    start = dateutil.parser.parse(d1)
+    dt = start
+    end = dateutil.parser.parse(d2)
+
+    while dt.year < year:
+        dt = addMonths(dt, 1)
+
+    cnt = 0
+    while dt.year == year and dt <= end:
+        dt = addMonths(dt, 1)
+        cnt += 1
+
+    return cnt
+
+def addYears(mydate: date, cntYears: int) -> date:
+    return mydate + relativedelta(years = cntYears)
+
+def addMonths(mydate: date, cntMonths: int) -> date:
+    return mydate + relativedelta(months = cntMonths)
+
+def addDays(mydate: date, cntDays: int) -> date:
+    return mydate + relativedelta(days = cntDays)
+
+
+
+def test():
+    d1 = '2018-01-01'
+    d2 = '2018-12-01'
+    cnt = getNumberOfMonths(d1, d2, 2018)
+    print(cnt)
+
+if __name__ == '__main__':
+    test()
