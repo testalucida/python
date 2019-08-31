@@ -276,6 +276,13 @@ class DataProvider:
         iddict = self._getReadRetValOrRaiseException(resp)
         return 0 if iddict is None else int(iddict['afa_id'])
 
+    def getAnlageVData_1_to_8(self, whg_id: int, vj: int) -> int:
+        resp = self.__session. \
+            get('http://localhost/kendelweb/dev/php/business.php?q=anlagev_1_to_8&id=' +
+                str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
+        data = self._getReadRetValOrRaiseException(resp)
+        return data
+
     '''
     insert afa
     '''
