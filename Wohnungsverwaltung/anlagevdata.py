@@ -95,6 +95,8 @@ class AnlageVData:
         self._getZeile_9_to_14_mtlEinn()
         self._getAfa()
 
+        self._writeInterface()
+
         now = datetime.datetime.now()
         self._writeLog('Beende Verarbeitung um ' + str(now))
         self._log.close()
@@ -102,6 +104,13 @@ class AnlageVData:
     def _writeLog(self, txt: str) -> None:
         txt = ''.join((txt, '\n'))
         self._log.write(txt)
+
+    def _writeInterface(self) -> None:
+        jsonfile = self._savePath + "/anlagevdata_" + str(self._vj) + ".json"
+        f = open(jsonfile, 'w')
+        json.dump(self._xdata, f)
+        #f.write(x)
+        f.close()
 
     def _getZeile_1_to_8(self):
         data = self._dataProvider.getAnlageVData_1_to_8(self._whg_id, self._vj)
@@ -151,10 +160,16 @@ class AnlageVData:
         netto_miete = nk_abschlag = 0
         for d in data:
             cnt = datehelper.getNumberOfMonths(d['gueltig_ab'], d['gueltig_bis'], self._vj)
-            netto_miete += (d['netto_miete'] * cnt) #Zeile 9
-            nk_abschlag += (d['nk_abschlag'] * cnt) #Zeile 13
+            netto_miete += (float(d['netto_miete']) * cnt) #Zeile 9
+            nk_abschlag += (float(d['nk_abschlag']) * cnt) #Zeile 13
 
         einnahme = netto_miete + nk_abschlag #Zeile 21
+        data = {
+            'netto_miete': netto_miete,
+            'nk_abschlag': nk_abschlag,
+            'summe_einnahmen': einnahme
+        }
+        self._addItems(data)
 
     def _getAfa(self):
         afa = self._dataProvider.getAfaData(self._whg_id, self._vj)
