@@ -290,6 +290,13 @@ class DataProvider:
         data = self._getReadRetValOrRaiseException(resp)
         return data
 
+    def getAnlageVData_13_nkKorr(self, whg_id: int, vj: int) -> int:
+        resp = self.__session. \
+            get('http://localhost/kendelweb/dev/php/business.php?q=anlagev_13_nk_korr&id=' +
+                str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
+        data = self._getReadRetValOrRaiseException(resp)
+        return data
+
     def getAnlageVData_grundsteuer(self, whg_id: int, vj: int) -> int:
         resp = self.__session. \
             get('http://localhost/kendelweb/dev/php/business.php?q=anlagev_grundsteuer&id=' +

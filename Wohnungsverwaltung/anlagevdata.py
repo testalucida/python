@@ -100,8 +100,8 @@ class AnlageVData:
         self._xdatadict['zeilen'] = self._zeilenlist
 
         self._getZeile_1_to_8()
-        #self._getZeile_9_to_14_mtlEinn()
-        #self._getAfa()
+        self._getZeile_9_to_14_mtlEinn()
+        self._sectionWerbungskosten()
 
         self._writeInterface()
 
@@ -176,22 +176,53 @@ class AnlageVData:
         """
         #count the number of months to be considered in each dictionary
         #and multiply them by netto_miete and nk_abschlag adjustments:
-        adjusts = self._dataProvider.get
-
         netto_miete = nk_abschlag = 0
         for d in data:
             cnt = datehelper.getNumberOfMonths(d['gueltig_ab'], d['gueltig_bis'], self._vj)
             netto_miete += (float(d['netto_miete']) * cnt) #Zeile 9
             nk_abschlag += (float(d['nk_abschlag']) * cnt) #Zeile 13
 
-        #get grundsteuer and add it to nk_abschlag
-        grdsteuer = self._dataProvider.getAnlageVData_grundsteuer(self._whg_id, self._vj)
-        #get nebenkosten adjustment of last vj
-        nk_adjust = self._dataProvider.getAnlageVData_nkAdjust(self._whg_id, self._vj)
-        einnahme = netto_miete + nk_abschlag #Zeile 21
+        #Grundsteuer: wird ignoriert, da sie ein durchlaufender Posten ist
 
-        self._createZeile(9, ('Mieteinnahmen', netto_miete))
-        self._createZeile(13, ('Umlagen, verrechnet mit Erstattungen', nk_berichtigt))
+        #get nebenkosten adjustment of last vj
+        nkAdjustList = self._dataProvider. \
+            getAnlageVData_13_nkKorr(self._whg_id, self._vj)
+        """
+        nkAdjustList: list of dictionaries:
+            [
+                {
+                    'sea_id': '11', 
+                    'vj': '2018', 
+                    'betrag': '93.00', 
+                    'art_id': '3', 
+                    'art': 'Nebenkostennachzahlung (Mieter->Verm.)',
+                    'ein_aus': 'e'
+                }
+            ]
+        """
+        adjustment = 0
+        for adjust in nkAdjustList:
+            betrag = float(adjust['betrag'])
+            if adjust['ein_aus'] == 'a': betrag *= -1
+            adjustment += betrag
+
+        einnahme = netto_miete + nk_abschlag #Zeile 21
+        nk_eff = nk_abschlag + adjustment
+
+        self._createZeile(9, ('Mieteinnahmen ohne Umlagen', netto_miete))
+        z13 = self._createZeile(13, ('Umlagen, verrechnet mit Erstattungen', nk_eff))
+        z13['nk_abschlag'] = nk_abschlag
+        z13['nk_korrektur'] = adjustment
+        self._createZeile(21, ('Summe der Einnahmen', einnahme))
+
+    def _sectionWerbungskosten(self):
+        self._getZeile_33_to_35_afa()
+
+    def _getZeile_33_to_35_afa(self) -> None:
+        pass
+
+    def _getZeile_36_to_37_afa(self) -> None:
+        pass
 
     def _getZeile_47_mtlVerwaltkosten(self) -> None:
         data = self._dataProvider.\
