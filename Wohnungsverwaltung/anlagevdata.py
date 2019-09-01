@@ -10,6 +10,7 @@ class AnlageVData:
     und schreibt sie in eine JSON-Schnittstelle mit folgendem Aufbau:
 {
    "_comment":"Alle Daten, die für die Anlage V benötigt werden",
+   "vj": 2018,
    "zeilen":[
       {
          "nr":1,
@@ -45,10 +46,13 @@ class AnlageVData:
    ]
 }
     """
-    def __init__(self, whg_id: int, vj: int, dataprovider: DataProvider):
+    def __init__(self, whg_id: int, anlage_nr: int, vj: int, dataprovider: DataProvider):
         self._whg_id = whg_id
+        self._anlage_nr = anlage_nr
         self._vj = vj
-        self._xdata = dict() #Dictionary für die Schnittstellendaten
+        self._xdatadict = dict() #Dictionary für die Schnittstellendaten
+        self._zeilenlist = list() #liste der Zeilen,
+                                  # die dem Schnittstellendict. hinzugefügt wird
         self._dataProvider = dataprovider
         self._savePath = '/home/martin/Projects/python/Wohnungsverwaltung'
         self._log = None
@@ -91,9 +95,13 @@ class AnlageVData:
         logfile = self._savePath + "/log_" + str(now) + ".txt"
         self._log = open(logfile, 'w')
         self._writeLog('Starte Verarbeitung um ' + str(now))
+
+        self._xdatadict['vj'] = self._vj
+        self._xdatadict['zeilen'] = self._zeilenlist
+
         self._getZeile_1_to_8()
-        self._getZeile_9_to_14_mtlEinn()
-        self._getAfa()
+        #self._getZeile_9_to_14_mtlEinn()
+        #self._getAfa()
 
         self._writeInterface()
 
@@ -108,7 +116,7 @@ class AnlageVData:
     def _writeInterface(self) -> None:
         jsonfile = self._savePath + "/anlagevdata_" + str(self._vj) + ".json"
         f = open(jsonfile, 'w')
-        json.dump(self._xdata, f)
+        json.dump(self._xdatadict, f)
         #f.write(x)
         f.close()
 
@@ -119,7 +127,7 @@ class AnlageVData:
         {
             'name': 'Kendel', 
             'vorname': 'Martin', 
-            'steuernummer': '217/235/50499', 
+            'steuernummer': '222/333/44444', 
             'strasse': 'Mendelstr. 24', 
             'plz': '90429', 
             'ort': 'Nürnberg', 
@@ -131,7 +139,17 @@ class AnlageVData:
             'isverwandt': 'N'
         }
         """
-        self._addItems(data)
+        self._createZeile(1, ('Name', data['name']))
+        self._createZeile(2, ('Vorname', data['vorname']))
+        self._createZeile(3, ('Steuernummer', data['steuernummer']),
+                             ('lfd. Nr.', self._anlage_nr))
+        self._createZeile(4, ('Straße, Hausnummer', data['strasse']),
+                             ('Angeschafft am', data['angeschafft_am']))
+        self._createZeile(5, ('Postleitzahl', data['plz']), ('Ort', data['ort']))
+        self._createZeile(6, ('Einheitswert-Aktenzeichen', data['einhwert_az']))
+        self._createZeile(7, ('Als Ferienwohnung genutzt', data['fewontzg']),
+                             ('An Angehörige vermietet', data['isverwandt']))
+        self._createZeile(8, ('Gesamtwohnfläche', data['qm']))
 
     def _getZeile_9_to_14_mtlEinn(self) -> None:
         data = self._dataProvider.\
@@ -153,21 +171,63 @@ class AnlageVData:
                 'netto_miete': '320.00', 
                 'nk_abschlag': '25.00'
             }, 
+            ...
         ]
         """
         #count the number of months to be considered in each dictionary
-        #and multiply them by netto_miete and nk_abschlag
+        #and multiply them by netto_miete and nk_abschlag adjustments:
+        adjusts = self._dataProvider.get
+
         netto_miete = nk_abschlag = 0
         for d in data:
             cnt = datehelper.getNumberOfMonths(d['gueltig_ab'], d['gueltig_bis'], self._vj)
             netto_miete += (float(d['netto_miete']) * cnt) #Zeile 9
             nk_abschlag += (float(d['nk_abschlag']) * cnt) #Zeile 13
 
+        #get grundsteuer and add it to nk_abschlag
+        grdsteuer = self._dataProvider.getAnlageVData_grundsteuer(self._whg_id, self._vj)
+        #get nebenkosten adjustment of last vj
+        nk_adjust = self._dataProvider.getAnlageVData_nkAdjust(self._whg_id, self._vj)
         einnahme = netto_miete + nk_abschlag #Zeile 21
+
+        self._createZeile(9, ('Mieteinnahmen', netto_miete))
+        self._createZeile(13, ('Umlagen, verrechnet mit Erstattungen', nk_berichtigt))
+
+    def _getZeile_47_mtlVerwaltkosten(self) -> None:
+        data = self._dataProvider.\
+                getAnlageVData_47_mtlVerwaltkosten(self._whg_id, self._vj)
+        """
+        data: list of dictionaries, order by gueltig_ab ascending
+        [
+            {
+                'mea_id': '3', 
+                'gueltig_ab': '2017-08-01', 
+                'gueltig_bis': '2018-09-30', 
+                'hg_netto_abschlag': '310.00', 
+                'ruecklage_zufuehr': '20.00'
+            },
+            {
+                'mea_id': '3', 
+                'gueltig_ab': '2017-08-01', 
+                'gueltig_bis': '2018-09-30', 
+                'hg_netto_abschlag': '310.00', 
+                'ruecklage_zufuehr': '20.00'
+            },
+            ... 
+        ]
+        
+        ruecklage_zufuehr wird im Rahmen der ESt nicht benötigt, aber an 
+        anderer Stelle für die Renditeberechnung.
+        """
+        #count the number of months to be considered in each dictionary
+        #and multiply them by netto_miete and nk_abschlag
+        hg_netto_abschlag = 0
+        for d in data:
+            cnt = datehelper.getNumberOfMonths(d['gueltig_ab'], d['gueltig_bis'], self._vj)
+            hg_netto_abschlag += (float(d['netto_miete']) * cnt) #Zeile 47
+
         data = {
-            'netto_miete': netto_miete,
-            'nk_abschlag': nk_abschlag,
-            'summe_einnahmen': einnahme
+            'hg_netto_abschlag': hg_netto_abschlag
         }
         self._addItems(data)
 
@@ -189,14 +249,49 @@ class AnlageVData:
 
     def _addItems(self, data: dict):
         for k, v in data.items():
-            self._xdata[k] = v
+            self._xdatadict[k] = v
+
+    def _createZeile(self, nr: int, *args):
+        """
+        create a dictionary representing the fields in a Zeile of Anlage V
+        :param args: each arg is a list containing a key (field's name)
+                     and a value (field's value)
+                     e.g. ('Straße, Hausnummer', 'Mendelstr. 24')
+        :return: dict:
+            {
+                "zeile": 4,
+                "felder": [
+                    {
+                        "name": "Straße, Hausnummer",
+                        "value": "Mendelstr. 24"
+                    },
+                    {
+                        "name": "Angeschafft am",
+                        "value": "13.05.1997"
+                    }
+                ]
+            }
+        """
+        zeile = dict()
+        zeile['zeile'] = nr
+        feldlist = list()
+        for item in args:
+            d = dict()
+            d['name'] = item[0]
+            d['value'] = item[1]
+            feldlist.append(d)
+
+        zeile['felder'] = feldlist
+        #add zeile to interface dictionary, key 'zeilen'
+        self._zeilenlist.append(zeile)
+        return zeile
 
 def test():
     from business import DataProvider, DataError
     dp = DataProvider()
     dp.connect('martin', 'fuenf55')
 
-    avdata = AnlageVData(1, 2018, dp)
+    avdata = AnlageVData(1, 2, 2018, dp)
     avdata.startWork()
 
 if __name__ == '__main__':

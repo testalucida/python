@@ -290,6 +290,20 @@ class DataProvider:
         data = self._getReadRetValOrRaiseException(resp)
         return data
 
+    def getAnlageVData_grundsteuer(self, whg_id: int, vj: int) -> int:
+        resp = self.__session. \
+            get('http://localhost/kendelweb/dev/php/business.php?q=anlagev_grundsteuer&id=' +
+                str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
+        data = self._getReadRetValOrRaiseException(resp)
+        return data
+
+    def getAnlageVData_47_mtlVerwaltkosten(self, whg_id: int, vj: int) -> int:
+        resp = self.__session. \
+            get('http://localhost/kendelweb/dev/php/business.php?q=anlagev_47_mtl_verwaltkost&id=' +
+                str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
+        data = self._getReadRetValOrRaiseException(resp)
+        return data
+
 
     '''
     insert afa
