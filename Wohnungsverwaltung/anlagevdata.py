@@ -218,10 +218,30 @@ class AnlageVData:
     def _sectionWerbungskosten(self):
         self._getZeile_33_to_35_afa()
 
-    def _getZeile_33_to_35_afa(self) -> None:
-        pass
+    def _getZeile_33_to_35_afa(self):
+        afa = self._dataProvider.getAfaData(self._whg_id, self._vj)
+        """
+        afa: 
+        {
+            'afa_id': '2', 
+            'vj_ab': '2018', 
+            'betrag': '343', 
+            'prozent': '2.23', 
+            'lin_deg_knz': 'l', 
+            'afa_wie_vorjahr': 'Ja', 
+            'art_afa': 'linear'
+        } 
+        """
+        afa_art = 'linear' if afa['lin_deg_knz'] == 'l' else 'degressiv'
+        wie_vj = 'X' if afa['afa_wie_vorjahr'] == 'Ja' else ' '
+        self._createZeile(33,
+                          (afa_art, 'X'),
+                          ('prozent', afa['prozent']),
+                          ('wie_vorjahr', wie_vj),
+                          ('betrag', afa['betrag']))
 
     def _getZeile_36_to_37_afa(self) -> None:
+        #todo: start from here after vacancies
         pass
 
     def _getZeile_47_mtlVerwaltkosten(self) -> None:
@@ -261,22 +281,6 @@ class AnlageVData:
             'hg_netto_abschlag': hg_netto_abschlag
         }
         self._addItems(data)
-
-    def _getAfa(self):
-        afa = self._dataProvider.getAfaData(self._whg_id, self._vj)
-        """
-        afa: 
-        {
-            'afa_id': '2', 
-            'vj_ab': '2018', 
-            'betrag': '343', 
-            'prozent': '2.23', 
-            'lin_deg_knz': 'l', 
-            'afa_wie_vorjahr': 'Ja', 
-            'art_afa': 'linear'
-        } 
-        """
-        self._addItems(afa)
 
     def _addItems(self, data: dict):
         for k, v in data.items():
