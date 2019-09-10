@@ -56,6 +56,7 @@ class AnlageVData:
         self._dataProvider = dataprovider
         self._savePath = '/home/martin/Projects/python/Wohnungsverwaltung'
         self._log = None
+        self._wohnungIdent = None
 
     def _checkForSavePath(self) -> None:
         """
@@ -120,6 +121,31 @@ class AnlageVData:
         #f.write(x)
         f.close()
 
+    def _writeRechnungenLog(self, rg: dict) -> None:
+        """
+        rg:
+            {
+                'rg_id': '48',
+                'rg_datum': '30.08.2019',
+                'rg_nr': 'BBB222',
+                'betrag': '222.00',
+                'verteilung_jahre': '1',
+                'firma': 'zweierle',
+                'bemerkung': 'fjsdlfdsjklfsdjil',
+                'rg_bezahlt_am': '02.09.2019',
+                'year_bezahlt_am': '2019',
+                'voll_abzugsfaehig': True,
+                'anteiliger_betrag': 222.00
+            }
+        """
+        txt = ''.join(('\tFirma ', rg['firma'], ', Rg.Nr. ',
+                        rg['rg_nr'], ' vom ', rg['rg_datum'], ', Betrag ', rg['betrag'],
+                       '\n\t\tBezahlt am ', rg['rg_bezahlt_am'],
+                       ', zu verteilen auf ', rg['verteilung_jahre'], ' Jahr(e). ',
+                       '\n\t\tAnzusetzender Betrag: ', str(rg['anteiliger_betrag'])))
+        self._writeLog(txt)
+
+
     def _getZeile_1_to_8(self):
         data = self._dataProvider.getAnlageVData_1_to_8(self._whg_id, self._vj)
         """
@@ -139,6 +165,9 @@ class AnlageVData:
             'isverwandt': 'N'
         }
         """
+        self._wohnungIdent = ''.join((data['plz'], ' ', data['ort'],
+                                     ', ', data['strasse'], ' / ', data['whg_bez']))
+
         self._createZeile(1, ('Name', data['name']))
         self._createZeile(2, ('Vorname', data['vorname']))
         self._createZeile(3, ('Steuernummer', data['steuernummer']),
@@ -217,6 +246,7 @@ class AnlageVData:
 
     def _sectionWerbungskosten(self):
         self._getZeile_33_to_35_afa()
+        self._getZeile_39_to_45_erhaltung()
 
     def _getZeile_33_to_35_afa(self):
         afa = self._dataProvider.getAfaData(self._whg_id, self._vj)
@@ -239,10 +269,20 @@ class AnlageVData:
                           ('prozent', afa['prozent']),
                           ('wie_vorjahr', wie_vj),
                           ('betrag', afa['betrag']))
+        #todo: createZeile 34, 35
 
     def _getZeile_36_to_37_afa(self) -> None:
-        #todo: start from here after vacancies
+        #todo
         pass
+
+    def _getZeile_39_to_45_erhaltung(self) -> None:
+        self._writeLog(''.join(('>>>> ', self._wohnungIdent, ' <<<<')))
+        txt = "\nFolgende Rechnungen werden zum Nachweis benötigt:\n"
+        self._writeLog(txt)
+        rgfilter = RechnungFilter(self._whg_id, self._vj, self._dataProvider)
+        rgfilter.registerCallback(self._writeRechnungenLog)
+        betraege: dict = rgfilter.getBetraege()
+        #todo: zeilen ausfüllen
 
     def _getZeile_47_mtlVerwaltkosten(self) -> None:
         data = self._dataProvider.\
@@ -321,6 +361,80 @@ class AnlageVData:
         self._zeilenlist.append(zeile)
         return zeile
 
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+class RechnungFilter:
+    def __init__(self, whg_id: int, vj: int, dataprovider: DataProvider):
+        self._whg_id = whg_id
+        self._vj = vj
+        self._dataprovider = dataprovider
+        self._rechnungen: list = None
+        self._betraege: dict = None
+        self._callback = None
+
+    def registerCallback(self, cb) -> None:
+        # the function to register has to accept a dictionary
+        # (representing a rechnung)
+        self._callback = cb
+
+    def getBetraege(self) -> list:
+        if self._betraege is None:
+            self._getRechnungen()
+        return self._betraege
+
+    def _getRechnungen(self):
+        self._rechnungen = self._dataprovider.getRechnungsUebersicht(self._whg_id)
+        #rglist: list of dictionaries:
+        """
+        class 'dict'>: 
+            {
+                'rg_id': '48', 
+                'rg_datum': '30.08.2019', 
+                'rg_nr': 'BBB222', 
+                'betrag': '222.00',
+                'verteilung_jahre': '1', 
+                'firma': 'zweierle', 
+                'bemerkung': 'fjsdlfdsjklfsdjil',
+                'rg_bezahlt_am': '02.09.2019',
+                'year_bezahlt_am': '2019'
+            }
+        """
+        betraege = dict()
+        betraege['voll'] = 0
+        for rg in self._rechnungen:
+            year_bezahlt_am = int(rg['year_bezahlt_am'])
+            if not rg['year_bezahlt_am']:
+                pass
+            elif year_bezahlt_am > self._vj:
+                pass
+            elif year_bezahlt_am + int(rg['verteilung_jahre']) <= self._vj:
+                pass
+            else:
+                #in diesen Zweig läuft alles, was berücksichtigt werden soll,
+                #entweder 'voll' im Vj oder anteilig
+                betrag = float(rg['betrag'])
+                verteilung_jahre = int(rg['verteilung_jahre'])
+                if year_bezahlt_am == self._vj and verteilung_jahre == 1:
+                    betraege['voll'] += betrag
+                    self._doCallback(rg, True, betrag)
+                else:
+                    anteil = betrag / verteilung_jahre
+                    if year_bezahlt_am in betraege:
+                        betraege[year_bezahlt_am] += anteil
+                    else: betraege[year_bezahlt_am] = anteil
+                    self._doCallback(rg, False, anteil)
+        self._betraege = betraege
+
+    def _doCallback(self, rg: dict, vollAbz: bool, betrag: float):
+        if self._callback:
+            rg['voll_abzugsfaehig'] = vollAbz
+            rg['anteiliger_betrag'] = betrag
+            self._callback(rg)
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+def rechnungfiltercallback(rg: dict):
+    print("logge: ", rg)
+
 def test():
     from business import DataProvider, DataError
     dp = DataProvider()
@@ -328,6 +442,11 @@ def test():
 
     avdata = AnlageVData(1, 2, 2018, dp)
     avdata.startWork()
+
+    # filter = RechnungFilter(1, 2018, dp)
+    # filter.registerCallback(rechnungfiltercallback)
+    # betraege: dict = filter.getBetraege()
+    # print(betraege)
 
 if __name__ == '__main__':
     test()
