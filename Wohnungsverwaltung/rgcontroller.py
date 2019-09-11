@@ -8,6 +8,27 @@ from actions import Action
 #++++++++++++++++++++++++++++++++++++++++++++++++
 
 class RechnungController:
+    """
+    todo:
+    Unterscheiden, ob es sich um Erhaltungsaufwand oder Herstellungsaufwand handelt.
+    Erhaltungsaufwand kann *nach Belieben des Vermieters* im Jahr der Bezahlung
+    oder aber auf bis zu 5 Jahre verteilt abgeschrieben werden.
+    Als Erhaltungsaufwand gelten laut Bundesfinanzministerium
+    "Aufwendungen für die Erneuerung von bereits vorhandenen Teilen,
+    Einrichtungen oder Anlagen". Wichtig ist in diesem Zusammenhang,
+    dass die modernisierten oder neuen Gebäudeteile die Funktion der alten Teile
+    in vergleichbarer Weise ersetzen.
+    Die Verwendungs- oder Nutzungsmöglichkeit soll erhalten oder wiederhergestellt werden.
+
+    Dazu muss
+        - ein neues DB-Feld "Erhaltung/Herstellung" eingeführt werden
+        - der Rechnung-Tab erweitert werden:
+            - sowohl in Tabelle wie auch in Edit-Zeile "Herstellung" bzw. "Erhaltung"
+              ergänzt werden
+            - im Falle von Erhaltung die Verteilung-Combobox auf 5 Jahre eingeschränkt werden
+        - dieser Controller erweitert werden
+        - die Klasse AnlageVData erweitert werden
+    """
     def __init__(self, dataProvider: DataProvider,
                  rechnungTableView: GenericEditableTable):
         self._dataProvider = dataProvider

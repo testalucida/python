@@ -57,6 +57,7 @@ class AnlageVData:
         self._savePath = '/home/martin/Projects/python/Wohnungsverwaltung'
         self._log = None
         self._wohnungIdent = None
+        self._stammdaten = None
 
     def _checkForSavePath(self) -> None:
         """
@@ -93,7 +94,34 @@ class AnlageVData:
         """
         self._checkForSavePath()
         now = datetime.datetime.now()
-        logfile = self._savePath + "/log_" + str(now) + ".txt"
+        data = self._dataProvider.getAnlageVData_1_to_8(self._whg_id, self._vj)
+        """
+        data:
+        {
+            'name': 'Kendel', 
+            'vorname': 'Martin', 
+            'steuernummer': '222/333/44444', 
+            'strasse': 'Mendelstr. 24', 
+            'plz': '90429', 
+            'ort': 'Nürnberg', 
+            'whg_bez': '3. OG rechts', 
+            'qm': '53', 
+            'angeschafft_am': '1989-02-13', 
+            'einhwert_az': 'ewewew ', 
+            'fewontzg': 'N', 
+            'isverwandt': 'N'
+        }
+        """
+        self._wohnungIdent = ''.join((data['plz'], ' ', data['ort'],
+                                      ', ', data['strasse'], ' / ', data['whg_bez']))
+        self._stammdaten = data
+
+        logfile = self._savePath + "/log_" + \
+                  ''.join((data['plz'], '_', data['ort'],
+                           '_', data['strasse'], '_',
+                           data['whg_bez'])) + \
+                  ".txt"
+
         self._log = open(logfile, 'w')
         self._writeLog('Starte Verarbeitung um ' + str(now))
 
@@ -107,7 +135,7 @@ class AnlageVData:
         self._writeInterface()
 
         now = datetime.datetime.now()
-        self._writeLog('Beende Verarbeitung um ' + str(now))
+        self._writeLog('\n\nBeende Verarbeitung um ' + str(now))
         self._log.close()
 
     def _writeLog(self, txt: str) -> None:
@@ -147,7 +175,7 @@ class AnlageVData:
 
 
     def _getZeile_1_to_8(self):
-        data = self._dataProvider.getAnlageVData_1_to_8(self._whg_id, self._vj)
+        data = self._stammdaten
         """
         data:
         {
@@ -165,8 +193,6 @@ class AnlageVData:
             'isverwandt': 'N'
         }
         """
-        self._wohnungIdent = ''.join((data['plz'], ' ', data['ort'],
-                                     ', ', data['strasse'], ' / ', data['whg_bez']))
 
         self._createZeile(1, ('Name', data['name']))
         self._createZeile(2, ('Vorname', data['vorname']))
@@ -275,14 +301,43 @@ class AnlageVData:
         #todo
         pass
 
+    def _getZeile_38_renten(self) -> None:
+        #todo
+        pass
+
     def _getZeile_39_to_45_erhaltung(self) -> None:
+        # eigenen Absatz für die als Nachweis
+        # benötigten Rechnungen im Log schreiben:
         self._writeLog(''.join(('>>>> ', self._wohnungIdent, ' <<<<')))
         txt = "\nFolgende Rechnungen werden zum Nachweis benötigt:\n"
         self._writeLog(txt)
+        #die für dieses Vj relevanten Rechnungen finden:
         rgfilter = RechnungFilter(self._whg_id, self._vj, self._dataProvider)
         rgfilter.registerCallback(self._writeRechnungenLog)
         betraege: dict = rgfilter.getBetraege()
-        #todo: zeilen ausfüllen
+        """
+            betraege: 
+            {
+                'voll': 223.45, 
+                2018: 145.95, 
+                2017: 438.27
+            }
+        """
+        # die notwendigen Einträge in die Schnittstellendatei machen:
+        if 'voll' in betraege:
+            self._createZeile(39, ('voll_abzuziehende', betraege['voll']))
+
+        z = 41 #erste Zeile für zu verteilende Erhalt.Aufwendungen
+        # in Zeile 41 kommt der Anteil für das Vj:
+        if self._vj in betraege:
+            self._createZeile(z, ('vj', betraege[self._vj]))
+        z += 1 # in die nächste Zeile (42) kommt der Anteil für Vj - 4 Jahre
+        y1 = self._vj - 4
+        for y in range(y1, self._vj):
+            if y in betraege:
+                ident = ''.join(('vj minus ', str(self._vj - y)))
+                self._createZeile(z, (ident, betraege[y]))
+            z += 1
 
     def _getZeile_47_mtlVerwaltkosten(self) -> None:
         data = self._dataProvider.\
