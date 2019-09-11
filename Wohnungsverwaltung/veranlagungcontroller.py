@@ -51,7 +51,9 @@ class VeranlagungController:
         :param whg:
         {
             'angeschafft_am': xx.xx.xxxx,
-            einhwert_az': 343434343434
+            'einhwert_az': 343434343434,
+            'steuerl_zurechng_mann': 100,
+            'steuerl_zurechng_frau': 0
         }
         :return: str or None
         """
@@ -64,6 +66,23 @@ class VeranlagungController:
 
         if not whg['einhwert_az']:
             return 'Einheitswert-Aktenzeichen fehlt.'
+
+        if not whg['steuerl_zurechng_mann']:
+            return 'Es fehlt die Angabe, zu wieviel Prozent das steuerliche ' \
+                   'Ergebnis dem Ehemann angerechnet werden soll'
+
+        if not whg['steuerl_zurechng_frau']:
+            return 'Es fehlt die Angabe, zu wieviel Prozent das steuerliche ' \
+                   'Ergebnis der Ehefrau angerechnet werden soll'
+
+        zurechng_mann = int(whg['steuerl_zurechng_mann'])
+        zurechng_frau = int(whg['steuerl_zurechng_frau'])
+
+        if zurechng_mann > 100 or zurechng_frau > 100:
+            return 'Der Zuordnungswert darf "100" nicht übersteigen'
+
+        if zurechng_mann + zurechng_frau != 100:
+            return 'Die Summe der Zurechnungswerte muss 100 betragen'
 
         return None
 
@@ -198,7 +217,9 @@ class VeranlagungController:
         :param data:
         {
             'angeschafft_am': xx.xx.xxxx or None
-            'einhwert_az':xxxxxxxxxxxxxxx
+            'einhwert_az':xxxxxxxxxxxxxxx,
+            'steuerl_zurechng_mann': nn,
+            'steuerl_zurechng_frau': nn
         }
         :return:
         """
@@ -219,7 +240,9 @@ class VeranlagungController:
             'strasse': 'Mendelstr. 24', 
             'whg_bez': '3. OG rechts', 
             'einhwert_az': None, 
-            'angeschafft_am': None
+            'angeschafft_am': None,
+            'steuerl_zurechng_mann: 100,
+            'steuerl_zurechng_frau: 0
         }
         """
         #set the views top label
@@ -227,7 +250,9 @@ class VeranlagungController:
         self._view.setWohnungIdent(whgident)
 
         #set wohnung data related to Veranlagung
-        self._view.setWohungData(d['angeschafft_am'], d['einhwert_az'])
+        self._view.setWohungData(d['angeschafft_am'], d['einhwert_az'],
+                                 d['steuerl_zurechng_mann'],
+                                 d['steuerl_zurechng_frau'])
         self._view.clearAfa()
 
         #and if a Vj is set get selected flat's AfA data as well:
@@ -242,7 +267,9 @@ class VeranlagungController:
         """
         data = self._dataProvider.getVeranlagungData(self._whg_id, vj)
         if data:
-            self._view.setWohungData(data['angeschafft_am'], data['einhwert_az'])
+            self._view.setWohungData(data['angeschafft_am'], data['einhwert_az'],
+                                     data['steuerl_zurechng_mann'],
+                                     data['steuerl_zurechng_frau'])
             self._view.setAfaData(data)
 
     def _loadWhgData(self):
@@ -253,7 +280,9 @@ class VeranlagungController:
         :return: None
         """
         data = self._dataProvider.getWohnungIdentifikation(self._whg_id)
-        self._view.setWohungData(data['angeschafft_am'], data['einhwert_az'])
+        self._view.setWohungData(data['angeschafft_am'], data['einhwert_az'],
+                                 data['steuerl_zurechng_mann'],
+                                 data['steuerl_zurechng_frau'])
 
     def _loadAfaData(self, vj: int):
         """

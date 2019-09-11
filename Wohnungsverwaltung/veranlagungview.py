@@ -3,7 +3,7 @@ from tkinter import ttk
 import sys
 sys.path.append('/home/martin/Projects/python/mywidgets')
 try:
-    from mywidgets import TextEntry, FloatEntry, MyLabel, MyCombobox
+    from mywidgets import TextEntry, FloatEntry, IntEntry, MyLabel, MyCombobox
     from mycalendar import DateEntry
     import datehelper
 except ImportError:
@@ -15,6 +15,8 @@ class VeranlagungView(ttk.Frame):
         self._whg_ident = None
         self._angeschafft_am = None
         self._einhwert_az = None
+        self._zurechng_ehemann = None
+        self._zurechng_ehefrau = None
         self._vj_combo = None
         self._art_afa = None
         self._prozent_afa = None
@@ -142,20 +144,40 @@ class VeranlagungView(ttk.Frame):
 
     def _createWohnungLabelFrame(self, padx: int, pady: int) -> ttk.Labelframe:
         lf = ttk.Labelframe(self, text='Wohnung')
-        MyLabel(lf, 'Angeschafft am: ', 0, 0, 'nswe', 'e', padx, pady)
+        lbl = MyLabel(lf, 'Angeschafft am: ', 0, 0, 'nsw', 'w', padx, pady)
         de = DateEntry(lf)
         de.setBackground('Whg.TEntry', 'lightyellow')
         de.setUseCalendar(False)
         de['width'] = 10
         de.registerModifyCallback(self._onWhgModified)
-        de.grid(column=1,row=0, sticky = 'nswe', padx=padx, pady=pady)
+        de.grid(column=1,row=0, sticky = 'nsw', padx=padx, pady=pady)
         self._angeschafft_am = de
 
         MyLabel(lf, 'Einh.wert-Az: ', 2, 0, 'nswe', 'e', padx, pady)
-        te = TextEntry(lf, 3, 0, 'nswe', padx, pady)
+        te = TextEntry(lf, 3, 0, 'nsw', padx, pady)
+        te.grid_configure(columnspan=2)
         te.setBackground('Whg.TEntry', 'lightyellow')
         te.registerModifyCallback(self._onWhgModified)
         self._einhwert_az = te
+
+        lbl = MyLabel(lf, 'Steuerl. Überschuss/Verlust zurechnen auf Ehemann/Ehefrau (%):',
+                      0, 1, 'nsw', 'w', padx, pady)
+        lbl.grid_configure(columnspan=3)
+        ie = IntEntry(lf)
+        ie.grid(column=3, row=1, sticky='nse', padx=padx, pady=pady)
+        ie.setWidth(4)
+        ie.setBackground('Whg.TEntry', 'lightyellow')
+        ie.setValue(100)
+        ie.registerModifyCallback(self._onWhgModified)
+        self._zurechng_ehemann = ie
+
+        ie = IntEntry(lf)
+        ie.grid(column=4, row=1, sticky='nsw', padx=padx, pady=pady)
+        ie.setWidth(4)
+        ie.setBackground('Whg.TEntry', 'lightyellow')
+        ie.setValue(0)
+        ie.registerModifyCallback(self._onWhgModified)
+        self._zurechng_ehefrau = ie
 
         return lf
 
@@ -265,10 +287,14 @@ class VeranlagungView(ttk.Frame):
             a[k] = v
         return a
 
-    def setWohungData(self, angeschafftAm: str, einhwertAz: str) -> None:
+    def setWohungData(self, angeschafftAm: str, einhwertAz: str,
+                      steuerl_zurechng_mann: int,
+                      steuerl_zurechng_frau: int) -> None:
         self._isWhgInitialized = False
         self._angeschafft_am.setValue(angeschafftAm)
         self._einhwert_az.setValue(einhwertAz)
+        self._zurechng_ehefrau.setValue(steuerl_zurechng_frau)
+        self._zurechng_ehemann.setValue(steuerl_zurechng_mann)
         self._isWhgInitialized = True
         self._isWhgModified = False
 
@@ -276,7 +302,9 @@ class VeranlagungView(ttk.Frame):
         return \
         {
             'angeschafft_am': self._angeschafft_am.getValue(),
-            'einhwert_az': self._einhwert_az.getValue()
+            'einhwert_az': self._einhwert_az.getValue(),
+            'steuerl_zurechng_mann': self._zurechng_ehemann.getValue(),
+            'steuerl_zurechng_frau': self._zurechng_ehefrau.getValue()
         }
 
     def setSaveButtonEnabled(self, enabled: bool):

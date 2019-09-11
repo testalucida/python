@@ -309,7 +309,7 @@ class IntEntry(ttk.Entry, GetterSetter, ConvenianceMethods, ModifyTracer):
 
     def setValue(self, val: int or str) -> None:
         self.clear()
-        if val:
+        if val is not None:
             if type(val) == str: #might be '123'
                 val = int(val)
             self.setInt(val)

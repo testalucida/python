@@ -136,7 +136,10 @@ class DataProvider:
             'strasse': 'Mendelstr. 24', 
             'whg_bez': '3. OG rechts', 
             'einhwert_az': '24106630826488', 
-            'angeschafft_am': None}
+            'angeschafft_am': None,
+            'steuerl_zurechng_ehemann: 100,
+            'steuerl_zurechng_ehefrau: 0
+        }
         """
         if data['angeschafft_am']:
             data['angeschafft_am'] = datehelper.convertIsoToEur(data['angeschafft_am'])
@@ -345,7 +348,9 @@ class DataProvider:
         {
             'whg_id': nnnn
             'angeschafft_am': yyyy-mm-dd,
-            'einhwert_az': xxxxxxxxxxxxxxx
+            'einhwert_az': xxxxxxxxxxxxxxx,
+            'steuerl_zurechng_mann: nn,
+            'steuerl_zurechng_frau: nn
         }
         :return:
         """
