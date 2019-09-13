@@ -21,7 +21,7 @@ class VeranlagungController:
         self._view.setCreateAnlageVButtonEnabled(False)
 
     def _onVjChanged(self, newVj: str):
-        print('onVjChanged: ', newVj)
+        #print('onVjChanged: ', newVj)
         #todo: check if there are any unsaved changes
         self._view.clearAfa()
         self._vj = None
@@ -251,8 +251,8 @@ class VeranlagungController:
 
         #set wohnung data related to Veranlagung
         self._view.setWohungData(d['angeschafft_am'], d['einhwert_az'],
-                                 d['steuerl_zurechng_mann'],
-                                 d['steuerl_zurechng_frau'])
+                                 int(d['steuerl_zurechng_mann']),
+                                 int(d['steuerl_zurechng_frau']))
         self._view.clearAfa()
 
         #and if a Vj is set get selected flat's AfA data as well:
@@ -270,7 +270,7 @@ class VeranlagungController:
             self._view.setWohungData(data['angeschafft_am'], data['einhwert_az'],
                                      data['steuerl_zurechng_mann'],
                                      data['steuerl_zurechng_frau'])
-            self._view.setAfaData(data)
+            self._view.setAfaAndVwData(data)
 
     def _loadWhgData(self):
         """
@@ -290,17 +290,19 @@ class VeranlagungController:
         :param vj: changed Vj
         :return: None
         """
-        data = self._dataProvider.getAfaData(self._whg_id, vj)
+        data = self._dataProvider.getAfa(self._whg_id, vj)
         """
         data = {
             'afa_id': '2',
             'betrag': '2345',
             'prozent': '2.23',
             'lin_deg_knz': 'l',
-            'afa_wie_vorjahr': 'Ja'
+            'afa_wie_vorjahr': 'Ja',
+            'verwaltkosten': 200,
+            'art_afa': 'linear'
         }
         """
-        self._view.setAfaData(data) #must be done even if data is none
+        self._view.setAfaAndVwData(data) #must be done even if data is none
         enabled = False
         if data:
             enabled = True if not self._validateAfa(data) else False

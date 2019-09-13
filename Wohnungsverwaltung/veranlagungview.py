@@ -22,6 +22,8 @@ class VeranlagungView(ttk.Frame):
         self._prozent_afa = None
         self._betrag_afa = None
         self._afa_wie_vj = None
+        self._verwaltkosten = None
+        #self._sonstigeKosten = None
         self._btnSave = None
         self._btnCreateAnlageV = None
 
@@ -58,7 +60,7 @@ class VeranlagungView(ttk.Frame):
 
     def _onAfaModified(self, widget: Widget, name: str, index: str, mode: str):
         if self._isAfaInitialized:
-            print("VeranlagungView._onAfaModified: setting _isAfaModified = True")
+            #print("VeranlagungView._onAfaModified: setting _isAfaModified = True")
             self._isAfaModified = True
             self.setSaveButtonEnabled(True)
             self.setCreateAnlageVButtonEnabled(False)
@@ -71,7 +73,7 @@ class VeranlagungView(ttk.Frame):
             self.setCreateAnlageVButtonEnabled(False)
 
     def _onSavePressed(self):
-        print("Veranlagungsview._onSavePressed: _isAfaModified == ", self._isAfaModified)
+        #print("Veranlagungsview._onSavePressed: _isAfaModified == ", self._isAfaModified)
         self.setSaveButtonEnabled(False)
         if self._save_callback:
             self._save_callback(self.getVeranlagData())
@@ -96,10 +98,13 @@ class VeranlagungView(ttk.Frame):
         f.grid(column=0, row=2, sticky='nswe')
 
         lf = self._createAfaLabelframe(padx, pady)
-        lf.grid(column=0, row=3, sticky='nswe', pady=(15, pady))
+        lf.grid(column=0, row=3, sticky='nswe', pady=(10, pady))
+
+        lf = self._createWerbungskostenLabelframe(padx, pady)
+        lf.grid(column=0, row=4, sticky='nswe', pady=(40, 20))
 
         f = self._createButtonFrame(self, padx, pady)
-        f.grid(column=0, row=4)
+        f.grid(column=0, row=5)
 
     def _createWohnungIdent(self, parent, padx, pady) -> ttk.Label:
         lbl = MyLabel(parent, text='', column=0, row=0, sticky='nswe',
@@ -109,13 +114,6 @@ class VeranlagungView(ttk.Frame):
         lbl.setFont('Helvetica 14 bold')
         lbl['relief'] = 'sunken'
         lbl.setTextPadding('whg_short.TLabel', 10, 10)
-
-        # lbl = ttk.Label(parent, text='Nürnberg, XStraße 22, Whg 334',
-        #                 anchor='center', relief='sunken')
-        # style = ttk.Style()
-        # style.configure('whg_short.TLabel', background='gray', foreground='white',
-        #                 font='Helvetica 16 bold', padding=(10))
-        # lbl['style'] = 'whg_short.TLabel'
         return lbl
 
     def _createVjFrame(self, parent, padx, pady) -> ttk.Frame:
@@ -163,21 +161,22 @@ class VeranlagungView(ttk.Frame):
         lbl = MyLabel(lf, 'Steuerl. Überschuss/Verlust zurechnen auf Ehemann/Ehefrau (%):',
                       0, 1, 'nsw', 'w', padx, pady)
         lbl.grid_configure(columnspan=3)
-        ie = IntEntry(lf)
+
+        self._zurechng_ehemann = IntEntry(lf)
+        ie = self._zurechng_ehemann
         ie.grid(column=3, row=1, sticky='nse', padx=padx, pady=pady)
         ie.setWidth(4)
         ie.setBackground('Whg.TEntry', 'lightyellow')
         ie.setValue(100)
         ie.registerModifyCallback(self._onWhgModified)
-        self._zurechng_ehemann = ie
 
-        ie = IntEntry(lf)
-        ie.grid(column=4, row=1, sticky='nsw', padx=padx, pady=pady)
-        ie.setWidth(4)
-        ie.setBackground('Whg.TEntry', 'lightyellow')
-        ie.setValue(0)
-        ie.registerModifyCallback(self._onWhgModified)
-        self._zurechng_ehefrau = ie
+        self._zurechng_ehefrau = IntEntry(lf)
+        ie2 = self._zurechng_ehefrau
+        ie2.grid(column=4, row=1, sticky='nsw', padx=padx, pady=pady)
+        ie2.setWidth(4)
+        ie2.setBackground('Whg.TEntry', 'lightyellow')
+        ie2.setValue(0)
+        ie2.registerModifyCallback(self._onWhgModified)
 
         return lf
 
@@ -203,7 +202,7 @@ class VeranlagungView(ttk.Frame):
         self._prozent_afa = f
 
         MyLabel(lf, 'Betrag: ', 0, 2, 'nswe', 'e', padx, pady)
-        f = FloatEntry(lf)
+        f = IntEntry(lf)
         f.setBackground('AfA.TEntry', 'lightyellow')
         f.grid(column=1, row=2, sticky='w', padx=padx, pady=pady)
         f.setWidth(8)
@@ -221,6 +220,32 @@ class VeranlagungView(ttk.Frame):
         c.registerModifyCallback(self._onAfaModified)
         c.grid(column=3, row=2, sticky='w', padx=padx, pady=pady)
         self._afa_wie_vj = c
+
+        return lf
+
+    def _createWerbungskostenLabelframe(self, padx: int, pady: int) -> ttk.Labelframe:
+        lf = ttk.Labelframe(self,
+                            text='Verwaltung gem. Anlage V Zeile 47')
+
+        MyLabel(lf,
+                'Verwaltungskosten inkl. Bankspesen '
+                'gem. Betriebskostenabrechnung: ',
+                0, 0, 'nswe', 'e', padx, pady)
+        f = IntEntry(lf)
+        f.setBackground('AfA.TEntry', 'lightyellow')
+        f.grid(column=1, row=0, sticky='w', padx=padx, pady=pady)
+        f['width'] = 5
+        f.registerModifyCallback(self._onAfaModified)
+        self._verwaltkosten = f
+
+        # MyLabel(lf, 'Sonstige Kosten (Fahrten, Tel., '
+        #             'allg. Rep. gem. Betriebskostenabrechnung): ', 0, 1,
+        #         'nswe', 'e', padx, pady)
+        # f = IntEntry(lf)
+        # f.grid(column=1, row=1, sticky='w', padx=padx, pady=pady)
+        # f.setWidth(5)
+        # f.registerModifyCallback(self._onAfaModified)
+        # self._sonstigeKosten = f
 
         return lf
 
@@ -245,6 +270,8 @@ class VeranlagungView(ttk.Frame):
         self._isWhgModified = False
         self._angeschafft_am.clear()
         self._einhwert_az.clear()
+        self._zurechng_ehefrau.clear()
+        self._zurechng_ehemann.clear()
 
     def clearAfa(self):
         self._isAfaInitialized = False
@@ -253,35 +280,38 @@ class VeranlagungView(ttk.Frame):
         self._prozent_afa.clear()
         self._afa_wie_vj.clear()
         self._betrag_afa.clear()
+        self._verwaltkosten.clear()
 
-    def setAfaData(self, data: dict) -> None:
+    def setAfaAndVwData(self, data: dict) -> None:
         if data:
             self._isAfaInitialized = False
             self._art_afa.setValue(data['art_afa'])
             self._prozent_afa.setValue(data['prozent'])
             self._afa_wie_vj.setValue(data['afa_wie_vorjahr'])
             self._betrag_afa.setValue(data['betrag'])
+            self._verwaltkosten.setValue(data['verwaltkosten'])
         self._isAfaInitialized = True
         self._isAfaModified = False
 
     def setWohnungIdent(self, wohnungIdent: str):
         self._whg_ident.setValue(wohnungIdent)
 
-    def getAfaData(self) -> dict:
+    def getAfaAndVw(self) -> dict:
         return \
         {
             'vj_ab': self._vj_combo.getValue(),
             'art_afa': self._art_afa.getValue(),
             'prozent': self._prozent_afa.getValue(),
             'afa_wie_vorjahr': self._afa_wie_vj.getValue(),
-            'betrag': self._betrag_afa.getValue()
+            'betrag': self._betrag_afa.getValue(),
+            'verwaltkosten': self._verwaltkosten.getValue()
         }
 
     def getVeranlagData(self) -> dict:
         """
-        :return: Wohnung and AfA Data
+        :return: Wohnung and AfA Data and Verwaltungskosten
         """
-        a = self.getAfaData()
+        a = self.getAfaAndVw()
         w = self.getWohnungData()
         for k, v in w.items():
             a[k] = v

@@ -227,20 +227,33 @@ class DataProvider:
         self._translateVeranlagung(veranl_data)
         return veranl_data
 
-    def getAfaData(self, whg_id: int, vj: int) -> dict:
+    def getAfa(self, whg_id: int, vj: int) -> dict:
         """
-        Note: this method will provide afa data
-        whose vj_ab is equal *or earlier* than the given vj
+        Note: this method will provide afa data and sonstige Kosten
+        (Verwaltung, Porto etc.) whose vj_ab is equal *or earlier* than the given vj
         :param whg_id:
         :param vj:
         :return:
         """
         resp = self.__session. \
-            get('http://localhost/kendelweb/dev/php/business.php?q=afa_data&id=' +
+            get('http://localhost/kendelweb/dev/php/business.php?q=afa&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
-        afa_data = self._getReadRetValOrRaiseException(resp)
-        self._translateVeranlagung(afa_data)
-        return afa_data
+        data = self._getReadRetValOrRaiseException(resp)
+        self._translateVeranlagung(data)
+        """
+         data: 
+         {
+            'afa_id': '2', 
+            'vj_ab': '2018', 
+            'betrag': '343', 
+            'prozent': '2.23', 
+            'lin_deg_knz': 'l',
+            'afa_wie_vorjahr': 'Ja', 
+            'art_afa': 'linear',
+            'verwaltkosten': 200
+        }
+        """
+        return data
 
     def _translateVeranlagung(self, data: dict):
         if data:
@@ -252,7 +265,7 @@ class DataProvider:
     def existsAfaData(self, whg_id: int, vj: int) -> bool:
         """
         Note: this methods will check for a vj_ab which is *equal* to the given vj
-        as opposed to method getAfaData
+        as opposed to method getAfaAndSonstige
         :param whg_id:
         :param vj:
         :return:
@@ -267,7 +280,7 @@ class DataProvider:
     def getAfaId(self, whg_id: int, vj: int) -> int:
         """
         Note: this methods will check for a record whose vj_ab
-        is *equal* to the given vj as opposed to method getAfaData
+        is *equal* to the given vj as opposed to method getAfaAndSonstige
         :param whg_id:
         :param vj:
         :return:

@@ -216,10 +216,10 @@ class FloatEntry(ttk.Entry, GetterSetter, ConvenianceMethods, ModifyTracer):
         ttk.Entry.__init__(self, parent, validate="key")
         ConvenianceMethods.__init__(self)
         ModifyTracer.__init__(self)
-        vcmd = (self.register(self.onValidate), '%P', '%S')
+        self.bind("<FocusOut>", self._onFocusOut)
+        vcmd = (self.register(self.onValidate), '%d', '%P')
         # valid percent substitutions (from the Tk entry man page)
-        # note: you only have to register the ones you need; this
-        # example registers them all for illustrative purposes
+        # note: you only have to register the ones you need
         #
         # %d = Type of action (1=insert, 0=delete, -1 for others)
         # %i = index of char string to be inserted/deleted, or -1
@@ -234,14 +234,23 @@ class FloatEntry(ttk.Entry, GetterSetter, ConvenianceMethods, ModifyTracer):
         self.setAlign('right')
         self.setTextPadding('Float.TEntry', 1, 1, 3, 1)
 
-    def onValidate(self, P, S):
-        if S >= '0' and S <= '9':
+    def onValidate(self, d, P):
+        # print('FloatEntry.onValidate: P, len(P), S = ', P, ', ', len(P), ', ', S)
+        if d == '0': #deletion always ok
             return True
+
+        if P.startswith(' ') or P.endswith(' '):
+            return False
+
         try:
             num = float(P)
             return True
         except:
             return False
+
+    def _onFocusOut(self, evt):
+         if self.getValue() == '':
+             self.setFloat(0.0)
 
     def setAlign(self, alignment: str):
         """
@@ -253,9 +262,8 @@ class FloatEntry(ttk.Entry, GetterSetter, ConvenianceMethods, ModifyTracer):
 
     def setFloat(self, floatvalue: float) -> None:
         self.clear()
-        if floatvalue:
-            f = float(floatvalue) #could be int as well
-            self.insert(0, str(f))
+        f = float(floatvalue) #could be int as well
+        self.insert(0, str(f))
 
     def getValue(self) -> any:
         return self.get()
@@ -266,21 +274,26 @@ class FloatEntry(ttk.Entry, GetterSetter, ConvenianceMethods, ModifyTracer):
         self.setFloat(val)
 
     def clear(self) -> None:
-        self.delete(0, 'end')
+        try:
+            self.delete(0, 'end')
+        except:
+            pass
 
 #+++++++++++++++++++++++++++++++++++++++++++++++
 
 class IntEntry(ttk.Entry, GetterSetter, ConvenianceMethods, ModifyTracer):
     def __init__(self, parent):
         ttk.Entry.__init__(self, parent, validate="key")
+        #super(IntEntry, self).__init__(parent, validate="key")
         ConvenianceMethods.__init__(self)
         ModifyTracer.__init__(self)
-        vcmd = (self.register(self.onValidate), '%P', '%S')
+        self.bind("<FocusOut>", self._onFocusOut)
+        vcmd = (self.register(self.onValidate), '%d', '%P')
         # valid percent substitutions (from the Tk entry man page)
         # note: you only have to register the ones you need; this
         # example registers them all for illustrative purposes
         #
-        # %d = Type of action (1=insert, 0=delete, -1 for others)
+        # %d = Type of action ('1'=insert, '0'=delete, '-1' for others)
         # %i = index of char string to be inserted/deleted, or -1
         # %P = value of the entry if the edit is allowed
         # %s = value of entry prior to editing
@@ -291,16 +304,25 @@ class IntEntry(ttk.Entry, GetterSetter, ConvenianceMethods, ModifyTracer):
         # %W = the tk name of the widget
         self['validatecommand'] = vcmd
 
-    def onValidate(self, P, S):
-        if S >= '0' and S <= '9':
+    def onValidate(self, d, P):
+        #print('IntEntry.onValidate: d, P, S: ', d, ', ', P, ', ', S)
+        if d == '0': #deletion always ok
             return True
+        
+        if P.startswith(' ') or P.endswith(' '):
+            return False
 
-        return False
+        try:
+            num = int(P)
+            return True
+        except:
+            return False
+
+    def _onFocusOut(self, evt):
+         if self.getValue() == '':
+             self.setInt(0)
 
     def setInt(self, intvalue: int) -> None:
-        if not isinstance(intvalue, int):
-            raise ValueError("".join(str(intvalue),
-                                     " is not a valid float value"))
         self.clear()
         self.insert(0, str(intvalue))
 
@@ -315,7 +337,10 @@ class IntEntry(ttk.Entry, GetterSetter, ConvenianceMethods, ModifyTracer):
             self.setInt(val)
 
     def clear(self) -> None:
-        self.delete(0, 'end')
+        try:
+            self.delete(0, 'end')
+        except:
+            pass
 
 #+++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -537,18 +562,25 @@ class TableView(ttk.Treeview):
 
 #++++++++++++++++++++++++++++++++++++++++++++++++
 
+def inttest(root):
+    ie = IntEntry(root)
+    ie.grid(column=0, row=0, sticky='nswe', padx=10, pady=10)
+
+    fe = FloatEntry(root)
+    fe.grid(column=1, row=0, sticky='nswe', padx=10, pady=10)
 
 def main():
     root = Tk()
+    inttest(root)
 
-    txt = MyText(root)
-    txt.setMyId('v_bla')
-    txt.grid(column=0, row=0, sticky='nswe')
-
-    txt.setValue('bac')
-    txt.clear()
-    txt.insert('1.0', 'abcde')
-    txt.setValue('the old brown fox jumps over the lazy dog.')
+    # txt = MyText(root)
+    # txt.setMyId('v_bla')
+    # txt.grid(column=0, row=0, sticky='nswe')
+    #
+    # txt.setValue('bac')
+    # txt.clear()
+    # txt.insert('1.0', 'abcde')
+    # txt.setValue('the old brown fox jumps over the lazy dog.')
     #print('myId: ', txt.getMyId())
 
     root.mainloop()

@@ -68,7 +68,7 @@
         "choice_values": null,
         "init_value": null,
         "readonly": true,
-        "width": 41,
+        "width": 38,
         "wstretch": false,
         "height": -1
       }

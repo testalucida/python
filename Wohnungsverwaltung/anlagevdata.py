@@ -131,7 +131,7 @@ class AnlageVData:
         self._getZeile_1_to_8()
         self._getZeile_9_to_14_mtlEinn()
         self._sectionWerbungskosten()
-
+        self._getZeile_24_zurechnung()
         self._writeInterface()
 
         now = datetime.datetime.now()
@@ -273,9 +273,11 @@ class AnlageVData:
     def _sectionWerbungskosten(self):
         self._getZeile_33_to_35_afa()
         self._getZeile_39_to_45_erhaltung()
+        self._getZeile_47_mtlVerwaltkosten()
+        self._getZeile_49_sonstiges()
 
     def _getZeile_33_to_35_afa(self):
-        afa = self._dataProvider.getAfaData(self._whg_id, self._vj)
+        afa = self._dataProvider.getAfa(self._whg_id, self._vj)
         """
         afa: 
         {
@@ -285,7 +287,8 @@ class AnlageVData:
             'prozent': '2.23', 
             'lin_deg_knz': 'l', 
             'afa_wie_vorjahr': 'Ja', 
-            'art_afa': 'linear'
+            'art_afa': 'linear',
+            'verwaltkosten': 200
         } 
         """
         afa_art = 'linear' if afa['lin_deg_knz'] == 'l' else 'degressiv'
@@ -376,6 +379,13 @@ class AnlageVData:
             'hg_netto_abschlag': hg_netto_abschlag
         }
         self._addItems(data)
+
+    def _getZeile_49_sonstiges(self) -> None:
+        pass
+
+    def _getZeile_24_zurechnung(self) -> None:
+        #todo
+        pass
 
     def _addItems(self, data: dict):
         for k, v in data.items():
