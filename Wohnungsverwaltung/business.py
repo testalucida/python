@@ -320,11 +320,41 @@ class DataProvider:
         data = self._getReadRetValOrRaiseException(resp)
         return data
 
-    def getAnlageVData_47_mtlVerwaltkosten(self, whg_id: int, vj: int) -> int:
+    def getAnlageVData_47_verwaltkosten(self, whg_id: int, vj: int) -> int:
         resp = self.__session. \
-            get('http://localhost/kendelweb/dev/php/business.php?q=anlagev_47_mtl_verwaltkost&id=' +
+            get('http://localhost/kendelweb/dev/php/business.php?q=anlagev_47_verwaltkosten&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         data = self._getReadRetValOrRaiseException(resp)
+        return int(data['verwaltkosten'])
+
+    def getAnlageVData_49_sonstiges(self, whg_id: int, vj: int) -> dict:
+        """
+        Berechnung Zeile 49:
+        Summe der mtl. Hausgeldzahlungen zzgl/abzgl Nachzahlungen/Rückzahlungen
+        PLUS zusätzliche Ausgaben z.B. für Fahrten zu ETVn, Porto, Telefon etc.
+        :param whg_id:
+        :param vj:
+        :return:
+        """
+        hausgeld = self.getHausgeld(whg_id, vj)
+        sonstige = self.getSonstigeKosten(whg_id, vj)
+
+        return None
+
+    def getHausgeld(self, whg_id: int, vj: int) -> dict:
+        resp = self.__session. \
+            get('http://localhost/kendelweb/dev/php/business.php?q=hausgeld&id=' +
+                str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
+        data = self._getReadRetValOrRaiseException(resp)
+
+        return data
+
+    def getSonstigeKosten(self, whg_id: int, vj: int) -> dict:
+        resp = self.__session. \
+            get('http://localhost/kendelweb/dev/php/business.php?q=sonstige&id=' +
+                str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
+        data = self._getReadRetValOrRaiseException(resp)
+
         return data
 
 

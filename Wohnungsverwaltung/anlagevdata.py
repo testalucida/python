@@ -273,7 +273,7 @@ class AnlageVData:
     def _sectionWerbungskosten(self):
         self._getZeile_33_to_35_afa()
         self._getZeile_39_to_45_erhaltung()
-        self._getZeile_47_mtlVerwaltkosten()
+        self._getZeile_47_verwaltkosten()
         self._getZeile_49_sonstiges()
 
     def _getZeile_33_to_35_afa(self):
@@ -342,46 +342,16 @@ class AnlageVData:
                 self._createZeile(z, (ident, betraege[y]))
             z += 1
 
-    def _getZeile_47_mtlVerwaltkosten(self) -> None:
-        data = self._dataProvider.\
-                getAnlageVData_47_mtlVerwaltkosten(self._whg_id, self._vj)
-        """
-        data: list of dictionaries, order by gueltig_ab ascending
-        [
-            {
-                'mea_id': '3', 
-                'gueltig_ab': '2017-08-01', 
-                'gueltig_bis': '2018-09-30', 
-                'hg_netto_abschlag': '310.00', 
-                'ruecklage_zufuehr': '20.00'
-            },
-            {
-                'mea_id': '3', 
-                'gueltig_ab': '2017-08-01', 
-                'gueltig_bis': '2018-09-30', 
-                'hg_netto_abschlag': '310.00', 
-                'ruecklage_zufuehr': '20.00'
-            },
-            ... 
-        ]
-        
-        ruecklage_zufuehr wird im Rahmen der ESt nicht benötigt, aber an 
-        anderer Stelle für die Renditeberechnung.
-        """
-        #count the number of months to be considered in each dictionary
-        #and multiply them by netto_miete and nk_abschlag
-        hg_netto_abschlag = 0
-        for d in data:
-            cnt = datehelper.getNumberOfMonths(d['gueltig_ab'], d['gueltig_bis'], self._vj)
-            hg_netto_abschlag += (float(d['netto_miete']) * cnt) #Zeile 47
+    def _getZeile_47_verwaltkosten(self) -> None:
+        vwkost: int = self._dataProvider.\
+                getAnlageVData_47_verwaltkosten(self._whg_id, self._vj)
+        self._createZeile(49, ('verwaltungskosten', vwkost))
 
-        data = {
-            'hg_netto_abschlag': hg_netto_abschlag
-        }
-        self._addItems(data)
 
     def _getZeile_49_sonstiges(self) -> None:
-        pass
+        sonstiges: int = self._dataProvider.\
+            getAnlageVData_49_sonstiges(self._whg_id, self._vj)
+        #todo
 
     def _getZeile_24_zurechnung(self) -> None:
         #todo
