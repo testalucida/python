@@ -6,6 +6,12 @@ import requests
 import json
 from abc import ABC, abstractmethod
 import datehelper
+from dictwrapper import DictWrapper, DictWrapperList
+from interfaces import \
+    XMtlHausgeld, XMtlHausgeldList, \
+    XHausgeldAdjustment, XHausgeldAdjustmentList, \
+    XSonstigeKosten, XSonstigeKostenList, \
+    XZurechnung
 
 # def testRequests():
 #     s = requests.Session() #create a persistent session
@@ -327,28 +333,27 @@ class DataProvider:
         data = self._getReadRetValOrRaiseException(resp)
         return int(data['verwaltkosten'])
 
-    def getAnlageVData_49_sonstiges(self, whg_id: int, vj: int) -> dict:
+    def getAnlageVData_49_sonstiges(self, whg_id: int, vj: int) -> int:
         """
         Berechnung Zeile 49:
         Summe der mtl. Hausgeldzahlungen zzgl/abzgl Nachzahlungen/Rückzahlungen
         PLUS zusätzliche Ausgaben z.B. für Fahrten zu ETVn, Porto, Telefon etc.
         :param whg_id:
         :param vj:
-        :return:
+        :return: (hausgeld, sonstige)
         """
         hausgeld = self.getHausgeld(whg_id, vj)
         sonstige = self.getSonstigeKosten(whg_id, vj)
 
-        return None
+        return round(hausgeld + sonstige)
 
-    def getHausgeld(self, whg_id: int, vj: int) -> dict:
+    def getHausgeld(self, whg_id: int, vj: int) -> int:
         #periodical payments
         resp = self.__session. \
             get('http://localhost/kendelweb/dev/php/business.php?q=anlageV_49_mtl_hausgeld&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
-        hg = self._getReadRetValOrRaiseException(resp)
         '''
-        hg: list of dictionaries:
+        resp contains a list of dictionaries:
         <class 'list'>: 
         [
             {
@@ -366,15 +371,19 @@ class DataProvider:
             ...
         ]
         '''
+        hg = XMtlHausgeldList(XMtlHausgeld,
+                             self._getReadRetValOrRaiseException(resp))
+        sum_abschlag = 0
+        for dic in hg.getList():
+            cnt: int = datehelper.getNumberOfMonths(dic.gueltig_ab, dic.gueltig_bis, vj)
+            sum_abschlag += (cnt * float(dic.hg_netto_abschlag))
 
         #adjustment payment as needed
         resp = self.__session. \
             get('http://localhost/kendelweb/dev/php/business.php?q=anlagev_49_hausgeld_korr&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
-        korr = self._getReadRetValOrRaiseException(resp)
-
         '''
-        korr: list of dictionaries:
+        resp contains a list of dictionaries (typically only one):
         <class 'list'>: 
         [
             {
@@ -384,20 +393,45 @@ class DataProvider:
                 'art_id': '1', 
                 'art': 'Hausgeldnachzahlung (Eigentümer->Verw.)', 
                 'ein_aus': 'a'
-            }
+            },
+            ...
         ]
         '''
+        hgadjust = XHausgeldAdjustmentList(XHausgeldAdjustment,
+                                          self._getReadRetValOrRaiseException(resp))
+        sum_adjust = 0
+        for dic in hgadjust.getList():
+            adj_betrag = float(dic.betrag)
+            if dic.ein_aus == 'e': # hausgeld is an expense.
+                                   # 'e' means a redemption, a reduction of this expense,
+                                    # so we have to subtract it from the periodically payment ,
+                                   # hence multiply by -1
+                adj_betrag *= -1
+            sum_adjust += adj_betrag
 
-        return None
+        hg_adjusted = sum_abschlag + sum_adjust
 
-    def getSonstigeKosten(self, whg_id: int, vj: int) -> dict:
+        return hg_adjusted
+
+    def getSonstigeKosten(self, whg_id: int, vj: int) -> float:
         resp = self.__session. \
-            get('http://localhost/kendelweb/dev/php/business.php?q=sonstige&id=' +
+            get('http://localhost/kendelweb/dev/php/business.php?q=anlagev_49_sonstige_ausgaben&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
-        data = self._getReadRetValOrRaiseException(resp)
+        sk = XSonstigeKostenList(XSonstigeKosten,
+                                 self._getReadRetValOrRaiseException(resp))
 
-        return data
+        sum_sonstige = 0.0
+        for item in sk.getList():
+            sum_sonstige += float(item.betrag)
 
+        return sum_sonstige
+
+    def getAnlageVData_24_zurechnung(self, whg_id: int):
+        resp = self.__session. \
+            get('http://localhost/kendelweb/dev/php/business.php?q=anlagev_24_zurechnung&id=' +
+                str(whg_id) + '&user=' + self.__user)
+        zurechnung = XZurechnung(self._getReadRetValOrRaiseException(resp))
+        return (zurechnung.steuerl_zurechng_mann, zurechnung.steuerl_zurechng_frau)
 
     '''
     insert afa
@@ -678,8 +712,8 @@ if __name__ == '__main__':
     prov = DataProvider()
     prov.connect('martin', 'fuenf55')
 
-    hg = prov.getHausgeld(1, 2018)
-
+    #hg = prov.getHausgeld(1, 2018)
+    sonst = prov.getAnlageVData_49_sonstiges(1, 2018)
     # afa = {
     #     'afa_id': 1,
     #     'betrag': 111,

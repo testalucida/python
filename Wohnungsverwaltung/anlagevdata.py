@@ -330,6 +330,9 @@ class AnlageVData:
         if 'voll' in betraege:
             self._createZeile(39, ('voll_abzuziehende', betraege['voll']))
 
+#todo: prüfen, ob das ab z41 stimmt. In Z41 kommt der Gesamtaufwand und der Anteil
+# nur des Vj, in die darunterliegenden Zeilen der jeweilige Anteil der Vorjahre
+
         z = 41 #erste Zeile für zu verteilende Erhalt.Aufwendungen
         # in Zeile 41 kommt der Anteil für das Vj:
         if self._vj in betraege:
@@ -345,17 +348,19 @@ class AnlageVData:
     def _getZeile_47_verwaltkosten(self) -> None:
         vwkost: int = self._dataProvider.\
                 getAnlageVData_47_verwaltkosten(self._whg_id, self._vj)
-        self._createZeile(49, ('verwaltungskosten', vwkost))
+        self._createZeile(47, ('verwaltungskosten', vwkost))
 
 
     def _getZeile_49_sonstiges(self) -> None:
-        sonstiges: int = self._dataProvider.\
+        sonstige: int = self._dataProvider.\
             getAnlageVData_49_sonstiges(self._whg_id, self._vj)
-        #todo
+        self._createZeile(49, ('sonstige', sonstige))
 
     def _getZeile_24_zurechnung(self) -> None:
-        #todo
-        pass
+        zurechng_mann, zurechng_frau = \
+            self._dataProvider.getAnlageVData_24_zurechnung(self._whg_id)
+        self._createZeile(24, ('zurechng_mann', zurechng_mann),
+                              ('zurechng_frau', zurechng_frau))
 
     def _addItems(self, data: dict):
         for k, v in data.items():
