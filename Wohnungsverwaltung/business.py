@@ -342,12 +342,53 @@ class DataProvider:
         return None
 
     def getHausgeld(self, whg_id: int, vj: int) -> dict:
+        #periodical payments
         resp = self.__session. \
-            get('http://localhost/kendelweb/dev/php/business.php?q=hausgeld&id=' +
+            get('http://localhost/kendelweb/dev/php/business.php?q=anlageV_49_mtl_hausgeld&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
-        data = self._getReadRetValOrRaiseException(resp)
+        hg = self._getReadRetValOrRaiseException(resp)
+        '''
+        hg: list of dictionaries:
+        <class 'list'>: 
+        [
+            {
+                'mea_id': '3', 
+                'gueltig_ab': '2017-08-01', 
+                'gueltig_bis': '2018-09-30', 
+                'hg_netto_abschlag': '20.00'
+            }, 
+            {
+                'mea_id': '4', 
+                'gueltig_ab': '2018-10-01', 
+                'gueltig_bis': '2019-05-31', 
+                'hg_netto_abschlag': '25.00'
+            },
+            ...
+        ]
+        '''
 
-        return data
+        #adjustment payment as needed
+        resp = self.__session. \
+            get('http://localhost/kendelweb/dev/php/business.php?q=anlagev_49_hausgeld_korr&id=' +
+                str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
+        korr = self._getReadRetValOrRaiseException(resp)
+
+        '''
+        korr: list of dictionaries:
+        <class 'list'>: 
+        [
+            {
+                'sea_id': '12', 
+                'vj': '2018', 
+                'betrag': '130.00', 
+                'art_id': '1', 
+                'art': 'Hausgeldnachzahlung (Eigentümer->Verw.)', 
+                'ein_aus': 'a'
+            }
+        ]
+        '''
+
+        return None
 
     def getSonstigeKosten(self, whg_id: int, vj: int) -> dict:
         resp = self.__session. \
@@ -636,14 +677,17 @@ class DataProvider:
 if __name__ == '__main__':
     prov = DataProvider()
     prov.connect('martin', 'fuenf55')
-    afa = {
-        'afa_id': 1,
-        'betrag': 111,
-        'prozent': 1.23,
-        'lin_deg_knz': 'l',
-        'afa_wie_vorjahr': 'J'
-    }
-    prov.updateAfaData(afa)
+
+    hg = prov.getHausgeld(1, 2018)
+
+    # afa = {
+    #     'afa_id': 1,
+    #     'betrag': 111,
+    #     'prozent': 1.23,
+    #     'lin_deg_knz': 'l',
+    #     'afa_wie_vorjahr': 'J'
+    # }
+    # prov.updateAfaData(afa)
 
     # id = prov.getAfaId(1, 2019)
     # print(id)
