@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-#import urllib.request
 import requests
 import json
 from abc import ABC, abstractmethod
+from typing import Dict, List, Text
 import datehelper
 from dictwrapper import DictWrapper, DictWrapperList
 from interfaces import \
@@ -305,18 +305,32 @@ class DataProvider:
         data = self._getReadRetValOrRaiseException(resp)
         return data
 
-    def getAnlageVData_9_to_14_mtlEinn(self, whg_id: int, vj: int) -> int:
+    def getAnlageVData_9_to_14_mtlEinn(self, whg_id: int, vj: int) -> List[Dict[str, str]]:
         resp = self.__session. \
             get('http://localhost/kendelweb/dev/php/business.php?q=anlagev_9_to_14_mtl_einn&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         data = self._getReadRetValOrRaiseException(resp)
         return data
 
-    def getAnlageVData_13_nkKorr(self, whg_id: int, vj: int) -> int:
+    def getAnlageVData_13_nkKorr(self, whg_id: int, vj: int) -> List[Dict[str, str]]:
         resp = self.__session. \
             get('http://localhost/kendelweb/dev/php/business.php?q=anlagev_13_nk_korr&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         data = self._getReadRetValOrRaiseException(resp)
+        """
+        data: list of dictionaries:
+        [
+            {
+                'sea_id': '11', 
+                'vj': '2018', 
+                'betrag': '93.00', 
+                'art_id': '3', 
+                'art': 'Nebenkostennachzahlung (Mieter->Verm.)',
+                'ein_aus': 'e'
+            },
+            ...
+        ]
+        """
         return data
 
     def getAnlageVData_grundsteuer(self, whg_id: int, vj: int) -> int:

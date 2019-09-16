@@ -1,7 +1,9 @@
 import json
 import datetime
+from typing import Dict, List, Text
 from business import DataProvider
 import datehelper
+from interfaces import XErhaltungsaufwand
 
 class AnlageVData:
     """
@@ -207,7 +209,7 @@ class AnlageVData:
         self._createZeile(8, ('Gesamtwohnfläche', data['qm']))
 
     def _getZeile_9_to_14_mtlEinn(self) -> None:
-        data = self._dataProvider.\
+        data: List[Dict[str, str]] = self._dataProvider.\
                 getAnlageVData_9_to_14_mtlEinn(self._whg_id, self._vj)
         """
         data: list of dictionaries, order by gueltig_ab ascending
@@ -240,7 +242,7 @@ class AnlageVData:
         #Grundsteuer: wird ignoriert, da sie ein durchlaufender Posten ist
 
         #get nebenkosten adjustment of last vj
-        nkAdjustList = self._dataProvider. \
+        nkAdjustList: List[Dict[str, str]] = self._dataProvider. \
             getAnlageVData_13_nkKorr(self._whg_id, self._vj)
         """
         nkAdjustList: list of dictionaries:
@@ -314,42 +316,28 @@ class AnlageVData:
         self._writeLog(''.join(('>>>> ', self._wohnungIdent, ' <<<<')))
         txt = "\nFolgende Rechnungen werden zum Nachweis benötigt:\n"
         self._writeLog(txt)
+
         #die für dieses Vj relevanten Rechnungen finden:
         rgfilter = RechnungFilter(self._whg_id, self._vj, self._dataProvider)
         rgfilter.registerCallback(self._writeRechnungenLog)
-        betraege: dict = rgfilter.getBetraege()
-        """
-            betraege: 
-            {
-                'voll': 223.45, 
-                2018: 145.95, 
-                2017: 438.27
-            }
-        """
+        aufwaende: XErhaltungsaufwand = rgfilter.getErhaltungsaufwaende()
         # die notwendigen Einträge in die Schnittstellendatei machen:
-        if 'voll' in betraege:
-            self._createZeile(39, ('voll_abzuziehende', betraege['voll']))
-
-#todo: prüfen, ob das ab z41 stimmt. In Z41 kommt der Gesamtaufwand und der Anteil
-# nur des Vj, in die darunterliegenden Zeilen der jeweilige Anteil der Vorjahre
+        self._createZeile(39, ('voll_abzuziehende', aufwaende.voll_abzuziehen))
 
         z = 41 #erste Zeile für zu verteilende Erhalt.Aufwendungen
-        # in Zeile 41 kommt der Anteil für das Vj:
-        if self._vj in betraege:
-            self._createZeile(z, ('vj', betraege[self._vj]))
+        # in Zeile 41 kommt der Gesamtaufwand des Vj und der Anteil für das Vj:
+        self._createZeile(z, ('gesamtaufwand_vj', aufwaende.vj_gesamtaufwand),
+                             ('anteil_vj', aufwaende.abzuziehen_vj))
         z += 1 # in die nächste Zeile (42) kommt der Anteil für Vj - 4 Jahre
-        y1 = self._vj - 4
-        for y in range(y1, self._vj):
-            if y in betraege:
-                ident = ''.join(('vj minus ', str(self._vj - y)))
-                self._createZeile(z, (ident, betraege[y]))
+        for y in range(4, 0, -1):
+            ident = ''.join(('vj_minus_', str(y)))
+            self._createZeile(z, (ident, aufwaende.get_abzuziehen_aus_vj_minus(y)))
             z += 1
 
     def _getZeile_47_verwaltkosten(self) -> None:
         vwkost: int = self._dataProvider.\
                 getAnlageVData_47_verwaltkosten(self._whg_id, self._vj)
         self._createZeile(47, ('verwaltungskosten', vwkost))
-
 
     def _getZeile_49_sonstiges(self) -> None:
         sonstige: int = self._dataProvider.\
@@ -408,8 +396,6 @@ class RechnungFilter:
         self._whg_id = whg_id
         self._vj = vj
         self._dataprovider = dataprovider
-        self._rechnungen: list = None
-        self._betraege: dict = None
         self._callback = None
 
     def registerCallback(self, cb) -> None:
@@ -417,16 +403,10 @@ class RechnungFilter:
         # (representing a rechnung)
         self._callback = cb
 
-    def getBetraege(self) -> list:
-        if self._betraege is None:
-            self._getRechnungen()
-        return self._betraege
-
-    def _getRechnungen(self):
-        self._rechnungen = self._dataprovider.getRechnungsUebersicht(self._whg_id)
-        #rglist: list of dictionaries:
+    def getErhaltungsaufwaende(self):
+        rechnungen: List[Dict[str, str]] = self._dataprovider.getRechnungsUebersicht(self._whg_id)
         """
-        class 'dict'>: 
+        rechnungen: list of dictionaries: 
             {
                 'rg_id': '48', 
                 'rg_datum': '30.08.2019', 
@@ -439,31 +419,36 @@ class RechnungFilter:
                 'year_bezahlt_am': '2019'
             }
         """
-        betraege = dict()
-        betraege['voll'] = 0
-        for rg in self._rechnungen:
+        aufwand = XErhaltungsaufwand()
+        for rg in rechnungen:
             year_bezahlt_am = int(rg['year_bezahlt_am'])
-            if not rg['year_bezahlt_am']:
+            if not rg['year_bezahlt_am']: #Rechnung noch nicht bezahlt
                 pass
             elif year_bezahlt_am > self._vj:
+                #Rechnung noch nicht relevant, erst nach dem Vj bezahlt
                 pass
             elif year_bezahlt_am + int(rg['verteilung_jahre']) <= self._vj:
+                # Rechnung nicht mehr relevant - schon im Vor-Vj bezahlt oder
+                # fertig abgeschrieben
                 pass
             else:
                 #in diesen Zweig läuft alles, was berücksichtigt werden soll,
-                #entweder 'voll' im Vj oder anteilig
+                #entweder 'voll_abzuziehen' im Vj oder anteilig
                 betrag = float(rg['betrag'])
                 verteilung_jahre = int(rg['verteilung_jahre'])
                 if year_bezahlt_am == self._vj and verteilung_jahre == 1:
-                    betraege['voll'] += betrag
+                    aufwand.voll_abzuziehen += betrag
                     self._doCallback(rg, True, betrag)
-                else:
+                elif verteilung_jahre > 1:
+                    # Versorgung der Zeilen 41 bis 45
+                    if year_bezahlt_am == self._vj:
+                        aufwand.vj_gesamtaufwand += betrag
                     anteil = betrag / verteilung_jahre
-                    if year_bezahlt_am in betraege:
-                        betraege[year_bezahlt_am] += anteil
-                    else: betraege[year_bezahlt_am] = anteil
+                    years = self._vj - year_bezahlt_am
+                    aufwand.addto_abzuziehen_aus_vj_minus(years, anteil)
                     self._doCallback(rg, False, anteil)
-        self._betraege = betraege
+        aufwand.roundAufwaende()
+        return aufwand
 
     def _doCallback(self, rg: dict, vollAbz: bool, betrag: float):
         if self._callback:

@@ -46,3 +46,41 @@ class XZurechnung(DictWrapper):
         self.steuerl_zurechng_frau = None
         DictWrapper.__init__(self, dic)
 
+class XErhaltungsaufwand:
+    def __init__(self):
+        self.voll_abzuziehen = 0
+        self.vj_gesamtaufwand = 0
+        self.abzuziehen_vj = 0
+        self.abzuziehen_aus_vj_minus_4 = 0
+        self.abzuziehen_aus_vj_minus_3 = 0
+        self.abzuziehen_aus_vj_minus_2 = 0
+        self.abzuziehen_aus_vj_minus_1 = 0
+        self._switch = {
+            0: 'abzuziehen_vj',
+            1: 'abzuziehen_aus_vj_minus_1',
+            2: 'abzuziehen_aus_vj_minus_2',
+            3: 'abzuziehen_aus_vj_minus_3',
+            4: 'abzuziehen_aus_vj_minus_4'
+        }
+
+    def addto_abzuziehen_aus_vj_minus(self, years: int, betrag: float) -> None:
+        self.__dict__[self._switch.get(years)] += betrag
+
+    def get_abzuziehen_aus_vj_minus(self, years: int) -> float or int:
+        return self.__dict__[self._switch.get(years)]
+
+    def roundAufwaende(self):
+        for v in self._switch.values():
+            self.__dict__[v] = round(self.__dict__[v])
+
+
+def test():
+    ea = XErhaltungsaufwand()
+    ea.addto_abzuziehen_aus_vj_minus(2, 112.34)
+    ea.roundAufwaende()
+    n = ea.get_abzuziehen_aus_vj_minus(2)
+    print(n)
+
+
+if __name__ == '__main__':
+    test()
