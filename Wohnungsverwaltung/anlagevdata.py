@@ -147,7 +147,7 @@ class AnlageVData:
     def _writeInterface(self) -> None:
         jsonfile = self._savePath + "/anlagevdata_" + str(self._vj) + ".json"
         f = open(jsonfile, 'w')
-        json.dump(self._xdatadict, f)
+        json.dump(self._xdatadict, f, indent=4)
         #f.write(x)
         f.close()
 
@@ -206,7 +206,7 @@ class AnlageVData:
         self._createZeile(6, ('Einheitswert-Aktenzeichen', data['einhwert_az']))
         self._createZeile(7, ('Als Ferienwohnung genutzt', data['fewontzg']),
                              ('An Angehörige vermietet', data['isverwandt']))
-        self._createZeile(8, ('Gesamtwohnfläche', data['qm']))
+        self._createZeile(8, ('Gesamtwohnfläche', int(data['qm'])))
 
     def _getZeile_9_to_14_mtlEinn(self) -> None:
         data: List[Dict[str, str]] = self._dataProvider.\
@@ -263,14 +263,12 @@ class AnlageVData:
             if adjust['ein_aus'] == 'a': betrag *= -1
             adjustment += betrag
 
-        einnahme = netto_miete + nk_abschlag #Zeile 21
         nk_eff = nk_abschlag + adjustment
+        einnahme = netto_miete + nk_eff #Zeile 21
 
-        self._createZeile(9, ('Mieteinnahmen ohne Umlagen', netto_miete))
-        z13 = self._createZeile(13, ('Umlagen, verrechnet mit Erstattungen', nk_eff))
-        z13['nk_abschlag'] = nk_abschlag
-        z13['nk_korrektur'] = adjustment
-        self._createZeile(21, ('Summe der Einnahmen', einnahme))
+        self._createZeile(9, ('Mieteinnahmen ohne Umlagen', round(netto_miete)))
+        self._createZeile(13, ('Umlagen, verrechnet mit Erstattungen', round(nk_eff)))
+        self._createZeile(21, ('Summe der Einnahmen', round(einnahme)))
 
     def _sectionWerbungskosten(self):
         self._getZeile_33_to_35_afa()
@@ -297,9 +295,9 @@ class AnlageVData:
         wie_vj = 'X' if afa['afa_wie_vorjahr'] == 'Ja' else ' '
         self._createZeile(33,
                           (afa_art, 'X'),
-                          ('prozent', afa['prozent']),
+                          ('prozent', float(afa['prozent'])),
                           ('wie_vorjahr', wie_vj),
-                          ('betrag', afa['betrag']))
+                          ('betrag', int(afa['betrag'])))
         #todo: createZeile 34, 35
 
     def _getZeile_36_to_37_afa(self) -> None:
