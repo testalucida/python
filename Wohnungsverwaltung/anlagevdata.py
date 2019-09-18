@@ -53,7 +53,7 @@ class AnlageVData:
         self._anlage_nr = anlage_nr
         self._vj = vj
         self._xdatadict = dict() #Dictionary für die Schnittstellendaten
-        self._zeilenlist = list() #liste der Zeilen,
+        #self._zeilenlist = list() #liste der Zeilen,
                                   # die dem Schnittstellendict. hinzugefügt wird
         self._dataProvider = dataprovider
         self._savePath = '/home/martin/Projects/python/Wohnungsverwaltung'
@@ -128,7 +128,7 @@ class AnlageVData:
         self._writeLog('Starte Verarbeitung um ' + str(now))
 
         self._xdatadict['vj'] = self._vj
-        self._xdatadict['zeilen'] = self._zeilenlist
+        self._xdatadict['zeilen'] = dict()
 
         self._getZeile_1_to_8()
         self._getZeile_9_to_14_mtlEinn()
@@ -348,10 +348,6 @@ class AnlageVData:
         self._createZeile(24, ('zurechng_mann', zurechng_mann),
                               ('zurechng_frau', zurechng_frau))
 
-    def _addItems(self, data: dict):
-        for k, v in data.items():
-            self._xdatadict[k] = v
-
     def _createZeile(self, nr: int, *args):
         """
         create a dictionary representing the fields in a Zeile of Anlage V
@@ -373,8 +369,8 @@ class AnlageVData:
                 ]
             }
         """
-        zeile = dict()
-        zeile['zeile'] = nr
+        #zeile = dict()
+        #zeile['zeile'] = nr
         feldlist = list()
         for item in args:
             d = dict()
@@ -382,10 +378,11 @@ class AnlageVData:
             d['value'] = item[1]
             feldlist.append(d)
 
-        zeile['felder'] = feldlist
+        #zeile['felder'] = feldlist
+        self._xdatadict['zeilen'][nr] = feldlist
         #add zeile to interface dictionary, key 'zeilen'
-        self._zeilenlist.append(zeile)
-        return zeile
+        #self._zeilenlist.append(zeile)
+        #return zeile
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
