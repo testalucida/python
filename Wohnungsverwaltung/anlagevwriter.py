@@ -1,100 +1,66 @@
-from tkinter import *
-from tkinter import Tk, Button, Canvas, font
-from functools import partial
+import os
+import sys
+from fpdf import FPDF
 import json
 from anlagevlayout import zeilen
 
 class AnlageVWriter:
-    def __init__(self, parent, col: int, row: int):
-        self._canvas = Canvas(parent, width=788, height=1120) # A4
-        self._canvas.grid(column=col, row=row, sticky='nswe', padx=0, pady=0)
-        self._font = font.Font(family="Helvetica", size=12, weight="bold")
+    def __init__(self):
         self._data = None
+        self._pdf = None
 
-    def startWork_(self, layout_filename: str, data_filename: str):
-        self.write(25, 20, 'topline')
-        self.write('6.1c', '0.5c', '217/235')
-        xmin = '2.35c'
-        x = 90
-        y = 75
-        #self.write(x, y, 'Kendel')
-        self.write(xmin, '1.9c', 'Kendel')
-        y = 100
-        #self.write(x, y, 'Paulchen')
-        self.write(xmin, '2.7c', 'Paulchen')
-        y = 125
-        #self.write(x+80, y, 'Steuernummer')
-        self.write('2.35c', '2.7c', 'Paulchen')
-        y = 220
-        self.write(x, y, 'Straße')
-        y = 250
-        self.write(x, y, 'PLZ')
-        y = 287
-        self.write(x+25, y, 'Einheitswert-Aktenzeichen')
-        self.write('8.0c', '7.6c', 'Einheitswert')
-        y = 332 # zeile 7
-        self.write(x, y, '2')
-        y = 362 # zeile 8
-        self.write(x, y, '53')
+    def createPdf(self, data_filename: str):
+        # open interface written by AnlageVData:
+        anlv_zeilen = self._openAnlageData(data_filename)['zeilen']
 
-    def startWork(self, data_filename: str):
-        self._openAnlageData(data_filename)
-        self.write(25, 20, 'topline')
-        self.write('6.1c', '0.5c', '217/235')
+        self._pdf = FPDF()
+        self._pdf.add_page()
+        self._pdf.set_font('helvetica', '', 12.0)
 
-        anlv_zeilen = self._data['zeilen']
+        x = 0
+        y = 1
+        for z, coords in zeilen.items():
+            # zeilen: dictionary defined in anlagevlayout.py
+            # key (z): line number
+            # value (coords): list containing x, y or list of lists -
+            # depending on the number of fields to print
 
-        for z, v in zeilen.items():
-            print('z: ', z, 'v: ', v)
+            try:
+                fieldlist = anlv_zeilen[str(z)] # get data for line z
+                i = 0
+                for field in fieldlist:
+                    print(z, field['value'])
+                    if type(coords[i]) == tuple:
+                        self.write(coords[i][x], coords[i][y], field['value'])
+                        i += 1
+                    else:
+                        self.write(coords[x], coords[y], field['value'])
+            except:
+                print('unexpected error: ', sys.exc_info()[0])
 
+        self._pdf.output('./anlagev.pdf', 'F')
 
+        if sys.platform.startswith("linux"):
+            os.system("xdg-open ./anlagev.pdf")
+        else:
+            os.system("./anlagev.pdf")
 
-        for zeile, value_list in anlv_zeilen.items():
-            print(zeile, value_list)
+    def write(self, x: int, y: int, text: str) -> None:
+        self._pdf.set_xy(x, y)
+        self._pdf.cell(ln=0, h=5.0, align='L', w=18.0, txt=text, border=0)
 
-    def get_values_to_print(self, znr: int):
-        return
-
-    def createTestTemplate(self):
-        y = 20
-        for x in range(0, 200, 10):
-            if x % 10 == 0:
-                self._canvas.create_text(x, y, font=('courier', 10), text='|')
-                self._canvas.create_text(x, y+20, font=('courier', 8), text=str(x))
-            else:
-                self._canvas.create_text(x, y, font=('courier', 10), text='.')
-
-    def print_in_cm(self):
-        y = 'c1'
-        self._canvas.create_text('1.0c', '2.0c', text='testtext')
-        self._canvas.create_text('2.0c', '3.0c', text='testtext')
-
-
-    def create_postscript(self):
-        self._canvas.postscript(file='temp.ps', colormode='color')
-
-    def write(self, x: int or str, y: int or str, s: str) -> None:
-        self._canvas.create_text(x, y, font=self._font, anchor='sw', text=s)
-
-    def _openAnlageData(self, filename):
+    def _openAnlageData(self, filename: str) -> None:
+        """
+        open interface written by AnlageVData
+        :param filename: name of json file containing interface data
+        :return:
+        """
         f = open(filename)
-        self._data = json.load(f)
+        return json.load(f)
 
 def test():
-    root = Tk()
-    # root.rowconfigure(0, weight=1)
-    # root.columnconfigure(0, weight=1)
-
-    avw = AnlageVWriter(root, 0, 1)
-
-    b = Button(root, text='Create Postscript', command=avw.create_postscript)
-    b.grid(column=0, row=0)
-
-    avw.startWork("/home/martin/Projects/python/Wohnungsverwaltung/anlagevdata_2018.json")
-    #avw.createTestTemplate()
-    #avw.print_in_cm()
-
-    root.mainloop()
+    writer = AnlageVWriter()
+    writer.createPdf("/home/martin/Projects/python/Wohnungsverwaltung/anlagevdata_2018.json")
 
 if __name__ == '__main__':
     test()

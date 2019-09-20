@@ -60,6 +60,8 @@ class AnlageVData:
         self._log = None
         self._wohnungIdent = None
         self._stammdaten = None
+        self._summe_einnahmen = 0
+        self._summe_wk = 0
 
     def _checkForSavePath(self) -> None:
         """
@@ -133,7 +135,7 @@ class AnlageVData:
         self._getZeile_1_to_8()
         self._getZeile_9_to_14_mtlEinn()
         self._sectionWerbungskosten()
-        self._getZeile_24_zurechnung()
+        self._getZeile_23_24_ueberschuss_zurechnung()
         self._writeInterface()
 
         now = datetime.datetime.now()
@@ -206,7 +208,7 @@ class AnlageVData:
         self._createZeile(6, ('Einheitswert-Aktenzeichen', data['einhwert_az']))
         self._createZeile(7, ('Als Ferienwohnung genutzt', data['fewontzg']),
                              ('An Angehörige vermietet', data['isverwandt']))
-        self._createZeile(8, ('Gesamtwohnfläche', int(data['qm'])))
+        self._createZeile(8, ('Gesamtwohnfläche', data['qm']))
 
     def _getZeile_9_to_14_mtlEinn(self) -> None:
         data: List[Dict[str, str]] = self._dataProvider.\
@@ -264,17 +266,19 @@ class AnlageVData:
             adjustment += betrag
 
         nk_eff = nk_abschlag + adjustment
-        einnahme = netto_miete + nk_eff #Zeile 21
+        einnahme = round(netto_miete + nk_eff) #Zeile 21
 
         self._createZeile(9, ('Mieteinnahmen ohne Umlagen', round(netto_miete)))
         self._createZeile(13, ('Umlagen, verrechnet mit Erstattungen', round(nk_eff)))
-        self._createZeile(21, ('Summe der Einnahmen', round(einnahme)))
+        self._createZeile(21, ('Summe der Einnahmen', einnahme))
+        self._summe_einnahmen = einnahme
 
     def _sectionWerbungskosten(self):
         self._getZeile_33_to_35_afa()
         self._getZeile_39_to_45_erhaltung()
         self._getZeile_47_verwaltkosten()
         self._getZeile_49_sonstiges()
+        self._getZeile_22_und_50_summe_wk()
 
     def _getZeile_33_to_35_afa(self):
         afa = self._dataProvider.getAfa(self._whg_id, self._vj)
@@ -295,12 +299,15 @@ class AnlageVData:
         wie_vj = 'X' if afa['afa_wie_vorjahr'] == 'Ja' else ' '
         self._createZeile(33,
                           (afa_art, 'X'),
-                          ('prozent', float(afa['prozent'])),
+                          ('prozent', afa['prozent']),
                           ('wie_vorjahr', wie_vj),
-                          ('betrag', int(afa['betrag'])))
+                          ('betrag', afa['betrag']))
+
+        self._summe_wk += int(afa['betrag'])
+
         #todo: createZeile 34, 35
 
-    def _getZeile_36_to_37_afa(self) -> None:
+    def _getZeile_36_to_37_kredit(self) -> None:
         #todo
         pass
 
@@ -321,32 +328,49 @@ class AnlageVData:
         aufwaende: XErhaltungsaufwand = rgfilter.getErhaltungsaufwaende()
         # die notwendigen Einträge in die Schnittstellendatei machen:
         self._createZeile(39, ('voll_abzuziehende', aufwaende.voll_abzuziehen))
+        self._summe_wk += aufwaende.voll_abzuziehen
 
         z = 41 #erste Zeile für zu verteilende Erhalt.Aufwendungen
         # in Zeile 41 kommt der Gesamtaufwand des Vj und der Anteil für das Vj:
         self._createZeile(z, ('gesamtaufwand_vj', aufwaende.vj_gesamtaufwand),
                              ('anteil_vj', aufwaende.abzuziehen_vj))
+        self._summe_wk += aufwaende.abzuziehen_vj
+
         z += 1 # in die nächste Zeile (42) kommt der Anteil für Vj - 4 Jahre
         for y in range(4, 0, -1):
             ident = ''.join(('vj_minus_', str(y)))
-            self._createZeile(z, (ident, aufwaende.get_abzuziehen_aus_vj_minus(y)))
+            aufwand = aufwaende.get_abzuziehen_aus_vj_minus(y)
+            self._createZeile(z, (ident, aufwand))
+            self._summe_wk += aufwand
             z += 1
 
     def _getZeile_47_verwaltkosten(self) -> None:
         vwkost: int = self._dataProvider.\
                 getAnlageVData_47_verwaltkosten(self._whg_id, self._vj)
         self._createZeile(47, ('verwaltungskosten', vwkost))
+        self._summe_wk += vwkost
 
     def _getZeile_49_sonstiges(self) -> None:
         sonstige: int = self._dataProvider.\
             getAnlageVData_49_sonstiges(self._whg_id, self._vj)
         self._createZeile(49, ('sonstige', sonstige))
+        self._summe_wk += sonstige
 
-    def _getZeile_24_zurechnung(self) -> None:
+    def _getZeile_22_und_50_summe_wk(self) -> None:
+        summe_wk = round(self._summe_wk)
+        self._createZeile(22, ('summe_werbungskosten', summe_wk))
+        self._createZeile(50, ('summe_werbungskosten', summe_wk))
+
+    def _getZeile_23_24_ueberschuss_zurechnung(self) -> None:
+        ueberschuss = round(self._summe_einnahmen - self._summe_wk)
+        self._createZeile(23, ('ueberschuss', ueberschuss))
+
         zurechng_mann, zurechng_frau = \
-            self._dataProvider.getAnlageVData_24_zurechnung(self._whg_id)
-        self._createZeile(24, ('zurechng_mann', zurechng_mann),
-                              ('zurechng_frau', zurechng_frau))
+            self._dataProvider.getAnlageVData_24_zurechnung(self._whg_id) # prozentsätze
+        betrag_mann = int(zurechng_mann)/100 * ueberschuss
+        betrag_frau = ueberschuss - betrag_mann
+        self._createZeile(24, ('zurechng_mann', round(betrag_mann)),
+                              ('zurechng_frau', round(betrag_frau)))
 
     def _createZeile(self, nr: int, *args):
         """
@@ -369,20 +393,14 @@ class AnlageVData:
                 ]
             }
         """
-        #zeile = dict()
-        #zeile['zeile'] = nr
         feldlist = list()
         for item in args:
             d = dict()
             d['name'] = item[0]
-            d['value'] = item[1]
+            d['value'] = str(item[1])
             feldlist.append(d)
 
-        #zeile['felder'] = feldlist
         self._xdatadict['zeilen'][nr] = feldlist
-        #add zeile to interface dictionary, key 'zeilen'
-        #self._zeilenlist.append(zeile)
-        #return zeile
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

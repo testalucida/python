@@ -303,6 +303,26 @@ class DataProvider:
             get('http://localhost/kendelweb/dev/php/business.php?q=anlagev_1_to_8&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         data = self._getReadRetValOrRaiseException(resp)
+        """
+        data:
+        <class 'dict'>: 
+        {
+            'name': 'Kendel', 
+            'vorname': 'Martin', 
+            'steuernummer': '217/235/50499', 
+            'strasse': 'Mendelstr. 24', 
+            'plz': '90429', 'ort': 'Nürnberg', 
+            'whg_bez': '3. OG rechts', 
+            'qm': '53', 
+            'angeschafft_am': '1989-02-13', 
+            'einhwert_az': '123456789', 
+            'fewontzg': 'N', 
+            'isverwandt': 'N'
+        }
+        """
+        data['angeschafft_am'] = datehelper.convertIsoToEur(data['angeschafft_am'])
+        data['fewontzg'] = '1' if data['fewontzg'] == 'J' else '2'
+        data['isverwandt'] = '1' if data['isverwandt'] == 'J' else '2'
         return data
 
     def getAnlageVData_9_to_14_mtlEinn(self, whg_id: int, vj: int) -> List[Dict[str, str]]:
