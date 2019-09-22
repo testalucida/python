@@ -296,9 +296,12 @@ class AnlageVData:
         } 
         """
         afa_art = 'linear' if afa['lin_deg_knz'] == 'l' else 'degressiv'
+        linear = 'X' if afa['lin_deg_knz'] == 'l' else ' '
+        degressiv = ' ' if linear == 'X' else 'X'
         wie_vj = 'X' if afa['afa_wie_vorjahr'] == 'Ja' else ' '
         self._createZeile(33,
-                          (afa_art, 'X'),
+                          ('linear', linear),
+                          ('degressiv', degressiv),
                           ('prozent', afa['prozent']),
                           ('wie_vorjahr', wie_vj),
                           ('betrag', afa['betrag']))
@@ -327,20 +330,22 @@ class AnlageVData:
         rgfilter.registerCallback(self._writeRechnungenLog)
         aufwaende: XErhaltungsaufwand = rgfilter.getErhaltungsaufwaende()
         # die notwendigen Einträge in die Schnittstellendatei machen:
-        self._createZeile(39, ('voll_abzuziehende', aufwaende.voll_abzuziehen))
+        self._createZeile(39, ('voll_abzuziehende',
+                               round(aufwaende.voll_abzuziehen)))
         self._summe_wk += aufwaende.voll_abzuziehen
 
         z = 41 #erste Zeile für zu verteilende Erhalt.Aufwendungen
         # in Zeile 41 kommt der Gesamtaufwand des Vj und der Anteil für das Vj:
-        self._createZeile(z, ('gesamtaufwand_vj', aufwaende.vj_gesamtaufwand),
-                             ('anteil_vj', aufwaende.abzuziehen_vj))
+        self._createZeile(z,
+                          ('gesamtaufwand_vj', round(aufwaende.vj_gesamtaufwand)),
+                          ('anteil_vj', round(aufwaende.abzuziehen_vj)))
         self._summe_wk += aufwaende.abzuziehen_vj
 
         z += 1 # in die nächste Zeile (42) kommt der Anteil für Vj - 4 Jahre
         for y in range(4, 0, -1):
             ident = ''.join(('vj_minus_', str(y)))
             aufwand = aufwaende.get_abzuziehen_aus_vj_minus(y)
-            self._createZeile(z, (ident, aufwand))
+            self._createZeile(z, (ident, round(aufwand)))
             self._summe_wk += aufwand
             z += 1
 

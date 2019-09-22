@@ -19,22 +19,39 @@ class AnlageVWriter:
 
         x = 0
         y = 1
+        a = 'L'
+        page_2 = False
         for z, coords in zeilen.items():
             # zeilen: dictionary defined in anlagevlayout.py
             # key (z): line number
             # value (coords): list containing x, y or list of lists -
             # depending on the number of fields to print
 
+            if z > 29 and not page_2:
+                self._pdf.add_page()
+                page_2 = True
+
             try:
                 fieldlist = anlv_zeilen[str(z)] # get data for line z
                 i = 0
                 for field in fieldlist:
-                    print(z, field['value'])
+                    posX = posY = 0
                     if type(coords[i]) == tuple:
-                        self.write(coords[i][x], coords[i][y], field['value'])
+                        args = list(coords[i])
+                        posX = coords[i][x]
+                        posY = coords[i][y]
                         i += 1
                     else:
-                        self.write(coords[x], coords[y], field['value'])
+                        args = list(coords)
+                        posX = coords[x]
+                        posY = coords[y]
+
+                    if len(args) == 2: #align not specified
+                        align = a #default
+                    else:
+                        align = args[2]
+
+                    self.write(posX, posY, field['value'], align)
             except:
                 print('unexpected error: ', sys.exc_info()[0])
 
@@ -45,9 +62,9 @@ class AnlageVWriter:
         else:
             os.system("./anlagev.pdf")
 
-    def write(self, x: int, y: int, text: str) -> None:
+    def write(self, x: int, y: int, text: str, align: str = 'L') -> None:
         self._pdf.set_xy(x, y)
-        self._pdf.cell(ln=0, h=5.0, align='L', w=18.0, txt=text, border=0)
+        self._pdf.cell(ln=0, h=5.0, align=align, w=18.0, txt=text, border=0)
 
     def _openAnlageData(self, filename: str) -> None:
         """
