@@ -6,12 +6,13 @@ import json
 from abc import ABC, abstractmethod
 from typing import Dict, List, Text
 import datehelper
-from dictwrapper import DictWrapper, DictWrapperList
+from xinterface import XInterface, XInterfaceList
 from interfaces import \
     XMtlHausgeld, XMtlHausgeldList, \
     XHausgeldAdjustment, XHausgeldAdjustmentList, \
     XSonstigeKosten, XSonstigeKostenList, \
-    XZurechnung
+    XZurechnung, XImmoStammdaten, XMtlEinnahmen, XMtlEinnahmenList, \
+    XAfa
 
 # def testRequests():
 #     s = requests.Session() #create a persistent session
@@ -261,6 +262,10 @@ class DataProvider:
         """
         return data
 
+    def getAnlageVData_33_to_35_afa(self, whg_id: int, vj: int) -> XAfa:
+        data = self.getAfa(whg_id, vj)
+        return XAfa(data)
+
     def _translateVeranlagung(self, data: dict):
         if data:
             data['art_afa'] = 'linear' if data['lin_deg_knz'] == 'l' else 'degressiv'
@@ -323,14 +328,15 @@ class DataProvider:
         data['angeschafft_am'] = datehelper.convertIsoToEur(data['angeschafft_am'])
         data['fewontzg'] = '1' if data['fewontzg'] == 'J' else '2'
         data['isverwandt'] = '1' if data['isverwandt'] == 'J' else '2'
-        return data
+        immostamm = XImmoStammdaten(data)
+        return immostamm
 
-    def getAnlageVData_9_to_14_mtlEinn(self, whg_id: int, vj: int) -> List[Dict[str, str]]:
+    def getAnlageVData_9_to_14_mtlEinn(self, whg_id: int, vj: int) -> XMtlEinnahmenList:
         resp = self.__session. \
             get('http://localhost/kendelweb/dev/php/business.php?q=anlagev_9_to_14_mtl_einn&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         data = self._getReadRetValOrRaiseException(resp)
-        return data
+        return XMtlEinnahmenList(XMtlEinnahmen, data)
 
     def getAnlageVData_13_nkKorr(self, whg_id: int, vj: int) -> List[Dict[str, str]]:
         resp = self.__session. \
@@ -351,6 +357,7 @@ class DataProvider:
             ...
         ]
         """
+
         return data
 
     def getAnlageVData_grundsteuer(self, whg_id: int, vj: int) -> int:

@@ -3,50 +3,203 @@ import datetime
 from typing import Dict, List, Text
 from business import DataProvider
 import datehelper
-from interfaces import XErhaltungsaufwand
+from interfaces import XErhaltungsaufwand, XImmoStammdaten, \
+    XMtlEinnahmen, XMtlEinnahmenList, XAfa
 
 class AnlageVData:
     """
     Sammelt alle Daten, die zur Erstellung der Anlage V für eine Wohnung
     für ein Veranlagungsjahr benötigt werden
     und schreibt sie in eine JSON-Schnittstelle mit folgendem Aufbau:
-{
-   "_comment":"Alle Daten, die für die Anlage V benötigt werden",
-   "vj": 2018,
-   "zeilen":[
-      {
-         "nr":1,
-         "felder":[
-            {
-               "name":"Name",
-               "value":"Richter"
+        {
+            "vj": 2018,
+            "zeilen": {
+                "1": [
+                    {
+                        "name": "Name",
+                        "value": "Kendel"
+                    }
+                ],
+                "2": [
+                    {
+                        "name": "Vorname",
+                        "value": "Martin"
+                    }
+                ],
+                "3": [
+                    {
+                        "name": "Steuernummer",
+                        "value": "217/235/50499"
+                    },
+                    {
+                        "name": "lfd. Nr.",
+                        "value": "2"
+                    }
+                ],
+                "4": [
+                    {
+                        "name": "Stra\u00dfe, Hausnummer",
+                        "value": "Mendelstr. 24"
+                    },
+                    {
+                        "name": "Angeschafft am",
+                        "value": "13.02.1989"
+                    }
+                ],
+                "5": [
+                    {
+                        "name": "Postleitzahl",
+                        "value": "90429"
+                    },
+                    {
+                        "name": "Ort",
+                        "value": "N\u00fcrnberg"
+                    }
+                ],
+                "6": [
+                    {
+                        "name": "Einheitswert-Aktenzeichen",
+                        "value": "123456789"
+                    }
+                ],
+                "7": [
+                    {
+                        "name": "Als Ferienwohnung genutzt",
+                        "value": "2"
+                    },
+                    {
+                        "name": "An Angeh\u00f6rige vermietet",
+                        "value": "2"
+                    }
+                ],
+                "8": [
+                    {
+                        "name": "Gesamtwohnfl\u00e4che",
+                        "value": "53"
+                    }
+                ],
+                "9": [
+                    {
+                        "name": "Mieteinnahmen ohne Umlagen",
+                        "value": "3750"
+                    }
+                ],
+                "13": [
+                    {
+                        "name": "Umlagen, verrechnet mit Erstattungen",
+                        "value": "348"
+                    }
+                ],
+                "21": [
+                    {
+                        "name": "Summe der Einnahmen",
+                        "value": "4098"
+                    }
+                ],
+                "33": [
+                    {
+                        "name": "linear",
+                        "value": "X"
+                    },
+                    {
+                        "name": "degressiv",
+                        "value": " "
+                    },
+                    {
+                        "name": "prozent",
+                        "value": "5.5"
+                    },
+                    {
+                        "name": "wie_vorjahr",
+                        "value": "X"
+                    },
+                    {
+                        "name": "betrag",
+                        "value": "2252"
+                    }
+                ],
+                "39": [
+                    {
+                        "name": "voll_abzuziehende",
+                        "value": "223"
+                    }
+                ],
+                "41": [
+                    {
+                        "name": "gesamtaufwand_vj",
+                        "value": "659"
+                    },
+                    {
+                        "name": "anteil_vj",
+                        "value": "146"
+                    }
+                ],
+                "42": [
+                    {
+                        "name": "vj_minus_4",
+                        "value": "0"
+                    }
+                ],
+                "43": [
+                    {
+                        "name": "vj_minus_3",
+                        "value": "0"
+                    }
+                ],
+                "44": [
+                    {
+                        "name": "vj_minus_2",
+                        "value": "0"
+                    }
+                ],
+                "45": [
+                    {
+                        "name": "vj_minus_1",
+                        "value": "438"
+                    }
+                ],
+                "47": [
+                    {
+                        "name": "verwaltungskosten",
+                        "value": "813"
+                    }
+                ],
+                "49": [
+                    {
+                        "name": "sonstige",
+                        "value": "592"
+                    }
+                ],
+                "22": [
+                    {
+                        "name": "summe_werbungskosten",
+                        "value": "4464"
+                    }
+                ],
+                "50": [
+                    {
+                        "name": "summe_werbungskosten",
+                        "value": "4464"
+                    }
+                ],
+                "23": [
+                    {
+                        "name": "ueberschuss",
+                        "value": "-366"
+                    }
+                ],
+                "24": [
+                    {
+                        "name": "zurechng_mann",
+                        "value": "-329"
+                    },
+                    {
+                        "name": "zurechng_frau",
+                        "value": "-37"
+                    }
+                ]
             }
-         ]
-      },
-      {
-         "nr":2,
-         "felder":[
-            {
-               "name":"Vorname",
-               "value":"Paul"
-            }
-         ]
-      },
-      {
-         "nr":3,
-         "felder":[
-            {
-               "name":"Steuernummer",
-               "value":"135/555/12345"
-            },
-            {
-               "name":"lfd. Nr. der Anlage",
-               "value":2
-            }
-         ]
-      }
-   ]
-}
+        }
     """
     def __init__(self, whg_id: int, anlage_nr: int, vj: int, dataprovider: DataProvider):
         self._whg_id = whg_id
@@ -98,36 +251,25 @@ class AnlageVData:
         """
         self._checkForSavePath()
         now = datetime.datetime.now()
-        data = self._dataProvider.getAnlageVData_1_to_8(self._whg_id, self._vj)
-        """
-        data:
-        {
-            'name': 'Kendel', 
-            'vorname': 'Martin', 
-            'steuernummer': '222/333/44444', 
-            'strasse': 'Mendelstr. 24', 
-            'plz': '90429', 
-            'ort': 'Nürnberg', 
-            'whg_bez': '3. OG rechts', 
-            'qm': '53', 
-            'angeschafft_am': '1989-02-13', 
-            'einhwert_az': 'ewewew ', 
-            'fewontzg': 'N', 
-            'isverwandt': 'N'
-        }
-        """
-        self._wohnungIdent = ''.join((data['plz'], ' ', data['ort'],
-                                      ', ', data['strasse'], ' / ', data['whg_bez']))
+        data: XImmoStammdaten = \
+            self._dataProvider.getAnlageVData_1_to_8(self._whg_id, self._vj)
         self._stammdaten = data
 
+        self._wohnungIdent = ''.join((data.plz, ' ', data.ort,
+                                      ', ', data.strasse, ' / ', data.whg_bez))
+
+
         logfile = self._savePath + "/log_" + \
-                  ''.join((data['plz'], '_', data['ort'],
-                           '_', data['strasse'], '_',
-                           data['whg_bez'])) + \
+                  ''.join((data.plz, '_', data.ort,
+                           '_', data.strasse, '_',
+                           data.whg_bez)) + \
                   ".txt"
 
         self._log = open(logfile, 'w')
         self._writeLog('Starte Verarbeitung um ' + str(now))
+        self._writeLog('')
+        self._writeLog(''.join(('>>>> ', self._wohnungIdent, ' <<<<')))
+        self._writeLog('')
 
         self._xdatadict['vj'] = self._vj
         self._xdatadict['zeilen'] = dict()
@@ -177,69 +319,46 @@ class AnlageVData:
                        '\n\t\tAnzusetzender Betrag: ', str(rg['anteiliger_betrag'])))
         self._writeLog(txt)
 
-
     def _getZeile_1_to_8(self):
-        data = self._stammdaten
-        """
-        data:
-        {
-            'name': 'Kendel', 
-            'vorname': 'Martin', 
-            'steuernummer': '222/333/44444', 
-            'strasse': 'Mendelstr. 24', 
-            'plz': '90429', 
-            'ort': 'Nürnberg', 
-            'whg_bez': '3. OG rechts', 
-            'qm': '53', 
-            'angeschafft_am': '1989-02-13', 
-            'einhwert_az': 'ewewew ', 
-            'fewontzg': 'N', 
-            'isverwandt': 'N'
-        }
-        """
+        data: XImmoStammdaten = self._stammdaten
+        self._log_missing_data_1_to_8(data)
 
-        self._createZeile(1, ('Name', data['name']))
-        self._createZeile(2, ('Vorname', data['vorname']))
-        self._createZeile(3, ('Steuernummer', data['steuernummer']),
+        self._createZeile(1, ('Name', data.name))
+        self._createZeile(2, ('Vorname', data.vorname))
+        self._createZeile(3, ('Steuernummer', data.steuernummer),
                              ('lfd. Nr.', self._anlage_nr))
-        self._createZeile(4, ('Straße, Hausnummer', data['strasse']),
-                             ('Angeschafft am', data['angeschafft_am']))
-        self._createZeile(5, ('Postleitzahl', data['plz']), ('Ort', data['ort']))
-        self._createZeile(6, ('Einheitswert-Aktenzeichen', data['einhwert_az']))
-        self._createZeile(7, ('Als Ferienwohnung genutzt', data['fewontzg']),
-                             ('An Angehörige vermietet', data['isverwandt']))
-        self._createZeile(8, ('Gesamtwohnfläche', data['qm']))
+        self._createZeile(4, ('Straße, Hausnummer', data.strasse),
+                             ('Angeschafft am', data.angeschafft_am))
+        self._createZeile(5, ('Postleitzahl', data.plz), ('Ort', data.ort))
+        self._createZeile(6, ('Einheitswert-Aktenzeichen', data.einhwert_az))
+        self._createZeile(7, ('Als Ferienwohnung genutzt', data.fewontzg),
+                             ('An Angehörige vermietet', data.isverwandt))
+        self._createZeile(8, ('Gesamtwohnfläche', data.qm))
+
+    def _log_missing_data_1_to_8(self, data: XImmoStammdaten) -> bool:
+        log = self._writeLog
+        if not data.einhwert_az:
+            log('Einheitswert-Aktenzeichen fehlt.')
+        if data.fewontzg is None:
+            log('Angabe fehlt, ob als Ferienwohnung genutzt.')
+        if data.isverwandt is None:
+            log('Angabe fehlt, ob das Objekt an Verwandte vermietet ist.')
+        if data.qm is None:
+            log('Angabe der Quadratmeter fehlt')
 
     def _getZeile_9_to_14_mtlEinn(self) -> None:
-        data: List[Dict[str, str]] = self._dataProvider.\
+        mtlEinList: XMtlEinnahmenList = self._dataProvider.\
                 getAnlageVData_9_to_14_mtlEinn(self._whg_id, self._vj)
-        """
-        data: list of dictionaries, order by gueltig_ab ascending
-        [
-            {
-                'mea_id': '3', 
-                'gueltig_ab': '2017-08-01', 
-                'gueltig_bis': '2018-09-30', 
-                'netto_miete': '310.00', 
-                'nk_abschlag': '20.00'
-            },
-            {
-                'mea_id': '4', 
-                'gueltig_ab': '2018-10-01', 
-                'gueltig_bis': '2019-05-31', 
-                'netto_miete': '320.00', 
-                'nk_abschlag': '25.00'
-            }, 
-            ...
-        ]
-        """
+
+        self._log_missing_data_9_to_14(mtlEinList)
+
         #count the number of months to be considered in each dictionary
         #and multiply them by netto_miete and nk_abschlag adjustments:
         netto_miete = nk_abschlag = 0
-        for d in data:
-            cnt = datehelper.getNumberOfMonths(d['gueltig_ab'], d['gueltig_bis'], self._vj)
-            netto_miete += (float(d['netto_miete']) * cnt) #Zeile 9
-            nk_abschlag += (float(d['nk_abschlag']) * cnt) #Zeile 13
+        for me in mtlEinList.getList():
+            cnt = datehelper.getNumberOfMonths(me.gueltig_ab, me.gueltig_bis, self._vj)
+            netto_miete += (float(me.netto_miete) * cnt) #Zeile 9
+            nk_abschlag += (float(me.nk_abschlag) * cnt) #Zeile 13
 
         #Grundsteuer: wird ignoriert, da sie ein durchlaufender Posten ist
 
@@ -273,6 +392,34 @@ class AnlageVData:
         self._createZeile(21, ('Summe der Einnahmen', einnahme))
         self._summe_einnahmen = einnahme
 
+    def _log_missing_data_9_to_14(self, xmelist: XMtlEinnahmenList):
+        log = self._writeLog
+        if len(xmelist.getList()) == 0:
+            log('!Keine monatlichen Einnahmen vorhanden!')
+            return
+
+        firstgueltigab = lastgueltigbis = ''
+        for xme in xmelist.getList():
+            if firstgueltigab == '' or xme.gueltig_ab < firstgueltigab:
+               firstgueltigab = xme.gueltig_ab
+            if lastgueltigbis == '' or xme.gueltig_bis > lastgueltigbis:
+                lastgueltigbis = xme.gueltig_bis
+            if not xme.netto_miete:
+                log('Keine Nettomiete angegeben für den Zeitraum vom ' +
+                    xme.gueltig_ab + ' bis ' + xme.gueltig_bis)
+            if not xme.nk_abschlag:
+                log('Kein Nebenkostenabschlag angegeben für den Zeitraum vom ' +
+                    xme.gueltig_ab + ' bis ' + xme.gueltig_bis)
+
+        vjstart = ''.join(('01.01.', str(self._vj)))
+        if datehelper.compareEurDates(
+                datehelper.convertIsoToEur(firstgueltigab), vjstart) > 0:
+            log('Mieteinnahmen beginnen erst ab ' + firstgueltigab)
+        vjend = ''.join(('31.12.', str(self._vj)))
+        if datehelper.compareEurDates(
+                datehelper.convertIsoToEur(lastgueltigbis), vjend) < 0:
+            log('Mieteinnahmen enden am ' + lastgueltigbis)
+
     def _sectionWerbungskosten(self):
         self._getZeile_33_to_35_afa()
         self._getZeile_39_to_45_erhaltung()
@@ -281,34 +428,37 @@ class AnlageVData:
         self._getZeile_22_und_50_summe_wk()
 
     def _getZeile_33_to_35_afa(self):
-        afa = self._dataProvider.getAfa(self._whg_id, self._vj)
-        """
-        afa: 
-        {
-            'afa_id': '2', 
-            'vj_ab': '2018', 
-            'betrag': '343', 
-            'prozent': '2.23', 
-            'lin_deg_knz': 'l', 
-            'afa_wie_vorjahr': 'Ja', 
-            'art_afa': 'linear',
-            'verwaltkosten': 200
-        } 
-        """
-        afa_art = 'linear' if afa['lin_deg_knz'] == 'l' else 'degressiv'
-        linear = 'X' if afa['lin_deg_knz'] == 'l' else ' '
+        afa: XAfa = self._dataProvider.\
+            getAnlageVData_33_to_35_afa(self._whg_id, self._vj)
+        self._log_missing_data_33_to_35(afa)
+
+        afa_art = 'linear' if afa.lin_deg_knz == 'l' else 'degressiv'
+        linear = 'X' if afa.lin_deg_knz == 'l' else ' '
         degressiv = ' ' if linear == 'X' else 'X'
-        wie_vj = 'X' if afa['afa_wie_vorjahr'] == 'Ja' else ' '
+        wie_vj = 'X' if afa.afa_wie_vorjahr == 'Ja' else ' '
         self._createZeile(33,
                           ('linear', linear),
                           ('degressiv', degressiv),
-                          ('prozent', afa['prozent']),
+                          ('prozent', afa.prozent),
                           ('wie_vorjahr', wie_vj),
-                          ('betrag', afa['betrag']))
+                          ('betrag', afa.betrag))
 
-        self._summe_wk += int(afa['betrag'])
+        self._summe_wk += int(afa.betrag)
 
         #todo: createZeile 34, 35
+
+    def _log_missing_data_33_to_35(self, afa: XAfa):
+        log = self._writeLog
+        if not afa.lin_deg_knz:
+            log("Afa-Art nicht angegeben. Muss 'linear' oder 'degressiv' sein.")
+        elif afa.lin_deg_knz == 'd' and not afa.prozent:
+            log("Prozentsatz fehlt bei Afa-Art 'degressiv'.")
+
+        if not afa.afa_wie_vorjahr:
+            log("Angabe ob 'Afa wie Vorjahr' fehlt.")
+
+        if not afa.betrag:
+            log("Afa-Betrag fehlt.")
 
     def _getZeile_36_to_37_kredit(self) -> None:
         #todo
@@ -321,7 +471,6 @@ class AnlageVData:
     def _getZeile_39_to_45_erhaltung(self) -> None:
         # eigenen Absatz für die als Nachweis
         # benötigten Rechnungen im Log schreiben:
-        self._writeLog(''.join(('>>>> ', self._wohnungIdent, ' <<<<')))
         txt = "\nFolgende Rechnungen werden zum Nachweis benötigt:\n"
         self._writeLog(txt)
 
@@ -329,10 +478,17 @@ class AnlageVData:
         rgfilter = RechnungFilter(self._whg_id, self._vj, self._dataProvider)
         rgfilter.registerCallback(self._writeRechnungenLog)
         aufwaende: XErhaltungsaufwand = rgfilter.getErhaltungsaufwaende()
-        # die notwendigen Einträge in die Schnittstellendatei machen:
+        if aufwaende.voll_abzuziehen == 0:
+            self._writeLog('Keine voll abziehbaren Aufwände im Vj.')
+
+        # die notwendigen Einträge in die Schnittstellendatei machen,
+        # auch wenn der Aufwand == 0:
         self._createZeile(39, ('voll_abzuziehende',
                                round(aufwaende.voll_abzuziehen)))
         self._summe_wk += aufwaende.voll_abzuziehen
+
+        if aufwaende.vj_gesamtaufwand == 0:
+            self._writeLog('Kein verteilbarer Aufwand im Vj (Zeile 41)')
 
         z = 41 #erste Zeile für zu verteilende Erhalt.Aufwendungen
         # in Zeile 41 kommt der Gesamtaufwand des Vj und der Anteil für das Vj:
@@ -352,12 +508,16 @@ class AnlageVData:
     def _getZeile_47_verwaltkosten(self) -> None:
         vwkost: int = self._dataProvider.\
                 getAnlageVData_47_verwaltkosten(self._whg_id, self._vj)
+        if vwkost == 0:
+            self._writeLog('Keine Verwaltungskosten im Vj (Zeile 47).')
         self._createZeile(47, ('verwaltungskosten', vwkost))
         self._summe_wk += vwkost
 
     def _getZeile_49_sonstiges(self) -> None:
         sonstige: int = self._dataProvider.\
             getAnlageVData_49_sonstiges(self._whg_id, self._vj)
+        if sonstige == 0:
+            self._writeLog('Keine sonstigen Kosten im Vj (Zeile 49).')
         self._createZeile(49, ('sonstige', sonstige))
         self._summe_wk += sonstige
 
@@ -372,10 +532,19 @@ class AnlageVData:
 
         zurechng_mann, zurechng_frau = \
             self._dataProvider.getAnlageVData_24_zurechnung(self._whg_id) # prozentsätze
+        self._log_missing_data_24(zurechng_mann, zurechng_frau)
+
         betrag_mann = int(zurechng_mann)/100 * ueberschuss
         betrag_frau = ueberschuss - betrag_mann
         self._createZeile(24, ('zurechng_mann', round(betrag_mann)),
                               ('zurechng_frau', round(betrag_frau)))
+
+    def _log_missing_data_24(self, zurechng_mann, zurechng_frau):
+        log = self._writeLog
+        if zurechng_frau == 0 and zurechng_mann == 0:
+            log('Angabe fehlt, wie der Überschuss aufzuteilen ist (Zeile 24).')
+        if zurechng_mann + zurechng_frau != 100:
+            log('Die Summe der Zurechnungen ergibt nicht 100% (Zeile 24).')
 
     def _createZeile(self, nr: int, *args):
         """
@@ -483,7 +652,7 @@ def test():
     dp = DataProvider()
     dp.connect('martin', 'fuenf55')
 
-    avdata = AnlageVData(1, 2, 2018, dp)
+    avdata = AnlageVData(2, 2, 2018, dp)
     avdata.startWork()
 
     # filter = RechnungFilter(1, 2018, dp)

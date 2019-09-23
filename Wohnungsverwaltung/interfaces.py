@@ -1,19 +1,56 @@
-from dictwrapper import DictWrapper, DictWrapperList
+from typing import Dict, List, Text
+from xinterface import XInterface, XInterfaceList
 
-class XMtlHausgeld(DictWrapper):
+class XImmoStammdaten(XInterface):
+    def __init__(self, dic: Dict[str, str]):
+        self.name: str = ''
+        self.vorname: str = ''
+        self.steuernummer: str = ''
+        self.strasse: str = ''
+        self.plz: str = ''
+        self.ort: str = ''
+        self.whg_bez: str = ''
+        self.qm: str  = ''
+        self.angeschafft_am: str = ''
+        self.einhwert_az: str = ''
+        self.fewontzg: bool = ''
+        self.isverwandt: bool = ''
+        XInterface.__init__(self, dic)
+
+class XMtlEinnahmen(XInterface):
+    def __init__(self, dic: Dict[str, str]):
+        self.gueltig_ab = ''
+        self.gueltig_bis = ''
+        self.netto_miete = ''
+        self.nk_abschlag = ''
+        XInterface.__init__(self, dic)
+
+class XMtlEinnahmenList(XInterfaceList):
+    def __init__(self, klass: type, li: list = None):
+        XInterfaceList.__init__(self, XMtlEinnahmen, li)
+
+class XAfa(XInterface):
+    def __init__(self, dic: Dict[str, str]):
+        self.lin_deg_knz = ''
+        self.afa_wie_vorjahr = ''
+        self.prozent = ''
+        self.betrag = ''
+        XInterface.__init__(self, dic)
+
+class XMtlHausgeld(XInterface):
     def __init__(self, dic: dict = None):
         self.mea_id = None
         self.gueltig_ab = None
         self.gueltig_bis = None
         self.hg_netto_abschlag = None
-        DictWrapper.__init__(self, dic)
+        XInterface.__init__(self, dic)
 
-class XMtlHausgeldList(DictWrapperList):
+class XMtlHausgeldList(XInterfaceList):
     def __init__(self, klass: type, li: list = None):
-        DictWrapperList.__init__(self, XMtlHausgeld, li)
+        XInterfaceList.__init__(self, XMtlHausgeld, li)
 
 
-class XHausgeldAdjustment(DictWrapper):
+class XHausgeldAdjustment(XInterface):
     def __init__(self, dic: dict = None):
         self.sea_id = None
         self.vj = None
@@ -21,30 +58,30 @@ class XHausgeldAdjustment(DictWrapper):
         self.art_id = None
         self.art = None
         self.ein_aus = None
-        DictWrapper.__init__(self, dic)
+        XInterface.__init__(self, dic)
 
-class XHausgeldAdjustmentList(DictWrapperList):
+class XHausgeldAdjustmentList(XInterfaceList):
     def __init__(self, klass: type, li: list = None):
-        DictWrapperList.__init__(self, XHausgeldAdjustment, li)
+        XInterfaceList.__init__(self, XHausgeldAdjustment, li)
 
 
-class XSonstigeKosten(DictWrapper):
+class XSonstigeKosten(XInterface):
     def __init__(self, dic: dict = None):
         self.sea_id = None
         self.vj = None
         self.betrag = None
-        DictWrapper.__init__(self, dic)
+        XInterface.__init__(self, dic)
 
-class XSonstigeKostenList(DictWrapperList):
+class XSonstigeKostenList(XInterfaceList):
     def __init__(self, klass: type, li: list = None):
-        DictWrapperList.__init__(self, XSonstigeKosten, li)
+        XInterfaceList.__init__(self, XSonstigeKosten, li)
 
 
-class XZurechnung(DictWrapper):
+class XZurechnung(XInterface):
     def __init__(self, dic: dict = None):
         self.steuerl_zurechng_mann = None
         self.steuerl_zurechng_frau = None
-        DictWrapper.__init__(self, dic)
+        XInterface.__init__(self, dic)
 
 class XErhaltungsaufwand:
     def __init__(self):
