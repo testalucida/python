@@ -106,8 +106,8 @@ class WV(ttk.Frame):
                 self._openBranches(tree, childlist)
 
     def _createNotebook(self, parent):
-        PAGE_WOHNUNG = 0
-        PAGE_STAMMDATEN = 1
+        PAGE_STAMMDATEN = 0
+        PAGE_WOHNUNG = 1
         PAGE_RECHUNGEN = 2
         PAGE_MTL_EIN_AUS = 3
         PAGE_SONST_EIN_AUS = 4
@@ -119,8 +119,8 @@ class WV(ttk.Frame):
         pages = (ttk.Frame(), ttk.Frame(), ttk.Frame(),
                  ttk.Frame(), ttk.Frame(), ttk.Frame(), ttk.Frame())
 
-        book.add(pages[PAGE_WOHNUNG], text='Wohnung')
         book.add(pages[PAGE_STAMMDATEN], text='Stammdaten')
+        book.add(pages[PAGE_WOHNUNG], text='Wohnung')
         book.add(pages[PAGE_RECHUNGEN], text='Rechnungen')
         book.add(pages[PAGE_MTL_EIN_AUS], text='Monatliche Ein-/Auszahlungen')
         book.add(pages[PAGE_SONST_EIN_AUS], text='Sonstige Ein-/Auszahlungen')
@@ -131,10 +131,10 @@ class WV(ttk.Frame):
 
         self._notebook = book
 
+        self._createStammdatenTab(pages[PAGE_STAMMDATEN])
         self._createRechnungenTab(pages[PAGE_RECHUNGEN])
         self._createMonatlicheTab(pages[PAGE_MTL_EIN_AUS])
         self._createSonstigeTab(pages[PAGE_SONST_EIN_AUS])
-        self._createStammdatenTab(pages[PAGE_STAMMDATEN])
         self._createVeranlagungTab(pages[PAGE_VERANLAGUNG])
 
     def _createRechnungenTab(self, rechnungPage:ttk.Frame):
@@ -248,14 +248,6 @@ class WV(ttk.Frame):
 
     def setStatusText(self, text: str):
         self._statusbar['text'] = text
-
-    # def configureMieteTable(self, columnDefs: list) -> None:
-    #     self._monatlicheTableView.configureTable(columnDefs)
-    #
-    # def configureSonstigeTable(self, sonstigeColumnDefs: list,
-    #                            grundsteuerColumnDefs: list) -> None:
-    #     self._sonstigeTableView.configureTable(sonstigeColumnDefs)
-    #     self._grundsteuerTableView.configureTable(grundsteuerColumnDefs)
 
     def getRechnungTableView(self) -> GenericEditableTable:
         return self._rechnungTableView
