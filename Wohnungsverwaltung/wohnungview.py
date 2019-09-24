@@ -13,19 +13,19 @@ class WohnungView(ttk.Frame):
     def __init__(self, parent: ttk.Frame):
         ttk.Frame.__init__(self, parent)
         self._lbl_ident = None
-        self._ie_zimmer = None
+        self._cbo_zimmer = None
+        self._ie_qm = None
         self._cb_ebk = None
         self._cb_balkon = None
         self._cb_tageslichtbad = None
         self._cb_dusche = None
         self._cb_wanne = None
         self._cb_bidet = None
-        self._txt_zusatz = None
-        self._ie_qm = None
+        #self._txt_zusatz = None
         self._txt_heizung = None
         self._txt_bemerkung = None
         self._cb_kellerabteil = None
-        self._combo_garage = None
+        self._cbo_garage = None
         self._cb_aufzug = None
         self._createUI()
         self.columnconfigure(0, weight=1)

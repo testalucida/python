@@ -317,7 +317,7 @@ class VeranlagungView(ttk.Frame):
             a[k] = v
         return a
 
-    def setWohungData(self, angeschafftAm: str, einhwertAz: str,
+    def setWohnungData(self, angeschafftAm: str, einhwertAz: str,
                       steuerl_zurechng_mann: int,
                       steuerl_zurechng_frau: int) -> None:
         self._isWhgInitialized = False

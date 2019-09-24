@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import ttk
+from enum import Enum, IntEnum
 import sys
 sys.path.append('/home/martin/Projects/python/mywidgets')
 try:
@@ -8,6 +9,8 @@ try:
     from veranlagungview import VeranlagungView
 except ImportError:
     print("couldn't import some stuff.")
+
+WohnungAction = IntEnum('WohnungAction', 'new delete')
 
 class WV(ttk.Frame):
     def __init__(self, root):
@@ -25,11 +28,12 @@ class WV(ttk.Frame):
         self._stammdatenView: StammdatenView = None
         self._veranlagungView: VeranlagungView = None
         self._wohnungClickedCallback = None
-        self.createUI(root)
+        self._wohnungActionCallback = None
+        self._createUI(root)
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
 
-    def createUI(self, root):
+    def _createUI(self, root):
         self._createMenu(root)
         self._createPanedWindow(root, 0, 0)
         self._createWohnungenTree(self._leftPane)
@@ -41,10 +45,13 @@ class WV(ttk.Frame):
         root.config(menu=menu, relief=FLAT)
 
         filemenu = Menu(menu, tearoff=0, relief=FLAT)
+        filemenu.add_command(label="Neu...", command=self._onNewWohnung)
+        filemenu.add_command(label="Löschen...", command=self._onDeleteWohnung)
+        filemenu.add_separator()
         filemenu.add_command(label="Wohnungsübersicht drucken...")
         filemenu.add_separator()
         filemenu.add_command(label="Exit", command=self.exitProgram)
-        menu.add_cascade(label="Anwendung", menu=filemenu)
+        menu.add_cascade(label="Wohnung", menu=filemenu)
 
         extrasmenu = Menu(menu, tearoff=0)
         extrasmenu.add_command(label="Verwalterwechsel...")
@@ -226,15 +233,30 @@ class WV(ttk.Frame):
         self._openBranches(tree, tree.get_children())
 
     def _onTreeItemClicked(self, event):  #bound to virtual TreeviewSelect event
-        #item = self._tree.identify('item', event.x, event.y)
+        whg_id = self.getSelectedTreeItem()
+        if whg_id > 0:
+            self._callbackWohnungClicked(whg_id)
+
+    def _onNewWohnung(self):
+        self._doWohnungActionCallback(WohnungAction.new)
+
+    def _onDeleteWohnung(self):
+        self._doWohnungActionCallback(WohnungAction.delete)
+
+    def _doWohnungActionCallback(self, action: WohnungAction):
+        if self._wohnungActionCallback:
+            whg_id = self.getSelectedTreeItem()
+            self._wohnungActionCallback(whg_id, action)
+
+    def getSelectedTreeItem(self) -> int:
         item = self._tree.selection()
         dic = self._tree.item(item)
         try:
             whg_id: int = dic['values'][0]
-            if whg_id > 0: #valid wohnung item clicked;
-                self._callbackWohnungClicked(whg_id)
-        except IndexError:  #straße- or ort-item clicked
-           pass
+            if whg_id > 0:  # valid wohnung item clicked;
+                return whg_id
+        except IndexError:  # straße- or ort-item clicked
+            return -1
 
     def _callbackWohnungClicked(self, whg_id:int) -> None:
         if self._wohnungClickedCallback:
@@ -245,6 +267,9 @@ class WV(ttk.Frame):
 
     def registerWohnungClickCallback(self, callback):
         self._wohnungClickedCallback = callback
+
+    def registerWohnungActionCallback(self, callback):
+        self._wohnungActionCallback = callback
 
     def setStatusText(self, text: str):
         self._statusbar['text'] = text
@@ -281,7 +306,7 @@ def main():
         style.theme_use('clam')
 
     wv = WV(root)
-    wv.setNotebookTab(2)
+    wv.setNotebookTab(0)
 
     ctrl = WvController(wv)
     ctrl.startWork()

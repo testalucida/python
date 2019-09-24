@@ -23,6 +23,13 @@ class StammdatenController:
         self._whg_id = whg_id
         self._loadStammdaten()
 
+    def clear(self) -> None:
+        self._whg_id = None
+        self._wohnungdata = None
+        self._vermieterdata = None
+        self._verwalterdata = None
+        self._view.clear()
+
     def _loadStammdaten(self):
         self._vermieterdata: dict = \
             self._dataProvider.getVermieterData(self._whg_id)
@@ -52,7 +59,7 @@ class StammdatenController:
         }
         """
         if self._wohnungdata:
-            self._view.setWohungData(self._wohnungdata)
+            self._view.setWohnungData(self._wohnungdata)
 
         self._verwalterdata: dict = \
             self._dataProvider.getVerwalterData(self._whg_id)

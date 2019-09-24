@@ -686,6 +686,22 @@ class DataProvider:
 
         return retval
 
+    '''
+    delete wohnung
+    '''
+    def deleteWohnung(self, whg_id: int) -> None:
+        delData = {
+            'whg_id': str(whg_id)
+        }
+        resp = self.__session. \
+            post('http://localhost/kendelweb/dev/php/business.php?q=delete_wohnung&user=' + self.__user, data=delData)
+
+        retval = self._getWriteRetValOrRaiseException(resp)
+
+        return retval
+
+    ###########################################################################
+
     def _getDictCopyIsoDate(self, orig: dict, *keys) -> dict:
         copy = dict(orig)
         for key in keys:
@@ -753,8 +769,10 @@ if __name__ == '__main__':
     prov = DataProvider()
     prov.connect('martin', 'fuenf55')
 
+    prov.deleteWohnung(2)
+
     #hg = prov.getHausgeld(1, 2018)
-    sonst = prov.getAnlageVData_49_sonstiges(1, 2018)
+    #sonst = prov.getAnlageVData_49_sonstiges(1, 2018)
     # afa = {
     #     'afa_id': 1,
     #     'betrag': 111,

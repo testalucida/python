@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import json
-from wvframe import WV
+from enum import Enum
+from wvframe import WV, WohnungAction
 from business import DataProvider
 from rgcontroller import RechnungController
 from mtleacontroller import MtlEinAusController
@@ -22,6 +23,7 @@ class WvController:
         self._veranlagungcontroller = None
 
     def startWork(self) -> None:
+        self._wv.registerWohnungActionCallback(self.onWohnungMenuAction)
         self._connect()
         self._loadTree()
 
@@ -55,6 +57,16 @@ class WvController:
         whg_list = self._dataProvider.getWohnungsUebersicht()
         self._wv.populateWohnungenTree(whg_list)
         self._wv.registerWohnungClickCallback(self._onWohnungClicked)
+
+    def onWohnungMenuAction(self, whg_id: int, action: WohnungAction):
+        print(action)
+        if action == WohnungAction.delete:
+            self._deleteWohnung(whg_id)
+
+    def _deleteWohnung(self, whg_id: int) -> None:
+        #todo: delete wohnung logically via DataProvider
+        self._stammdatencontroller.clear()
+        #todo: clear all views via their controllers just like stammdaten
 
     def _onWohnungClicked(self, whg_id:int) -> None:
         root = self._wv.master

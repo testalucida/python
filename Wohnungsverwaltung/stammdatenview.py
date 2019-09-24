@@ -200,6 +200,39 @@ class StammdatenView(ttk.Frame):
 
         return lf
 
+    def clear(self):
+        self.clearWohnungData()
+        self.clearVermieterData()
+        self.clearVerwalterData()
+        self.update()
+
+    def clearWohnungData(self):
+        self._whg_strasse.clear()
+        self._whg_bez.clear()
+        self._whg_plz.clear()
+        self._whg_ort.clear()
+        self._einhwert_az.clear()
+        self._angeschafft_am.clear()
+        self._isWohnungInitialized = False
+
+    def clearVermieterData(self):
+        self._vorname.clear()
+        self._name.clear()
+        self._strasse.clear()
+        self._plz.clear()
+        self._ort.clear()
+        self._steuernummer.clear()
+        self._isVermieterInitialized = False
+
+    def clearVerwalterData(self):
+        self._verwalter_firma.clear()
+        self._verwalter_strasse.clear()
+        self._verwalter_plz.clear()
+        self._verwalter_ort.clear()
+        self._verwalter_tel.clear()
+        self._verwalter_email.clear()
+        self._isVerwalterInitialized = False
+
     def setVermieterData(self, data: dict) -> None:
         self._vorname.setValue(data['vorname'])
         self._name.setValue(data['name'])
@@ -209,7 +242,7 @@ class StammdatenView(ttk.Frame):
         self._steuernummer.setValue(data['steuernummer'])
         self._isVermieterInitialized = True
 
-    def setWohungData(self, data: dict) -> None:
+    def setWohnungData(self, data: dict) -> None:
         self._whg_strasse.setValue(data['strasse'])
         self._whg_bez.setValue(data['whg_bez'])
         self._whg_plz.setValue(data['plz'])

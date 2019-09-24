@@ -250,7 +250,7 @@ class VeranlagungController:
         self._view.setWohnungIdent(whgident)
 
         #set wohnung data related to Veranlagung
-        self._view.setWohungData(d['angeschafft_am'], d['einhwert_az'],
+        self._view.setWohnungData(d['angeschafft_am'], d['einhwert_az'],
                                  int(d['steuerl_zurechng_mann']),
                                  int(d['steuerl_zurechng_frau']))
         self._view.clearAfa()
@@ -267,7 +267,7 @@ class VeranlagungController:
         """
         data = self._dataProvider.getVeranlagungData(self._whg_id, vj)
         if data:
-            self._view.setWohungData(data['angeschafft_am'], data['einhwert_az'],
+            self._view.setWohnungData(data['angeschafft_am'], data['einhwert_az'],
                                      data['steuerl_zurechng_mann'],
                                      data['steuerl_zurechng_frau'])
             self._view.setAfaAndVwData(data)
@@ -280,7 +280,7 @@ class VeranlagungController:
         :return: None
         """
         data = self._dataProvider.getWohnungIdentifikation(self._whg_id)
-        self._view.setWohungData(data['angeschafft_am'], data['einhwert_az'],
+        self._view.setWohnungData(data['angeschafft_am'], data['einhwert_az'],
                                  data['steuerl_zurechng_mann'],
                                  data['steuerl_zurechng_frau'])
 
