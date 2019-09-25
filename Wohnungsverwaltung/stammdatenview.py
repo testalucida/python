@@ -4,6 +4,7 @@ import sys
 sys.path.append('/home/martin/Projects/python/mywidgets')
 try:
     from mywidgets import TextEntry, FloatEntry, MyLabel, MyCombobox
+    from editablegroup import EditSaveFunctionBar, EditableGroupAction
     from mycalendar import DateEntry
     import datehelper
 except ImportError:
@@ -85,6 +86,9 @@ class StammdatenView(ttk.Frame):
         btn.grid(column=0, row=4, sticky='nswe', pady=pady)
         self._btnSave = btn
 
+    def kannweg(self, action: EditableGroupAction):
+        print(action)
+
     def _createVermieterLabelframe(self, padx: int, pady: int) -> ttk.Labelframe:
         lf = ttk.Labelframe(self, text='Vermieterstammdaten')
         lf.columnconfigure(1, weight=1)
@@ -92,34 +96,40 @@ class StammdatenView(ttk.Frame):
         lf.columnconfigure(4, weight=1)
         lf.columnconfigure(5, weight=1)
 
-        MyLabel(lf, 'Vorname: ', 0, 0, 'nswe', 'e', padx, pady)
-        self._vorname = TextEntry(lf, 1, 0, 'nswe', padx, pady)
+        row = 0
+        MyLabel(lf, 'Vorname: ', 0, row, 'nswe', 'e', padx, pady)
+        self._vorname = TextEntry(lf, 1, row, 'nswe', padx, pady)
         self._vorname.setBackground('My.TEntry', 'lightyellow')
         self._vorname.registerModifyCallback(self._onVermieterModified)
 
-        MyLabel(lf, 'Name: ', 2, 0, 'nswe', 'e', padx, pady)
-        self._name = TextEntry(lf, 3, 0, 'nswe', padx, pady)
+        MyLabel(lf, 'Name: ', 2, row, 'nswe', 'e', padx, pady)
+        self._name = TextEntry(lf, 3, row, 'nswe', padx, pady)
         self._name.setBackground('My.TEntry', 'lightyellow')
         self._name.grid(columnspan=2)
         self._name.registerModifyCallback(self._onVermieterModified)
 
-        MyLabel(lf, 'Straße: ', 0, 1, 'nswe', 'e', padx, pady)
-        self._strasse = TextEntry(lf, 1, 1, 'nswe', padx, pady)
+        row += 1
+        MyLabel(lf, 'Straße: ', 0, row, 'nswe', 'e', padx, pady)
+        self._strasse = TextEntry(lf, 1, row, 'nswe', padx, pady)
         self._strasse.registerModifyCallback(self._onVermieterModified)
 
-        l = MyLabel(lf, 'PLZ/Ort: ', 2, 1, 'nswe', 'e', padx, pady)
-        self._plz = TextEntry(lf, 3, 1, 'nsw', padx, pady)
+        l = MyLabel(lf, 'PLZ/Ort: ', 2, row, 'nswe', 'e', padx, pady)
+        self._plz = TextEntry(lf, 3, row, 'nsw', padx, pady)
         self._plz['width'] = 6
         self._plz.registerModifyCallback(self._onVermieterModified)
 
         #MyLabel(lf, 'Ort: ', 4, 1, 'nswe', 'e', padx, pady)
-        self._ort = TextEntry(lf, 4, 1, 'nswe', padx, pady)
+        self._ort = TextEntry(lf, 4, row, 'nswe', padx, pady)
         self._ort.registerModifyCallback(self._onVermieterModified)
 
-        l = MyLabel(lf, 'Steuernummer: ', 0, 2, 'nswe', 'e', padx, pady)
-        self._steuernummer = TextEntry(lf, 1, 2, 'nswe', padx, pady)
+        row += 1
+        l = MyLabel(lf, 'Steuernummer: ', 0, row, 'nswe', 'e', padx, pady)
+        self._steuernummer = TextEntry(lf, 1, row, 'nswe', padx, pady)
         self._steuernummer.setBackground('My.TEntry', 'lightyellow')
         self._steuernummer.registerModifyCallback(self._onVermieterModified)
+
+        funcbar = EditSaveFunctionBar(lf, self.kannweg)
+        funcbar.grid(column=4, row=row, sticky='e')
 
         return lf
 

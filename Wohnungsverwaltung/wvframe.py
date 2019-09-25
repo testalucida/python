@@ -45,17 +45,17 @@ class WV(ttk.Frame):
         root.config(menu=menu, relief=FLAT)
 
         filemenu = Menu(menu, tearoff=0, relief=FLAT)
-        filemenu.add_command(label="Neu...", command=self._onNewWohnung)
-        filemenu.add_command(label="Löschen...", command=self._onDeleteWohnung)
+        filemenu.add_command(label="Neues Objekt anlegen...", command=self._onNewWohnung)
+        filemenu.add_command(label="Objekt löschen...", command=self._onDeleteWohnung)
+        filemenu.add_command(label="Objektübersicht drucken...")
         filemenu.add_separator()
-        filemenu.add_command(label="Wohnungsübersicht drucken...")
+        filemenu.add_command(label="Vermieter verwalten...")
+        filemenu.add_command(label="Verwalter verwalten...")
         filemenu.add_separator()
         filemenu.add_command(label="Exit", command=self.exitProgram)
-        menu.add_cascade(label="Wohnung", menu=filemenu)
+        menu.add_cascade(label="Stammdaten", menu=filemenu)
 
         extrasmenu = Menu(menu, tearoff=0)
-        extrasmenu.add_command(label="Verwalterwechsel...")
-        extrasmenu.add_separator()
         extrasmenu.add_command(label="Jahresübersicht für Wohnung erstellen...")
         menu.add_cascade(label="Extras", menu=extrasmenu)
 

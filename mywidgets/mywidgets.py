@@ -93,6 +93,14 @@ class ConvenianceMethods:
     def setEnabled(self, enabled: bool):
         self['state'] = 'normal' if enabled else 'disabled'
 
+    def setTextAlignment(self, align:str) -> None:
+        """
+        sets the 'anchor' attribute
+        :param align: {n, ne, e, se, s, sw, w, nw, center}
+        :return: None
+        """
+        self['anchor'] = align
+
     def setTextPadding(self, name: str, *pads) -> None:
         """
         sets the padding around the text
@@ -120,7 +128,8 @@ class MyLabel(ttk.Label, ConvenianceMethods):
                  text: str = None,
                  column: int = None, row: int = None,
                  sticky: str = None, anchor: str = None,
-                 padx:int = None, pady: int = None ):
+                 padx:int or tuple = None, pady: int or tuple = None,
+                 align:str = None):
         ttk.Label.__init__(self, parent, text=text)
         ConvenianceMethods.__init__(self)
         if not column is None and column >= 0:
@@ -135,6 +144,11 @@ class MyLabel(ttk.Label, ConvenianceMethods):
             self.grid(padx=padx)
         if pady:
             self.grid(pady=pady)
+        if align:
+            # if sticky is set to '..w' and
+            # align is set to 'e' then
+            # the align setting will have no effect
+            self.setTextAlignment(align)
 
     def setBackground(self, stylename: str, color: str) -> None:
         ttk.Style().configure(stylename, background=color)
@@ -165,7 +179,7 @@ class TextEntry(ttk.Entry, GetterSetter, ConvenianceMethods, ModifyTracer):
     def __init__(self, parent,
                  column: int = None, row: int = None,
                  sticky: str = None,
-                 padx:int = None, pady: int = None ):
+                 padx:int or tuple = None, pady: int or tuple = None ):
         ttk.Entry.__init__(self, parent)
         ConvenianceMethods.__init__(self)
         ModifyTracer.__init__(self)
@@ -367,6 +381,9 @@ class MyCombobox(ttk.Combobox, GetterSetter, ConvenianceMethods, ModifyTracer):
 
     def setItems(self, itemlist: list or tuple) -> None:
         self['values'] = itemlist
+
+    def getItems(self) -> list or tuple:
+        return self['values']
 
 #+++++++++++++++++++++++++++++++++++++++++++++++
 
