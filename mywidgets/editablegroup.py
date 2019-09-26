@@ -23,7 +23,7 @@ class EditSaveFunctionBar(ttk.Frame):
         s.configure("My.TButton",
                     padding=0,
                     relief="flat",
-                    borderwith=0)
+                    borderwidth=1)
 
         # Button "Choose"
         self.dropdownpng = PhotoImage(file="/home/martin/Projects/python/mywidgets/images/dropdown_22x22.png")

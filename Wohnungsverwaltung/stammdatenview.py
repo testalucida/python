@@ -1,5 +1,7 @@
 from tkinter import *
 from tkinter import ttk
+from collections import UserDict
+
 import sys
 sys.path.append('/home/martin/Projects/python/mywidgets')
 try:
@@ -9,6 +11,60 @@ try:
     import datehelper
 except ImportError:
     print("couldn't import my widgets.")
+
+class WohnungLabelframe(ttk.Labelframe):
+    def __init__(self, parent):
+        ttk.Labelframe.__init__(self, parent, text='Wohnungsdaten')
+        self._whg_strasse = None
+        self._whg_plz = None
+        self._whg_ort = None
+        self._whg_bez = None
+        self._angeschafft_am = None
+        self._einhwert_az = None
+        self._createUI()
+
+    def _createUI(self):
+        padx = pady = 5
+        self.columnconfigure(1, weight=1)
+        self.columnconfigure(4, weight=1)
+        self.columnconfigure(5, weight=1)
+
+        MyLabel(self, 'Straße: ', 0, 0, 'nswe', 'e', padx, pady)
+        self._whg_strasse = TextEntry(self, 1, 0, 'nswe', padx, pady)
+        self._whg_strasse.setBackground('My.TEntry', 'lightyellow')
+        self._whg_strasse.setWidth(30)
+        self._whg_strasse.registerModifyCallback(self._onWohnungModified)
+
+        MyLabel(self, 'PLZ/Ort: ', 2, 0, 'nswe', 'e', padx, pady)
+        self._whg_plz = TextEntry(self, 3, 0, 'nsw', padx, pady)
+        self._whg_plz['width'] = 6
+        self._whg_plz.setBackground('My.TEntry', 'lightyellow')
+        self._whg_plz.registerModifyCallback(self._onWohnungModified)
+
+        self._whg_ort = TextEntry(self, 4, 0, 'nswe', padx, pady)
+        self._whg_ort.setBackground('My.TEntry', 'lightyellow')
+        self._whg_ort.setWidth(30)
+        self._whg_ort.registerModifyCallback(self._onWohnungModified)
+
+        MyLabel(self, 'Whg.-Bez.: ', 0, 1, 'nswe', 'e', padx, pady)
+        self._whg_bez = TextEntry(self, 1, 1, 'nswe', padx, pady)
+        self._whg_bez.registerModifyCallback(self._onWohnungModified)
+
+        MyLabel(self, 'Angeschafft am: ', 0, 2, 'nswe', 'e', padx, pady)
+        de = DateEntry(self)
+        de.setUseCalendar(False)
+        de['width'] = 10
+        de.grid(column=1, row=2, sticky='nw', padx=padx, pady=pady)
+        self._angeschafft_am = de
+        self._angeschafft_am.registerModifyCallback(self._onWohnungModified)
+
+        MyLabel(self, 'Einhts.wert-Az: ', 2, 2, 'nswe', 'e', padx, pady)
+        self._einhwert_az = TextEntry(self, 3, 2, 'nswe', padx, pady)
+        self._einhwert_az.grid(columnspan=2)
+        self._einhwert_az.registerModifyCallback(self._onWohnungModified)
+
+    def _onWohnungModified(self, widget: Widget, name: str, index: str, mode: str):
+        print('Modiefied.')
 
 class StammdatenView(ttk.Frame):
     def __init__(self, parent: ttk.Frame):
@@ -173,14 +229,17 @@ class StammdatenView(ttk.Frame):
         self._einhwert_az.setBackground('My.TEntry', 'lightyellow')
         self._einhwert_az.registerModifyCallback(self._onWohnungModified)
 
+        funcbar = EditSaveFunctionBar(lf, self.kannweg)
+        funcbar.grid(column=4, row=3, sticky='e')
+
         return lf
 
     def _createVerwalterLabelframe(self, padx: int, pady: int) -> ttk.Labelframe:
         lf = ttk.Labelframe(self, text='Verwalterstammdaten')
         lf.columnconfigure(1, weight=1)
         #lf.columnconfigure(3, weight=1)
-        lf.columnconfigure(4, weight=1)
-        lf.columnconfigure(5, weight=1)
+        #lf.columnconfigure(4, weight=1)
+        #lf.columnconfigure(5, weight=1)
 
         MyLabel(lf, 'Firma: ', 0, 0, 'nswe', 'e', padx, pady)
         self._verwalter_firma = TextEntry(lf, 1, 0, 'nswe', padx, pady)
@@ -207,6 +266,9 @@ class StammdatenView(ttk.Frame):
         self._verwalter_email = TextEntry(lf, 3, 2, 'nswe', padx, pady)
         self._verwalter_email.grid(columnspan=2)
         self._verwalter_email.registerModifyCallback(self._onVerwalterModified)
+
+        funcbar = EditSaveFunctionBar(lf, self.kannweg)
+        funcbar.grid(column=4, row=3, sticky='e')
 
         return lf
 
