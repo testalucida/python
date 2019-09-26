@@ -6,21 +6,24 @@ import sys
 sys.path.append('/home/martin/Projects/python/mywidgets')
 try:
     from mywidgets import TextEntry, FloatEntry, MyLabel, MyCombobox
+    from interfaces import XWohnungDaten
     from editablegroup import EditSaveFunctionBar, EditableGroupAction
     from mycalendar import DateEntry
     import datehelper
 except ImportError:
     print("couldn't import my widgets.")
 
-class WohnungLabelframe(ttk.Labelframe):
+class WohnungFrame(ttk.Frame):
     def __init__(self, parent):
-        ttk.Labelframe.__init__(self, parent, text='Wohnungsdaten')
+        ttk.Frame.__init__(self, parent)
         self._whg_strasse = None
         self._whg_plz = None
         self._whg_ort = None
         self._whg_bez = None
         self._angeschafft_am = None
         self._einhwert_az = None
+        self._isModified = False
+        self._callback = None
         self._createUI()
 
     def _createUI(self):
@@ -64,7 +67,42 @@ class WohnungLabelframe(ttk.Labelframe):
         self._einhwert_az.registerModifyCallback(self._onWohnungModified)
 
     def _onWohnungModified(self, widget: Widget, name: str, index: str, mode: str):
-        print('Modiefied.')
+        self._isModified = True
+        if self._callback:
+            self._callback()
+
+    def registerModifyCallback(self, callback) -> None:
+        self._callback = callback
+
+    def isModified(self) -> bool:
+        return self._isModified
+
+    def setData(self, data: XWohnungDaten) -> None:
+        self._whg_strasse = data.strasse
+        self._whg_plz = data.plz
+        self._whg_ort = data.ort
+        self._whg_bez = data.whg_bez
+        self._angeschafft_am = data.angeschafft_am
+        self._einhwert_az = data.einhwert_az
+        self._isModified = False
+
+    def getData(self) -> XWohnungDaten:
+        d: XWohnungDaten = XWohnungDaten()
+        d.strasse = self._whg_strasse.getValue()
+        d.plz = self._whg_plz.getValue()
+        d.ort = self._whg_ort.getValue()
+        d.whg_bez = self._whg_bez.getValue()
+        d.angeschafft_am = self._angeschafft_am.getValue()
+        d.einhwert_az = self._einhwert_az.getValue()
+        return d
+
+    def clearData(self):
+        self._whg_strasse.clear()
+        self._whg_bez.clear()
+        self._whg_plz.clear()
+        self._whg_ort.clear()
+        self._einhwert_az.clear()
+        self._angeschafft_am.clear()
 
 class StammdatenView(ttk.Frame):
     def __init__(self, parent: ttk.Frame):

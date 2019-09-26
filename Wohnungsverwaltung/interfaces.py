@@ -1,6 +1,18 @@
 from typing import Dict, List, Text
 from xinterface import XInterface, XInterfaceList
 
+class XWohnungDaten(XInterface):
+    def __init__(self, dic: Dict[str, str] = None):
+        self.strasse = ''
+        self.plz = ''
+        self.ort = ''
+        self.whg_bez = ''
+        self.angeschafft_am = ''
+        self.einhwert_az = ''
+        if not dic:
+            dic = self.__dict__
+        XInterface.__init__(self, dic)
+
 class XImmoStammdaten(XInterface):
     def __init__(self, dic: Dict[str, str]):
         self.name: str = ''
