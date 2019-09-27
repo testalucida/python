@@ -10,18 +10,21 @@ try:
     from editablegroup import EditSaveFunctionBar, EditableGroupAction
     from mycalendar import DateEntry
     import datehelper
+    from buttonfactory import ButtonFactory
 except ImportError:
     print("couldn't import my widgets.")
 
-class WohnungFrame(ttk.Frame):
+class StammdatenView(ttk.Frame):
     def __init__(self, parent):
         ttk.Frame.__init__(self, parent)
-        self._whg_strasse = None
-        self._whg_plz = None
-        self._whg_ort = None
-        self._whg_bez = None
-        self._angeschafft_am = None
-        self._einhwert_az = None
+        self._teStrasse = None
+        self._tePlz = None
+        self._teOrt = None
+        self._teWhg_bez = None
+        self._deAngeschafft_am = None
+        self._teEinhwert_az = None
+        self._cboVermieter = None
+        self._cboVerwalter = None
         self._isModified = False
         self._callback = None
         self._createUI()
@@ -33,43 +36,90 @@ class WohnungFrame(ttk.Frame):
         self.columnconfigure(5, weight=1)
 
         MyLabel(self, 'Straße: ', 0, 0, 'nswe', 'e', padx, pady)
-        self._whg_strasse = TextEntry(self, 1, 0, 'nswe', padx, pady)
-        self._whg_strasse.setBackground('My.TEntry', 'lightyellow')
-        self._whg_strasse.setWidth(30)
-        self._whg_strasse.registerModifyCallback(self._onWohnungModified)
+        self._teStrasse = TextEntry(self, 1, 0, 'nswe', padx, pady)
+        self._teStrasse.setBackground('My.TEntry', 'lightyellow')
+        self._teStrasse.setWidth(30)
+        self._teStrasse.registerModifyCallback(self._onWohnungModified)
 
-        MyLabel(self, 'PLZ/Ort: ', 2, 0, 'nswe', 'e', padx, pady)
-        self._whg_plz = TextEntry(self, 3, 0, 'nsw', padx, pady)
-        self._whg_plz['width'] = 6
-        self._whg_plz.setBackground('My.TEntry', 'lightyellow')
-        self._whg_plz.registerModifyCallback(self._onWohnungModified)
+        MyLabel(self, 'PLZ/Ort: ', 0, 1, 'nswe', 'e', padx, pady)
+        f = ttk.Frame(self)
+        f.columnconfigure(1, weight=1)
+        self._tePlz = TextEntry(f, 0, 0, 'nsw', padx=(0, 3))
+        self._tePlz['width'] = 6
+        self._tePlz.setBackground('My.TEntry', 'lightyellow')
+        self._tePlz.registerModifyCallback(self._onWohnungModified)
 
-        self._whg_ort = TextEntry(self, 4, 0, 'nswe', padx, pady)
-        self._whg_ort.setBackground('My.TEntry', 'lightyellow')
-        self._whg_ort.setWidth(30)
-        self._whg_ort.registerModifyCallback(self._onWohnungModified)
+        self._teOrt = TextEntry(f, 1, 0, 'nswe')
+        self._teOrt.setBackground('My.TEntry', 'lightyellow')
+        self._teOrt.setWidth(30)
+        self._teOrt.registerModifyCallback(self._onWohnungModified)
+        f.grid(column=1, row=1, sticky='nswe', padx=padx, pady=pady)
 
-        MyLabel(self, 'Whg.-Bez.: ', 0, 1, 'nswe', 'e', padx, pady)
-        self._whg_bez = TextEntry(self, 1, 1, 'nswe', padx, pady)
-        self._whg_bez.registerModifyCallback(self._onWohnungModified)
+        MyLabel(self, 'Whg.-Bez.: ', 0, 2, 'nswe', 'e', padx, pady)
+        self._teWhg_bez = TextEntry(self, 1, 2, 'nswe', padx, pady)
+        self._teWhg_bez.registerModifyCallback(self._onWohnungModified)
 
-        MyLabel(self, 'Angeschafft am: ', 0, 2, 'nswe', 'e', padx, pady)
+        MyLabel(self, 'Angeschafft am: ', 0, 3, 'nswe', 'e', padx, pady)
         de = DateEntry(self)
         de.setUseCalendar(False)
         de['width'] = 10
-        de.grid(column=1, row=2, sticky='nw', padx=padx, pady=pady)
-        self._angeschafft_am = de
-        self._angeschafft_am.registerModifyCallback(self._onWohnungModified)
+        de.grid(column=1, row=3, sticky='nw', padx=padx, pady=pady)
+        self._deAngeschafft_am = de
+        self._deAngeschafft_am.registerModifyCallback(self._onWohnungModified)
 
-        MyLabel(self, 'Einhts.wert-Az: ', 2, 2, 'nswe', 'e', padx, pady)
-        self._einhwert_az = TextEntry(self, 3, 2, 'nswe', padx, pady)
-        self._einhwert_az.grid(columnspan=2)
-        self._einhwert_az.registerModifyCallback(self._onWohnungModified)
+        MyLabel(self, 'Einhts.wert-Az: ', 0, 4, 'nswe', 'e', padx, pady)
+        self._teEinhwert_az = TextEntry(self, 1, 4, 'nswe', padx, pady)
+        #self._teEinhwert_az.grid(columnspan=2)
+        self._teEinhwert_az.registerModifyCallback(self._onWohnungModified)
+
+        MyLabel(self, 'Vermieter:', column=0, row=5, sticky='nse', anchor='e', padx=padx, pady=pady)
+        cbo = MyCombobox(self)
+        cbo.setItems(('Martin Kendel, Schellenberg', 'Gudrun Kendel, Schellenberg'))
+        cbo.setReadonly(True)
+        cbo.registerModifyCallback(self._onVermieterChanged)
+        cbo.grid(column=1, row=5, sticky='we', padx=padx, pady=pady)
+        self._cboVermieter = cbo
+
+        btn = ButtonFactory.getNewButton(self, 'Neuen Vermieter anlegen', self._onNewVermieter)
+        btn.grid(column=2, row=5, sticky='swe', padx=(0, 0), pady=pady)
+        btnEdit = ButtonFactory.getEditButton(self, 'Vermieterdaten ändern', self._onEditVermieter)
+        btnEdit.grid(column=3, row=5, sticky='swe', padx=(0,0), pady=pady)
+
+        MyLabel(self, 'Verwalter:', column=0, row=6, sticky='nse', padx=padx, pady=pady)
+        cbo = MyCombobox(self)
+        cbo.setItems(('Hugo Baldrian, Nürnberg', 'Susanne Schleimich, Fürth'))
+        cbo.setReadonly(True)
+        cbo.registerModifyCallback(self._onVerwalterChanged)
+        cbo.grid(column=1, row=6, sticky='we', padx=padx, pady=pady)
+        self._cboVerwalter = cbo
+
+        btn2 = ButtonFactory.getNewButton(self, 'Neuen Verwalter anlegen', self._onNewVerwalter)
+        btn2.grid(column=2, row=6, sticky='swe', padx=(0,0), pady=pady)
+        btnEdit2 = ButtonFactory.getEditButton(self, 'Vermieterdaten ändern', self._onEditVerwalter)
+        btnEdit2.grid(column=3, row=6, sticky='swe', padx=(0, 0), pady=pady)
 
     def _onWohnungModified(self, widget: Widget, name: str, index: str, mode: str):
         self._isModified = True
         if self._callback:
             self._callback()
+
+    def _onVermieterChanged(self, widget: Widget, name: str, index: str, mode: str):
+        print('onVermieterChanged')
+
+    def _onVerwalterChanged(self, widget: Widget, name: str, index: str, mode: str):
+        print('onVerwalterChanged')
+
+    def _onNewVermieter(self, arg):
+        print('onNewVermieter')
+
+    def _onEditVermieter(self, arg):
+        print('onEditVermieter')
+
+    def _onNewVerwalter(self, arg):
+        print('onNewVerwalter')
+
+    def _onEditVerwalter(self, arg):
+        print('onEditVerwalter')
 
     def registerModifyCallback(self, callback) -> None:
         self._callback = callback
@@ -78,33 +128,41 @@ class WohnungFrame(ttk.Frame):
         return self._isModified
 
     def setData(self, data: XWohnungDaten) -> None:
-        self._whg_strasse = data.strasse
-        self._whg_plz = data.plz
-        self._whg_ort = data.ort
-        self._whg_bez = data.whg_bez
-        self._angeschafft_am = data.angeschafft_am
-        self._einhwert_az = data.einhwert_az
+        self._teStrasse = data.strasse
+        self._tePlz = data.plz
+        self._teOrt = data.ort
+        self._teWhg_bez = data.whg_bez
+        self._deAngeschafft_am = data.angeschafft_am
+        self._teEinhwert_az = data.einhwert_az
+        self._cboVermieter.setItems(data.vermieter_list)
+        self._cboVermieter.setIndex(data.vermieter)
+        self._cboVerwalter.setItems(data.verwalter_list)
+        self._cboVerwalter.setIndex(data.verwalter)
         self._isModified = False
 
     def getData(self) -> XWohnungDaten:
         d: XWohnungDaten = XWohnungDaten()
-        d.strasse = self._whg_strasse.getValue()
-        d.plz = self._whg_plz.getValue()
-        d.ort = self._whg_ort.getValue()
-        d.whg_bez = self._whg_bez.getValue()
-        d.angeschafft_am = self._angeschafft_am.getValue()
-        d.einhwert_az = self._einhwert_az.getValue()
+        d.strasse = self._teStrasse.getValue()
+        d.plz = self._tePlz.getValue()
+        d.ort = self._teOrt.getValue()
+        d.whg_bez = self._teWhg_bez.getValue()
+        d.angeschafft_am = self._deAngeschafft_am.getValue()
+        d.einhwert_az = self._teEinhwert_az.getValue()
+        d.verwalter = self._cboVerwalter.getCurrentIndex()
+        d.vermieter = self._cboVermieter.getCurrentIndex()
+        d.verwalter_list = self._cboVerwalter.getItems()
+        d.vermieter_list = self._cboVermieter.getItems()
         return d
 
     def clearData(self):
-        self._whg_strasse.clear()
-        self._whg_bez.clear()
-        self._whg_plz.clear()
-        self._whg_ort.clear()
-        self._einhwert_az.clear()
-        self._angeschafft_am.clear()
+        self._teStrasse.clear()
+        self._teWhg_bez.clear()
+        self._tePlz.clear()
+        self._teOrt.clear()
+        self._teEinhwert_az.clear()
+        self._deAngeschafft_am.clear()
 
-class StammdatenView(ttk.Frame):
+class StammdatenView__alt(ttk.Frame):
     def __init__(self, parent: ttk.Frame):
         ttk.Frame.__init__(self, parent)
         self._name = None

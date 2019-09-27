@@ -9,7 +9,7 @@ try:
 except ImportError:
     print("couldn't import my widgets.")
 
-class WohnungView(ttk.Frame):
+class WohnungDetailsView(ttk.Frame):
     def __init__(self, parent: ttk.Frame):
         ttk.Frame.__init__(self, parent)
         self._lbl_ident = None
@@ -55,7 +55,7 @@ def test():
     style = ttk.Style()
     style.theme_use('clam')
 
-    wv = WohnungView(root)
+    wv = WohnungDetailsView(root)
     wv.grid(column=0, row=0, sticky='nswe', padx=10, pady=10)
 
     root.mainloop()

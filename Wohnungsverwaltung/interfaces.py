@@ -9,6 +9,10 @@ class XWohnungDaten(XInterface):
         self.whg_bez = ''
         self.angeschafft_am = ''
         self.einhwert_az = ''
+        self.verwalter = -1 #index of selected combo item
+        self.vermieter = -1 #index of selected combo item
+        self.verwalter_list = list()
+        self.vermieter_list = list()
         if not dic:
             dic = self.__dict__
         XInterface.__init__(self, dic)
