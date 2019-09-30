@@ -12,7 +12,7 @@ from interfaces import \
     XHausgeldAdjustment, XHausgeldAdjustmentList, \
     XSonstigeKosten, XSonstigeKostenList, \
     XZurechnung, XImmoStammdaten, XMtlEinnahmen, XMtlEinnahmenList, \
-    XAfa
+    XAfa, XWohnungDaten, XVermieter, XVerwalter, XVermieterList, XVerwalterList
 
 # def testRequests():
 #     s = requests.Session() #create a persistent session
@@ -152,6 +152,32 @@ class DataProvider:
             data['angeschafft_am'] = datehelper.convertIsoToEur(data['angeschafft_am'])
         return data
 
+    def getWohnungMinStammdaten(self, whg_id: int) -> XWohnungDaten:
+        resp = self.__session. \
+            get('http://localhost/kendelweb/dev/php/business.php?q=wohnung_min_stamm&id=' +
+                str(whg_id) + '&user=' +
+                self.__user)
+        data: dict = self._getReadRetValOrRaiseException(resp)
+        if data['angeschafft_am']:
+            data['angeschafft_am'] = datehelper.convertIsoToEur(data['angeschafft_am'])
+        return XWohnungDaten(data)
+
+    def getVerwalterListe(self) -> XVerwalterList:
+        resp = self.__session. \
+            get('http://localhost/kendelweb/dev/php/business.php?q=verwalter_list&id=' +
+                '&user=' + self.__user)
+        sk = XVerwalterList(XVerwalter,
+                            self._getReadRetValOrRaiseException(resp))
+        return sk
+
+    def getVermieterListe(self) -> XVermieterList:
+        resp = self.__session. \
+            get('http://localhost/kendelweb/dev/php/business.php?q=vermieter_list&id=' +
+                '&user=' + self.__user)
+        sk = XVermieterList(XVermieter,
+                            self._getReadRetValOrRaiseException(resp))
+        return sk
+
     def getRechnungsUebersicht( self, whg_id: int ) -> list:
         resp = self.__session. \
             get('http://localhost/kendelweb/dev/php/business.php?q=uebersicht_rechnungen&id=' +
@@ -212,19 +238,19 @@ class DataProvider:
         gs_data = self._getReadRetValOrRaiseException(resp)
         return gs_data
 
-    def getVermieterData(self, whg_id: int):
-        resp = self.__session. \
-            get('http://localhost/kendelweb/dev/php/business.php?q=vermieter_data&id=' +
-                str(whg_id) + '&user=' + self.__user)
-        v_data = self._getReadRetValOrRaiseException(resp)
-        return v_data
+    # def getVermieterData(self, whg_id: int):
+    #     resp = self.__session. \
+    #         get('http://localhost/kendelweb/dev/php/business.php?q=vermieter_data&id=' +
+    #             str(whg_id) + '&user=' + self.__user)
+    #     v_data = self._getReadRetValOrRaiseException(resp)
+    #     return v_data
 
-    def getVerwalterData(self, whg_id: int):
-        resp = self.__session. \
-            get('http://localhost/kendelweb/dev/php/business.php?q=verwalter_data&id=' +
-                str(whg_id) + '&user=' + self.__user)
-        v_data = self._getReadRetValOrRaiseException(resp)
-        return v_data
+    # def getVerwalterData(self, whg_id: int):
+    #     resp = self.__session. \
+    #         get('http://localhost/kendelweb/dev/php/business.php?q=verwalter_data&id=' +
+    #             str(whg_id) + '&user=' + self.__user)
+    #     v_data = self._getReadRetValOrRaiseException(resp)
+    #     return v_data
 
     def getVeranlagungData(self, whg_id: int, vj: int) -> dict:
         resp = self.__session. \
@@ -768,8 +794,11 @@ class DataProvider:
 if __name__ == '__main__':
     prov = DataProvider()
     prov.connect('martin', 'fuenf55')
-
-    prov.deleteWohnung(2)
+    xvwlist: XVerwalterList = prov.getVerwalterListe()
+    xvmlist: XVermieterList = prov.getVermieterListe()
+    xdata: XWohnungDaten = prov.getWohnungMinStammdaten(1)
+    print(xdata)
+    #prov.deleteWohnung(2)
 
     #hg = prov.getHausgeld(1, 2018)
     #sonst = prov.getAnlageVData_49_sonstiges(1, 2018)

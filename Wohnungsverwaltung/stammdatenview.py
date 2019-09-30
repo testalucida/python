@@ -1,18 +1,26 @@
 from tkinter import *
 from tkinter import ttk
 from collections import UserDict
+from typing import Dict, List
+from enum import IntEnum
+from functools import partial
+from copy import deepcopy
 
 import sys
 sys.path.append('/home/martin/Projects/python/mywidgets')
 try:
     from mywidgets import TextEntry, FloatEntry, MyLabel, MyCombobox
-    from interfaces import XWohnungDaten
+    from interfaces import XWohnungDaten, XVermieter, XVerwalter
     from editablegroup import EditSaveFunctionBar, EditableGroupAction
     from mycalendar import DateEntry
     import datehelper
     from buttonfactory import ButtonFactory
 except ImportError:
     print("couldn't import my widgets.")
+
+StammdatenAction = \
+    IntEnum('StammdatenAction',
+            'save_changes revert_changes new_vermieter edit_vermieter new_verwalter edit_verwalter')
 
 class StammdatenView(ttk.Frame):
     def __init__(self, parent):
@@ -25,15 +33,17 @@ class StammdatenView(ttk.Frame):
         self._teEinhwert_az = None
         self._cboVermieter = None
         self._cboVerwalter = None
+        self._xwhgdatacopy = None
+        self._btnSave = None
+        self._btnCancel = None
         self._isModified = False
-        self._callback = None
+        self._modifyCallback = None
+        self._actionCallback = None
         self._createUI()
 
     def _createUI(self):
         padx = pady = 5
         self.columnconfigure(1, weight=1)
-        self.columnconfigure(4, weight=1)
-        self.columnconfigure(5, weight=1)
 
         MyLabel(self, 'Straße: ', 0, 0, 'nswe', 'e', padx, pady)
         self._teStrasse = TextEntry(self, 1, 0, 'nswe', padx, pady)
@@ -76,69 +86,100 @@ class StammdatenView(ttk.Frame):
         cbo = MyCombobox(self)
         cbo.setItems(('Martin Kendel, Schellenberg', 'Gudrun Kendel, Schellenberg'))
         cbo.setReadonly(True)
-        cbo.registerModifyCallback(self._onVermieterChanged)
+        cbo.registerModifyCallback(self._onWohnungModified)
         cbo.grid(column=1, row=5, sticky='we', padx=padx, pady=pady)
         self._cboVermieter = cbo
 
-        btn = ButtonFactory.getNewButton(self, 'Neuen Vermieter anlegen', self._onNewVermieter)
+        btn = ButtonFactory.getNewButton(self, 'Neuen Vermieter anlegen', partial(self._onAction, StammdatenAction.new_vermieter))
         btn.grid(column=2, row=5, sticky='swe', padx=(0, 0), pady=pady)
-        btnEdit = ButtonFactory.getEditButton(self, 'Vermieterdaten ändern', self._onEditVermieter)
+        btnEdit = ButtonFactory.getEditButton(self, 'Vermieterdaten ändern', partial(self._onAction, StammdatenAction.edit_vermieter))
         btnEdit.grid(column=3, row=5, sticky='swe', padx=(0,0), pady=pady)
 
         MyLabel(self, 'Verwalter:', column=0, row=6, sticky='nse', padx=padx, pady=pady)
         cbo = MyCombobox(self)
         cbo.setItems(('Hugo Baldrian, Nürnberg', 'Susanne Schleimich, Fürth'))
         cbo.setReadonly(True)
-        cbo.registerModifyCallback(self._onVerwalterChanged)
+        cbo.registerModifyCallback(self._onWohnungModified)
         cbo.grid(column=1, row=6, sticky='we', padx=padx, pady=pady)
         self._cboVerwalter = cbo
 
-        btn2 = ButtonFactory.getNewButton(self, 'Neuen Verwalter anlegen', self._onNewVerwalter)
+        btn2 = ButtonFactory.getNewButton(self, 'Neuen Verwalter anlegen',
+                                          partial(self._onAction, StammdatenAction.new_verwalter))
         btn2.grid(column=2, row=6, sticky='swe', padx=(0,0), pady=pady)
-        btnEdit2 = ButtonFactory.getEditButton(self, 'Vermieterdaten ändern', self._onEditVerwalter)
+        btnEdit2 = ButtonFactory.getEditButton(self, 'Verwalterdaten ändern',
+                                               partial(self._onAction, StammdatenAction.edit_verwalter))
         btnEdit2.grid(column=3, row=6, sticky='swe', padx=(0, 0), pady=pady)
+
+        f: ttk.Frame = self._createSaveCancelButtons()
+        f.grid(column=1, columnspan=3, sticky='e', padx = padx, pady = pady)
+
+    def _createSaveCancelButtons(self) -> ttk.Frame:
+        f = ttk.Frame(self)
+        btn = ttk.Button(f, text='Speichern', state='disabled',
+                         command=partial(self._onAction, StammdatenAction.save_changes))
+        btn.grid(column=0, row=0, sticky='nsw')
+        self._btnSave = btn
+
+        btn = ttk.Button(f, text='Verwerfen', state='disabled',
+                         command=partial(self._onAction, StammdatenAction.revert_changes))
+        btn.grid(column=1, row=0, sticky='nsw')
+        self._btnCancel = btn
+        return f
+
+    def setButtonText(self, okbtntext:str, cancelbtntext:str) -> None:
+        self._btnSave['text'] = okbtntext
+        self._btnCancel['text'] = cancelbtntext
+
+    def setButtonState(self, okbtnstate:str=None, cancelbtnstate:str=None) -> None:
+        if okbtnstate:
+            self._btnSave['state'] = okbtnstate
+        if cancelbtnstate:
+            self._btnCancel['state'] = cancelbtnstate
 
     def _onWohnungModified(self, widget: Widget, name: str, index: str, mode: str):
         self._isModified = True
-        if self._callback:
-            self._callback()
+        if self._modifyCallback:
+            self._modifyCallback()
 
-    def _onVermieterChanged(self, widget: Widget, name: str, index: str, mode: str):
-        print('onVermieterChanged')
-
-    def _onVerwalterChanged(self, widget: Widget, name: str, index: str, mode: str):
-        print('onVerwalterChanged')
-
-    def _onNewVermieter(self, arg):
-        print('onNewVermieter')
-
-    def _onEditVermieter(self, arg):
-        print('onEditVermieter')
-
-    def _onNewVerwalter(self, arg):
-        print('onNewVerwalter')
-
-    def _onEditVerwalter(self, arg):
-        print('onEditVerwalter')
+    def _onAction(self, action, arg=None):
+        if self._actionCallback:
+            self._actionCallback(action, self.getData(), self._xwhgdatacopy)
+        if action == StammdatenAction.save_changes or \
+                action == StammdatenAction.revert_changes:
+            self._isModified = False
 
     def registerModifyCallback(self, callback) -> None:
-        self._callback = callback
+        #function to register takes no arguments
+        self._modifyCallback = callback
+
+    def registerActionCallback(self, callback) -> None:
+        #function to register has to take three arguments:
+        #  - StammdatenAction
+        #  - XWohnungDaten
+        #  - XWohnungDaten (values before modifying)
+        self._actionCallback = callback
 
     def isModified(self) -> bool:
         return self._isModified
 
     def setData(self, data: XWohnungDaten) -> None:
-        self._teStrasse = data.strasse
-        self._tePlz = data.plz
-        self._teOrt = data.ort
-        self._teWhg_bez = data.whg_bez
-        self._deAngeschafft_am = data.angeschafft_am
-        self._teEinhwert_az = data.einhwert_az
-        self._cboVermieter.setItems(data.vermieter_list)
-        self._cboVermieter.setIndex(data.vermieter)
-        self._cboVerwalter.setItems(data.verwalter_list)
-        self._cboVerwalter.setIndex(data.verwalter)
+        self._teStrasse.setValue(data.strasse)
+        self._tePlz.setValue(data.plz)
+        self._teOrt.setValue( data.ort)
+        self._teWhg_bez.setValue(data.whg_bez)
+        self._deAngeschafft_am.setValue( data.angeschafft_am)
+        self._teEinhwert_az.setValue(data.einhwert_az)
+        self._cboVermieter.setValue(data.vermieter)
+        self._cboVerwalter.setValue(data.verwalter)
         self._isModified = False
+        self.setButtonState('disabled', 'disabled')
+        self._xwhgdatacopy = deepcopy(data)
+
+    def setVerwalterList(self, vwlist: List[str]):
+        self._cboVerwalter.setItems(vwlist)
+
+    def setVermieterList(self, vmlist: List[str]):
+        self._cboVermieter.setItems(vmlist)
 
     def getData(self) -> XWohnungDaten:
         d: XWohnungDaten = XWohnungDaten()
@@ -148,19 +189,20 @@ class StammdatenView(ttk.Frame):
         d.whg_bez = self._teWhg_bez.getValue()
         d.angeschafft_am = self._deAngeschafft_am.getValue()
         d.einhwert_az = self._teEinhwert_az.getValue()
-        d.verwalter = self._cboVerwalter.getCurrentIndex()
-        d.vermieter = self._cboVermieter.getCurrentIndex()
-        d.verwalter_list = self._cboVerwalter.getItems()
-        d.vermieter_list = self._cboVermieter.getItems()
+        d.verwalter = self._cboVerwalter.getValue()
+        d.vermieter = self._cboVermieter.getValue()
+        # d.verwalter_list = self._cboVerwalter.getItems()
+        # d.vermieter_list = self._cboVermieter.getItems()
         return d
 
-    def clearData(self):
+    def clear(self):
         self._teStrasse.clear()
         self._teWhg_bez.clear()
         self._tePlz.clear()
         self._teOrt.clear()
         self._teEinhwert_az.clear()
         self._deAngeschafft_am.clear()
+        self._xwhgdatacopy = None
 
 class StammdatenView__alt(ttk.Frame):
     def __init__(self, parent: ttk.Frame):

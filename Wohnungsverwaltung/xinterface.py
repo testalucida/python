@@ -5,14 +5,15 @@ class XInterface:
         if dic:
             selfdict = self.__dict__
             for key in selfdict:
-                if type(selfdict[key]) == int:
-                    selfdict[key] = int(dic[key])
-                elif type(selfdict[key]) == float:
-                    selfdict[key] = float(dic[key])
-                else:
-                    selfdict[key] = dic[key]
-            # for key in dic:
-            #     self.__dict__[key] = dic[key]
+                try:
+                    if type(selfdict[key]) == int:
+                        selfdict[key] = int(dic[key])
+                    elif type(selfdict[key]) == float:
+                        selfdict[key] = float(dic[key])
+                    else:
+                        selfdict[key] = dic[key]
+                except:
+                    pass # ok. Not each of selfdict's keys has to be part of dic.
 
     def setValue(self, attr_name: str, attr_value: any) -> None:
         self.__dict__[attr_name] = attr_value

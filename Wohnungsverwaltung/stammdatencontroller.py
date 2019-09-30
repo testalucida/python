@@ -1,8 +1,10 @@
-
+from typing import Dict, List
 from business import DataProvider, DataError, ServiceException
 from mywidgets import TextEntry
 from actions import Action
-from stammdatenview import StammdatenView
+from stammdatenview import StammdatenView, StammdatenAction
+from interfaces import XWohnungDaten, XVerwalter, XVermieter, \
+    XVermieterList, XVerwalterList
 import datehelper
 
 class StammdatenController:
@@ -11,13 +13,12 @@ class StammdatenController:
         self._dataProvider = dataProvider
         self._view = stammdatenView
         self._whg_id = None
-        self._vermieterdata = None
-        self._wohnungdata = None
-        self._verwalterdata = None
+        self._vermieterDic: Dict[int, str] = {} #dictionary of all vermieter
+        self._verwalterDic: Dict[int, str] = {} #dictionary of all verwalter
 
     def startWork(self) -> None:
-        #todo: register Save-Callback
-        pass
+        self._view.registerModifyCallback(self.onStammdatenModify)
+        self._view.registerActionCallback(self.onStammdatenAction)
 
     def wohnungSelected(self, whg_id: int) -> None:
         self._whg_id = whg_id
@@ -25,46 +26,60 @@ class StammdatenController:
 
     def clear(self) -> None:
         self._whg_id = None
-        self._wohnungdata = None
-        self._vermieterdata = None
-        self._verwalterdata = None
         self._view.clear()
 
     def _loadStammdaten(self):
-        self._vermieterdata: dict = \
-            self._dataProvider.getVermieterData(self._whg_id)
-        """
-        {
-            'v_id': '1', 
-            'name': 'Kendel', 
-            'vorname': 'Martin', 
-            'strasse': '', 
-            'plz': '', 
-            'ort': '', 
-            'steuernummer': '217/235/50499'
-        }
-        """
-        self._view.setVermieterData(self._vermieterdata)
+        #get minimalistic wohnung stammdaten
+        xwhgdata: XWohnungDaten = self._dataProvider. \
+            getWohnungMinStammdaten(self._whg_id)
+        vermieter_id = xwhgdata.vermieter_id
+        verwalter_id = xwhgdata.verwalter_id
 
-        self._wohnungdata: dict = \
-            self._dataProvider.getWohnungIdentifikation(self._whg_id)
-        """
-        {
-            'plz': '90429', 
-            'ort': 'Nürnberg', 
-            'strasse': 'Mendelstr. 24', 
-            'whg_bez': '3. OG rechts', 
-            'einhwert_az': None, 
-            'angeschafft_am': None
-        }
-        """
-        if self._wohnungdata:
-            self._view.setWohnungData(self._wohnungdata)
+        #create and set vermieter combo list:
+        xvmlist: XVermieterList = self._dataProvider.getVermieterListe()
+        for vm in xvmlist.getList():
+            cboItem = ''.join((vm.name, ' ', vm.vorname, ', ', vm.ort))
+            self._vermieterDic[vm.vermieter_id] = cboItem
+            if vm.vermieter_id == vermieter_id:
+                xwhgdata.vermieter = cboItem
+        self._view.setVermieterList(list(self._vermieterDic.values()))
 
-        self._verwalterdata: dict = \
-            self._dataProvider.getVerwalterData(self._whg_id)
-        if self._verwalterdata:
-            self._view.setVerwalterData(self._verwalterdata)
+        #create and set verwalter combo list
+        xvwlist: XVerwalterList = self._dataProvider.getVerwalterListe()
+        for vw in xvwlist.getList():
+            cboItem = ''.join((vw.firma, ' ', vw.ort))
+            self._verwalterDic[vw.verwalter_id] = cboItem
+            if vw.verwalter_id == verwalter_id:
+                xwhgdata.verwalter = cboItem
+        self._view.setVerwalterList(list(self._verwalterDic.values()))
+
+        self._view.setData(xwhgdata)
+
+    def onStammdatenModify(self):
+        self._view.setButtonState('normal', 'normal')
+
+    def onStammdatenAction(self, action:StammdatenAction,
+                           xdata:XWohnungDaten, xdatacopy:XWohnungDaten):
+        # take proper action depending on given StammdatenAction
+        #print(action, xdata)
+        if action == StammdatenAction.revert_changes:
+            xdata = xdatacopy
+            self._view.setData(xdata)
+        else:
+            switcher = {
+                StammdatenAction.save_changes: self._handleSaveChanges,
+                StammdatenAction.new_vermieter: self._handleNewVermieter
+            }
+            switcher.get(action)(xdata)
+        # elif action == StammdatenAction.save_changes:
+        #     pass
+        # elif action == StammdatenAction.new_vermieter:
+        #     pass
+    def _handleSaveChanges(self, xdata:XWohnungDaten):
+        print('save')
+
+    def _handleNewVermieter(self, xdata:XWohnungDaten):
+        pass
 
 def test():
     from tkinter import  Tk

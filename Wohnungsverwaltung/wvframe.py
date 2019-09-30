@@ -10,7 +10,7 @@ try:
 except ImportError:
     print("couldn't import some stuff.")
 
-WohnungAction = IntEnum('WohnungAction', 'new delete')
+WohnungAction = IntEnum('WohnungAction', 'new edit delete')
 
 class WV(ttk.Frame):
     def __init__(self, root):
@@ -187,7 +187,7 @@ class WV(ttk.Frame):
 
     def _createStammdatenTab(self, stammdatenPage:ttk.Frame):
         stv = StammdatenView(stammdatenPage)
-        stv.grid(column=0, row=0, sticky='nswe', padx=5, pady=5)
+        stv.grid(column=0, row=0, sticky='nwe', padx=50, pady=50)
         self._stammdatenView = stv
 
         stammdatenPage.rowconfigure(0, weight=1)
@@ -245,7 +245,9 @@ class WV(ttk.Frame):
 
     def _doWohnungActionCallback(self, action: WohnungAction):
         if self._wohnungActionCallback:
-            whg_id = self.getSelectedTreeItem()
+            whg_id = -1
+            if not action == WohnungAction.new:
+                whg_id = self.getSelectedTreeItem()
             self._wohnungActionCallback(whg_id, action)
 
     def getSelectedTreeItem(self) -> int:

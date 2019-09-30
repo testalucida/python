@@ -1,6 +1,40 @@
 from typing import Dict, List, Text
 from xinterface import XInterface, XInterfaceList
 
+class XVermieter(XInterface):
+    def __init__(self, dic: Dict[str, str] = None):
+        self.vermieter_id = 0
+        self.name = ''
+        self.vorname = ''
+        self.strasse = ''
+        self.plz = ''
+        self.ort = ''
+        self.steuernummer = ''
+        if not dic:
+            dic = self.__dict__
+        XInterface.__init__(self, dic)
+
+class XVermieterList(XInterfaceList):
+    def __init__(self, klass: type, li: list = None):
+        XInterfaceList.__init__(self, XVermieter, li)
+
+class XVerwalter(XInterface):
+    def __init__(self, dic: Dict[str, str] = None):
+        self.verwalter_id = 0
+        self.firma = ''
+        self.strasse = ''
+        self.plz = ''
+        self.ort = ''
+        self.telefon = ''
+        self.email = ''
+        if not dic:
+            dic = self.__dict__
+        XInterface.__init__(self, dic)
+
+class XVerwalterList(XInterfaceList):
+    def __init__(self, klass: type, li: list = None):
+        XInterfaceList.__init__(self, XVerwalter, li)
+
 class XWohnungDaten(XInterface):
     def __init__(self, dic: Dict[str, str] = None):
         self.strasse = ''
@@ -9,10 +43,10 @@ class XWohnungDaten(XInterface):
         self.whg_bez = ''
         self.angeschafft_am = ''
         self.einhwert_az = ''
-        self.verwalter = -1 #index of selected combo item
-        self.vermieter = -1 #index of selected combo item
-        self.verwalter_list = list()
-        self.vermieter_list = list()
+        self.verwalter = '' #textual verwalter identification like 'Nittel, Nürnberg'
+        self.vermieter = '' #textual vermieter identification like 'Martin Kendel, Schellenberg'
+        self.verwalter_id = -1 #database id
+        self.vermieter_id = -1 #database id
         if not dic:
             dic = self.__dict__
         XInterface.__init__(self, dic)

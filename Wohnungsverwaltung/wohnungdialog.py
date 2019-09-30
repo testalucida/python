@@ -32,8 +32,8 @@ class WohnungDialog(Toplevel):
         lf = self._createWohnungLabelframe(padx, pady)
         lf.grid(column=0, row=0, sticky='nswe', padx=padx, pady=pady)
 
-        f = self._createSaveCancelButtons()
-        f.grid(column=0, row=2, sticky='nse', padx=padx, pady=pady)
+        #f = self._createSaveCancelButtons()
+        #f.grid(column=0, row=2, sticky='nse', padx=padx, pady=pady)
 
     def _createWohnungLabelframe(self, padx:int, pady:int):
         lf = ttk.Labelframe(self, text='Wohnungsdaten')
@@ -78,6 +78,11 @@ class WohnungDialog(Toplevel):
     def setPosition(self, x: int, y: int) -> None:
         self.geometry("+%d+%d" % (x , y ))
 
+    def setData(self, xdata: XWohnungDaten) -> None:
+        self._fWohnung.setData(xdata)
+
+    def getData(self) -> XWohnungDaten:
+        return self._fWohnung.getData()
 
 
 def openDialog(root, frame):

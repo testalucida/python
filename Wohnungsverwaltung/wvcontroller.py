@@ -10,6 +10,7 @@ from sonsteacontroller import SonstEinAusController
 from grundsteuercontroller import GrundsteuerController
 from stammdatencontroller import StammdatenController
 from veranlagungcontroller import VeranlagungController
+from wohnungdialogcontroller import WohnungDialogController
 
 class WvController:
     def __init__(self, wv: WV):
@@ -59,9 +60,13 @@ class WvController:
         self._wv.registerWohnungClickCallback(self._onWohnungClicked)
 
     def onWohnungMenuAction(self, whg_id: int, action: WohnungAction):
-        print(action)
+        #print(action)
         if action == WohnungAction.delete:
             self._deleteWohnung(whg_id)
+        elif(action == WohnungAction.new or action == WohnungAction.edit):
+            whg_id = None if whg_id == -1 else whg_id
+            c = WohnungDialogController(self._wv, action, whg_id)
+            c.startWork()
 
     def _deleteWohnung(self, whg_id: int) -> None:
         #todo: delete wohnung logically via DataProvider
