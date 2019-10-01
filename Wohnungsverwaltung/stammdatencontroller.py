@@ -1,5 +1,9 @@
+from tkinter import messagebox
 from typing import Dict, List
+from functools import partial
 from business import DataProvider, DataError, ServiceException
+from vermietercontroller import VermieterController
+from verwaltercontroller import VerwalterController
 from mywidgets import TextEntry
 from actions import Action
 from stammdatenview import StammdatenView, StammdatenAction
@@ -65,21 +69,56 @@ class StammdatenController:
         if action == StammdatenAction.revert_changes:
             xdata = xdatacopy
             self._view.setData(xdata)
+        elif action == StammdatenAction.save_changes:
+            self._handleSaveChanges(xdata)
         else:
             switcher = {
-                StammdatenAction.save_changes: self._handleSaveChanges,
-                StammdatenAction.new_vermieter: self._handleNewVermieter
+                StammdatenAction.new_vermieter: self._handleVermieter,
+                StammdatenAction.edit_vermieter:
+                    partial(self._handleVermieter, xdata.vermieter),
+                StammdatenAction.new_verwalter: self._handleVerwalter,
+                StammdatenAction.edit_verwalter:
+                    partial(self._handleVerwalter, xdata.verwalter)
             }
-            switcher.get(action)(xdata)
-        # elif action == StammdatenAction.save_changes:
-        #     pass
-        # elif action == StammdatenAction.new_vermieter:
-        #     pass
+            switcher.get(action)()
+
     def _handleSaveChanges(self, xdata:XWohnungDaten):
         print('save')
 
-    def _handleNewVermieter(self, xdata:XWohnungDaten):
-        pass
+    def _handleVermieter(self, vermieter:str = None):
+        verm_ctrl = VermieterController(self._dataProvider)
+        if vermieter is None:
+            # new vermieter
+            verm_ctrl.createVermieter()
+        else:
+            if not vermieter:
+                messagebox.showerror('Aktion nicht möglich',
+                                     'Es ist kein Vermieter ausgewählt.')
+                return
+
+            #edit vermieter
+            #get vermieter_id by means of vermieter and call vermieter controller
+            for id, name in self._vermieterDic.items():
+                if name == vermieter:
+                    verm_ctrl.editVermieter(id)
+                    return
+
+    def _handleVerwalter(self, verwalter:str = None):
+        verw_ctrl = VerwalterController(self._dataProvider, self._view)
+        if verwalter is None:
+            # new verwalter
+            verw_ctrl.createVerwalter()
+        else:
+            if not verwalter:
+                messagebox.showerror('Aktion nicht möglich',
+                                     'Es ist kein Verwalter ausgewählt.')
+                return
+            # edit verwalter
+            # get vermieter_id by means of vermieter and call vermieter controller
+            for id, firma in self._verwalterDic.items():
+                if firma == verwalter:
+                    verw_ctrl.editVerwalter(id)
+                    return
 
 def test():
     from tkinter import  Tk

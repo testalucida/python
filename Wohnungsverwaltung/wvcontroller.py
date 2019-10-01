@@ -46,6 +46,8 @@ class WvController:
 
         self._stammdatencontroller = StammdatenController(self._dataProvider,
                                                           self._wv.getStammdatenView())
+        self._stammdatencontroller.startWork()
+
         self._veranlagungcontroller = VeranlagungController(self._dataProvider,
                                                             self._wv.getVeranlagungView())
         self._veranlagungcontroller.startWork()
