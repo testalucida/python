@@ -155,6 +155,7 @@ class VerwalterDialog(Toplevel):
         Toplevel.__init__(self, parent)
         self.title('Verwalter anlegen')
         self.view = self._createUI()
+        #self.attributes('-topmost', True)  --> bad: message box will be not visible
 
     def _createUI(self):
         self.columnconfigure(0, weight=1)

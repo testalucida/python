@@ -21,6 +21,9 @@ class XInterface:
     def getValue(self, attr_name) -> any:
         return self.__dict__[attr_name]
 
+    def getValuesAsDict(self) -> dict:
+        return self.__dict__
+
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 class XInterfaceList:

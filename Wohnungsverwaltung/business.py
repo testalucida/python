@@ -729,6 +729,30 @@ class DataProvider:
 
         return retval
 
+    '''
+    insert verwalter
+    '''
+    def insertVerwalter(self, data:XVerwalter) -> None:
+        resp = self.__session. \
+            post(SERVER + 'business.php?q=insert_verwalter&user=' + self.__user,
+                 data=data.getValuesAsDict())
+
+        retval = self._getWriteRetValOrRaiseException(resp)
+
+        return retval
+
+    '''
+    update verwalter
+    '''
+    def updateVerwalter(self, data:XVerwalter) -> None:
+        resp = self.__session. \
+            post(SERVER + 'business.php?q=update_verwalter&user=' + self.__user,
+                 data=data.getValuesAsDict())
+
+        retval = self._getWriteRetValOrRaiseException(resp)
+
+        return retval
+
     ###########################################################################
 
     def _getDictCopyIsoDate(self, orig: dict, *keys) -> dict:

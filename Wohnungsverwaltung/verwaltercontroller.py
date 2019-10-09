@@ -1,4 +1,4 @@
-from tkinter import ttk
+from tkinter import ttk, Tk
 from tkinter import messagebox
 from business import DataProvider
 from verwalterview import VerwalterView, VerwalterDialog
@@ -12,15 +12,20 @@ class VerwalterController:
         self._dlg = None
 
     def createVerwalter(self):
-        print('VerwalterController.createVerwalter.')
         self._showDialog()
 
     def editVerwalter(self, verwalter_id:int):
-        print('VerwalterController.editVerwalter. id=', verwalter_id)
+        #get verwalter data:
+        vdata:XVerwalter = self._dataProvider.getVerwalterData(verwalter_id)
+        self._showDialog(vdata)
 
-    def _showDialog(self):
+    def _showDialog(self, verwalterData:XVerwalter = None):
         self._dlg = VerwalterDialog(self._dlgParent)
-        view = self._dlg.view
+        self._dlg.attributes('-topmost', True)
+        #self._dlg.attributes('-topmost', False)
+        view:VerwalterView = self._dlg.view
+        if verwalterData:
+            view.setData(verwalterData)
         view.setButtonState('disabled', 'normal')
         view.registerModifyCallback(self._onModified)
         view.registerActionCallback(self._onAction)
@@ -29,10 +34,51 @@ class VerwalterController:
         self._dlg.view.setButtonState('normal', 'normal')
 
     def _onAction(self, action:StammdatenAction, data:XVerwalter, data_before:XVerwalter):
-        print(action, data, data_before)
-        if action == StammdatenAction.revert_changes:
+        if action == StammdatenAction.save_changes:
+            msg:str = self._validate(data, data_before)
+            if msg:
+                messagebox.showwarning('Speichern nicht möglich', msg)
+            else:
+                if data.verwalter_id < 0:
+                    self._dataProvider.insertVerwalter(data)
+                else:
+                    self._dataProvider.updateVerwalter(data)
+        else: #cancel
             if self._dlg.view.isModified():
                 if not messagebox.askyesno(
                         'Bestätigung', 'Daten wurden geändert. Wirklich abbrechen?'):
                     return
-            self._dlg.destroy()
+
+        self._dlg.destroy()
+
+    def _validate(self, data_mod: XVerwalter, data_before:XVerwalter) -> str:
+        if not data_mod.firma:
+            return 'Name der Firma muss angegeben sein.'
+        if data_before:
+            if data_mod.firma == data_before.firma and \
+                data_mod.strasse == data_before.strasse and \
+                data_mod.plz == data_before.plz and \
+                data_mod.ort == data_before.ort and \
+                data_mod.telefon == data_before.telefon and \
+                data_mod.email == data_before.telefon:
+                return 'Keine Änderungen erkannt.'
+        return ''
+
+def test():
+    dp = DataProvider()
+    dp.connect('martin', 'fuenf55')
+
+    root = Tk()
+    root.rowconfigure(0, weight=1)
+    root.columnconfigure(0, weight=1)
+
+    style = ttk.Style()
+    style.theme_use('clam')
+
+    vc = VerwalterController(dp, root)
+    vc.createVerwalter()
+
+    root.mainloop()
+
+if __name__ == '__main__':
+    test()
