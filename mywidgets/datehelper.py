@@ -23,6 +23,13 @@ def isValidEurDatestring(eurstring: str) -> bool:
     except ValueError as err:
         return False
 
+def isValidIsoDatestring(isostring: str) -> bool:
+    try:
+        datetime.strptime(isostring, '%Y-%m-%d')
+        return True
+    except ValueError as err:
+        return False
+
 def convertEurToIso(eurstring: str) -> str:
     """
     converts an eurdatestring int an iso datestring

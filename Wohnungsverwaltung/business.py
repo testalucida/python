@@ -504,6 +504,39 @@ class DataProvider:
         return (zurechnung.steuerl_zurechng_mann, zurechnung.steuerl_zurechng_frau)
 
     '''
+    insert wohnung
+    '''
+    def insertWohnungMin(self, xdata:XWohnungDaten) -> int:
+        return self._writeWohnungMin(xdata, isInsert=True)
+
+    '''
+    update wohnung min
+    '''
+    def updateWohnungMin(self, xdata:XWohnungDaten) -> int:
+        return self._writeWohnungMin(xdata, isInsert=False)
+
+    def _writeWohnungMin(self, xdata: XWohnungDaten, isInsert: bool) -> int:
+        q = 'insert_wohnung_min' if isInsert else 'update_wohnung_min'
+        if xdata.angeschafft_am:
+            if datehelper.isValidEurDatestring(xdata.angeschafft_am):
+                xdata.angeschafft_am = \
+                    datehelper.convertEurToIso(xdata.angeschafft_am)
+            else:
+                if not datehelper.isValidIsoDatestring(xdata.angeschafft_am):
+                    raise ValueError(''.join((
+                        'Wohnung angeschafft am: ',
+                        xdata.angeschafft_am,
+                        ' ist kein gültiges Datumsformat')))
+
+        resp = self.__session. \
+            post(SERVER + 'business.php?q=' + q + '&user=' + self.__user,
+                 data=xdata.getValuesAsDict())
+
+        retval = self._getWriteRetValOrRaiseException(resp)
+
+        return int(retval.object_id())
+
+    '''
     insert afa
     '''
     def insertAfaData(self, afa_dict):
@@ -821,10 +854,22 @@ class DataProvider:
 if __name__ == '__main__':
     prov = DataProvider()
     prov.connect('martin', 'fuenf55')
-    xvwlist: XVerwalterList = prov.getVerwalterListe()
-    xvmlist: XVermieterList = prov.getVermieterListe()
-    xdata: XWohnungDaten = prov.getWohnungMinStammdaten(1)
+    #xvwlist: XVerwalterList = prov.getVerwalterListe()
+    #xvmlist: XVermieterList = prov.getVermieterListe()
+    #xdata: XWohnungDaten = prov.getWohnungMinStammdaten(1)
+
+    # from datetime import datetime, date
+    # s = '2012-3-24'
+    # dt = datetime.strptime(s, '%Y-%m-%d')
+
+    xdata: XWohnungDaten = XWohnungDaten()
+    xdata.strasse = 'Antonstr. 22'
+    xdata.plz = '90429'
+    xdata.ort = 'Gostenhof'
+    xdata.angeschafft_am = '2000-5-24'
     print(xdata)
+    prov.insertWohnungMin(xdata)
+
     #prov.deleteWohnung(2)
 
     #hg = prov.getHausgeld(1, 2018)

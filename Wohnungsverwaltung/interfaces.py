@@ -37,6 +37,7 @@ class XVerwalterList(XInterfaceList):
 
 class XWohnungDaten(XInterface):
     def __init__(self, dic: Dict[str, str] = None):
+        self.whg_id = -1
         self.strasse = ''
         self.plz = ''
         self.ort = ''

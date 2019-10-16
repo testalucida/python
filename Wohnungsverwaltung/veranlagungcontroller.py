@@ -32,16 +32,8 @@ class VeranlagungController:
         except:
             pass
 
-    # def _onSaveXXX(self, veranlagData: dict):
-    #     print('VeranlagungsController._onSave')
-    #     self._handleSave(veranlagData)
-    #     self._view.setSaveButtonEnabled(False)
-    #
-    #     msg = self._validate(veranlagData)
-    #     if msg:
-    #         messagebox.showerror('Validierungsfehler', msg)
-    #     else:
-    #         self._view.setCreateAnlageVButtonEnabled(True)
+    def clear(self):
+        self._view.clearAll()
 
     def _onCreateAnlageV(self, afa: dict):
         print('VeranlagungsController._onCreateAnlageV')

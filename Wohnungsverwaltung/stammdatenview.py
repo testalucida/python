@@ -20,7 +20,7 @@ except ImportError:
 
 StammdatenAction = \
     IntEnum('StammdatenAction',
-            'save_changes revert_changes new_vermieter edit_vermieter new_verwalter edit_verwalter')
+            'save_changes revert_changes cancel new_vermieter edit_vermieter new_verwalter edit_verwalter')
 
 class StammdatenView(ttk.Frame):
     def __init__(self, parent):
@@ -68,6 +68,7 @@ class StammdatenView(ttk.Frame):
 
         MyLabel(self, 'Whg.-Bez.: ', 0, 2, 'nswe', 'e', padx, pady)
         self._teWhg_bez = TextEntry(self, 1, 2, 'nswe', padx, pady)
+        self._teWhg_bez.setBackground('My.TEntry', 'lightyellow')
         self._teWhg_bez.registerModifyCallback(self._onWohnungModified)
 
         MyLabel(self, 'Angeschafft am: ', 0, 3, 'nswe', 'e', padx, pady)
@@ -182,6 +183,9 @@ class StammdatenView(ttk.Frame):
 
     def getData(self) -> XWohnungDaten:
         d: XWohnungDaten = XWohnungDaten()
+        if self._xwhgdatacopy:
+            # _xwhgdatacopy only exists in editing mode, not in new mode
+            d.whg_id = self._xwhgdatacopy.whg_id
         d.strasse = self._teStrasse.getValue()
         d.plz = self._tePlz.getValue()
         d.ort = self._teOrt.getValue()

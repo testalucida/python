@@ -218,6 +218,7 @@ class WV(ttk.Frame):
         # }
 
         tree = self._tree
+        tree.delete(*tree.get_children())
         top = tree.insert('', 0, text='Alle Wohnungen')
         ort =  stra = bez = ''
         ort_item = stra_item = bez_item = None
@@ -259,6 +260,25 @@ class WV(ttk.Frame):
                 return whg_id
         except IndexError:  # straße- or ort-item clicked
             return -1
+
+    def selectWohnungItem(self, whg_id: int) -> None:
+        item = self.searchWohnungItem(whg_id, self._tree.get_children())
+        self._tree.selection_set(item)
+        self._tree.focus(item)
+
+    def searchWohnungItem(self, whg_id: int, children):
+        for child in children:
+            childlist = self._tree.get_children(child)
+            if childlist:
+                item = self.searchWohnungItem(whg_id, childlist)
+                if item:
+                    return item
+            else:
+                dic = self._tree.item(child)
+                ival = int(dic['values'][0])
+                if ival == whg_id:
+                    return child
+                return None
 
     def _callbackWohnungClicked(self, whg_id:int) -> None:
         if self._wohnungClickedCallback:

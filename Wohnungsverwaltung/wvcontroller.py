@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import json
-from enum import Enum
+from functools import partial
 from wvframe import WV, WohnungAction
 from business import DataProvider
 from rgcontroller import RechnungController
 from mtleacontroller import MtlEinAusController
 from sonsteacontroller import SonstEinAusController
 from grundsteuercontroller import GrundsteuerController
+from stammdatenview import StammdatenAction
 from stammdatencontroller import StammdatenController
 from veranlagungcontroller import VeranlagungController
 from wohnungdialogcontroller import WohnungDialogController
+from wohnungdialog import WohnungDialog
 
 class WvController:
     def __init__(self, wv: WV):
@@ -62,18 +64,32 @@ class WvController:
         self._wv.registerWohnungClickCallback(self._onWohnungClicked)
 
     def onWohnungMenuAction(self, whg_id: int, action: WohnungAction):
-        #print(action)
         if action == WohnungAction.delete:
             self._deleteWohnung(whg_id)
-        elif(action == WohnungAction.new or action == WohnungAction.edit):
-            whg_id = None if whg_id == -1 else whg_id
-            c = WohnungDialogController(self._wv, action, whg_id)
-            c.startWork()
+        elif(action == WohnungAction.new):
+            dlg = WohnungDialog(self._wv)
+            dlg.grab_set()
+            ctrl = StammdatenController(self._dataProvider, dlg.getView())
+            #ctrl.registerActionCompletedCallback(lambda: dlg.close())
+            ctrl.registerActionCompletedCallback(partial(self._wohnungActionCompleted, dlg))
+            ctrl.startWork()
+
+    def _wohnungActionCompleted(self, dlg: WohnungDialog, action: StammdatenAction, whg_id: int):
+        dlg.close()
+        if action == StammdatenAction.save_changes: # new wohnung created
+            self._loadTree()
+        self._wv.selectWohnungItem(whg_id)
 
     def _deleteWohnung(self, whg_id: int) -> None:
-        #todo: delete wohnung logically via DataProvider
+        self._dataProvider.deleteWohnung(whg_id)
+        self._loadTree()
+
+        self._rgcontroller.wohnungSelected(-1)
+        self._mtleacontroller.wohnungSelected(-1)
+        self._sonsteacontroller.wohnungSelected(-1)
+        self._grundsteuercontroller.wohnungSelected(-1)
         self._stammdatencontroller.clear()
-        #todo: clear all views via their controllers just like stammdaten
+        self._veranlagungcontroller.clear()
 
     def _onWohnungClicked(self, whg_id:int) -> None:
         root = self._wv.master
