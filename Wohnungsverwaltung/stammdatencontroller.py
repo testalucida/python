@@ -3,7 +3,7 @@ from typing import Dict, List
 from functools import partial
 from business import DataProvider, DataError, ServiceException
 from vermietercontroller import VermieterController
-from verwaltercontroller import VerwalterController
+from verwaltercontroller import VerwalterController, VerwalterModifiedAction
 from mywidgets import TextEntry
 from actions import Action
 from stammdatenview import StammdatenView, StammdatenAction
@@ -20,6 +20,7 @@ class StammdatenController:
         self._vermieterDic: Dict[int, str] = {} #dictionary of all vermieter
         self._verwalterDic: Dict[int, str] = {} #dictionary of all verwalter
         self._actionCompletedCallback = None
+        self._xwohnungDataTmp = None
 
     def startWork(self) -> None:
         self._view.registerModifyCallback(self.onStammdatenModify)
@@ -63,7 +64,10 @@ class StammdatenController:
     def _getVerwalterListAndSyncX(self, xdata:XWohnungDaten):
         self._view.setVerwalterList(self._getVerwalterList())
         if xdata.verwalter_id > 0:
+            okstate, cancelstate = self._view.getButtonState()
             xdata.verwalter = self._verwalterDic[xdata.verwalter_id]
+            self._view.setVerwalter(xdata.verwalter)
+            self._view.setButtonState(okstate, cancelstate)
 
     def _getVerwalterList(self) -> List[str]:
         xvwlist: XVerwalterList = self._dataProvider.getVerwalterListe()
@@ -77,6 +81,10 @@ class StammdatenController:
 
     def onStammdatenAction(self, action:StammdatenAction,
                            xdata:XWohnungDaten, xdatacopy:XWohnungDaten):
+        # xdata doesn't contain vermieter_id and verwalter_id, so we have
+        #to provide them by using vermieter and verwalter:
+        self._provideVermieterIdAndVerwalterId(xdata)
+
         # take proper action depending on given StammdatenAction
         if action == StammdatenAction.revert_changes:
             if self._view.isModified():
@@ -85,7 +93,7 @@ class StammdatenController:
             if xdatacopy: # edit mode - show data before editing
                 xdata = xdatacopy
                 self._view.setData(xdata)
-            else: # new, close view/dialog
+            else: # create mode, close view/dialog
                 if self._actionCompletedCallback:
                     self._actionCompletedCallback(StammdatenAction.cancel, xdata.whg_id)
         elif action == StammdatenAction.save_changes:
@@ -99,17 +107,19 @@ class StammdatenController:
             if action == StammdatenAction.new_vermieter:
                 self._createVermieter()
             elif action == StammdatenAction.edit_vermieter:
+                self._xwohnungDataTmp = xdata
                 self._editVermieter(xdata.vermieter)
             elif action == StammdatenAction.new_verwalter:
                 self._createVerwalter()
             elif action == StammdatenAction.edit_verwalter:
+                self._xwohnungDataTmp = xdata
                 self._editVerwalter(xdata.verwalter)
 
             if action == StammdatenAction.new_vermieter or \
                     action == StammdatenAction.edit_vermieter:
                 self._getVermieterListAndSyncX(xdata)
-            else:
-                self._getVerwalterListAndSyncX(xdata)
+            # else:
+            #     self._getVerwalterListAndSyncX(xdata)
 
     def _handleSaveChanges(self, xdata:XWohnungDaten):
         whg_id = xdata.whg_id
@@ -118,14 +128,7 @@ class StammdatenController:
             messagebox.showerror('Daten unvollständig', msg)
             return whg_id
 
-        if xdata.vermieter:
-            # get vermieter's id by name
-            xdata.vermieter_id = \
-                self._getIdByName(self._vermieterDic, xdata.vermieter)
-        if xdata.verwalter:
-            # get verwalter's id by name
-            xdata.verwalter_id = \
-                self._getIdByName(self._verwalterDic, xdata.verwalter)
+        self._provideVermieterIdAndVerwalterId(xdata)
 
         if xdata.whg_id < 0:
             # insert new wohnung
@@ -135,6 +138,21 @@ class StammdatenController:
             whg_id = self._dataProvider.updateWohnungMin(xdata)
 
         return whg_id
+
+    def _provideVermieterIdAndVerwalterId(self, xdata:XWohnungDaten):
+        if xdata.vermieter:
+            # get vermieter's id by name
+            xdata.vermieter_id = \
+                self._getIdByName(self._vermieterDic, xdata.vermieter)
+        else:
+            xdata.vermieter_id = -1
+
+        if xdata.verwalter:
+            # get verwalter's id by name
+            xdata.verwalter_id = \
+                self._getIdByName(self._verwalterDic, xdata.verwalter)
+        else:
+            xdata.verwalter_id = -1
 
     def _validateWohnungData(self, xdata:XWohnungDaten) -> str or None:
         if not xdata.strasse:
@@ -177,6 +195,7 @@ class StammdatenController:
 
     def _editVerwalter(self, verwalter: str):
         verw_ctrl = VerwalterController(self._dataProvider, self._view)
+        verw_ctrl.registerModifiedCallback(self.onVerwalterModified)
         if not verwalter:
             messagebox.showerror('Aktion nicht möglich',
                                  'Es ist kein Verwalter ausgewählt.')
@@ -187,6 +206,10 @@ class StammdatenController:
             if firma == verwalter:
                 verw_ctrl.editVerwalter(id)
                 return
+
+    def onVerwalterModified(self, action:VerwalterModifiedAction,
+                            data:XVerwalter, data_before:XVerwalter):
+        self._getVerwalterListAndSyncX(self._xwohnungDataTmp)
 
 def test():
     from tkinter import  Tk

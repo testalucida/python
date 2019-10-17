@@ -136,6 +136,9 @@ class StammdatenView(ttk.Frame):
         if cancelbtnstate:
             self._btnCancel['state'] = cancelbtnstate
 
+    def getButtonState(self) -> List[str]:
+        return (self._btnSave['state'], self._btnCancel['state'])
+
     def _onWohnungModified(self, widget: Widget, name: str, index: str, mode: str):
         self._isModified = True
         if self._modifyCallback:
@@ -177,6 +180,9 @@ class StammdatenView(ttk.Frame):
 
     def setVerwalterList(self, vwlist: List[str]):
         self._cboVerwalter.setItems(vwlist)
+
+    def setVerwalter(self, verwalter: str):
+        self._cboVerwalter.setValue(verwalter)
 
     def setVermieterList(self, vmlist: List[str]):
         self._cboVermieter.setItems(vmlist)

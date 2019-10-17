@@ -1,15 +1,24 @@
 from tkinter import ttk, Tk
 from tkinter import messagebox
+from enum import IntEnum
 from business import DataProvider
 from verwalterview import VerwalterView, VerwalterDialog
 from stammdatenview import StammdatenAction
 from interfaces import XVerwalter
+
+VerwalterModifiedAction = IntEnum('VerwalterModifiedAction', 'new modified')
 
 class VerwalterController:
     def __init__(self, dp:DataProvider, parent:ttk.Frame):
         self._dataProvider:DataProvider = dp
         self._dlgParent = parent
         self._dlg = None
+        self._modifyCallback = None
+
+    def registerModifiedCallback(self, callback) -> None:
+        # callback function to register must take 3 arguments:
+        #  action:StammdatenAction, data:XVerwalter, data_before:XVerwalter
+        self._modifyCallback = callback
 
     def createVerwalter(self):
         self._showDialog()
@@ -39,10 +48,14 @@ class VerwalterController:
             if msg:
                 messagebox.showwarning('Speichern nicht möglich', msg)
             else:
+                action = VerwalterModifiedAction.new
                 if data.verwalter_id < 0:
                     self._dataProvider.insertVerwalter(data)
                 else:
                     self._dataProvider.updateVerwalter(data)
+                    action = VerwalterModifiedAction.modified
+                if self._modifyCallback:
+                    self._modifyCallback(action, data, data_before)
         else: #cancel
             if self._dlg.view.isModified():
                 if not messagebox.askyesno(
