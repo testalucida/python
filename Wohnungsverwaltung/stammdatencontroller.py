@@ -19,15 +19,26 @@ class StammdatenController:
         self._whg_id = None
         self._vermieterDic: Dict[int, str] = {} #dictionary of all vermieter
         self._verwalterDic: Dict[int, str] = {} #dictionary of all verwalter
-        self._actionCompletedCallback = None
+        self._actionCompletedCallbacks = list()
         self._xwohnungDataTmp = None
 
     def startWork(self) -> None:
         self._view.registerModifyCallback(self.onStammdatenModify)
         self._view.registerActionCallback(self.onStammdatenAction)
+        self._view.setVermieterList(self._getVermieterList())
+        self._view.setVerwalterList(self._getVerwalterList())
 
-    def registerActionCompletedCallback(self, callback) -> None:
-        self._actionCompletedCallback = callback
+    def registerWohnungActionCompletedCallback(self, callback) -> None:
+        """
+        registers a method or function to be called when a wohnung
+        has been created or modified.
+        :param callback:  method/function to be called.
+        Has to accept 2 arguments:
+            - kind of action (StammdatenAction)
+            - interface XWohnungDaten
+        :return:
+        """
+        self._actionCompletedCallbacks.append(callback)
 
     def wohnungSelected(self, whg_id: int) -> None:
         self._whg_id = whg_id
@@ -80,7 +91,17 @@ class StammdatenController:
         self._view.setButtonState('normal', 'normal')
 
     def onStammdatenAction(self, action:StammdatenAction,
-                           xdata:XWohnungDaten, xdatacopy:XWohnungDaten):
+                           xdata:XWohnungDaten, xdatacopy:XWohnungDaten) -> None:
+        """
+        called by actions of stammdatenview (save, undo changes, cancel,
+        create or edit verwalter or vermieter)
+        :param action: kind of action
+        :param xdata: interface XWohnungDaten containing modified data
+        :param xdatacopy: interface XWohnungDaten containing data before
+        beeing changed resp. None if a new wohnung is created
+        :return:  None
+        """
+
         # xdata doesn't contain vermieter_id and verwalter_id, so we have
         #to provide them by using vermieter and verwalter:
         self._provideVermieterIdAndVerwalterId(xdata)
@@ -93,16 +114,14 @@ class StammdatenController:
             if xdatacopy: # edit mode - show data before editing
                 xdata = xdatacopy
                 self._view.setData(xdata)
-            else: # create mode, close view/dialog
-                if self._actionCompletedCallback:
-                    self._actionCompletedCallback(StammdatenAction.cancel, xdata.whg_id)
+            else: # create mode, close view/dialog due to cancelling
+                self._doActionCompletedCallback(StammdatenAction.cancel, xdata)
         elif action == StammdatenAction.save_changes:
             # save modified wohnung data
             xdata.whg_id = self._handleSaveChanges(xdata)
             self._view.setButtonState('disabled', 'disabled')
             self._view.setData(xdata)
-            if self._actionCompletedCallback:
-                self._actionCompletedCallback(StammdatenAction.save_changes, xdata.whg_id)
+            self._doActionCompletedCallback(action, xdata)
         else:
             if action == StammdatenAction.new_vermieter:
                 self._createVermieter()
@@ -120,6 +139,13 @@ class StammdatenController:
                 self._getVermieterListAndSyncX(xdata)
             # else:
             #     self._getVerwalterListAndSyncX(xdata)
+
+    def onWohnungDatenChangedByOthers(self, angeschafft_am: str,
+                                      einhwert_az: str) -> None:
+        xdata: XWohnungDaten = self._view.getData()
+        xdata.angeschafft_am = angeschafft_am
+        xdata.einhwert_az = einhwert_az
+        self._view.setData(xdata)
 
     def _handleSaveChanges(self, xdata:XWohnungDaten):
         whg_id = xdata.whg_id
@@ -164,6 +190,11 @@ class StammdatenController:
         if not xdata.whg_bez:
             return 'Wohnungsbezeichnung muss angegeben sein; ggf. "Gesamtes Objekt".'
         return None
+
+    def _doActionCompletedCallback(self, action: StammdatenAction,
+                                  xdata: XWohnungDaten):
+        for cb in self._actionCompletedCallbacks:
+            cb(action, xdata)
 
     def _getIdByName(self, dic, searchname):
         return \

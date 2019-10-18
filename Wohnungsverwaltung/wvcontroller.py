@@ -13,6 +13,7 @@ from stammdatencontroller import StammdatenController
 from veranlagungcontroller import VeranlagungController
 from wohnungdialogcontroller import WohnungDialogController
 from wohnungdialog import WohnungDialog
+from interfaces import XWohnungDaten
 
 class WvController:
     def __init__(self, wv: WV):
@@ -54,6 +55,14 @@ class WvController:
                                                             self._wv.getVeranlagungView())
         self._veranlagungcontroller.startWork()
 
+        self._stammdatencontroller.\
+            registerWohnungActionCompletedCallback(
+                self._veranlagungcontroller.onWohnungChanged)
+
+        self._veranlagungcontroller.\
+            registerWohnungDatenChangedCallback(
+                self._stammdatencontroller.onWohnungDatenChangedByOthers)
+
     def _connect(self):
         #todo: Login-Dialog
         self._dataProvider.connect('martin', 'fuenf55')
@@ -71,14 +80,17 @@ class WvController:
             dlg.grab_set()
             ctrl = StammdatenController(self._dataProvider, dlg.getView())
             #ctrl.registerActionCompletedCallback(lambda: dlg.close())
-            ctrl.registerActionCompletedCallback(partial(self._wohnungActionCompleted, dlg))
+            ctrl.registerWohnungActionCompletedCallback(
+                partial(self._wohnungActionCompleted, dlg))
             ctrl.startWork()
 
-    def _wohnungActionCompleted(self, dlg: WohnungDialog, action: StammdatenAction, whg_id: int):
+    def _wohnungActionCompleted(self, dlg: WohnungDialog,
+                                action: StammdatenAction,
+                                xdata: XWohnungDaten) -> None:
         dlg.close()
         if action == StammdatenAction.save_changes: # new wohnung created
             self._loadTree()
-        self._wv.selectWohnungItem(whg_id)
+        self._wv.selectWohnungItem(xdata.whg_id)
 
     def _deleteWohnung(self, whg_id: int) -> None:
         self._dataProvider.deleteWohnung(whg_id)

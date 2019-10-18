@@ -2,6 +2,8 @@
 from business import DataProvider, DataError, ServiceException
 from tkinter import messagebox
 from veranlagungview import VeranlagungView
+from stammdatenview import StammdatenAction
+from interfaces import XWohnungDaten
 import datehelper
 
 class VeranlagungController:
@@ -12,6 +14,7 @@ class VeranlagungController:
         self._whg_id = None
         self._afadata = None
         self._vj = None
+        self._wohnungDatenChangedCallback = None
 
     def startWork(self) -> None:
         self._view.registerVjChangeCallback(self._onVjChanged)
@@ -19,6 +22,16 @@ class VeranlagungController:
         self._view.registerCreateAnlageVCallback(self._onCreateAnlageV)
         self._view.setSaveButtonEnabled(False)
         self._view.setCreateAnlageVButtonEnabled(False)
+
+    def registerWohnungDatenChangedCallback(self, callback) -> None:
+        """
+        registers a method/function to be called when one of the following items is changed:
+            - angeschafft_am
+            - einhwert_az
+        :param callback: method/function to be called
+        :return: None
+        """
+        self._wohnungDatenChangedCallback = callback
 
     def _onVjChanged(self, newVj: str):
         #print('onVjChanged: ', newVj)
@@ -145,6 +158,8 @@ class VeranlagungController:
             if whgMsg:
                 messagebox.showwarning(
                     'Wohnungsdaten wurden gespeichert, aber...', whgMsg)
+            if self._wohnungDatenChangedCallback:
+                self._wohnungDatenChangedCallback(data['angeschafft_am'], data['einhwert_az'])
 
         rcAfa = self._handleAfaData(data)
 
@@ -299,6 +314,29 @@ class VeranlagungController:
         if data:
             enabled = True if not self._validateAfa(data) else False
         self._view.setCreateAnlageVButtonEnabled(enabled)
+
+    def onWohnungChanged(self, action: StammdatenAction, xdata: XWohnungDaten):
+        d = self._view.getWohnungData()
+        """
+        d = {
+            'angeschafft_am': ...,
+            'einhwert_az': ...,
+            'steuerl_zurechng_mann': ...,
+            'steuerl_zurechng_frau': ...
+        }
+        """
+        sync = False
+        if d['angeschafft_am'] != xdata.angeschafft_am:
+            d['angeschafft_am'] = xdata.angeschafft_am
+            sync = True
+        if d['einhwert_az'] != xdata.einhwert_az:
+            d['einhwert_az'] = xdata.einhwert_az
+            sync = True
+        if sync:
+            self._view.setWohnungData(d['angeschafft_am'], d['einhwert_az'],
+                                      d['steuerl_zurechng_mann'],
+                                      d['steuerl_zurechng_frau'])
+
 
 def test():
     from tkinter import  Tk

@@ -411,6 +411,8 @@ class DateEntry(ttk.Entry, GetterSetter, ConvenianceMethods, ModifyTracer):
     def setValue(self, val: str) -> None:
         if val:
             self.setDate(val)
+        else:
+            self.clear()
 
     def clear(self):
         self.delete(0, 'end')

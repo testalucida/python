@@ -4,6 +4,7 @@
 import requests
 import json
 from typing import Dict, List, Text
+from copy import deepcopy
 import datehelper
 from interfaces import \
     XMtlHausgeld, XMtlHausgeldList, \
@@ -517,9 +518,10 @@ class DataProvider:
 
     def _writeWohnungMin(self, xdata: XWohnungDaten, isInsert: bool) -> int:
         q = 'insert_wohnung_min' if isInsert else 'update_wohnung_min'
+        xdatatmp:XWohnungDaten = deepcopy(xdata)
         if xdata.angeschafft_am:
             if datehelper.isValidEurDatestring(xdata.angeschafft_am):
-                xdata.angeschafft_am = \
+                xdatatmp.angeschafft_am = \
                     datehelper.convertEurToIso(xdata.angeschafft_am)
             else:
                 if not datehelper.isValidIsoDatestring(xdata.angeschafft_am):
@@ -530,7 +532,7 @@ class DataProvider:
 
         resp = self.__session. \
             post(SERVER + 'business.php?q=' + q + '&user=' + self.__user,
-                 data=xdata.getValuesAsDict())
+                 data=xdatatmp.getValuesAsDict())
 
         retval = self._getWriteRetValOrRaiseException(resp)
 
