@@ -207,6 +207,8 @@ class VeranlagungController:
     def _handleSaveAfa(self, data: dict):
         data['lin_deg_knz'] = 'l' if data['art_afa'] == 'linear' else 'd'
         data['afa_wie_vorjahr'] = 'J' if data['afa_wie_vorjahr'] == 'Ja' else 'N'
+        if data['prozent'] == '': data['prozent'] = 0.0
+        if data['verwaltkosten'] == '': data['verwaltkosten'] = 0
         #check if update or insert
         id: int = self._dataProvider.getAfaId(self._whg_id, int(data['vj_ab']))
         if id > 0:
