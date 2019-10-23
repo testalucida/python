@@ -82,11 +82,10 @@ class WriteRetVal:
     def object_id(self):
         return self.__obj_id
 
-#+++++++++++++++++++++++++++++++++++++++++++++
-LOCALHOST: str = 'http://localhost/kendelweb/dev/php/'
-REMOTE: str = 'http://kendelweb/dev/php/'
-SERVER: str = LOCALHOST
-#++++++++++++++++++++++++++++++++++++++++++++
+class Server:
+    LOCALHOST: str = 'http://localhost/kendelweb/dev/php/'
+    REMOTE: str = 'http://kendelweb.de/dev/php/'
+    SERVER: str = LOCALHOST  # will possibly be changed in DataProvider.connect()
 
 class DataProvider:
     JSONERROR: int = -2
@@ -94,6 +93,9 @@ class DataProvider:
     def __init__(self ):
         self.__session = requests.Session()
         self.__user = ''
+
+    def __del__(self):
+        self.disconnect()
 
     def _checkException(self, resp, additionalText: str = None) -> None:
         if resp.status_code != 200 or not resp.content:
@@ -103,13 +105,19 @@ class DataProvider:
             ex = ServiceException(resp.status_code, msg)
             raise ex
 
-    def connect(self, user, pwd) -> None:
+    def connect(self, user) -> None:
+        Server.SERVER = Server.LOCALHOST if user == 'test' else Server.REMOTE
         self.__user = user
-        d = {'user':user, 'password':pwd}
-        resp = self.__session.post(SERVER + 'login.php', data=d )
+        #d = {'user':user, 'password':pwd}
+        d = {'user': user}
+        resp = self.__session.post(Server.SERVER + 'login.php', data=d )
+        #resp = self.__session.post(SERVER + 'testecho.php', data=d)
         if resp.status_code != 200:
             msg = ''.join(('Error on connecting user ', user, '\nServer says: ', resp.text))
             raise ServiceException(resp.status_code, msg)
+
+    def disconnect(self):
+        self.__session.close()
 
     def getWohnungsUebersicht(self) -> list:
         """
@@ -122,20 +130,21 @@ class DataProvider:
             'whg_bez': '2. OG'
         """
         resp = self.__session.\
-            get(SERVER + 'business.php?q=uebersicht_wohnungen&' +
+            get(Server.SERVER + 'business.php?q=uebersicht_wohnungen&' +
                 'user=' + self.__user)
         whg_list = self._getReadRetValOrRaiseException(resp)
+        if whg_list is None: whg_list = []
         return whg_list
 
     def getWohnungDetails(self, whg_id ):
         resp = self.__session.\
-            get(SERVER + 'business.php?q=detail&id=' + whg_id + '&user=' +
+            get(Server.SERVER + 'business.php?q=detail&id=' + whg_id + '&user=' +
                 self.__user )
         return resp
 
     def getWohnungIdentifikation(self, whg_id: int ):
         resp = self.__session.\
-            get(SERVER + 'business.php?q=wohnung_kurz&id=' +
+            get(Server.SERVER + 'business.php?q=wohnung_kurz&id=' +
                 str(whg_id) + '&user=' +
                 self.__user )
         data: dict = self._getReadRetValOrRaiseException(resp)
@@ -157,7 +166,7 @@ class DataProvider:
 
     def getWohnungMinStammdaten(self, whg_id: int) -> XWohnungDaten:
         resp = self.__session. \
-            get(SERVER + 'business.php?q=wohnung_min_stamm&id=' +
+            get(Server.SERVER + 'business.php?q=wohnung_min_stamm&id=' +
                 str(whg_id) + '&user=' +
                 self.__user)
         data: dict = self._getReadRetValOrRaiseException(resp)
@@ -167,7 +176,7 @@ class DataProvider:
 
     def getVerwalterListe(self) -> XVerwalterList:
         resp = self.__session. \
-            get(SERVER + 'business.php?q=verwalter_list&id=' +
+            get(Server.SERVER + 'business.php?q=verwalter_list&id=' +
                 '&user=' + self.__user)
         sk = XVerwalterList(XVerwalter,
                             self._getReadRetValOrRaiseException(resp))
@@ -175,7 +184,7 @@ class DataProvider:
 
     def getVermieterListe(self) -> XVermieterList:
         resp = self.__session. \
-            get(SERVER + 'business.php?q=vermieter_list&id=' +
+            get(Server.SERVER + 'business.php?q=vermieter_list&id=' +
                 '&user=' + self.__user)
         sk = XVermieterList(XVermieter,
                             self._getReadRetValOrRaiseException(resp))
@@ -183,7 +192,7 @@ class DataProvider:
 
     def getRechnungsUebersicht( self, whg_id: int ) -> list:
         resp = self.__session. \
-            get(SERVER + 'business.php?q=uebersicht_rechnungen&id=' +
+            get(Server.SERVER + 'business.php?q=uebersicht_rechnungen&id=' +
                 str( whg_id ) + '&user=' + self.__user)
         # self._checkException(resp)
         # rg_list = json.loads(resp.content)
@@ -193,7 +202,7 @@ class DataProvider:
 
     def getMtlEinAusData(self, whg_id: int):
         resp = self.__session. \
-            get(SERVER + 'business.php?q=mtl_ein_aus_data&id=' +
+            get(Server.SERVER + 'business.php?q=mtl_ein_aus_data&id=' +
                 str(whg_id) + '&user=' + self.__user)
         # self._checkException(resp)
         # mea_data = json.loads(resp.content)
@@ -203,7 +212,7 @@ class DataProvider:
 
     def getSonstigeEinAusData(self, whg_id: int):
         resp = self.__session. \
-            get(SERVER + 'business.php?q=sonst_ein_aus_data&id=' +
+            get(Server.SERVER + 'business.php?q=sonst_ein_aus_data&id=' +
                 str(whg_id) + '&user=' + self.__user)
         # self._checkException(resp)
         # sea_data = json.loads(resp.content)
@@ -212,7 +221,7 @@ class DataProvider:
 
     def getSonstigeEinAusArten(self) -> list:
         resp = self.__session. \
-            get(SERVER + 'business.php?q=sonst_ein_aus_arten' +
+            get(Server.SERVER + 'business.php?q=sonst_ein_aus_arten' +
                 '&user=' + self.__user)
         art_data = self._getReadRetValOrRaiseException(resp)
         """
@@ -227,7 +236,7 @@ class DataProvider:
 
     def getCurrentAndFutureMtlEinAus(self, whg_id:int) -> list:
         resp = self.__session. \
-            get(SERVER + 'business.php?q=current_future_mtl_ein_aus&id=' +
+            get(Server.SERVER + 'business.php?q=current_future_mtl_ein_aus&id=' +
                 str(whg_id) + '&user=' + self.__user)
         self._checkException(resp)
         mea_data = json.loads(resp.content)
@@ -236,7 +245,7 @@ class DataProvider:
 
     def getGrundsteuerData(self, whg_id: int):
         resp = self.__session. \
-            get(SERVER + 'business.php?q=grundsteuer_data&id=' +
+            get(Server.SERVER + 'business.php?q=grundsteuer_data&id=' +
                 str(whg_id) + '&user=' + self.__user)
         gs_data = self._getReadRetValOrRaiseException(resp)
         return gs_data
@@ -250,7 +259,7 @@ class DataProvider:
 
     def getVerwalterData(self, verwalter_id: int):
         resp = self.__session. \
-            get(SERVER + 'business.php?q=verwalter_data&id=' +
+            get(Server.SERVER + 'business.php?q=verwalter_data&id=' +
                 str(verwalter_id) + '&user=' + self.__user)
         data = self._getReadRetValOrRaiseException(resp)
         xverwalter = XVerwalter(data)
@@ -258,7 +267,7 @@ class DataProvider:
 
     def getVeranlagungData(self, whg_id: int, vj: int) -> dict:
         resp = self.__session. \
-            get(SERVER + 'business.php?q=veranl_data&id=' +
+            get(Server.SERVER + 'business.php?q=veranl_data&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         veranl_data = self._getReadRetValOrRaiseException(resp)
         self._translateVeranlagung(veranl_data)
@@ -273,7 +282,7 @@ class DataProvider:
         :return:
         """
         resp = self.__session. \
-            get(SERVER + 'business.php?q=afa&id=' +
+            get(Server.SERVER + 'business.php?q=afa&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         data = self._getReadRetValOrRaiseException(resp)
         self._translateVeranlagung(data)
@@ -313,7 +322,7 @@ class DataProvider:
         """
 
         resp = self.__session. \
-            get(SERVER + 'business.php?q=exists_afa_data&id=' +
+            get(Server.SERVER + 'business.php?q=exists_afa_data&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         exists = self._getReadRetValOrRaiseException(resp)
         return exists
@@ -328,14 +337,14 @@ class DataProvider:
         """
 
         resp = self.__session. \
-            get(SERVER + 'business.php?q=afa_id&id=' +
+            get(Server.SERVER + 'business.php?q=afa_id&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         iddict = self._getReadRetValOrRaiseException(resp)
         return 0 if iddict is None else int(iddict['afa_id'])
 
     def getAnlageVData_1_to_8(self, whg_id: int, vj: int) -> int:
         resp = self.__session. \
-            get(SERVER + 'business.php?q=anlagev_1_to_8&id=' +
+            get(Server.SERVER + 'business.php?q=anlagev_1_to_8&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         data = self._getReadRetValOrRaiseException(resp)
         """
@@ -363,14 +372,14 @@ class DataProvider:
 
     def getAnlageVData_9_to_14_mtlEinn(self, whg_id: int, vj: int) -> XMtlEinnahmenList:
         resp = self.__session. \
-            get(SERVER + 'business.php?q=anlagev_9_to_14_mtl_einn&id=' +
+            get(Server.SERVER + 'business.php?q=anlagev_9_to_14_mtl_einn&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         data = self._getReadRetValOrRaiseException(resp)
         return XMtlEinnahmenList(XMtlEinnahmen, data)
 
     def getAnlageVData_13_nkKorr(self, whg_id: int, vj: int) -> List[Dict[str, str]]:
         resp = self.__session. \
-            get(SERVER + 'business.php?q=anlagev_13_nk_korr&id=' +
+            get(Server.SERVER + 'business.php?q=anlagev_13_nk_korr&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         data = self._getReadRetValOrRaiseException(resp)
         """
@@ -392,14 +401,14 @@ class DataProvider:
 
     def getAnlageVData_grundsteuer(self, whg_id: int, vj: int) -> int:
         resp = self.__session. \
-            get(SERVER + 'business.php?q=anlagev_grundsteuer&id=' +
+            get(Server.SERVER + 'business.php?q=anlagev_grundsteuer&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         data = self._getReadRetValOrRaiseException(resp)
         return data
 
     def getAnlageVData_47_verwaltkosten(self, whg_id: int, vj: int) -> int:
         resp = self.__session. \
-            get(SERVER + 'business.php?q=anlagev_47_verwaltkosten&id=' +
+            get(Server.SERVER + 'business.php?q=anlagev_47_verwaltkosten&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         data = self._getReadRetValOrRaiseException(resp)
         return int(data['verwaltkosten'])
@@ -421,7 +430,7 @@ class DataProvider:
     def getHausgeld(self, whg_id: int, vj: int) -> int:
         #periodical payments
         resp = self.__session. \
-            get(SERVER + 'business.php?q=anlageV_49_mtl_hausgeld&id=' +
+            get(Server.SERVER + 'business.php?q=anlageV_49_mtl_hausgeld&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         '''
         resp contains a list of dictionaries:
@@ -451,7 +460,7 @@ class DataProvider:
 
         #adjustment payment as needed
         resp = self.__session. \
-            get(SERVER + 'business.php?q=anlagev_49_hausgeld_korr&id=' +
+            get(Server.SERVER + 'business.php?q=anlagev_49_hausgeld_korr&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         '''
         resp contains a list of dictionaries (typically only one):
@@ -486,7 +495,7 @@ class DataProvider:
 
     def getSonstigeKosten(self, whg_id: int, vj: int) -> float:
         resp = self.__session. \
-            get(SERVER + 'business.php?q=anlagev_49_sonstige_ausgaben&id=' +
+            get(Server.SERVER + 'business.php?q=anlagev_49_sonstige_ausgaben&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         sk = XSonstigeKostenList(XSonstigeKosten,
                                  self._getReadRetValOrRaiseException(resp))
@@ -499,7 +508,7 @@ class DataProvider:
 
     def getAnlageVData_24_zurechnung(self, whg_id: int):
         resp = self.__session. \
-            get(SERVER + 'business.php?q=anlagev_24_zurechnung&id=' +
+            get(Server.SERVER + 'business.php?q=anlagev_24_zurechnung&id=' +
                 str(whg_id) + '&user=' + self.__user)
         zurechnung = XZurechnung(self._getReadRetValOrRaiseException(resp))
         return (zurechnung.steuerl_zurechng_mann, zurechnung.steuerl_zurechng_frau)
@@ -531,7 +540,7 @@ class DataProvider:
                         ' ist kein gültiges Datumsformat')))
 
         resp = self.__session. \
-            post(SERVER + 'business.php?q=' + q + '&user=' + self.__user,
+            post(Server.SERVER + 'business.php?q=' + q + '&user=' + self.__user,
                  data=xdatatmp.getValuesAsDict())
 
         retval = self._getWriteRetValOrRaiseException(resp)
@@ -543,7 +552,7 @@ class DataProvider:
     '''
     def insertAfaData(self, afa_dict):
         resp = self.__session. \
-            post(SERVER + 'business.php?q=insert_afa&user=' + self.__user,
+            post(Server.SERVER + 'business.php?q=insert_afa&user=' + self.__user,
                  data=afa_dict)
 
         retval = self._getWriteRetValOrRaiseException(resp)
@@ -555,7 +564,7 @@ class DataProvider:
     '''
     def updateAfaData(self, afa_dict):
         resp = self.__session. \
-            post(SERVER + 'business.php?q=update_afa&user=' + self.__user,
+            post(Server.SERVER + 'business.php?q=update_afa&user=' + self.__user,
                  data=afa_dict)
 
         retval = self._getWriteRetValOrRaiseException(resp)
@@ -578,7 +587,7 @@ class DataProvider:
         :return:
         """
         resp = self.__session. \
-            post(SERVER + 'business.php?q=update_whg_veranlag&user=' + self.__user,
+            post(Server.SERVER + 'business.php?q=update_whg_veranlag&user=' + self.__user,
                  data=data)
 
         retval = self._getWriteRetValOrRaiseException(resp)
@@ -592,7 +601,7 @@ class DataProvider:
     def insertMtlEinAus(self, mea_dict):
         meadictcopy = self._getDictCopyIsoDate(mea_dict, 'gueltig_ab', 'gueltig_bis')
         resp = self.__session. \
-            post(SERVER + 'business.php?q=insert_mtl_ein_aus&user=' + self.__user,
+            post(Server.SERVER + 'business.php?q=insert_mtl_ein_aus&user=' + self.__user,
                  data=meadictcopy)
 
         retval = self._getWriteRetValOrRaiseException(resp)
@@ -605,7 +614,7 @@ class DataProvider:
     def updateMtlEinAus(self, mea_dict):
         meadictcopy = self._getDictCopyIsoDate(mea_dict, 'gueltig_ab', 'gueltig_bis')
         resp = self.__session. \
-            post(SERVER + 'business.php?q=update_mtl_ein_aus&user=' + self.__user,
+            post(Server.SERVER + 'business.php?q=update_mtl_ein_aus&user=' + self.__user,
                  data=meadictcopy)
 
         retval = self._getWriteRetValOrRaiseException(resp)
@@ -618,7 +627,7 @@ class DataProvider:
     def terminateMtlEinAus(self, mea_id, gueltig_bis):
         d = {'mea_id': mea_id, 'gueltig_bis': gueltig_bis}
         resp = self.__session. \
-            post(SERVER + 'business.php?q=terminate_mtl_ein_aus&user=' + self.__user,
+            post(Server.SERVER + 'business.php?q=terminate_mtl_ein_aus&user=' + self.__user,
                  data=d)
 
         retval = self._getWriteRetValOrRaiseException(resp)
@@ -631,7 +640,7 @@ class DataProvider:
     def deleteMtlEinAus(self, mea_id):
         d = {'mea_id': mea_id}
         resp = self.__session. \
-            post(SERVER + 'business.php?q=delete_mtl_ein_aus&user=' + self.__user, data=d)
+            post(Server.SERVER + 'business.php?q=delete_mtl_ein_aus&user=' + self.__user, data=d)
 
         retval = self._getWriteRetValOrRaiseException(resp)
 
@@ -642,7 +651,7 @@ class DataProvider:
     '''
     def insertSonstEinAus(self, sea_dict: dict):
         resp = self.__session. \
-            post(SERVER + 'business.php?q=insert_sonst_ein_aus&user=' + self.__user,
+            post(Server.SERVER + 'business.php?q=insert_sonst_ein_aus&user=' + self.__user,
                  data=sea_dict)
 
         retval = self._getWriteRetValOrRaiseException(resp)
@@ -654,7 +663,7 @@ class DataProvider:
      '''
     def updateSonstEinAus(self, sea_dict):
         resp = self.__session. \
-            post(SERVER + 'business.php?q=update_sonst_ein_aus&user=' + self.__user,
+            post(Server.SERVER + 'business.php?q=update_sonst_ein_aus&user=' + self.__user,
                  data=sea_dict)
 
         retval = self._getWriteRetValOrRaiseException(resp)
@@ -668,7 +677,7 @@ class DataProvider:
         delData = {}
         delData['sea_id'] = str(sea_id)
         resp = self.__session. \
-            post(SERVER + 'business.php?q=delete_sonst_ein_aus&user=' + self.__user, data=delData)
+            post(Server.SERVER + 'business.php?q=delete_sonst_ein_aus&user=' + self.__user, data=delData)
 
         retval = self._getWriteRetValOrRaiseException(resp)
 
@@ -679,7 +688,7 @@ class DataProvider:
     '''
     def insertGrundsteuer(self, gs_dict: dict):
         resp = self.__session. \
-            post(SERVER + 'business.php?q=insert_grundsteuer&user=' + self.__user,
+            post(Server.SERVER + 'business.php?q=insert_grundsteuer&user=' + self.__user,
                  data=gs_dict)
 
         retval = self._getWriteRetValOrRaiseException(resp)
@@ -691,7 +700,7 @@ class DataProvider:
      '''
     def updateGrundsteuer(self, gs_dict):
         resp = self.__session. \
-            post(SERVER + 'business.php?q=update_grundsteuer&user=' + self.__user,
+            post(Server.SERVER + 'business.php?q=update_grundsteuer&user=' + self.__user,
                  data=gs_dict)
 
         retval = self._getWriteRetValOrRaiseException(resp)
@@ -705,7 +714,7 @@ class DataProvider:
         delData = {}
         delData['gs_id'] = str(gs_id)
         resp = self.__session. \
-            post(SERVER + 'business.php?q=delete_grundsteuer&user=' + self.__user,
+            post(Server.SERVER + 'business.php?q=delete_grundsteuer&user=' + self.__user,
                  data=delData)
 
         retval = self._getWriteRetValOrRaiseException(resp)
@@ -718,7 +727,7 @@ class DataProvider:
     def insertRechnung(self, rg_dict):
         rgdictcopy = self._getDictCopyIsoDate(rg_dict, 'rg_datum', 'rg_bezahlt_am')
         resp = self.__session. \
-            post(SERVER + 'business.php?q=insert_rechnung&user=' + self.__user, data=rgdictcopy)
+            post(Server.SERVER + 'business.php?q=insert_rechnung&user=' + self.__user, data=rgdictcopy)
 
         retval = self._getWriteRetValOrRaiseException(resp)
 
@@ -730,7 +739,7 @@ class DataProvider:
     def updateRechnung(self, rg_dict):
         rgdictcopy = self._getDictCopyIsoDate(rg_dict, 'rg_datum', 'rg_bezahlt_am')
         resp = self.__session. \
-            post(SERVER + 'business.php?q=update_rechnung&user=' + self.__user,
+            post(Server.SERVER + 'business.php?q=update_rechnung&user=' + self.__user,
                  data=rgdictcopy)
 
         retval = self._getWriteRetValOrRaiseException(resp)
@@ -744,7 +753,7 @@ class DataProvider:
         delData = {}
         delData['rg_id'] = str(rg_id)
         resp = self.__session. \
-            post(SERVER + 'business.php?q=delete_rechnung&user=' + self.__user, data=delData)
+            post(Server.SERVER + 'business.php?q=delete_rechnung&user=' + self.__user, data=delData)
 
         retval = self._getWriteRetValOrRaiseException(resp)
 
@@ -758,7 +767,7 @@ class DataProvider:
             'whg_id': str(whg_id)
         }
         resp = self.__session. \
-            post(SERVER + 'business.php?q=delete_wohnung&user=' + self.__user, data=delData)
+            post(Server.SERVER + 'business.php?q=delete_wohnung&user=' + self.__user, data=delData)
 
         retval = self._getWriteRetValOrRaiseException(resp)
 
@@ -769,7 +778,7 @@ class DataProvider:
     '''
     def insertVerwalter(self, data:XVerwalter) -> None:
         resp = self.__session. \
-            post(SERVER + 'business.php?q=insert_verwalter&user=' + self.__user,
+            post(Server.SERVER + 'business.php?q=insert_verwalter&user=' + self.__user,
                  data=data.getValuesAsDict())
 
         retval = self._getWriteRetValOrRaiseException(resp)
@@ -781,7 +790,7 @@ class DataProvider:
     '''
     def updateVerwalter(self, data:XVerwalter) -> None:
         resp = self.__session. \
-            post(SERVER + 'business.php?q=update_verwalter&user=' + self.__user,
+            post(Server.SERVER + 'business.php?q=update_verwalter&user=' + self.__user,
                  data=data.getValuesAsDict())
 
         retval = self._getWriteRetValOrRaiseException(resp)
