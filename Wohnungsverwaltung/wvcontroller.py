@@ -65,8 +65,8 @@ class WvController:
 
     def _connect(self):
         #todo: Login-Dialog
-        #self._dataProvider.connect('test')
-        self._dataProvider.connect('d02bacec')
+        self._dataProvider.connect('test')
+        #self._dataProvider.connect('d02bacec')
 
     def _loadTree(self):
         whg_list = self._dataProvider.getWohnungsUebersicht()

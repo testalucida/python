@@ -231,6 +231,8 @@ class FloatEntry(ttk.Entry, GetterSetter, ConvenianceMethods, ModifyTracer):
         ConvenianceMethods.__init__(self)
         ModifyTracer.__init__(self)
         self.bind("<FocusOut>", self._onFocusOut)
+        #self.bind("<Key>", self._onKey)
+        self.bind("<KeyRelease>", self._onKeyRelease)
         vcmd = (self.register(self.onValidate), '%d', '%P')
         # valid percent substitutions (from the Tk entry man page)
         # note: you only have to register the ones you need
@@ -249,12 +251,15 @@ class FloatEntry(ttk.Entry, GetterSetter, ConvenianceMethods, ModifyTracer):
         self.setTextPadding('Float.TEntry', 1, 1, 3, 1)
 
     def onValidate(self, d, P):
-        # print('FloatEntry.onValidate: P, len(P), S = ', P, ', ', len(P), ', ', S)
+        #print("onValidate: ", self.get())
+        #print('FloatEntry.onValidate: P, len(P), S = ', P, ', ', len(P), ', ', S)
         if d == '0': #deletion always ok
             return True
 
         if P.startswith(' ') or P.endswith(' '):
             return False
+
+        P = P.replace(',', '.')
 
         try:
             num = float(P)
@@ -265,6 +270,22 @@ class FloatEntry(ttk.Entry, GetterSetter, ConvenianceMethods, ModifyTracer):
     def _onFocusOut(self, evt):
          if self.getValue() == '':
              self.setFloat(0.0)
+
+    # def _onKey(self, key):
+    #     print(key.char)
+    #     key.char = '0'
+
+    def _onKeyRelease(self, key):
+        val = self.get()
+        pos = -1
+        try:
+            pos = val.index(',')
+        except:
+            return
+        if pos > -1:
+            val = val.replace(',', '.')
+            self.clear()
+            self.insert(0, val)
 
     def setAlign(self, alignment: str):
         """
@@ -284,6 +305,7 @@ class FloatEntry(ttk.Entry, GetterSetter, ConvenianceMethods, ModifyTracer):
 
     def setValue(self, val: float or str) -> None:
         if type(val) == str: #might be '123.45'
+            val = val.replace(',', '.')
             val = float(val)
         self.setFloat(val)
 
@@ -586,9 +608,21 @@ def inttest(root):
     fe = FloatEntry(root)
     fe.grid(column=1, row=0, sticky='nswe', padx=10, pady=10)
 
+
+def floattest(root):
+    # import locale
+    # locale.setlocale(locale.LC_NUMERIC, "de_DE.UTF-8")
+    # f = float('123,45')
+
+    f = float('123.45')
+    fe = FloatEntry(root)
+    fe.grid(column=1, row=0, sticky='nswe', padx=10, pady=10)
+
+
 def main():
     root = Tk()
-    inttest(root)
+    floattest(root)
+    #inttest(root)
 
     # txt = MyText(root)
     # txt.setMyId('v_bla')
