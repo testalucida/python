@@ -100,6 +100,7 @@ class WV(ttk.Frame):
         tree['columns'] = ('whg_id')
         tree['displaycolumns'] = []
         tree.heading('#0', text='Übersicht', anchor=W)
+        tree.column("#0", minwidth=100, width=275)
         #tree.bind("<Button-1>", self._onTreeItemClicked)
         tree.bind('<<TreeviewSelect>>', self._onTreeItemClicked)
         tree.grid(column=0, row=0, sticky='nswe')
@@ -219,6 +220,7 @@ class WV(ttk.Frame):
 
         tree = self._tree
         tree.delete(*tree.get_children())
+        self.hauspng = PhotoImage(file="/home/martin/Projects/python/Wohnungsverwaltung/images/haus_18x16.png")
         top = tree.insert('', 0, text='Alle Wohnungen')
         ort =  stra = bez = ''
         ort_item = stra_item = bez_item = None
@@ -229,7 +231,7 @@ class WV(ttk.Frame):
             if whg['strasse'] != stra:
                 stra = whg['strasse']
                 stra_item = tree.insert(ort_item, END, text=stra)
-            tree.insert(stra_item, END, text = whg['whg_bez'], values=(whg['whg_id']))
+            tree.insert(stra_item, END, text = whg['whg_bez'], image=self.hauspng, values=(whg['whg_id']))
 
         self._openBranches(tree, tree.get_children())
 
