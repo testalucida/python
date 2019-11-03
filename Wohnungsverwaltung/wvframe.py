@@ -1,12 +1,18 @@
 from tkinter import *
 from tkinter import ttk
 from enum import Enum, IntEnum
-import sys
-sys.path.append('/home/martin/Projects/python/mywidgets')
+# import sys
+# sys.path.append('/home/martin/Projects/python/mywidgets')
+
 try:
     from editabletable import GenericEditableTable, Mappings
+    print('editabletable imported')
     from stammdatenview import StammdatenView
+    print('stammdatenview imported')
     from veranlagungview import VeranlagungView
+    print('veranlagungview imported')
+    # from wvcontroller import WvController
+    # print('wvcontroller imported')
 except ImportError:
     print("couldn't import some stuff.")
 
@@ -319,30 +325,28 @@ class WV(ttk.Frame):
     def exitProgram(self):
         exit()
 
-def main():
-    import sys
-    from wvcontroller import WvController
-    print("path: ", sys.path)
-    root = Tk()
-
-    if 'win' not in sys.platform:
-        style = ttk.Style()
-        style.theme_use('clam')
-
-    wv = WV(root)
-    wv.setNotebookTab(0)
-
-    ctrl = WvController(wv)
-    ctrl.startWork()
-
-    wv.setStatusText("Bereit")
-
-    #width = root.winfo_screenwidth()
-    #width = root.winfo_width()
-    #height = int(root.winfo_screenheight()/2)
-    #root.geometry('%sx%s' % (900, height))
-
-    root.mainloop()
-
-if __name__ == '__main__':
-    main()
+# def main():
+#     print("path: ", sys.path)
+#     root = Tk()
+#
+#     if 'win' not in sys.platform:
+#         style = ttk.Style()
+#         style.theme_use('clam')
+#
+#     wv = WV(root)
+#     wv.setNotebookTab(0)
+#
+#     ctrl = WvController(wv)
+#     ctrl.startWork()
+#
+#     wv.setStatusText("Bereit")
+#
+#     #width = root.winfo_screenwidth()
+#     #width = root.winfo_width()
+#     #height = int(root.winfo_screenheight()/2)
+#     #root.geometry('%sx%s' % (900, height))
+#
+#     root.mainloop()
+#
+# if __name__ == '__main__':
+#     main()
