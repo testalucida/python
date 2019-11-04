@@ -85,12 +85,12 @@ class WriteRetVal:
 class Server:
     LOCALHOST: str = 'http://localhost/kendelweb/dev/php/'
     REMOTE: str = 'http://kendelweb.de/dev/php/'
-    SERVER: str = LOCALHOST  # will possibly be changed in DataProvider.connect()
+    SERVER: str = ''
 
 class DataProvider:
     JSONERROR: int = -2
 
-    def __init__(self ):
+    def __init__(self):
         self.__session = requests.Session()
         self.__user = ''
 
@@ -342,7 +342,7 @@ class DataProvider:
         iddict = self._getReadRetValOrRaiseException(resp)
         return 0 if iddict is None else int(iddict['afa_id'])
 
-    def getAnlageVData_1_to_8(self, whg_id: int, vj: int) -> int:
+    def getAnlageVData_1_to_8(self, whg_id: int, vj: int) -> XImmoStammdaten:
         resp = self.__session. \
             get(Server.SERVER + 'business.php?q=anlagev_1_to_8&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)

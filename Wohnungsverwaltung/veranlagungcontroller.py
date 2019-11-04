@@ -4,6 +4,8 @@ from tkinter import messagebox
 from veranlagungview import VeranlagungView
 from stammdatenview import StammdatenAction
 from interfaces import XWohnungDaten
+from anlagevdata import AnlageVData
+from anlagevwriter import AnlageVWriter
 import datehelper
 
 class VeranlagungController:
@@ -37,19 +39,64 @@ class VeranlagungController:
         #print('onVjChanged: ', newVj)
         #todo: check if there are any unsaved changes
         self._view.clearAfa()
-        self._vj = None
-        try:
-            newVj = int(newVj)
-            self._loadAfaData(newVj)
-            self._vj = newVj
-        except:
-            pass
+        self._vj = int(newVj)
+        self._loadAfaData()
 
     def clear(self):
         self._view.clearAll()
 
     def _onCreateAnlageV(self, afa: dict):
-        print('VeranlagungsController._onCreateAnlageV')
+        """
+        Validates data.
+        Opens dialog to ask for the path the AnlageV is to save into.
+        Instantiates AnlageVData.
+        Instantiates AnlageVWriter.
+        Reports to the using after having ended
+        :param afa:
+        :return:
+        """
+        msg = self._validateAfa(afa)
+        if msg:
+            messagebox.showerror('Anlage V kann nicht erstellt werden', msg)
+            return
+
+        savepath = self._getAnlageVSavepath()
+        if savepath:
+            self.createAnlageV(1, savepath)
+
+    def createAnlageV(self, anlage_nr: int, savepath: str):
+        anlagevdata = AnlageVData(self._whg_id,
+                                  anlage_nr,
+                                  self._vj,
+                                  savepath,
+                                  self._dataProvider)
+        jsonfile = anlagevdata.startWork()
+
+        anlagevwriter = AnlageVWriter()
+        anlagevwriter.writePdf(jsonfile)
+        anlagevwriter.endPdf()
+
+        msg = 'Anlage V wurde im Verzeichnis ' + savepath + ' erstellt.'
+        messagebox.showinfo('Verarbeitung beendet', msg)
+
+    def _getAnlageVSavepath(self):
+        from tkinter import filedialog
+        import os
+        options = {}
+        # options['initialdir'] = dirName
+        options['title'] = 'Verzeichnis auswählen, ggf. neues dazuschreiben'
+        options['mustexist'] = False
+        dir = filedialog.askdirectory(**options)
+        if not os.path.isdir(dir):
+            parts = dir.split('/')
+            dirpath = '/'
+            for part in parts:
+                if len(part) > 0:
+                    dirpath += part
+                    if not os.path.isdir(dirpath):
+                        os.mkdir(dirpath)
+                    dirpath += '/'
+        return dir
 
     def _validateWhg(self, whg: dict) -> str or None:
         """
@@ -140,7 +187,7 @@ class VeranlagungController:
         if rcWhg['isWhgModified'] and rcAfa['isAfaModified']:
             self._loadAllData(self._vj)
         elif rcAfa['isAfaModified']:
-            self._loadAfaData(self._vj)
+            self._loadAfaData()
         elif rcWhg['isWhgModified']:
             self._loadWhgData()
 
@@ -167,7 +214,7 @@ class VeranlagungController:
             self._loadAllData(self._vj)
         else:
             if rcAfa['isAfaModified'] and rcAfa['isAfaValid']:
-                self._loadAfaData(self._vj)
+                self._loadAfaData()
             if isWhgModified:
                 self._loadWhgData()
 
@@ -266,7 +313,7 @@ class VeranlagungController:
 
         #and if a Vj is set get selected flat's AfA data as well:
         if self._vj:
-            self._loadAfaData(self._vj)
+            self._loadAfaData()
 
     def _loadAllData(self, vj: int):
         """
@@ -293,13 +340,13 @@ class VeranlagungController:
                                  data['steuerl_zurechng_mann'],
                                  data['steuerl_zurechng_frau'])
 
-    def _loadAfaData(self, vj: int):
+    def _loadAfaData(self):
         """
         called when Vj was changed by user
         :param vj: changed Vj
         :return: None
         """
-        data = self._dataProvider.getAfa(self._whg_id, vj)
+        data = self._dataProvider.getAfa(self._whg_id, self._vj)
         """
         data = {
             'afa_id': '2',
@@ -345,7 +392,8 @@ def test():
     from tkinter import ttk
 
     dp = DataProvider()
-    dp.connect('martin', 'fuenf55')
+    dp.connect('test')
+    #dp.connect('d02bacec')
 
     root = root = Tk()
 
@@ -356,7 +404,8 @@ def test():
     tv.grid(column=0, row=0, sticky='nswe', padx=10, pady=10)
     ctrl = VeranlagungController(dp, tv)
     ctrl.startWork()
-    ctrl.wohnungSelected(1)
+    ctrl.wohnungSelected(1) # dev: Mendel
+    #ctrl.wohnungSelected(5) # rel: Heuschlag
 
     root.mainloop()
 

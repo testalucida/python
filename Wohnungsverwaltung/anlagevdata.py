@@ -201,38 +201,40 @@ class AnlageVData:
             }
         }
     """
-    def __init__(self, whg_id: int, anlage_nr: int, vj: int, dataprovider: DataProvider):
+    def __init__(self, whg_id: int,
+                 anlage_nr: int,
+                 vj: int,
+                 savepath: str,
+                 dataprovider: DataProvider):
         self._whg_id = whg_id
         self._anlage_nr = anlage_nr
         self._vj = vj
-        self._xdatadict = dict() #Dictionary für die Schnittstellendaten
-        #self._zeilenlist = list() #liste der Zeilen,
-                                  # die dem Schnittstellendict. hinzugefügt wird
+        self._xdatadict = dict()  # Dictionary für die Schnittstellendaten
         self._dataProvider = dataprovider
-        self._savePath = '/home/martin/Projects/python/Wohnungsverwaltung'
+        self._savePath = savepath
         self._log = None
         self._wohnungIdent = None
         self._stammdaten = None
         self._summe_einnahmen = 0
         self._summe_wk = 0
 
-    def _checkForSavePath(self) -> None:
-        """
-        Setzt einen vom Default abweichenden Pfad.
-        :param path: der gewünschte Pfad
-        :return: None
-        """
-        jsonfile = "/home/martin/Projects/python/Wohnungsverwaltung/anlagevconfig.json"
-        try:
-            f = open(jsonfile)
-            j = json.load(f)
-        except:
-            pass # no file specified
+    # def _checkForSavePath(self) -> None:
+    #     """
+    #     Setzt einen vom Default abweichenden Pfad.
+    #     :param path: der gewünschte Pfad
+    #     :return: None
+    #     """
+    #     jsonfile = self._savePath + "/anlagevconfig.json"
+    #     try:
+    #         f = open(jsonfile)
+    #         j = json.load(f)
+    #     except:
+    #         pass # no file specified
 
-    def startWork(self) -> None:
+    def startWork(self) -> str:
         """
         - prüft, ob es im current directory eine Config-Datei gibt,
-          die einen alternativen SavePath vorgibt
+          die einen alternativen SavePath vorgibt ### not yet implemented
         - sammelt die notwendigen Daten:
             - Mieteinnahmen
             - vereinnahmte Nebenkostenabschläge
@@ -245,11 +247,11 @@ class AnlageVData:
         - erstellt aus diesen Daten ein Dictionary, das als
           JSON-Struktur in die spezifizierte Datei geschrieben
           wird
-        - ruft das C++ - Programm auf, das diese Schnittstelle
-          einliest und das Drucken übernimmt.
-        :return: None
+
+        :return: path and name of the written json file
         """
-        self._checkForSavePath()
+
+        #self._checkForSavePath()
         now = datetime.datetime.now()
         data: XImmoStammdaten = \
             self._dataProvider.getAnlageVData_1_to_8(self._whg_id, self._vj)
@@ -278,22 +280,25 @@ class AnlageVData:
         self._getZeile_9_to_14_mtlEinn()
         self._sectionWerbungskosten()
         self._getZeile_23_24_ueberschuss_zurechnung()
-        self._writeInterface()
+        jsonfile = self._writeInterface()
 
         now = datetime.datetime.now()
         self._writeLog('\n\nBeende Verarbeitung um ' + str(now))
         self._log.close()
 
+        return jsonfile
+
     def _writeLog(self, txt: str) -> None:
         txt = ''.join((txt, '\n'))
         self._log.write(txt)
 
-    def _writeInterface(self) -> None:
+    def _writeInterface(self) -> str:
         jsonfile = self._savePath + "/anlagevdata_" + str(self._vj) + ".json"
         f = open(jsonfile, 'w')
         json.dump(self._xdatadict, f, indent=4)
         #f.write(x)
         f.close()
+        return jsonfile
 
     def _writeRechnungenLog(self, rg: dict) -> None:
         """
@@ -652,7 +657,9 @@ def test():
     dp = DataProvider()
     dp.connect('martin', 'fuenf55')
 
-    avdata = AnlageVData(2, 2, 2018, dp)
+    avdata = AnlageVData(2, 2, 2018,
+                         '/home/martin/Projects/python/Wohnungsverwaltung/anlagen_v/2018',
+                         dp)
     avdata.startWork()
 
     # filter = RechnungFilter(1, 2018, dp)

@@ -7,13 +7,45 @@ from anlagevlayout import zeilen
 class AnlageVWriter:
     def __init__(self):
         self._data = None
-        self._pdf = None
+        self._pdf = FPDF()
 
-    def createPdf(self, data_filename: str):
+    def writePdf(self, data_filename: str):
+        """
+        call this method for each anlageV json-struct that is to
+        be converted into a single pdf file.
+        After having written the last json struct call endPdf to
+        create and open the desired pdf file.
+        :param data_filename: like anlagevdata_2018.json.
+        contains line numbers of the Anlage V form and the values
+        to be written in each line, e.g.:
+                "zeilen": {
+                "1": [
+                    {
+                        "name": "Name",
+                        "value": "Kendel"
+                    }
+                ],
+                "2": [
+                    {
+                        "name": "Vorname",
+                        "value": "Martin"
+                    }
+                ],
+                "3": [
+                    {
+                        "name": "Steuernummer",
+                        "value": "217/235/50499"
+                    },
+                    {
+                        "name": "lfd. Nr.",
+                        "value": "1"
+                    }
+                ], ...
+        :return: None
+        """
+
         # open interface written by AnlageVData:
         anlv_zeilen = self._openAnlageData(data_filename)['zeilen']
-
-        self._pdf = FPDF()
         self._pdf.add_page()
         self._pdf.set_font('helvetica', '', 12.0)
 
@@ -55,6 +87,7 @@ class AnlageVWriter:
             except:
                 print('unexpected error: ', sys.exc_info()[0])
 
+    def endPdf(self):
         self._pdf.output('./anlagev.pdf', 'F')
 
         if sys.platform.startswith("linux"):
@@ -73,7 +106,9 @@ class AnlageVWriter:
         :return:
         """
         f = open(filename)
-        return json.load(f)
+        json_struc = json.load(f)
+        f.close()
+        return json_struc
 
 def test():
     writer = AnlageVWriter()

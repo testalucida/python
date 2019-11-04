@@ -3,10 +3,12 @@ from tkinter import ttk
 import sys
 import os
 
-cwd = os.getcwd()
-print("current directory is: " + cwd)
-mywidgetspath = cwd.replace('Wohnungsverwaltung', 'mywidgets')
+scriptpath = os.path.realpath(__file__)
+scriptdir = scriptpath.replace('/main.py', '')
+print('scriptdir is: ', scriptdir)
+mywidgetspath = scriptdir.replace('Wohnungsverwaltung', 'mywidgets')
 print('mywidgets path is: ', mywidgetspath)
+
 sys.path.append(mywidgetspath)
 
 from wvframe import WV
@@ -23,6 +25,8 @@ def main():
     wv = WV(root)
     wv.setNotebookTab(0)
 
+    global scriptpath
+    isTest = True if 'Projects/python' in scriptpath else False
     ctrl = WvController(wv)
     ctrl.startWork()
 
