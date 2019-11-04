@@ -172,7 +172,7 @@ class WV(ttk.Frame):
     def _createSonstigeTab(self, sonstigePage: ttk.Frame):
         # sonstige payments and grundsteuer
 
-        lbl = ttk.Label(sonstigePage, text='Einmalige Ein- und Auszahlungen')
+        lbl = ttk.Label(sonstigePage, text='Einmalige Ein- und Auszahlungen; VJ ist das Jahr der Ein-/Auszahlung')
         lbl.configure(anchor="center", background='lightyellow')
         lbl.grid(column=0, row=0, sticky='we', pady=(20,2))
 

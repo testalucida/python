@@ -392,8 +392,8 @@ def test():
     from tkinter import ttk
 
     dp = DataProvider()
-    dp.connect('test')
-    #dp.connect('d02bacec')
+    #dp.connect('test')
+    dp.connect('d02bacec')
 
     root = root = Tk()
 

@@ -655,7 +655,7 @@ def rechnungfiltercallback(rg: dict):
 def test():
     from business import DataProvider, DataError
     dp = DataProvider()
-    dp.connect('martin', 'fuenf55')
+    dp.connect('d02bacec')
 
     avdata = AnlageVData(2, 2, 2018,
                          '/home/martin/Projects/python/Wohnungsverwaltung/anlagen_v/2018',

@@ -418,16 +418,24 @@ class DataProvider:
         Berechnung Zeile 49:
         Summe der mtl. Hausgeldzahlungen zzgl/abzgl Nachzahlungen/Rückzahlungen
         PLUS zusätzliche Ausgaben z.B. für Fahrten zu ETVn, Porto, Telefon etc.
+        MINUS Verwalterkosten, die separat in Zeile 47 ausgegeben werden.
         :param whg_id:
         :param vj:
         :return: (hausgeld, sonstige)
         """
         hausgeld = self.getHausgeld(whg_id, vj)
-        sonstige = self.getSonstigeKosten(whg_id, vj)
+        sonstige = self.getSonstigeKostenUndAbloesen(whg_id, vj)
+        vwkosten = self.getAnlageVData_47_verwaltkosten(whg_id, vj)
 
-        return round(hausgeld + sonstige)
+        return round(hausgeld + sonstige - vwkosten)
 
     def getHausgeld(self, whg_id: int, vj: int) -> int:
+        """
+        returns corrected Hausgeld
+        :param whg_id:
+        :param vj:
+        :return:
+        """
         #periodical payments
         resp = self.__session. \
             get(Server.SERVER + 'business.php?q=anlageV_49_mtl_hausgeld&id=' +
@@ -493,9 +501,9 @@ class DataProvider:
 
         return hg_adjusted
 
-    def getSonstigeKosten(self, whg_id: int, vj: int) -> float:
+    def getSonstigeKostenUndAbloesen(self, whg_id: int, vj: int) -> float:
         resp = self.__session. \
-            get(Server.SERVER + 'business.php?q=anlagev_49_sonstige_ausgaben&id=' +
+            get(Server.SERVER + 'business.php?q=sonstige_kosten_und_abloesen&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         sk = XSonstigeKostenList(XSonstigeKosten,
                                  self._getReadRetValOrRaiseException(resp))
@@ -864,7 +872,8 @@ class DataProvider:
 #
 if __name__ == '__main__':
     prov = DataProvider()
-    prov.connect('martin', 'fuenf55')
+    prov.connect('d02bacec')
+    prov.getAnlageVData_49_sonstiges(1, 2018)
     #xvwlist: XVerwalterList = prov.getVerwalterListe()
     #xvmlist: XVermieterList = prov.getVermieterListe()
     #xdata: XWohnungDaten = prov.getWohnungMinStammdaten(1)
@@ -879,7 +888,7 @@ if __name__ == '__main__':
     xdata.ort = 'Gostenhof'
     xdata.angeschafft_am = '2000-5-24'
     print(xdata)
-    prov.insertWohnungMin(xdata)
+    #prov.insertWohnungMin(xdata)
 
     #prov.deleteWohnung(2)
 
