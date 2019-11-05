@@ -66,7 +66,7 @@ class WvController:
     def _connect(self):
         import os
         #check if a configuration file exists. If so, connect remote, else local.
-        scriptpath = os.path.realpath(__file__)   
+        scriptpath = os.path.realpath(__file__)
         scriptdir = scriptpath.replace('/wvcontroller.py', '')
         configfile = scriptdir + '/connect_remote'
         user = 'test'
