@@ -511,10 +511,14 @@ class AnlageVData:
             z += 1
 
     def _getZeile_47_verwaltkosten(self) -> None:
+        """
+        Zeile 47 enthält nichts weiter als das um
+        Nach- und Rückzahlungen bereinigte Hausgeld.
+        """
         vwkost: int = self._dataProvider.\
-                getAnlageVData_47_verwaltkosten(self._whg_id, self._vj)
+                getAnlageVData_47_hausgeld(self._whg_id, self._vj)
         if vwkost == 0:
-            self._writeLog('Keine Verwaltungskosten im Vj (Zeile 47).')
+            self._writeLog('Keine Verwaltungskosten (Hausgelder) im Vj (Zeile 47).')
         self._createZeile(47, ('verwaltungskosten', vwkost))
         self._summe_wk += vwkost
 

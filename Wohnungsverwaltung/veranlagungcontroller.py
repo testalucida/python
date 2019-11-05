@@ -255,7 +255,7 @@ class VeranlagungController:
         data['lin_deg_knz'] = 'l' if data['art_afa'] == 'linear' else 'd'
         data['afa_wie_vorjahr'] = 'J' if data['afa_wie_vorjahr'] == 'Ja' else 'N'
         if data['prozent'] == '': data['prozent'] = 0.0
-        if data['verwaltkosten'] == '': data['verwaltkosten'] = 0
+        #if data['verwaltkosten'] == '': data['verwaltkosten'] = 0
         #check if update or insert
         id: int = self._dataProvider.getAfaId(self._whg_id, int(data['vj_ab']))
         if id > 0:
@@ -326,7 +326,7 @@ class VeranlagungController:
             self._view.setWohnungData(data['angeschafft_am'], data['einhwert_az'],
                                      data['steuerl_zurechng_mann'],
                                      data['steuerl_zurechng_frau'])
-            self._view.setAfaAndVwData(data)
+            self._view.setAfaData(data)
 
     def _loadWhgData(self):
         """
@@ -354,11 +354,10 @@ class VeranlagungController:
             'prozent': '2.23',
             'lin_deg_knz': 'l',
             'afa_wie_vorjahr': 'Ja',
-            'verwaltkosten': 200,
             'art_afa': 'linear'
         }
         """
-        self._view.setAfaAndVwData(data) #must be done even if data is none
+        self._view.setAfaData(data) #must be done even if data is none
         enabled = False
         if data:
             enabled = True if not self._validateAfa(data) else False
@@ -392,8 +391,8 @@ def test():
     from tkinter import ttk
 
     dp = DataProvider()
-    #dp.connect('test')
-    dp.connect('d02bacec')
+    dp.connect('test')
+    #dp.connect('d02bacec')
 
     root = root = Tk()
 

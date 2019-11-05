@@ -64,9 +64,14 @@ class WvController:
                 self._stammdatencontroller.onWohnungDatenChangedByOthers)
 
     def _connect(self):
-        #todo: Login-Dialog
-        #self._dataProvider.connect('test')
-        self._dataProvider.connect('d02bacec')
+        import os
+        #check if a configuration file exists. If so, connect remote, else local.
+        scriptpath = os.path.realpath(__file__)   
+        scriptdir = scriptpath.replace('/wvcontroller.py', '')
+        configfile = scriptdir + '/connect_remote'
+        user = 'test'
+        if os.path.isfile(configfile): user = 'd02bacec'
+        self._dataProvider.connect(user)
 
     def _loadTree(self):
         whg_list = self._dataProvider.getWohnungsUebersicht()

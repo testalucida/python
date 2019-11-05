@@ -295,8 +295,7 @@ class DataProvider:
             'prozent': '2.23', 
             'lin_deg_knz': 'l',
             'afa_wie_vorjahr': 'Ja', 
-            'art_afa': 'linear',
-            'verwaltkosten': 200
+            'art_afa': 'linear'
         }
         """
         return data
@@ -406,30 +405,26 @@ class DataProvider:
         data = self._getReadRetValOrRaiseException(resp)
         return data
 
-    def getAnlageVData_47_verwaltkosten(self, whg_id: int, vj: int) -> int:
-        resp = self.__session. \
-            get(Server.SERVER + 'business.php?q=anlagev_47_verwaltkosten&id=' +
-                str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
-        data = self._getReadRetValOrRaiseException(resp)
-        return int(data['verwaltkosten'])
+############### Zeilen 47 und 49 ANFANG ################################################
+    """
+    Verwaltungskosten (Zeile 47) sind insbesondere Zahlungen an den Hausverwalter 
+    sowie Hausgelder. 
+    
+    Zu «Sonstiges» (Zeile 49) gehören z. B. Mitgliedsbeiträge zum 
+    Haus- und Grundbesitzerverein, 
+    Kosten für die Mietersuche (Makler, Zeitungsanzeigen) 
+    oder der Einziehung der Miete (Anwalts-, Mahn-, Gerichtskosten), 
+    Kontoführungsgebühren (pauschal 16 EUR), 
+    Reisekosten (Fahrtkosten, Verpflegungsmehraufwendungen 
+                 und Übernachtungskosten im Zusammenhang mit Reparaturen, Behördengängen, 
+                 Handwerkerbesprechungen oder Grundstückskontrollen) 
+    sowie Telefongespräche mit den Mietern und Steuerberatungskosten im Zusammenhang 
+    mit dem vermieteten Objekt. 
+    (siehe https://www.steuern.de/steuererklaerung-anlage-v.html und
+           https://www.smartsteuer.de/online/ausfuellhilfen/anlage-v-ausfuellhilfe/)
+    """
 
-    def getAnlageVData_49_sonstiges(self, whg_id: int, vj: int) -> int:
-        """
-        Berechnung Zeile 49:
-        Summe der mtl. Hausgeldzahlungen zzgl/abzgl Nachzahlungen/Rückzahlungen
-        PLUS zusätzliche Ausgaben z.B. für Fahrten zu ETVn, Porto, Telefon etc.
-        MINUS Verwalterkosten, die separat in Zeile 47 ausgegeben werden.
-        :param whg_id:
-        :param vj:
-        :return: (hausgeld, sonstige)
-        """
-        hausgeld = self.getHausgeld(whg_id, vj)
-        sonstige = self.getSonstigeKostenUndAbloesen(whg_id, vj)
-        vwkosten = self.getAnlageVData_47_verwaltkosten(whg_id, vj)
-
-        return round(hausgeld + sonstige - vwkosten)
-
-    def getHausgeld(self, whg_id: int, vj: int) -> int:
+    def getAnlageVData_47_hausgeld(self, whg_id: int, vj: int) -> int:
         """
         returns corrected Hausgeld
         :param whg_id:
@@ -438,7 +433,7 @@ class DataProvider:
         """
         #periodical payments
         resp = self.__session. \
-            get(Server.SERVER + 'business.php?q=anlageV_49_mtl_hausgeld&id=' +
+            get(Server.SERVER + 'business.php?q=anlageV_47_mtl_hausgeld&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         '''
         resp contains a list of dictionaries:
@@ -468,7 +463,7 @@ class DataProvider:
 
         #adjustment payment as needed
         resp = self.__session. \
-            get(Server.SERVER + 'business.php?q=anlagev_49_hausgeld_korr&id=' +
+            get(Server.SERVER + 'business.php?q=anlagev_47_hausgeld_korr&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         '''
         resp contains a list of dictionaries (typically only one):
@@ -501,9 +496,13 @@ class DataProvider:
 
         return hg_adjusted
 
-    def getSonstigeKostenUndAbloesen(self, whg_id: int, vj: int) -> float:
+    def getAnlageVData_49_sonstiges(self, whg_id: int, vj: int) -> int:
+        """
+        Ermittelt aus der Tabelle 'sonstige_ein_aus' alle zur whg_id und vj passenden
+        Sätze der Art 'sonst_kost'.
+        """
         resp = self.__session. \
-            get(Server.SERVER + 'business.php?q=sonstige_kosten_und_abloesen&id=' +
+            get(Server.SERVER + 'business.php?q=anlagev_49_sonstige_kosten&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         sk = XSonstigeKostenList(XSonstigeKosten,
                                  self._getReadRetValOrRaiseException(resp))
@@ -512,7 +511,9 @@ class DataProvider:
         for item in sk.getList():
             sum_sonstige += float(item.betrag)
 
-        return sum_sonstige
+        return int(sum_sonstige)
+
+############### Zeilen 47 und 49 ENDE ##################################################
 
     def getAnlageVData_24_zurechnung(self, whg_id: int):
         resp = self.__session. \

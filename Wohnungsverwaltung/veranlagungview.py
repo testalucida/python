@@ -22,7 +22,7 @@ class VeranlagungView(ttk.Frame):
         self._prozent_afa = None
         self._betrag_afa = None
         self._afa_wie_vj = None
-        self._verwaltkosten = None
+        #self._verwaltkosten = None
         #self._sonstigeKosten = None
         self._btnSave = None
         self._btnCreateAnlageV = None
@@ -100,10 +100,10 @@ class VeranlagungView(ttk.Frame):
         lf = self._createAfaLabelframe(padx, pady)
         lf.grid(column=0, row=3, sticky='nswe', pady=(10, pady))
 
-        lf = self._createWerbungskostenLabelframe(padx, pady)
-        lf.grid(column=0, row=4, sticky='nswe', pady=(40, 20))
+        # lf = self._createWerbungskostenLabelframe(padx, pady)
+        # lf.grid(column=0, row=4, sticky='nswe', pady=(40, 20))
 
-        f = self._createButtonFrame(self, padx, pady)
+        f = self._createButtonFrame(self, padx, pady=(15,5))
         f.grid(column=0, row=5)
 
     def _createWohnungIdent(self, parent, padx, pady) -> ttk.Label:
@@ -227,16 +227,16 @@ class VeranlagungView(ttk.Frame):
         lf = ttk.Labelframe(self,
                             text='Verwaltung gem. Anlage V Zeile 47')
 
-        MyLabel(lf,
-                'Verwaltungskosten inkl. Bankspesen '
-                'gem. Betriebskostenabrechnung: ',
-                0, 0, 'nswe', 'e', padx, pady)
-        f = IntEntry(lf)
-        f.setBackground('AfA.TEntry', 'lightyellow')
-        f.grid(column=1, row=0, sticky='w', padx=padx, pady=pady)
-        f['width'] = 5
-        f.registerModifyCallback(self._onAfaModified)
-        self._verwaltkosten = f
+        # MyLabel(lf,
+        #         'Verwaltungskosten inkl. Bankspesen '
+        #         'gem. Betriebskostenabrechnung: ',
+        #         0, 0, 'nswe', 'e', padx, pady)
+        # f = IntEntry(lf)
+        # f.setBackground('AfA.TEntry', 'lightyellow')
+        # f.grid(column=1, row=0, sticky='w', padx=padx, pady=pady)
+        # f['width'] = 5
+        # f.registerModifyCallback(self._onAfaModified)
+        # self._verwaltkosten = f
 
         # MyLabel(lf, 'Sonstige Kosten (Fahrten, Tel., '
         #             'allg. Rep. gem. Betriebskostenabrechnung): ', 0, 1,
@@ -280,16 +280,16 @@ class VeranlagungView(ttk.Frame):
         self._prozent_afa.clear()
         self._afa_wie_vj.clear()
         self._betrag_afa.clear()
-        self._verwaltkosten.clear()
+        #self._verwaltkosten.clear()
 
-    def setAfaAndVwData(self, data: dict) -> None:
+    def setAfaData(self, data: dict) -> None:
         if data:
             self._isAfaInitialized = False
             self._art_afa.setValue(data['art_afa'])
             self._prozent_afa.setValue(data['prozent'])
             self._afa_wie_vj.setValue(data['afa_wie_vorjahr'])
             self._betrag_afa.setValue(data['betrag'])
-            self._verwaltkosten.setValue(data['verwaltkosten'])
+            #self._verwaltkosten.setValue(data['verwaltkosten'])
         self._isAfaInitialized = True
         self._isAfaModified = False
 
@@ -303,8 +303,7 @@ class VeranlagungView(ttk.Frame):
             'art_afa': self._art_afa.getValue(),
             'prozent': self._prozent_afa.getValue(),
             'afa_wie_vorjahr': self._afa_wie_vj.getValue(),
-            'betrag': self._betrag_afa.getValue(),
-            'verwaltkosten': self._verwaltkosten.getValue()
+            'betrag': self._betrag_afa.getValue()
         }
 
     def getVeranlagData(self) -> dict:
@@ -346,7 +345,7 @@ class VeranlagungView(ttk.Frame):
 def test():
     from business import DataProvider, DataError
     dp = DataProvider()
-    dp.connect('martin', 'fuenf55')
+    dp.connect('test')
     root = Tk()
     # root.rowconfigure(0, weight=1)
     # root.columnconfigure(0, weight=1)
