@@ -24,6 +24,7 @@ def main():
 
     wv = WV(root)
     wv.setNotebookTab(0)
+    firstshow: bool = True
 
     global scriptpath
     isTest = True if 'Projects/python' in scriptpath else False
@@ -37,7 +38,9 @@ def main():
     #height = int(root.winfo_screenheight()/2)
     #root.geometry('%sx%s' % (900, height))
 
-    root.mainloop()
+    #wv.bind("<Visibility>", show)
+
+    wv.mainloop()
 
 if __name__ == '__main__':
     main()

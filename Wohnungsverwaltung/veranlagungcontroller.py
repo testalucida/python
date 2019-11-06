@@ -79,24 +79,34 @@ class VeranlagungController:
         msg = 'Anlage V wurde im Verzeichnis ' + savepath + ' erstellt.'
         messagebox.showinfo('Verarbeitung beendet', msg)
 
-    def _getAnlageVSavepath(self):
+    def _getAnlageVSavepath(self) -> str or None:
         from tkinter import filedialog
         import os
+        initdir = os.getcwd()
+        wvdir = '/wohnungsverwaltung'
+        if os.path.isdir(initdir + wvdir):
+            initdir += wvdir
+            anlagedir = '/anlagen_v'
+            if os.path.isdir(initdir + anlagedir):
+                initdir += anlagedir
+
         options = {}
-        # options['initialdir'] = dirName
+        options['initialdir'] = initdir
         options['title'] = 'Verzeichnis auswählen, ggf. neues dazuschreiben'
         options['mustexist'] = False
         dir = filedialog.askdirectory(**options)
-        if not os.path.isdir(dir):
-            parts = dir.split('/')
-            dirpath = '/'
-            for part in parts:
-                if len(part) > 0:
-                    dirpath += part
-                    if not os.path.isdir(dirpath):
-                        os.mkdir(dirpath)
-                    dirpath += '/'
-        return dir
+        if type(dir) is str:
+            if not os.path.isdir(dir):
+                parts = dir.split('/')
+                dirpath = '/'
+                for part in parts:
+                    if len(part) > 0:
+                        dirpath += part
+                        if not os.path.isdir(dirpath):
+                            os.mkdir(dirpath)
+                        dirpath += '/'
+            return dir
+        return None
 
     def _validateWhg(self, whg: dict) -> str or None:
         """
