@@ -72,7 +72,7 @@ class VeranlagungController:
                                   self._dataProvider)
         jsonfile = anlagevdata.startWork()
 
-        anlagevwriter = AnlageVWriter()
+        anlagevwriter = AnlageVWriter(savepath)
         anlagevwriter.writePdf(jsonfile)
         anlagevwriter.endPdf()
 

@@ -5,9 +5,10 @@ import json
 from anlagevlayout import zeilen
 
 class AnlageVWriter:
-    def __init__(self):
+    def __init__(self, savepath: str):
         self._data = None
         self._pdf = FPDF()
+        self._savepath = savepath
 
     def writePdf(self, data_filename: str):
         """
@@ -88,12 +89,14 @@ class AnlageVWriter:
                 print('unexpected error: ', sys.exc_info()[0])
 
     def endPdf(self):
-        self._pdf.output('./anlagev.pdf', 'F')
+        pdfFile = self._savepath + '/anlagev.pdf'
+        self._pdf.output(pdfFile, 'F')
 
         if sys.platform.startswith("linux"):
-            os.system("xdg-open ./anlagev.pdf")
+            #os.system("xdg-open ./anlagev.pdf")
+            os.system("xdg-open " + pdfFile)
         else:
-            os.system("./anlagev.pdf")
+            os.system(pdfFile)
 
     def write(self, x: int, y: int, text: str, align: str = 'L') -> None:
         self._pdf.set_xy(x, y)
@@ -111,7 +114,7 @@ class AnlageVWriter:
         return json_struc
 
 def test():
-    writer = AnlageVWriter()
+    writer = AnlageVWriter('.')
     writer.createPdf("/home/martin/Projects/python/Wohnungsverwaltung/anlagevdata_2018.json")
 
 if __name__ == '__main__':

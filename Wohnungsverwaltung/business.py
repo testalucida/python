@@ -494,7 +494,7 @@ class DataProvider:
 
         hg_adjusted = sum_abschlag + sum_adjust
 
-        return hg_adjusted
+        return int(round(hg_adjusted))
 
     def getAnlageVData_49_sonstiges(self, whg_id: int, vj: int) -> int:
         """

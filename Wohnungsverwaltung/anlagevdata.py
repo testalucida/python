@@ -212,6 +212,7 @@ class AnlageVData:
         self._xdatadict = dict()  # Dictionary für die Schnittstellendaten
         self._dataProvider = dataprovider
         self._savePath = savepath
+        self._fileIdent = ''
         self._log = None
         self._wohnungIdent = None
         self._stammdaten = None
@@ -260,12 +261,13 @@ class AnlageVData:
         self._wohnungIdent = ''.join((data.plz, ' ', data.ort,
                                       ', ', data.strasse, ' / ', data.whg_bez))
 
-
-        logfile = self._savePath + "/log_" + \
-                  ''.join((data.plz, '_', data.ort,
-                           '_', data.strasse, '_',
-                           data.whg_bez)) + \
-                  ".txt"
+        #prepare parts for logfile name:
+        self._fileIdent = \
+            data.plz + '_' + data.ort + '_' + data.strasse + '_' + data.whg_bez
+        self._fileIdent = self._fileIdent.replace('/', '_')
+        self._fileIdent = self._fileIdent.replace(' ', '')
+        #create logfile name:
+        logfile = self._savePath + '/log_' + self._fileIdent + '.txt'
 
         self._log = open(logfile, 'w')
         self._writeLog('Starte Verarbeitung um ' + str(now))
@@ -293,7 +295,7 @@ class AnlageVData:
         self._log.write(txt)
 
     def _writeInterface(self) -> str:
-        jsonfile = self._savePath + "/anlagevdata_" + str(self._vj) + ".json"
+        jsonfile = self._savePath + "/anlagevdata_" + self._fileIdent + ".json"
         f = open(jsonfile, 'w')
         json.dump(self._xdatadict, f, indent=4)
         #f.write(x)
@@ -338,7 +340,7 @@ class AnlageVData:
         self._createZeile(6, ('Einheitswert-Aktenzeichen', data.einhwert_az))
         self._createZeile(7, ('Als Ferienwohnung genutzt', data.fewontzg),
                              ('An Angehörige vermietet', data.isverwandt))
-        self._createZeile(8, ('Gesamtwohnfläche', data.qm))
+        self._createZeile(8, ('Gesamtwohnfläche', '' if not data.qm else data.qm))
 
     def _log_missing_data_1_to_8(self, data: XImmoStammdaten) -> bool:
         log = self._writeLog
@@ -441,10 +443,11 @@ class AnlageVData:
         linear = 'X' if afa.lin_deg_knz == 'l' else ' '
         degressiv = ' ' if linear == 'X' else 'X'
         wie_vj = 'X' if afa.afa_wie_vorjahr == 'Ja' else ' '
+        proz = '' if afa.prozent == 0 else str(float(afa.prozent))
         self._createZeile(33,
                           ('linear', linear),
                           ('degressiv', degressiv),
-                          ('prozent', afa.prozent),
+                          ('prozent', proz),
                           ('wie_vorjahr', wie_vj),
                           ('betrag', afa.betrag))
 
@@ -519,15 +522,22 @@ class AnlageVData:
                 getAnlageVData_47_hausgeld(self._whg_id, self._vj)
         if vwkost == 0:
             self._writeLog('Keine Verwaltungskosten (Hausgelder) im Vj (Zeile 47).')
-        self._createZeile(47, ('verwaltungskosten', vwkost))
+        self._createZeile(47, ('hausgeld', 'Hausgeld inkl. Nach-/Rückzahlg.'),
+                              ('verwaltungskosten', vwkost))
         self._summe_wk += vwkost
 
     def _getZeile_49_sonstiges(self) -> None:
+        """
+        Zeile 49 enthält z.B. Porto, Fahrtkosten (ETVn), RA-Kosten, H&G-Beiträge.
+        In der Tabelle sonstige_ein_aus ist das die kostenart 'sonst_kost'
+        :return: None
+        """
         sonstige: int = self._dataProvider.\
             getAnlageVData_49_sonstiges(self._whg_id, self._vj)
         if sonstige == 0:
             self._writeLog('Keine sonstigen Kosten im Vj (Zeile 49).')
-        self._createZeile(49, ('sonstige', sonstige))
+        self._createZeile(49, ('sonst_kost', 'Porto, Fahrtkosten, H&G etc.'),
+                              ('sonstige', sonstige))
         self._summe_wk += sonstige
 
     def _getZeile_22_und_50_summe_wk(self) -> None:
@@ -541,14 +551,16 @@ class AnlageVData:
 
         zurechng_mann, zurechng_frau = \
             self._dataProvider.getAnlageVData_24_zurechnung(self._whg_id) # prozentsätze
+        zurechng_mann = int(zurechng_mann)
+        zurechng_frau = int(zurechng_frau)
         self._log_missing_data_24(zurechng_mann, zurechng_frau)
 
-        betrag_mann = int(zurechng_mann)/100 * ueberschuss
+        betrag_mann = zurechng_mann/100 * ueberschuss
         betrag_frau = ueberschuss - betrag_mann
         self._createZeile(24, ('zurechng_mann', round(betrag_mann)),
                               ('zurechng_frau', round(betrag_frau)))
 
-    def _log_missing_data_24(self, zurechng_mann, zurechng_frau):
+    def _log_missing_data_24(self, zurechng_mann: int, zurechng_frau: int):
         log = self._writeLog
         if zurechng_frau == 0 and zurechng_mann == 0:
             log('Angabe fehlt, wie der Überschuss aufzuteilen ist (Zeile 24).')
