@@ -486,6 +486,7 @@ class AnlageVData:
         rgfilter = RechnungFilter(self._whg_id, self._vj, self._dataProvider)
         rgfilter.registerCallback(self._writeRechnungenLog)
         aufwaende: XErhaltungsaufwand = rgfilter.getErhaltungsaufwaende()
+
         if aufwaende.voll_abzuziehen == 0:
             self._writeLog('Keine voll abziehbaren Aufwände im Vj.')
 

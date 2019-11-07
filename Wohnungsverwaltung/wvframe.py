@@ -135,7 +135,7 @@ class WV(ttk.Frame):
 
         book.add(pages[PAGE_STAMMDATEN], text='Stammdaten')
         book.add(pages[PAGE_WOHNUNG], text='Wohnung')
-        book.add(pages[PAGE_RECHUNGEN], text='Rechnungen')
+        book.add(pages[PAGE_RECHUNGEN], text='Rechnungen / Rücklage-Entnahmen')
         book.add(pages[PAGE_MTL_EIN_AUS], text='Monatliche Ein-/Auszahlungen')
         book.add(pages[PAGE_SONST_EIN_AUS], text='Sonstige Ein-/Auszahlungen')
         book.add(pages[PAGE_MIETEVERHAELTNIS], text='Mietverhältnis')

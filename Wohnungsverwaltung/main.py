@@ -44,3 +44,21 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+"""
+todo
+
+- Menüpunkt "Alle Anlagen V erstellen" implementieren
+
+- wenn im Baum auf einen Eintrag geklickt wird, der keine
+  Wohnung ist: Tabs löschen (Methode clearView in jeden Controller
+  einbauen)
+
+- EditableTable: wenn Zellinhalt nicht komplett gezeigt wird,
+  ein Fenster mit dem ganzen Inhalt aufmachen, wenn der 
+  Mauszeiger über die Zelle fährt
+  
+- Anlage V: in einem Dialog in Textform ausgeben
+
+- in Tabelle afa Spalte verwaltkosten löschen
+"""
