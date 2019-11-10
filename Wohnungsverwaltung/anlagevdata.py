@@ -334,7 +334,8 @@ class AnlageVData:
         self._createZeile(2, ('Vorname', data.vorname))
         self._createZeile(3, ('Steuernummer', data.steuernummer),
                              ('lfd. Nr.', self._anlage_nr))
-        self._createZeile(4, ('Straße, Hausnummer', data.strasse),
+        z4str = data.strasse + ' / ' + data.whg_bez
+        self._createZeile(4, ('Straße, Hausnummer', z4str),
                              ('Angeschafft am', data.angeschafft_am))
         self._createZeile(5, ('Postleitzahl', data.plz), ('Ort', data.ort))
         self._createZeile(6, ('Einheitswert-Aktenzeichen', data.einhwert_az))
@@ -443,7 +444,8 @@ class AnlageVData:
         linear = 'X' if afa.lin_deg_knz == 'l' else ' '
         degressiv = ' ' if linear == 'X' else 'X'
         wie_vj = 'X' if afa.afa_wie_vorjahr == 'Ja' else ' '
-        proz = '' if afa.prozent == 0 else str(float(afa.prozent))
+        proz = '' if (afa.prozent == '0' or afa.prozent == '0.0') \
+            else str(float(afa.prozent))
         self._createZeile(33,
                           ('linear', linear),
                           ('degressiv', degressiv),
@@ -630,7 +632,7 @@ class RechnungFilter:
         """
         aufwand = XErhaltungsaufwand()
         for rg in rechnungen:
-            year_bezahlt_am = int(rg['year_bezahlt_am'])
+            year_bezahlt_am = 0 if not rg['year_bezahlt_am'] else int(rg['year_bezahlt_am'])
             if not rg['year_bezahlt_am']: #Rechnung noch nicht bezahlt
                 pass
             elif year_bezahlt_am > self._vj:
@@ -656,6 +658,7 @@ class RechnungFilter:
                     years = self._vj - year_bezahlt_am
                     aufwand.addto_abzuziehen_aus_vj_minus(years, anteil)
                     self._doCallback(rg, False, anteil)
+
         aufwand.roundAufwaende()
         return aufwand
 
