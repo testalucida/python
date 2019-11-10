@@ -4,8 +4,10 @@ from tkinter import messagebox
 from veranlagungview import VeranlagungView
 from stammdatenview import StammdatenAction
 from interfaces import XWohnungDaten
-from anlagevdata import AnlageVData
-from anlagevwriter import AnlageVWriter
+#from anlagevdata import AnlageVData
+#from anlagevwriter import AnlageVWriter
+from anlagevcreator import AnlageVCreator
+
 import datehelper
 
 class VeranlagungController:
@@ -60,53 +62,19 @@ class VeranlagungController:
             messagebox.showerror('Anlage V kann nicht erstellt werden', msg)
             return
 
-        savepath = self._getAnlageVSavepath()
-        if savepath:
-            self.createAnlageV(1, savepath)
+        self._createAnlageV()
 
-    def createAnlageV(self, anlage_nr: int, savepath: str):
-        anlagevdata = AnlageVData(self._whg_id,
-                                  anlage_nr,
-                                  self._vj,
-                                  savepath,
-                                  self._dataProvider)
-        jsonfile = anlagevdata.startWork()
-
-        anlagevwriter = AnlageVWriter(savepath)
-        anlagevwriter.writePdf(jsonfile)
-        anlagevwriter.endPdf()
-
-        msg = 'Anlage V wurde im Verzeichnis ' + savepath + ' erstellt.'
-        messagebox.showinfo('Verarbeitung beendet', msg)
-
-    def _getAnlageVSavepath(self) -> str or None:
-        from tkinter import filedialog
-        import os
-        initdir = os.getcwd()
-        wvdir = '/wohnungsverwaltung'
-        if os.path.isdir(initdir + wvdir):
-            initdir += wvdir
-            anlagedir = '/anlagen_v'
-            if os.path.isdir(initdir + anlagedir):
-                initdir += anlagedir
-
-        options = {}
-        options['initialdir'] = initdir
-        options['title'] = 'Verzeichnis auswählen, ggf. neues dazuschreiben'
-        options['mustexist'] = False
-        dir = filedialog.askdirectory(**options)
-        if type(dir) is str:
-            if not os.path.isdir(dir):
-                parts = dir.split('/')
-                dirpath = '/'
-                for part in parts:
-                    if len(part) > 0:
-                        dirpath += part
-                        if not os.path.isdir(dirpath):
-                            os.mkdir(dirpath)
-                        dirpath += '/'
-            return dir
-        return None
+    def _createAnlageV(self):
+        anlcreator = AnlageVCreator(self._vj, self._dataProvider)
+        try:
+            anlcreator.createAnlage(self._whg_id, 1)
+            anlcreator.endCreate()
+            msg = 'Anlage V wurde im Verzeichnis ' + anlcreator.getSavePath() + \
+                  ' erstellt.'
+            messagebox.showinfo('Verarbeitung beendet', msg)
+        except:
+            msg = 'Fehler beim Erstellen der Anlage V'
+            messagebox.showerror('Verarbeitung abgebrochen', msg)
 
     def _validateWhg(self, whg: dict) -> str or None:
         """

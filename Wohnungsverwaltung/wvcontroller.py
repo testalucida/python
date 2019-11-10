@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import json
+from tkinter import messagebox
 from functools import partial
-from wvframe import WV, WohnungAction
-from business import DataProvider
+from wvframe import WV, WohnungAction, AnlageVAction
+from business import DataProvider, WvException
 from rgcontroller import RechnungController
 from mtleacontroller import MtlEinAusController
 from sonsteacontroller import SonstEinAusController
@@ -13,7 +13,9 @@ from stammdatencontroller import StammdatenController
 from veranlagungcontroller import VeranlagungController
 from wohnungdialogcontroller import WohnungDialogController
 from wohnungdialog import WohnungDialog
+from vjdialog import VjDialog
 from interfaces import XWohnungDaten
+from anlagevcreatorbatch import AnlageVCreatorBatch
 
 class WvController:
     def __init__(self, wv: WV):
@@ -28,6 +30,7 @@ class WvController:
 
     def startWork(self) -> None:
         self._wv.registerWohnungActionCallback(self.onWohnungMenuAction)
+        self._wv.registerAnlageVActionCallback(self.onAnlageVAction)
         self._connect()
         self._loadTree()
 
@@ -89,6 +92,24 @@ class WvController:
             ctrl.registerWohnungActionCompletedCallback(
                 partial(self._wohnungActionCompleted, dlg))
             ctrl.startWork()
+
+    def onAnlageVAction(self, action: AnlageVAction) -> None:
+        def _onOk(selectedVj):
+            dlg.destroy()
+            if action == AnlageVAction.all:
+                batch = AnlageVCreatorBatch(int(selectedVj), self._dataProvider)
+                try:
+                    batch.startWork()
+                except WvException as e:
+                    messagebox.showerror('Verarbeitung wird abgebrochen', e.toString())
+                    return
+            else:
+                # todo
+                pass
+            return
+
+        dlg = VjDialog(self._wv)
+        dlg.registerCallback(_onOk)
 
     def _wohnungActionCompleted(self, dlg: WohnungDialog,
                                 action: StammdatenAction,

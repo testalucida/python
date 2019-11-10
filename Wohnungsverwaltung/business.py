@@ -128,6 +128,7 @@ class DataProvider:
             'ort': 'Nürnberg',
             'strasse': 'Austr. 22',
             'whg_bez': '2. OG'
+        }
         """
         resp = self.__session.\
             get(Server.SERVER + 'business.php?q=uebersicht_wohnungen&' +
@@ -345,6 +346,7 @@ class DataProvider:
         resp = self.__session. \
             get(Server.SERVER + 'business.php?q=anlagev_1_to_8&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
+
         data = self._getReadRetValOrRaiseException(resp)
         """
         data:
@@ -363,7 +365,8 @@ class DataProvider:
             'isverwandt': 'N'
         }
         """
-        data['angeschafft_am'] = datehelper.convertIsoToEur(data['angeschafft_am'])
+        data['angeschafft_am'] = '' if not data['angeschafft_am'] else \
+                                datehelper.convertIsoToEur(data['angeschafft_am'])
         data['fewontzg'] = '1' if data['fewontzg'] == 'J' else '2'
         data['isverwandt'] = '1' if data['isverwandt'] == 'J' else '2'
         immostamm = XImmoStammdaten(data)
@@ -398,12 +401,12 @@ class DataProvider:
 
         return data
 
-    def getAnlageVData_grundsteuer(self, whg_id: int, vj: int) -> int:
+    def getAnlageVData_46_grundsteuer(self, whg_id: int, vj: int) -> int:
         resp = self.__session. \
             get(Server.SERVER + 'business.php?q=anlagev_grundsteuer&id=' +
                 str(whg_id) + '&vj=' + str(vj) + '&user=' + self.__user)
         data = self._getReadRetValOrRaiseException(resp)
-        return data
+        return int(round(float(data['betrag'])))
 
 ############### Zeilen 47 und 49 ANFANG ################################################
     """
@@ -839,10 +842,12 @@ class DataProvider:
             msg: str = ''.join((str(type(e)), ': ', e.args[0]))
             print(msg)
             raise ServiceException(str(self.JSONERROR), msg)
-
         except Exception as x:
             dataError = DataError(resp.status_code, resp.content)
             raise dataError
+
+        if ret is None:
+            raise WvException(resp.status_code, 'Service call provided no content (None)')
 
         return ret
 

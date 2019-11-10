@@ -1,7 +1,7 @@
 import json
 import datetime
 from typing import Dict, List, Text
-from business import DataProvider
+from business import DataProvider, WvException
 import datehelper
 from interfaces import XErhaltungsaufwand, XImmoStammdaten, \
     XMtlEinnahmen, XMtlEinnahmenList, XAfa
@@ -255,7 +255,7 @@ class AnlageVData:
         #self._checkForSavePath()
         now = datetime.datetime.now()
         data: XImmoStammdaten = \
-            self._dataProvider.getAnlageVData_1_to_8(self._whg_id, self._vj)
+                self._dataProvider.getAnlageVData_1_to_8(self._whg_id, self._vj)
         self._stammdaten = data
 
         self._wohnungIdent = ''.join((data.plz, ' ', data.ort,
@@ -431,6 +431,7 @@ class AnlageVData:
     def _sectionWerbungskosten(self):
         self._getZeile_33_to_35_afa()
         self._getZeile_39_to_45_erhaltung()
+        self._getZeile_46_grundsteuer()
         self._getZeile_47_verwaltkosten()
         self._getZeile_49_sonstiges()
         self._getZeile_22_und_50_summe_wk()
@@ -515,6 +516,16 @@ class AnlageVData:
             self._createZeile(z, (ident, round(aufwand)))
             self._summe_wk += aufwand
             z += 1
+
+    def _getZeile_46_grundsteuer(self) -> None:
+        gs: int = self._dataProvider.getAnlageVData_46_grundsteuer(
+                    self._whg_id, self._vj)
+        if gs == 0:
+            self._writeLog('Keine Grundsteuer für diese Wohnung eingetragen.')
+
+        self._createZeile(46, ('grundsteuer_txt', 'Grundsteuer'),
+                              ('grundsteuer', gs))
+        self._summe_wk += gs
 
     def _getZeile_47_verwaltkosten(self) -> None:
         """

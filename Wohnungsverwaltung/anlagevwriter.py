@@ -47,6 +47,7 @@ class AnlageVWriter:
 
         # open interface written by AnlageVData:
         anlv_zeilen = self._openAnlageData(data_filename)['zeilen']
+
         self._pdf.add_page()
         self._pdf.set_font('helvetica', '', 12.0)
 

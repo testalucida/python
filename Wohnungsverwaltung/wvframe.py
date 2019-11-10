@@ -17,6 +17,7 @@ except ImportError:
     print("couldn't import some stuff.")
 
 WohnungAction = IntEnum('WohnungAction', 'new edit delete')
+AnlageVAction = IntEnum('AnlageVAction', 'all choice')
 
 class WV(ttk.Frame):
     def __init__(self, root):
@@ -35,6 +36,7 @@ class WV(ttk.Frame):
         self._veranlagungView: VeranlagungView = None
         self._wohnungClickedCallback = None
         self._wohnungActionCallback = None
+        self._anlageVActionCallback = None
         self._createUI(root)
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
@@ -66,8 +68,10 @@ class WV(ttk.Frame):
         menu.add_cascade(label="Extras", menu=extrasmenu)
 
         anlvmenu = Menu(menu, tearoff=0)
-        anlvmenu.add_command(label="Anlagen V für alle Wohnungen erstellen...")
-        anlvmenu.add_command(label="Anlage V für ausgewählte Wohnung erstellen...")
+        anlvmenu.add_command(label="Anlagen V für alle Wohnungen erstellen...",
+                             command = self._onAnlageV_all)
+        anlvmenu.add_command(label="Anlage V für ausgewählte Wohnung erstellen...",
+                             command = self._onAnlageV_choice)
         menu.add_cascade(label="Anlage V", menu=anlvmenu)
 
     def _createStatusBar(self, parent):
@@ -252,6 +256,14 @@ class WV(ttk.Frame):
     def _onDeleteWohnung(self):
         self._doWohnungActionCallback(WohnungAction.delete)
 
+    def _onAnlageV_all(self):
+        if self._anlageVActionCallback:
+            self._anlageVActionCallback(AnlageVAction.all)
+
+    def _onAnlageV_choice(self):
+        if self._anlageVActionCallback:
+            self._anlageVActionCallback(AnlageVAction.choice)
+
     def _doWohnungActionCallback(self, action: WohnungAction):
         if self._wohnungActionCallback:
             whg_id = -1
@@ -300,6 +312,9 @@ class WV(ttk.Frame):
 
     def registerWohnungActionCallback(self, callback):
         self._wohnungActionCallback = callback
+
+    def registerAnlageVActionCallback(self, callback):
+        self._anlageVActionCallback = callback
 
     def setStatusText(self, text: str):
         self._statusbar['text'] = text
