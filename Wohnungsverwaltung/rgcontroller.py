@@ -114,3 +114,6 @@ class RechnungController:
         """
         rg_list = self._dataProvider.getRechnungsUebersicht(self._whg_id)
         self._tv.setRows(rg_list)
+
+    def clear(self) -> None:
+        self._tv.clear()

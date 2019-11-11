@@ -51,10 +51,6 @@ todo
 
 - Menüpunkt "Anlagen V für ausgewählte Wohnungen erstellen" implementieren
 
-- wenn im Baum auf einen Eintrag geklickt wird, der keine
-  Wohnung ist: Tabs löschen (Methode clearView in jeden Controller
-  einbauen)
-
 - EditableTable: wenn Zellinhalt nicht komplett gezeigt wird,
   ein Fenster mit dem ganzen Inhalt aufmachen, wenn der 
   Mauszeiger über die Zelle fährt

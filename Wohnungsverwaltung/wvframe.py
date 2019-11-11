@@ -35,6 +35,7 @@ class WV(ttk.Frame):
         self._stammdatenView: StammdatenView = None
         self._veranlagungView: VeranlagungView = None
         self._wohnungClickedCallback = None
+        self._noWohnungClickedCallback = None
         self._wohnungActionCallback = None
         self._anlageVActionCallback = None
         self._createUI(root)
@@ -249,6 +250,8 @@ class WV(ttk.Frame):
         whg_id = self.getSelectedTreeItem()
         if whg_id > 0:
             self._callbackWohnungClicked(whg_id)
+        else:
+            self._callbackNoWohnungClicked()
 
     def _onNewWohnung(self):
         self._doWohnungActionCallback(WohnungAction.new)
@@ -304,11 +307,18 @@ class WV(ttk.Frame):
         if self._wohnungClickedCallback:
             self._wohnungClickedCallback(whg_id)
 
+    def _callbackNoWohnungClicked(self) -> None:
+        if self._noWohnungClickedCallback:
+            self._noWohnungClickedCallback()
+
     def setNotebookTab(self, idx: int) -> None:
         self._notebook.select(idx)
 
     def registerWohnungClickCallback(self, callback):
         self._wohnungClickedCallback = callback
+
+    def registerNoWohnungClickCallback(self, callback):
+        self._noWohnungClickedCallback = callback
 
     def registerWohnungActionCallback(self, callback):
         self._wohnungActionCallback = callback

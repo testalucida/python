@@ -81,6 +81,7 @@ class WvController:
         whg_list = self._dataProvider.getWohnungsUebersicht()
         self._wv.populateWohnungenTree(whg_list)
         self._wv.registerWohnungClickCallback(self._onWohnungClicked)
+        self._wv.registerNoWohnungClickCallback(self._onNoWohnungClicked)
 
     def onWohnungMenuAction(self, whg_id: int, action: WohnungAction):
         if action == WohnungAction.delete:
@@ -144,3 +145,11 @@ class WvController:
         self._veranlagungcontroller.wohnungSelected(whg_id)
         root.configure(cursor='')
         root.update()
+
+    def _onNoWohnungClicked(self):
+        self._stammdatencontroller.clear()
+        self._rgcontroller.clear()
+        self._mtleacontroller.clear()
+        self._sonsteacontroller.clear()
+        self._grundsteuercontroller.clear()
+        self._veranlagungcontroller.clear()

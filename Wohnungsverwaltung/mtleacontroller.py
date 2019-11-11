@@ -173,6 +173,9 @@ class MtlEinAusController:
         mea_list = self._dataProvider.getMtlEinAusData(self._whg_id)
         self._tv.setRows(mea_list)
 
+    def clear(self) -> None:
+        self._tv.clear()
+
 def test():
     gueltig_ab = '01.01.2020'
     gueltig_bis = ''

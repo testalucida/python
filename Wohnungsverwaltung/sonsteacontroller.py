@@ -102,6 +102,9 @@ class SonstEinAusController:
         sea_list = self._dataProvider.getSonstigeEinAusData(self._whg_id)
         self._tv.setRows(sea_list)
 
+    def clear(self) -> None:
+        self._tv.clear()
+
 def test():
     from tkinter import  Tk
     from tkinter import ttk
