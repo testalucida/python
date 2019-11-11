@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk, scrolledtext, Text
 from tkinter import font
+from typing import Dict, List, Any
 from abc import ABC, abstractmethod
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -416,8 +417,13 @@ class TableView(ttk.Treeview):
         self.bind('<Button-1>', self._onLeftMouse)
         self.bind('<Double-1>', self._onLeftMouseDouble)
         self.bind('<Return>', self._onReturn)
+        self.bind('<Motion>', self._onMouseMove)
         self.bind("<<TreeviewSelect>>", self._onTreeviewSelect, "+")
         self._selectionCallback = None
+        #self._mouseOverCallback = None
+        #self._mouseOverCallbackColumns = list()
+        self._rowColMemo = list()
+        self._zoom = None
 
     def setColumns(self, columnNames: list):
         self.heading("#0", text='Nr', anchor='w')
@@ -437,6 +443,21 @@ class TableView(ttk.Treeview):
         values are provided with data of selected row
         """
         self._selectionCallback = callback
+
+    # def registerMouseOverColumnsCallback(self, columns: List[int], callback) -> None:
+    #     """
+    #     Registers a method or function to be called if the mouse pointer hovers over
+    #     a given list of column indexes (starting by 0).
+    #     The method to register has to accept three arguments:
+    #     - the row's iid (e.g. 'I002' -> string
+    #     - the column's index (e.g. 0) -> int
+    #     - the value of the cell the mouse pointer is hovering over -> Any
+    #     :param columns: a list containing the interesting column indexes
+    #     :param callback: the method to call back
+    #     :return: None
+    #     """
+    #     self._mouseOverCallback = callback
+    #     self._mouseOverCallbackColumns = columns
 
     def setColumnWidth(self, columnName: str, w: int):
         self.column(columnName, width=w)
@@ -558,6 +579,12 @@ class TableView(ttk.Treeview):
         row = self.item(iid)
         return row['values']
 
+    def getCellValue(self, iid: str, column: int) -> Any or None:
+        values = self.getRowValues(iid)
+        if len(values) > column:
+            return values[column]
+        return None
+
     def selectRow(self, rownr: int) -> None:
         iid = self.getRowIid(rownr)
         self.selection_set(iid)
@@ -577,6 +604,50 @@ class TableView(ttk.Treeview):
 
     def _onReturn(self, evt: Event) -> None:
         self._onTableRowSelected(evt, 'returnkey')
+
+    # def _onMouseMove(self, evt: Event) -> None:
+    #     if self._mouseOverCallback:
+    #         iid = self.identify_row(evt.y)
+    #         if not iid: return
+    #         col = self.identify_column(evt.x)
+    #         if (iid, col) != self._rowColMemo:
+    #             self._rowColMemo = (iid, col)
+    #             col = int(col[1:]) - 1
+    #             if self._mouseOverCallbackColumns.index(col) > -1:
+    #                 val = self.getCellValue(iid, col)
+    #                 #print('val at cell ', col, '/', iid, ': ', val)
+    #                 self._mouseOverCallback(iid, col, val)
+    #             else:
+    #                 if len(self._rowColMemo) > 0:
+    #                     self._rowColMemo.clear()
+    #                     self._mouseOverCallback(None, None, None)
+
+    def _onMouseMove(self, evt: Event) -> None:
+        iid = self.identify_row(evt.y)
+        if not iid:
+            if self._zoom:
+                self._zoom.close()
+                self._rowColMemo.clear()
+                return
+        col = self.identify_column(evt.x)
+        if [iid, col] != self._rowColMemo:
+            if self._zoom:
+                self._zoom.close()
+            self._rowColMemo = [iid, col]
+            colname = self.heading(col)['text']
+            print('mouse in column ', colname)
+            colwidth = self.column(colname)['width']
+            colIdx = self['columns'].index(colname)
+            try:
+                val = self.item(iid)['values'][colIdx]
+                if val:
+                    f = font.Font(family='arial', size=11)  # todo: how to get actual font??
+                    (textwidth, h) = (f.measure(val), f.metrics("linespace"))
+                    print('val at cell ', colIdx, '/', iid, ': ', val)
+                    if textwidth > colwidth:
+                        self._zoom = Zoom(self, val, evt.x_root, evt.y_root)
+            except:
+                pass
 
     def _onTableRowSelected(self, evt: Event, trigger: str) -> None:
         """
@@ -601,6 +672,48 @@ class TableView(ttk.Treeview):
 
 #++++++++++++++++++++++++++++++++++++++++++++++++
 
+class Zoom(Toplevel):
+    def __init__(self, parent, text: str, x: int, y: int):
+        Toplevel.__init__(self, parent)
+        self.wm_overrideredirect(True)
+        #self.bind("<Enter>", self.enter)
+        self.bind("<Leave>", self.close)
+        self.wm_geometry("+%d+%d" % (x, y))
+        label = Label(self, text=text, background='white', relief='solid', borderwidth=1,
+                      font=("arial", "11", "normal"))
+        label.pack(ipadx=1)
+
+    def enter(self, event=None):
+        x = y = 0
+        x, y, cx, cy = self.widget.bbox("insert")
+        x += self.widget.winfo_rootx() + 25
+        y += self.widget.winfo_rooty() + 20
+        # creates a toplevel window
+        self.tw = Toplevel(self.widget)
+        # Leaves only the label and removes the app window
+        self.tw.wm_overrideredirect(True)
+        self.tw.wm_geometry("+%d+%d" % (x, y))
+        label = Label(self.tw, text=self.text, justify='left',
+                      background='white', relief='solid', borderwidth=1,
+                      font=("arial", "10", "normal"))
+        label.pack(ipadx=1)
+
+    def close(self, event=None):
+        self.destroy()
+
+#++++++++++++++++++++++++++++++++++++++++++++++++
+
+def onMoveOverColumn( iid: str, col: int, val: Any) -> None:
+    print('onMoveOverColumn: ', iid, '/', col, ': ', val)
+
+def tableTest(root):
+    tv = TableView(root)
+    tv.setColumns(('Spalte 1', 'Spalte 2'))
+    tv.appendRow(('einseins', 'einszwei'))
+    tv.appendRow(('zweieins', 'zweizwei und noch wahnsinnig viel Text hinterher...'))
+    tv.grid(column=0, row=0, sticky='nswe', padx=5, pady=5)
+    #tv.registerMouseOverColumnsCallback((0, 1), onMoveOverColumn)
+
 def inttest(root):
     ie = IntEntry(root)
     ie.grid(column=0, row=0, sticky='nswe', padx=10, pady=10)
@@ -621,7 +734,10 @@ def floattest(root):
 
 def main():
     root = Tk()
-    floattest(root)
+    tableTest(root)
+    root.rowconfigure(0, weight=1)
+    root.columnconfigure(0, weight=1)
+    #floattest(root)
     #inttest(root)
 
     # txt = MyText(root)

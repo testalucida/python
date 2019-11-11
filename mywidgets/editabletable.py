@@ -159,18 +159,7 @@ class Mappings:
             mapped[mapping['dbname']] = mapping['heading']
         return mapped
 
-# #+++++++++++++++++++++++++++++++++++++++++++++++
-#
-# class ActionCallbackResponse:
-#     def __init__(self, title: str, msg: str):
-#         self._title = title
-#         self._msg = msg
-#
-#     def getTitle(self): return self._title
-#
-#     def getMessage(self): return self._msg
-#
-#+++++++++++++++++++++++++++++++++++++++++++++++
+###############################################################
 
 class GenericEditableTable(ttk.Frame):
     def __init__(self, parent):
