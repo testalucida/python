@@ -16,7 +16,12 @@ class VjDialog(Toplevel):
         cbo = MyCombobox(self)
         cbo.setItems(datehelper.getLastYears(3))
         cbo.setIndex(1)
-        cbo.grid(column=0, row=0, columnspan=2, sticky='nswe', padx=5, pady=5)
+        cbo.setTextPadding('Vj.TCombobox', 5, 5, 0)
+        cbo.setWidth(5)
+        cbo.setFont('Helvetica 16 bold')
+        cbo.setReadonly(True)
+
+        cbo.grid(column=0, row=0, columnspan=2, padx=5, pady=5)
         self._cbo = cbo
 
         okBtn = ttk.Button(self, text='OK', command=self._onOk)

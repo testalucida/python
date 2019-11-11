@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
+import sys, traceback
+import itertools
 import requests
 import json
 from typing import Dict, List, Text
@@ -828,28 +829,44 @@ class DataProvider:
         if resp.status_code != 200:
             serviceError = None
             if resp.status_code == 500:
-                serviceError = ServiceException(500, 'Requested service not found.')
+                msg = 'Requested service not found.\n\n' + self._getStack()
+                serviceError = ServiceException(500, msg)
             else:
-                serviceError = ServiceException( resp.status_code, resp.text )
-            print(serviceError.toString())
+                msg = resp.text + '\n\n' + self._getStack()
+                serviceError = ServiceException( resp.status_code, msg )
+
             raise serviceError
 
         ret = None
         try:
             ret = json.loads(resp.content)
         except ValueError as e:
-            print(e)
             msg: str = ''.join((str(type(e)), ': ', e.args[0]))
-            print(msg)
+            msg += '\n\n'
+            msg += self._getStack()
             raise ServiceException(str(self.JSONERROR), msg)
         except Exception as x:
-            dataError = DataError(resp.status_code, resp.content)
+            msg = '' if not resp.content else resp.content
+            msg += '\n\n'
+            msg += self._getStack()
+            dataError = DataError(resp.status_code, msg)
             raise dataError
 
         if ret is None:
-            raise WvException(resp.status_code, 'Service call provided no content (None)')
+            msg = 'Service call provided no content (None)\n\n' + self._getStack()
+            raise WvException(resp.status_code, msg)
 
         return ret
+
+    def _getStack(self) -> str:
+        stacklist = traceback.format_stack()
+        stack = 'Stacktrace:\n'
+        start = len(stacklist)
+        start = start - 4 if start > 3 else 0
+        for e in stacklist[start:]:
+            stack += e
+            stack += '\n'
+        return stack
 
     def _getWriteRetValOrRaiseException(self, resp):
         if resp.status_code != 200:

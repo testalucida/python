@@ -40,6 +40,8 @@ def main():
 
     #wv.bind("<Visibility>", show)
 
+    root.option_add('*Dialog.msg.font', 'Helvetica 11')
+
     wv.mainloop()
 
 if __name__ == '__main__':

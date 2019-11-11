@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import sys, traceback
 from tkinter import messagebox
 from functools import partial
 from wvframe import WV, WohnungAction, AnlageVAction
@@ -101,6 +102,7 @@ class WvController:
                 try:
                     batch.startWork()
                 except WvException as e:
+                    #traceback.print_exc(file=sys.stdout)
                     messagebox.showerror('Verarbeitung wird abgebrochen', e.toString())
                     return
             else:
