@@ -6,11 +6,11 @@ from enum import Enum, IntEnum
 
 try:
     from editabletable import GenericEditableTable, Mappings
-    print('editabletable imported')
+    #print('editabletable imported')
     from stammdatenview import StammdatenView
-    print('stammdatenview imported')
+    #print('stammdatenview imported')
     from veranlagungview import VeranlagungView
-    print('veranlagungview imported')
+    #print('veranlagungview imported')
     # from wvcontroller import WvController
     # print('wvcontroller imported')
 except ImportError:

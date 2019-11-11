@@ -1,13 +1,12 @@
-from tkinter import *
-from tkinter import ttk
+from tkinter import Tk, ttk
 import sys
 import os
 
 scriptpath = os.path.realpath(__file__)
 scriptdir = scriptpath.replace('/main.py', '')
-print('scriptdir is: ', scriptdir)
+#print('scriptdir is: ', scriptdir)
 mywidgetspath = scriptdir.replace('Wohnungsverwaltung', 'mywidgets')
-print('mywidgets path is: ', mywidgetspath)
+#print('mywidgets path is: ', mywidgetspath)
 
 sys.path.append(mywidgetspath)
 
@@ -15,7 +14,7 @@ from wvframe import WV
 from wvcontroller import WvController
 
 def main():
-    print("path: ", sys.path)
+    #print("path: ", sys.path)
     root = Tk()
 
     if 'win' not in sys.platform:
@@ -50,7 +49,7 @@ if __name__ == '__main__':
 """
 todo
 
-- Menüpunkt "Alle Anlagen V erstellen" implementieren
+- Menüpunkt "Anlagen V für ausgewählte Wohnungen erstellen" implementieren
 
 - wenn im Baum auf einen Eintrag geklickt wird, der keine
   Wohnung ist: Tabs löschen (Methode clearView in jeden Controller
@@ -62,5 +61,4 @@ todo
   
 - Anlage V: in einem Dialog in Textform ausgeben
 
-- in Tabelle afa Spalte verwaltkosten löschen
 """
