@@ -50,11 +50,8 @@ if __name__ == '__main__':
 todo
 
 - Menüpunkt "Anlagen V für ausgewählte Wohnungen erstellen" implementieren
-
-- EditableTable: wenn Zellinhalt nicht komplett gezeigt wird,
-  ein Fenster mit dem ganzen Inhalt aufmachen, wenn der 
-  Mauszeiger über die Zelle fährt
-  
 - Anlage V: in einem Dialog in Textform ausgeben
+- Tab Page Wohnungsdaten implementieren
+- Tab Page Vermietung implementieren
 
 """

@@ -3,6 +3,7 @@
 import sys, traceback
 from tkinter import messagebox
 from functools import partial
+from typing import Dict, List
 from wvframe import WV, WohnungAction, AnlageVAction
 from business import DataProvider, WvException
 from rgcontroller import RechnungController
@@ -14,7 +15,7 @@ from stammdatencontroller import StammdatenController
 from veranlagungcontroller import VeranlagungController
 from wohnungdialogcontroller import WohnungDialogController
 from wohnungdialog import WohnungDialog
-from vjdialog import VjDialog
+from anlagevauswahldialog import AnlageVAuswahlDialog
 from interfaces import XWohnungDaten
 from anlagevcreatorbatch import AnlageVCreatorBatch
 
@@ -96,7 +97,7 @@ class WvController:
             ctrl.startWork()
 
     def onAnlageVAction(self, action: AnlageVAction) -> None:
-        def _onOk(selectedVj):
+        def _onOk(selectedVj, whgAuswahl):
             dlg.destroy()
             if action == AnlageVAction.all:
                 batch = AnlageVCreatorBatch(int(selectedVj), self._dataProvider)
@@ -111,7 +112,8 @@ class WvController:
                 pass
             return
 
-        dlg = VjDialog(self._wv)
+        whgList: List[Dict[str, str]] = self._dataProvider.getWohnungsUebersicht()
+        dlg = AnlageVAuswahlDialog(self._wv, whgList)
         dlg.registerCallback(_onOk)
 
     def _wohnungActionCompleted(self, dlg: WohnungDialog,

@@ -713,6 +713,57 @@ class Zoom(Toplevel):
 
 #++++++++++++++++++++++++++++++++++++++++++++++++
 
+class CheckableItemModel:
+    def __init__(self, text: str, check: bool = True):
+        self.text = text
+        self.check = check
+
+class CheckableItem(ttk.Frame):
+    def __init__(self, parent, text: str, check: bool = True):
+        ttk.Frame.__init__(self, parent)
+        self._text = text
+        #self._isChecked = isChecked
+        self._val = IntVar()
+        self.setChecked(check)
+        self._createGui(parent)
+
+    @classmethod
+    def fromModel(cls, checkModel: CheckableItemModel) -> None:
+        return cls(checkModel.text, checkModel.check)
+
+    def getText(self) -> str:
+        return self._text
+
+    def isChecked(self) -> str:
+        return True if self._val.get() == 1 else False
+
+    def setChecked(self, check: bool = True):
+        self._val.set(1 if check else 0)
+
+    def _createGui(self, parent):
+        #self.rowconfigure(0, weight = 1)
+        self.columnconfigure(1, weight = 1)
+        checkbtn = ttk.Checkbutton(parent, variable=self._val)
+        checkbtn.grid(column=0, row=0, sticky='w', padx=3, pady=3)
+        lbl = ttk.Label(parent, text=self._text)
+        lbl.grid(column=1, row=0, sticky='nswe', padx=6, pady=3)
+
+#++++++++++++++++++++++++++++++++++++++++++++++++
+
+class CheckableItemTable(ttk.Frame):
+    def __init__(self, parent):
+        ttk.Frame.__init__(self, parent)
+
+
+#++++++++++++++++++++++++++++++++++++++++++++++++
+
+def checkableItemTest(parent):
+    i = IntVar()
+    i.set(5)
+    print(i.get())
+    item = CheckableItem(parent, 'Wohnung 1', True)
+    item.grid(column=0, row=0, sticky='nswe', padx=5, pady=5)
+
 def onMoveOverColumn( iid: str, col: int, val: Any) -> None:
     print('onMoveOverColumn: ', iid, '/', col, ': ', val)
 
@@ -744,9 +795,10 @@ def floattest(root):
 
 def main():
     root = Tk()
-    tableTest(root)
+    #tableTest(root)
     root.rowconfigure(0, weight=1)
     root.columnconfigure(0, weight=1)
+    checkableItemTest(root)
     #floattest(root)
     #inttest(root)
 
