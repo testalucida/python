@@ -69,6 +69,9 @@ class MtlEinAusController:
                                  ''.join(('Zahlungszeiträume dürfen sich nicht überschneiden:\n',
                                           msg)))
                 else:
+                    #work around a bug in MyText: remove trailing '\n'
+                    if values['bemerkung'].endswith('\n'):
+                        values['bemerkung'] = values['bemerkung'][:-1]
                     #provide whg_id
                     values['whg_id'] = self._whg_id
                     if isUpdate:

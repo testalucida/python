@@ -46,6 +46,10 @@ class GrundsteuerController:
                 tv.showError('Validierungsfehler', msg)
 
             else: #validation ok
+                # work around a bug in MyText: remove trailing '\n'
+                if values['bemerkung'].endswith('\n'):
+                    values['bemerkung'] = values['bemerkung'][:-1]
+
                 values['whg_id'] = self._whg_id
                 #update or insert?
                 if ('gs_id' in values and values['gs_id'] > 0):

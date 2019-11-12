@@ -64,6 +64,11 @@ class RechnungController:
                 tv.showError('Validierungsfehler', msg)
             else: #validation ok
                 #provide whg_id
+
+                # work around a bug in MyText: remove trailing '\n'
+                if values['bemerkung'].endswith('\n'):
+                    values['bemerkung'] = values['bemerkung'][:-1]
+
                 valuescopy = dict(values)
                 valuescopy['whg_id'] = self._whg_id
                 if 'rg_id' in values and values['rg_id'] > 0:

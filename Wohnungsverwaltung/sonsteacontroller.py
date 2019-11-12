@@ -61,6 +61,10 @@ class SonstEinAusController:
                         values['art_id'] = k['art_id']
                         break
 
+                # work around a bug in MyText: remove trailing '\n'
+                if values['bemerkung'].endswith('\n'):
+                    values['bemerkung'] = values['bemerkung'][:-1]
+
                 #complement whg_id
                 values['whg_id'] = self._whg_id
                 #update or insert?

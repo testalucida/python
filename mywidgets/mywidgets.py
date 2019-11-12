@@ -635,17 +635,24 @@ class TableView(ttk.Treeview):
                 self._zoom.close()
             self._rowColMemo = [iid, col]
             colname = self.heading(col)['text']
-            print('mouse in column ', colname)
+            #print('mouse in column ', colname)
             colwidth = self.column(colname)['width']
             colIdx = self['columns'].index(colname)
             try:
                 val = self.item(iid)['values'][colIdx]
                 if val:
-                    f = font.Font(family='arial', size=11)  # todo: how to get actual font??
-                    (textwidth, h) = (f.measure(val), f.metrics("linespace"))
-                    print('val at cell ', colIdx, '/', iid, ': ', val)
-                    if textwidth > colwidth:
-                        self._zoom = Zoom(self, val, evt.x_root, evt.y_root)
+                    if isinstance(val, str):
+                        zoom = False
+                        if val.count('\n') > 0:
+                            zoom = True
+                        else:
+                            f = font.Font(family='arial', size=11)  # todo: how to get actual font??
+                            (textwidth, h) = (f.measure(val), f.metrics("linespace"))
+                            #print('val at cell ', colIdx, '/', iid, ': ', val)
+                            if textwidth > colwidth:
+                                zoom = True
+                        if zoom:
+                            self._zoom = Zoom(self, val, evt.x_root, evt.y_root)
             except:
                 pass
 
@@ -679,24 +686,27 @@ class Zoom(Toplevel):
         #self.bind("<Enter>", self.enter)
         self.bind("<Leave>", self.close)
         self.wm_geometry("+%d+%d" % (x, y))
-        label = Label(self, text=text, background='white', relief='solid', borderwidth=1,
+        linecount = text.count('\n') + 1
+        label = Label(self, text=text, background='white', relief='solid',
+                      borderwidth=1, justify='left', height=linecount,
                       font=("arial", "11", "normal"))
+
         label.pack(ipadx=1)
 
-    def enter(self, event=None):
-        x = y = 0
-        x, y, cx, cy = self.widget.bbox("insert")
-        x += self.widget.winfo_rootx() + 25
-        y += self.widget.winfo_rooty() + 20
-        # creates a toplevel window
-        self.tw = Toplevel(self.widget)
-        # Leaves only the label and removes the app window
-        self.tw.wm_overrideredirect(True)
-        self.tw.wm_geometry("+%d+%d" % (x, y))
-        label = Label(self.tw, text=self.text, justify='left',
-                      background='white', relief='solid', borderwidth=1,
-                      font=("arial", "10", "normal"))
-        label.pack(ipadx=1)
+    # def enter(self, event=None):
+    #     x = y = 0
+    #     x, y, cx, cy = self.widget.bbox("insert")
+    #     x += self.widget.winfo_rootx() + 25
+    #     y += self.widget.winfo_rooty() + 20
+    #     # creates a toplevel window
+    #     self.tw = Toplevel(self.widget)
+    #     # Leaves only the label and removes the app window
+    #     self.tw.wm_overrideredirect(True)
+    #     self.tw.wm_geometry("+%d+%d" % (x, y))
+    #     label = Label(self.tw, text=self.text, justify='left', anchor='w',
+    #                   background='white', relief='solid', borderwidth=1,
+    #                   font=("arial", "10", "normal"))
+    #     label.pack(ipadx=1)
 
     def close(self, event=None):
         self.destroy()
@@ -710,7 +720,7 @@ def tableTest(root):
     tv = TableView(root)
     tv.setColumns(('Spalte 1', 'Spalte 2'))
     tv.appendRow(('einseins', 'einszwei'))
-    tv.appendRow(('zweieins', 'zweizwei und noch wahnsinnig viel Text hinterher...'))
+    tv.appendRow(('zweieins', 'zweizwei und noch wahnsinnig viel Text hinterher...\nund auch noch ein Zeilenumbruch'))
     tv.grid(column=0, row=0, sticky='nswe', padx=5, pady=5)
     #tv.registerMouseOverColumnsCallback((0, 1), onMoveOverColumn)
 
