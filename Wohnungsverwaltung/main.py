@@ -52,7 +52,6 @@ if __name__ == '__main__':
 """
 todo
 
-- Menüpunkt "Anlagen V für ausgewählte Wohnungen erstellen" implementieren
 - Anlage V: in einem Dialog in Textform ausgeben
 - Tab Page Wohnungsdaten implementieren
 - Tab Page Vermietung implementieren

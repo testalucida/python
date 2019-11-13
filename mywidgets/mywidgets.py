@@ -704,6 +704,8 @@ class CheckableItem:
         self.id = id
         self.check = check
 
+#++++++++++++++++++++++++++++++++++++++++++++++++
+
 class CheckableItemList:
     def __init__(self):
         self._list = list()
@@ -714,6 +716,13 @@ class CheckableItemList:
 
     def getItems(self) -> List[CheckableItem]:
         return self._list
+
+    def isChecked(self, id: Any) -> bool:
+        for item in self._list:
+            if item.id == id:
+                return item.check
+
+        raise ValueError('CheckableItemList: id ' + str(id) + ' not found.')
 
 #++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -738,37 +747,61 @@ class CheckableItemView(ttk.Frame):
         returns id and check state of this item
         :return: (id, check)
         """
-        return (self.item.id, True if self._val.get() == 1 else False)
+        return (self._item.id, True if self._val.get() == 1 else False)
 
     def setChecked(self, check: bool = True):
         self._val.set(1 if check else 0)
 
     def _createGui(self):
-        checkbtn = ttk.Checkbutton(self, variable=self._val)
-        checkbtn.grid(column=0, row=0, sticky='nsw', padx=6, pady=3)
-        lbl = ttk.Label(self, text=self._item.text, font = self._font)
-        lbl.grid(column=1, row=0, sticky='nswe', padx=6, pady=3)
+        s = ttk.Style()
+        s.configure('my.TCheckbutton', font=('Helvetica', 12))
+        checkbtn = ttk.Checkbutton(self, variable=self._val,
+                                   text=self._item.text,
+                                   style='my.TCheckbutton')
+        checkbtn.grid(column=0, row=0, sticky='nswe', padx=6, pady=5)
+        #
+        # lbl = ttk.Label(self, text=self._item.text, font = self._font)
+        # lbl.grid(column=1, row=0, sticky='nswe', padx=6, pady=3)
 
 #++++++++++++++++++++++++++++++++++++++++++++++++
 
 class CheckableItemTableView(ttk.Frame):
-    def __init__(self, parent, checkableItemList: CheckableItemList):
+    def __init__(self, parent, itemList: CheckableItemList = None):
         ttk.Frame.__init__(self, parent)
-        self._itemList: CheckableItemList = checkableItemList
         self._itemViewList: List[CheckableItemView] = list()
         self._checkAll = None
         self._val = IntVar()
         self._val.set(-1)
         self._createGui()
+        if itemList:
+            self.setCheckableItemList(itemList)
 
     def _createGui(self):
         self._checkAll = ttk.Checkbutton(self, text = 'Alle auswählen/abwählen',
                                          command=self._onAll)
+        s = ttk.Style()
+        s.configure('my.TCheckbutton', font=('Helvetica', 12))
         self._checkAll.grid(column=0, row=0, sticky='nswe', padx=5, pady=10)
+        self._checkAll['style'] = 'my.TCheckbutton'
+
+    def setCheckableItemList(self, itemList: CheckableItemList):
+        self._itemList = itemList
         for r, item in enumerate(self._itemList.getItems()):
             itemview = CheckableItemView(self, item)
             itemview.grid(column=0, row=r+1, sticky='nswe', padx=15, pady=5)
             self._itemViewList.append(itemview)
+
+    def getCheckableItemList(self) -> CheckableItemList:
+        """
+        :return: a list of all items with their current check states
+        """
+        for itemView in self._itemViewList:
+            (id, check) = itemView.isChecked()
+            for item in self._itemList.getItems():
+                if item.id == id:
+                    item.check = check
+                    break
+        return self._itemList
 
     def _onAll(self):
         if self._val.get() < 0:
@@ -777,8 +810,6 @@ class CheckableItemTableView(ttk.Frame):
         check = True if self._val.get() == 1 else False
         for item in self._itemViewList:
             item.setChecked(check)
-
-
 
 #++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -790,7 +821,8 @@ def checkableItemTest(parent):
     itemList.appendItem('Wohnung 1', 5, True)
     itemList.appendItem('Haus 88', 3, False)
     itemList.appendItem('Gostenhofer Geisterhaus, Mendelstr. 24', 6, True)
-    itemTable = CheckableItemTableView(parent, itemList)
+    itemTable = CheckableItemTableView(parent)
+    itemTable.setCheckableItemList(itemList)
     itemTable.grid(column=0, row=0, sticky='nswe', padx=5, pady=5)
 
 def onMoveOverColumn( iid: str, col: int, val: Any) -> None:

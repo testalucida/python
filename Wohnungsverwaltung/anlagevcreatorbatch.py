@@ -4,7 +4,7 @@ from anlagevcreator import AnlageVCreator
 from business import DataProvider, WvException
 
 class AnlageVCreatorBatch:
-    def __init__(self, vj, dataprovider: DataProvider, whgList: List[Dict[str, str]] = None):
+    def __init__(self, vj, dataprovider: DataProvider, whgList: List[Dict[str, str]]):
         self._vj = vj
         self._dataProvider = dataprovider
         self._whgList: List[Dict[str, str]] = whgList
@@ -26,9 +26,6 @@ class AnlageVCreatorBatch:
     def startWork(self):
         anlcreator = AnlageVCreator(self._vj, self._dataProvider)
         anl_nr = 0
-        if not self._whgList or len(self._whgList) < 1:
-            self._whgList: List[Dict[str, str]] = self._dataProvider.\
-                                                  getWohnungsUebersicht()
         for whg in self._whgList:
             anl_nr += 1
             whg_id = int(whg['whg_id'])

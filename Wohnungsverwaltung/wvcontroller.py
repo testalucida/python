@@ -4,7 +4,7 @@ import sys, traceback
 from tkinter import messagebox
 from functools import partial
 from typing import Dict, List
-from wvframe import WV, WohnungAction, AnlageVAction
+from wvframe import WV, WohnungAction
 from business import DataProvider, WvException
 from rgcontroller import RechnungController
 from mtleacontroller import MtlEinAusController
@@ -18,6 +18,7 @@ from wohnungdialog import WohnungDialog
 from anlagevauswahldialog import AnlageVAuswahlDialog
 from interfaces import XWohnungDaten
 from anlagevcreatorbatch import AnlageVCreatorBatch
+from mywidgets import CheckableItemList
 
 class WvController:
     def __init__(self, wv: WV):
@@ -96,24 +97,38 @@ class WvController:
                 partial(self._wohnungActionCompleted, dlg))
             ctrl.startWork()
 
-    def onAnlageVAction(self, action: AnlageVAction) -> None:
-        def _onOk(selectedVj, whgAuswahl):
+    def onAnlageVAction(self) -> None:
+        def _onOk(selectedVj, whgItemList: CheckableItemList):
+            def _removeWhgFromList(whg_id: int):
+                for whg in whgList:
+                    if int(whg['whg_id']) == whg_id:
+                        whgList.remove(whg)
+                        return
+                raise ValueError('_removeWhgFromList: whg_id ' +
+                                 str(whg_id) + ' not found.')
+
             dlg.destroy()
-            if action == AnlageVAction.all:
-                batch = AnlageVCreatorBatch(int(selectedVj), self._dataProvider)
-                try:
-                    batch.startWork()
-                except WvException as e:
-                    #traceback.print_exc(file=sys.stdout)
-                    messagebox.showerror('Verarbeitung wird abgebrochen', e.toString())
-                    return
-            else:
-                # todo
-                pass
-            return
+            #remove the non-checked wohnungen:
+            for whgItem in whgItemList.getItems():
+                if not whgItem.check:
+                    _removeWhgFromList(whgItem.id)
+
+            batch = AnlageVCreatorBatch(int(selectedVj), self._dataProvider, whgList)
+            try:
+                batch.startWork()
+            except WvException as e:
+                #traceback.print_exc(file=sys.stdout)
+                messagebox.showerror('Verarbeitung wird abgebrochen', e.toString())
+                return
+
 
         whgList: List[Dict[str, str]] = self._dataProvider.getWohnungsUebersicht()
-        dlg = AnlageVAuswahlDialog(self._wv, whgList)
+        itemList = CheckableItemList()
+        for whg in whgList:
+            bez = whg['ort'] + ', ' + whg['strasse'] + ' / ' + whg['whg_bez']
+            itemList.appendItem(bez, int(whg['whg_id']), True)
+
+        dlg = AnlageVAuswahlDialog(self._wv, itemList)
         dlg.registerCallback(_onOk)
 
     def _wohnungActionCompleted(self, dlg: WohnungDialog,
