@@ -1,9 +1,9 @@
 from tkinter import *
 from tkinter import ttk, scrolledtext, Text
 from tkinter import font
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Tuple
 from abc import ABC, abstractmethod
-
+from collections import UserList
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 class ToolTip(object):
@@ -693,66 +693,91 @@ class Zoom(Toplevel):
 
         label.pack(ipadx=1)
 
-    # def enter(self, event=None):
-    #     x = y = 0
-    #     x, y, cx, cy = self.widget.bbox("insert")
-    #     x += self.widget.winfo_rootx() + 25
-    #     y += self.widget.winfo_rooty() + 20
-    #     # creates a toplevel window
-    #     self.tw = Toplevel(self.widget)
-    #     # Leaves only the label and removes the app window
-    #     self.tw.wm_overrideredirect(True)
-    #     self.tw.wm_geometry("+%d+%d" % (x, y))
-    #     label = Label(self.tw, text=self.text, justify='left', anchor='w',
-    #                   background='white', relief='solid', borderwidth=1,
-    #                   font=("arial", "10", "normal"))
-    #     label.pack(ipadx=1)
-
     def close(self, event=None):
         self.destroy()
 
 #++++++++++++++++++++++++++++++++++++++++++++++++
 
-class CheckableItemModel:
-    def __init__(self, text: str, check: bool = True):
+class CheckableItem:
+    def __init__(self, text: str, id: Any, check: bool = True):
         self.text = text
+        self.id = id
         self.check = check
 
-class CheckableItem(ttk.Frame):
-    def __init__(self, parent, text: str, check: bool = True):
+class CheckableItemList:
+    def __init__(self):
+        self._list = list()
+
+    def appendItem(self, text: str, id: Any, check: bool = True):
+        item = CheckableItem(text, id, check)
+        self._list.append(item)
+
+    def getItems(self) -> List[CheckableItem]:
+        return self._list
+
+#++++++++++++++++++++++++++++++++++++++++++++++++
+
+class CheckableItemView(ttk.Frame):
+    """
+    represents one row of CheckableItemTableView:
+    - a checkbox cell
+    - a text cell
+    - a (hidden) id to unambiguously identify the displayed text
+    """
+    def __init__(self, parent, item: CheckableItem):
         ttk.Frame.__init__(self, parent)
-        self._text = text
-        #self._isChecked = isChecked
+        self._item = item
         self._val = IntVar()
-        self.setChecked(check)
-        self._createGui(parent)
+        self.setChecked(item.check)
+        self._font = ("arial", "12", "normal")
+        self.columnconfigure(1, weight=1)
+        self._createGui()
 
-    @classmethod
-    def fromModel(cls, checkModel: CheckableItemModel) -> None:
-        return cls(checkModel.text, checkModel.check)
-
-    def getText(self) -> str:
-        return self._text
-
-    def isChecked(self) -> str:
-        return True if self._val.get() == 1 else False
+    def isChecked(self) -> Tuple[int, bool]:
+        """
+        returns id and check state of this item
+        :return: (id, check)
+        """
+        return (self.item.id, True if self._val.get() == 1 else False)
 
     def setChecked(self, check: bool = True):
         self._val.set(1 if check else 0)
 
-    def _createGui(self, parent):
-        #self.rowconfigure(0, weight = 1)
-        self.columnconfigure(1, weight = 1)
-        checkbtn = ttk.Checkbutton(parent, variable=self._val)
-        checkbtn.grid(column=0, row=0, sticky='w', padx=3, pady=3)
-        lbl = ttk.Label(parent, text=self._text)
+    def _createGui(self):
+        checkbtn = ttk.Checkbutton(self, variable=self._val)
+        checkbtn.grid(column=0, row=0, sticky='nsw', padx=6, pady=3)
+        lbl = ttk.Label(self, text=self._item.text, font = self._font)
         lbl.grid(column=1, row=0, sticky='nswe', padx=6, pady=3)
 
 #++++++++++++++++++++++++++++++++++++++++++++++++
 
-class CheckableItemTable(ttk.Frame):
-    def __init__(self, parent):
+class CheckableItemTableView(ttk.Frame):
+    def __init__(self, parent, checkableItemList: CheckableItemList):
         ttk.Frame.__init__(self, parent)
+        self._itemList: CheckableItemList = checkableItemList
+        self._itemViewList: List[CheckableItemView] = list()
+        self._checkAll = None
+        self._val = IntVar()
+        self._val.set(-1)
+        self._createGui()
+
+    def _createGui(self):
+        self._checkAll = ttk.Checkbutton(self, text = 'Alle auswählen/abwählen',
+                                         command=self._onAll)
+        self._checkAll.grid(column=0, row=0, sticky='nswe', padx=5, pady=10)
+        for r, item in enumerate(self._itemList.getItems()):
+            itemview = CheckableItemView(self, item)
+            itemview.grid(column=0, row=r+1, sticky='nswe', padx=15, pady=5)
+            self._itemViewList.append(itemview)
+
+    def _onAll(self):
+        if self._val.get() < 0:
+            self._checkAll['variable'] = self._val
+            self._val.set(1)
+        check = True if self._val.get() == 1 else False
+        for item in self._itemViewList:
+            item.setChecked(check)
+
 
 
 #++++++++++++++++++++++++++++++++++++++++++++++++
@@ -761,8 +786,12 @@ def checkableItemTest(parent):
     i = IntVar()
     i.set(5)
     print(i.get())
-    item = CheckableItem(parent, 'Wohnung 1', True)
-    item.grid(column=0, row=0, sticky='nswe', padx=5, pady=5)
+    itemList = CheckableItemList()
+    itemList.appendItem('Wohnung 1', 5, True)
+    itemList.appendItem('Haus 88', 3, False)
+    itemList.appendItem('Gostenhofer Geisterhaus, Mendelstr. 24', 6, True)
+    itemTable = CheckableItemTableView(parent, itemList)
+    itemTable.grid(column=0, row=0, sticky='nswe', padx=5, pady=5)
 
 def onMoveOverColumn( iid: str, col: int, val: Any) -> None:
     print('onMoveOverColumn: ', iid, '/', col, ': ', val)
