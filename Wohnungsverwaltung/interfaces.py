@@ -52,6 +52,31 @@ class XWohnungDaten(XInterface):
             dic = self.__dict__
         XInterface.__init__(self, dic)
 
+class XWohnungDetails(XInterface):
+    def __init__(self, dic: Dict[str, str] = None):
+        self.whg_id = -1
+        self.strasse = ''
+        self.plz = ''
+        self.ort = ''
+        self.whg_bez = ''
+        self.angeschafft_am = ''
+        self.einhwert_az = ''
+        self.zimmer = 0
+        self.ebk = ''
+        self.balkon = ''
+        self.heizung = ''
+        self.zusatz = ''
+        self.qm = ''
+        self.bemerkung = ''
+        self.tageslichtbad = ''
+        self.badewanne = ''
+        self.dusche = ''
+        self.bidet = ''
+        self.kellerabteil = ''
+        self.aufzug = ''
+        self.garage = ''
+        XInterface.__init__(self, dic)
+
 class XImmoStammdaten(XInterface):
     def __init__(self, dic: Dict[str, str]):
         self.name: str = ''

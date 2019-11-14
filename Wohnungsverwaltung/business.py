@@ -12,7 +12,8 @@ from interfaces import \
     XHausgeldAdjustment, XHausgeldAdjustmentList, \
     XSonstigeKosten, XSonstigeKostenList, \
     XZurechnung, XImmoStammdaten, XMtlEinnahmen, XMtlEinnahmenList, \
-    XAfa, XWohnungDaten, XVermieter, XVerwalter, XVermieterList, XVerwalterList
+    XAfa, XWohnungDaten, XVermieter, XVerwalter, XVermieterList, XVerwalterList, \
+    XWohnungDetails
 
 # def testRequests():
 #     s = requests.Session() #create a persistent session
@@ -138,11 +139,15 @@ class DataProvider:
         if whg_list is None: whg_list = []
         return whg_list
 
-    def getWohnungDetails(self, whg_id ):
+    def getWohnungDetails(self, whg_id ) -> XWohnungDetails:
         resp = self.__session.\
-            get(Server.SERVER + 'business.php?q=detail&id=' + whg_id + '&user=' +
+            get(Server.SERVER + 'business.php?q=whg_detail&id=' + str(whg_id) + '&user=' +
                 self.__user )
-        return resp
+        data: dict = self._getReadRetValOrRaiseException(resp)
+        if data['angeschafft_am']:
+            data['angeschafft_am'] = datehelper.convertIsoToEur(data['angeschafft_am'])
+        details = XWohnungDetails(data)
+        return details
 
     def getWohnungIdentifikation(self, whg_id: int ):
         resp = self.__session.\
