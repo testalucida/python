@@ -1,4 +1,5 @@
 import json
+import utils
 
 class ColumnDefsProvider:
     @staticmethod
@@ -11,24 +12,24 @@ class ColumnDefsProvider:
     @staticmethod
     def getRechnungDefs() -> list:
         columnsDefs = ColumnDefsProvider._getWidgetDefs(
-            "/home/martin/Projects/python/Wohnungsverwaltung/rechnung.json")
+            utils.getScriptPath() + "/rechnung.json")
         return columnsDefs
 
     @staticmethod
     def getMonatlicheEinAusDefs() -> list:
         columnsDefs = ColumnDefsProvider._getWidgetDefs(
-            "/home/martin/Projects/python/Wohnungsverwaltung/monatlicheeinaus.json")
+            utils.getScriptPath() + "/monatlicheeinaus.json")
         return columnsDefs
 
     @staticmethod
     def getSonstigeEinAusDefs() -> list:
         columnsDefs = ColumnDefsProvider._getWidgetDefs(
-            "/home/martin/Projects/python/Wohnungsverwaltung/sonstigeeinaus.json")
+            utils.getScriptPath() + "/sonstigeeinaus.json")
         return columnsDefs
 
     @staticmethod
     def getGrundsteuerDefs() -> list:
         columnsDefs = ColumnDefsProvider._getWidgetDefs(
-            "/home/martin/Projects/python/Wohnungsverwaltung/grundsteuer.json")
+            utils.getScriptPath() + "/grundsteuer.json")
         return columnsDefs
 

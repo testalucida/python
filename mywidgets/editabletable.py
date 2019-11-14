@@ -2,6 +2,8 @@ from tkinter import *
 from tkinter import ttk, messagebox
 from mywidgets import TableView, ToolTip, MyText
 from actions import Action
+import paths
+#from paths import *
 #from dataclasses import dataclass #comes with python 3.7
 
 #xxxdefinition.json
@@ -438,22 +440,24 @@ class GenericEditRow(ttk.Frame):
                     relief="flat",
                     borderwith=0 )
 
+        imagepath = paths.getMyWidgetsImagePath()
         # Button "Übernehmen"
-        self.okpng = PhotoImage(file="/home/martin/Projects/python/mywidgets/images/ok_25x25.png")
+        self.okpng = PhotoImage(file=imagepath + "/ok_25x25.png")
+        #self.okpng = PhotoImage(file="/home/martin/Projects/python/mywidgets/images/ok_25x25.png")
         self.okBtn = ttk.Button(btnFrame, image=self.okpng, style="My.TButton",
                                 command=self._onOk)
         self.okBtn.grid(column=0, row=0, sticky=(N, W))
         ToolTip(self.okBtn, 'Werte in Tabelle übernehmen')
 
         # Button "Cancel"
-        self.cancelpng = PhotoImage(file="/home/martin/Projects/python/mywidgets/images/reset_25x25.png")
+        self.cancelpng = PhotoImage(file=imagepath + "/reset_25x25.png")
         self.cancelBtn = ttk.Button(btnFrame, image=self.cancelpng, style="My.TButton",
                                    command=self._onCancel)
         self.cancelBtn.grid(column=1, row=0, sticky=(N, W))
         ToolTip(self.cancelBtn, 'Änderung abbrechen')
 
         # Button "Löschen"
-        self.binpng = PhotoImage(file="/home/martin/Projects/python/mywidgets/images/bin_25x25_3.png")
+        self.binpng = PhotoImage(file=imagepath + "/bin_25x25_3.png")
         self.deleteBtn = ttk.Button(btnFrame, image=self.binpng, style="My.TButton",
                                     command=self._onDelete)
         self.deleteBtn.grid(column=2, row=0, sticky=(N, W))

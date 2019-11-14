@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk
 from enum import Enum, IntEnum
+import utils
 # import sys
 # sys.path.append('/home/martin/Projects/python/mywidgets')
 
@@ -228,7 +229,8 @@ class WV(ttk.Frame):
 
         tree = self._tree
         tree.delete(*tree.get_children())
-        self.hauspng = PhotoImage(file="/home/martin/Projects/python/Wohnungsverwaltung/images/haus_18x16.png")
+        self.hauspng = PhotoImage(file=utils.getWvImagePath() + "/haus_18x16.png")
+        #self.hauspng = PhotoImage(file="/home/martin/Projects/python/Wohnungsverwaltung/images/haus_18x16.png")
         top = tree.insert('', 0, text='Alle Wohnungen')
         ort =  stra = bez = ''
         ort_item = stra_item = bez_item = None

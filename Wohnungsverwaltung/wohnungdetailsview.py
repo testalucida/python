@@ -1,7 +1,7 @@
 from tkinter import *
 from tkinter import ttk
 import sys
-sys.path.append('/home/martin/Projects/python/mywidgets')
+#sys.path.append('/home/martin/Projects/python/mywidgets')
 try:
     from mywidgets import TextEntry, FloatEntry, MyLabel, MyCombobox
     from mycalendar import DateEntry

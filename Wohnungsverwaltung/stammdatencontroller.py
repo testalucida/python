@@ -1,6 +1,5 @@
-from tkinter import messagebox
-from typing import Dict, List
-from functools import partial
+from libs import *
+import utils
 from business import DataProvider, DataError, ServiceException
 from vermietercontroller import VermieterController
 from verwaltercontroller import VerwalterController, VerwalterModifiedAction
@@ -10,7 +9,7 @@ from stammdatenview import StammdatenView, StammdatenAction
 from interfaces import XWohnungDaten, XVerwalter, XVermieter, \
     XVermieterList, XVerwalterList
 import datehelper
-
+print(utils.getScriptPath())
 class StammdatenController:
     def __init__(self, dataProvider: DataProvider,
                  stammdatenView: StammdatenView):

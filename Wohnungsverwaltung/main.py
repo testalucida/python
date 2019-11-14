@@ -1,17 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
-from tkinter import Tk, ttk
-import sys
-import os
-
-scriptpath = os.path.realpath(__file__)
-scriptdir = scriptpath.replace('/main.py', '')
-#print('scriptdir is: ', scriptdir)
-mywidgetspath = scriptdir.replace('Wohnungsverwaltung', 'mywidgets')
-#print('mywidgets path is: ', mywidgetspath)
-
-sys.path.append(mywidgetspath)
+from libs import *
+from utils import *
 
 from wvframe import WV
 from wvcontroller import WvController
@@ -26,10 +16,7 @@ def main():
 
     wv = WV(root)
     wv.setNotebookTab(0)
-    firstshow: bool = True
 
-    global scriptpath
-    isTest = True if 'Projects/python' in scriptpath else False
     ctrl = WvController(wv)
     ctrl.startWork()
 

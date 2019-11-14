@@ -6,8 +6,8 @@ from enum import IntEnum
 from functools import partial
 from copy import deepcopy
 
-import sys
-sys.path.append('/home/martin/Projects/python/mywidgets')
+#import sys
+#sys.path.append('/home/martin/Projects/python/mywidgets')
 try:
     from mywidgets import TextEntry, FloatEntry, MyLabel, MyCombobox
     from interfaces import XWohnungDaten, XVermieter, XVerwalter

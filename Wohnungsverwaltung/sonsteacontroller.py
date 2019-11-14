@@ -112,8 +112,8 @@ class SonstEinAusController:
 def test():
     from tkinter import  Tk
     from tkinter import ttk
-    import sys
-    sys.path.append('/home/martin/Projects/python/mywidgets')
+    #import sys
+    #sys.path.append('/home/martin/Projects/python/mywidgets')
     try:
         from editabletable import GenericEditableTable, Mappings
     except ImportError:

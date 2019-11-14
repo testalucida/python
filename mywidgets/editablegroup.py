@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from functools import partial
 from enum import Enum, IntEnum
 from mywidgets import MyCombobox, TextEntry, MyLabel, ToolTip
+import paths
 
 EditableGroupAction = IntEnum('EditableGroupAction', 'new edit choose save')
 
@@ -25,29 +26,30 @@ class EditSaveFunctionBar(ttk.Frame):
                     relief="flat",
                     borderwidth=1)
 
+        imagepath = paths.getMyWidgetsImagePath()
         # Button "Choose"
-        self.dropdownpng = PhotoImage(file="/home/martin/Projects/python/mywidgets/images/dropdown_22x22.png")
+        self.dropdownpng = PhotoImage(file=imagepath + "/dropdown_22x22.png")
         self.chooseBtn = ttk.Button(self, image=self.dropdownpng, style="My.TButton",
                                     command=partial(self._callback, EditableGroupAction.choose))
         self.chooseBtn.grid(column=0, row=0, sticky=(S, E))
         ToolTip(self.chooseBtn, 'Gewünschten Datensatz aus einer Liste wählen')
 
         # Button "Edit"
-        self.editpng = PhotoImage(file="/home/martin/Projects/python/mywidgets/images/edit_22x22.png")
+        self.editpng = PhotoImage(file=imagepath + "/edit_22x22.png")
         self.editBtn = ttk.Button(self, image=self.editpng, style="My.TButton",
                                   command=partial(self._callback, EditableGroupAction.edit))
         self.editBtn.grid(column=1, row=0, sticky=(S, E))
         ToolTip(self.editBtn, 'Daten ändern')
 
         # Button "New"
-        self.newpng = PhotoImage(file="/home/martin/Projects/python/mywidgets/images/plus_22x22.png")
+        self.newpng = PhotoImage(file=imagepath + "/plus_22x22.png")
         self.newBtn = ttk.Button(self, image=self.newpng, style="My.TButton",
                                  command=partial(self._callback, EditableGroupAction.new))
         self.newBtn.grid(column=2, row=0, sticky=(S, E))
         ToolTip(self.newBtn, 'Neuen Datensatz anlegen')
 
         # Button "Save"
-        self.savepng = PhotoImage(file="/home/martin/Projects/python/mywidgets/images/save_22x22.png")
+        self.savepng = PhotoImage(file=imagepath + "/save_22x22.png")
         self.saveBtn = ttk.Button(self, image=self.savepng, style="My.TButton",
                                   command=partial(self._callback, EditableGroupAction.save))
         self.saveBtn.grid(column=3, row=0, sticky=(S, E))
@@ -108,28 +110,28 @@ class EditableGroup(ttk.Frame, ABC):
                     borderwith=0 )
 
         # Button "Choose"
-        self.dropdownpng = PhotoImage(file="/home/martin/Projects/python/mywidgets/images/dropdown_22x22.png")
+        self.dropdownpng = PhotoImage(file=imagepath + "/dropdown_22x22.png")
         self.chooseBtn = ttk.Button(frame, image=self.dropdownpng, style="My.TButton",
                                   command=partial(self._onAction, EditableGroupAction.choose))
         self.chooseBtn.grid(column=0, row=0, sticky=(N, W))
         ToolTip(self.chooseBtn, 'Gewünschten Datensatz aus einer Liste wählen')
 
         # Button "Edit"
-        self.editpng = PhotoImage(file="/home/martin/Projects/python/mywidgets/images/edit_22x22.png")
+        self.editpng = PhotoImage(file=imagepath + "/edit_22x22.png")
         self.editBtn = ttk.Button(frame, image=self.editpng, style="My.TButton",
                                   command=partial(self._onAction, EditableGroupAction.edit))
         self.editBtn.grid(column=1, row=0, sticky=(N, W))
         ToolTip(self.editBtn, 'Daten ändern')
 
         # Button "New"
-        self.newpng = PhotoImage(file="/home/martin/Projects/python/mywidgets/images/plus_22x22.png")
+        self.newpng = PhotoImage(file=imagepath + "/plus_22x22.png")
         self.newBtn = ttk.Button(frame, image=self.newpng, style="My.TButton",
                                  command=partial(self._onAction, EditableGroupAction.new))
         self.newBtn.grid(column=2, row=0, sticky=(N, W))
         ToolTip(self.newBtn, 'Neuen Datensatz anlegen')
 
         # Button "Save"
-        self.savepng = PhotoImage(file="/home/martin/Projects/python/mywidgets/images/save_22x22.png")
+        self.savepng = PhotoImage(file=imagepath + "/save_22x22.png")
         self.saveBtn = ttk.Button(frame, image=self.savepng, style="My.TButton",
                                   command=partial(self._onAction, EditableGroupAction.save))
         self.saveBtn.grid(column=3, row=0, sticky=(N, W))

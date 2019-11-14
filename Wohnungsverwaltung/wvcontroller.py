@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import sys, traceback
-from tkinter import messagebox
-from functools import partial
-from typing import Dict, List
+import libs
+import utils
 from wvframe import WV, WohnungAction
 from business import DataProvider, WvException
 from rgcontroller import RechnungController
@@ -70,14 +68,15 @@ class WvController:
                 self._stammdatencontroller.onWohnungDatenChangedByOthers)
 
     def _connect(self):
-        import os
-        #check if a configuration file exists. If so, connect remote, else local.
-        scriptpath = os.path.realpath(__file__)
-        scriptdir = scriptpath.replace('/wvcontroller.py', '')
-        configfile = scriptdir + '/connect_remote'
-        user = 'test'
-        if os.path.isfile(configfile): user = 'd02bacec'
-        self._dataProvider.connect(user)
+        # import os
+        # #check if a configuration file exists. If so, connect remote, else local.
+        # scriptpath = os.path.realpath(__file__)
+        # scriptdir = scriptpath.replace('/wvcontroller.py', '')
+        # configfile = scriptdir + '/connect_remote'
+        # user = 'test'
+        # if os.path.isfile(configfile): user = 'd02bacec'
+        #self._dataProvider.connect(user)
+        self._dataProvider.connect(utils.getUser())
 
     def _loadTree(self):
         whg_list = self._dataProvider.getWohnungsUebersicht()
