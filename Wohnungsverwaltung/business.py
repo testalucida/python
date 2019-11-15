@@ -900,8 +900,11 @@ class DataProvider:
 #
 if __name__ == '__main__':
     prov = DataProvider()
-    prov.connect('d02bacec')
-    prov.getAnlageVData_49_sonstiges(1, 2018)
+    prov.connect('test')
+
+    data: XWohnungDetails = prov.getWohnungDetails(1)
+
+    #prov.getAnlageVData_49_sonstiges(1, 2018)
     #xvwlist: XVerwalterList = prov.getVerwalterListe()
     #xvmlist: XVermieterList = prov.getVermieterListe()
     #xdata: XWohnungDaten = prov.getWohnungMinStammdaten(1)

@@ -59,10 +59,13 @@ class XWohnungDetails(XInterface):
         self.plz = ''
         self.ort = ''
         self.whg_bez = ''
+        self.etage = 0
         self.angeschafft_am = ''
         self.einhwert_az = ''
-        self.zimmer = 0
+        self.zimmer = 0.0
+        self.kueche = ''
         self.ebk = ''
+        self.kuechengeraete = ''
         self.balkon = ''
         self.heizung = ''
         self.zusatz = ''
