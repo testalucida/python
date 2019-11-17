@@ -168,6 +168,11 @@ class ModifyTracer:
         self._cbfnc = None
 
     def registerModifyCallback(self, cbfnc) -> None:
+        #the given callback function has to take 4 arguments:
+        #  -  widget: Widget,
+        #  -  name: str,
+        #  -  index: str,
+        #  -  mode: str
         self._cbfnc = cbfnc
 
     def _onModify(self, name, index, mode):
@@ -212,6 +217,17 @@ class MyText(Text, GetterSetter):
     def __init__(self, parent):
         Text.__init__(self, parent)
         self._myId = None
+        self._cbfnc = None
+        self.bind('<<Modified>>', self._onModify)
+
+    def registerModifyCallback(self, cbfnc) -> None:
+        #the given callback function has to take 1 argument:
+        #  -  evt: Event
+        self._cbfnc = cbfnc
+
+    def _onModify(self, evt: Event):
+        if self._cbfnc:
+            self._cbfnc(self, evt)
 
     def getValue(self) -> any:
         return self.get('1.0', 'end')

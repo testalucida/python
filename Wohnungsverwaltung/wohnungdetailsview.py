@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk
 from interfaces import XWohnungDetails
+from mywidgets import MyText
 
 try:
     from mywidgets import TextEntry, IntEntry, FloatEntry, MyLabel, MyCombobox
@@ -14,6 +15,10 @@ class WohnungDetailsView(ttk.Frame):
         ttk.Frame.__init__(self, parent)
         self._details: XWohnungDetails = None
         self._lblIdent = None
+
+        self._style_labelframe = None
+        self._stylename_labelframe = None
+
         # Allgemein +++++++++++
         self._cboEtage = None
         self._ieAnteil = None
@@ -26,6 +31,7 @@ class WohnungDetailsView(ttk.Frame):
         self._ivarEbk = IntVar()
         self._cboKuechenGeraete = None
         self._cbTageslichtbad = None
+        self._ivarTageslicht = IntVar()
         self._cbDusche = None
         self._ivarDusche = IntVar()
         self._cbWanne = None
@@ -40,18 +46,41 @@ class WohnungDetailsView(ttk.Frame):
         self._cboGarage = None
         self._cbAufzug = None
         self._ivarAufzug = IntVar()
-        self._createUI()
-        self.columnconfigure(0, weight=1)
         # Bemerkumg +++++++++++
         self._txtBemerkung = None
+        # Buttons ++++++++++++++
+        self._btnOk = None
+        # called after any modification
+        self._isModified = False
+
+        self.columnconfigure(0, weight=1)
+        self._createUI()
+        self._setIntVarTracebacks()
+
+    def _setIntVarTracebacks(self):
+        d = self.__dict__
+        for k, v in d.items():
+            if isinstance(v, IntVar):
+                v.trace('w', self._onModified)
+
+    def _onModified(self, *args):
+        print('_onModified')
+        self._isModified = True
+        self.setOkButtonEnabled(True)
+
+    def setOkButtonEnabled(self, enabled: bool):
+        self._btnOk['state'] = 'normal' if enabled else 'disabled'
 
     def _createUI(self):
         padx = pady = 5
         self._lblIdent = self._createWohnungIdent(padx, pady)
+        self._style_labelframe = ttk.Style()
+        self._style_labelframe.\
+            configure('my.TLabelframe.Label', font=('courier', 13, 'bold'))
         self._createAllgemeinFrame(1, padx, pady)
         self._createAusstattungFrame(2, padx, pady)
         self._createZubehoerFrame(3, padx, pady)
-        self._createBemerkung(4, padx, pady)
+        self._createBemerkungFrame(4, padx, pady)
         self._createButtons(5, padx, pady)
 
     def _createWohnungIdent(self, padx, pady) -> ttk.Label:
@@ -65,67 +94,97 @@ class WohnungDetailsView(ttk.Frame):
         return lbl
 
     def _createAllgemeinFrame(self, row, padx, pady):
-        lf = ttk.Labelframe(self, text='Allgemeine Daten')
-        lf.grid(column=0, row=row, sticky='nswe', padx=padx, pady=pady)
+        lf = ttk.Labelframe(self, text='Allgemeine Daten', style='my.TLabelframe')
+        lf.grid(column=0, row=row, sticky='nswe', padx=padx, pady=(pady+8, pady))
 
+        ### Combo und Label für Etage
         col = 0
         cbo = MyCombobox(lf)
         cbo.setItems((1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15))
         cbo.setWidth(3)
+        cbo.registerModifyCallback(self._onModified)
         cbo.grid(column=col, row=0, sticky='nswe', padx=padx, pady=pady)
+
         col += 1
         self._cboEtage = cbo
         MyLabel(lf, '. Etage', col, 0, 'nswe', 'w', (0,padx), pady)
-        col += 1
 
+        #### Entry und Label für qm
+        col += 1
         ie = IntEntry(lf)
         ie.setWidth(3)
+        ie.registerModifyCallback(self._onModified)
         ie.grid(column=col, row=0, sticky='nswe', padx=padx, pady=pady)
-        col += 1
         self._ieQm = ie
-        lbl = MyLabel(lf, 'qm', col, 0, 'nswe', 'w', (0,padx), pady)
-        col += 1
 
+        col += 1
+        lbl = MyLabel(lf, 'qm', col, 0, 'nswe', 'w', (0,padx), pady)
+
+        ### Combo und Label für Zimmer
+        col += 1
         cbo = MyCombobox(lf)
         cbo.setItems((1, 1.5, 2, 2.5, 3, 3.5, 4, 5))
         cbo.setIndex(2)
         cbo.setWidth(3)
+        cbo.registerModifyCallback(self._onModified)
         cbo.grid(column=col, row=0, sticky='nswe', padx=padx, pady=pady)
-        col += 1
         self._cboZimmer = cbo
-        MyLabel(lf, 'Zimmer', col, 0, 'nswe', 'w', (0,padx), pady)
-        col += 1
 
+        col += 1
+        MyLabel(lf, 'Zimmer', col, 0, 'nswe', 'w', (0,padx), pady)
+
+        ### Entry und Label für Anteile
+        col += 1
         ie = IntEntry(lf)
         ie.setWidth(3)
         ie.grid(column=col, row=0, sticky='nswe', padx=padx, pady=pady)
-        col += 1
+        ie.registerModifyCallback(self._onModified)
         self._ieAnteil = ie
+
+        col += 1
         MyLabel(lf, 'Anteile am Gesamtobjekt', col, 0, 'nswe', 'w', (0,padx), pady)
 
-        lbl = MyLabel(lf, 'IBAN der WEG ', 0, 1, 'nswe', 'w', padx, pady)
+        ### neue Zeile
+        ### Checkbutton für Aufzug
+        col = 0
+        cb = ttk.Checkbutton(lf, text='Aufzug im Haus', variable=self._ivarAufzug)
+        cb.grid(column=col, row=1, columnspan=2, sticky='nswe', padx=padx, pady=pady)
+        self._cbAufzug = cb
+
+        ### neue Zeile
+        ### Label und Entry für IBAN
+        col = 0
+        lbl = MyLabel(lf, 'IBAN der WEG ', 0, 2, 'nswe', 'w', padx, pady)
         lbl.grid(columnspan=2)
-        te = TextEntry(lf, 2, 1,'nswe', (padx), pady )
+
+        col += 2
+        te = TextEntry(lf, col, 2,'nswe', (padx), pady )
+        te.registerModifyCallback(self._onModified)
         te.grid(columnspan=5)
         self._teIbanWEG = te
 
     def _createAusstattungFrame(self, row, padx, pady):
-        lf = ttk.Labelframe(self, text='Ausstattung der Wohnung')
-        lf.grid(column=0, row=row, sticky='nswe', padx=padx, pady=pady)
+        lf = ttk.Labelframe(self, text='Ausstattung der Wohnung', style='my.TLabelframe')
+        lf.grid(column=0, row=row, sticky='nswe', padx=padx, pady=(pady+8, pady))
         self._createKuecheLabelframe(lf, padx, pady)
         self._createBadLabelframe(lf, padx, pady)
+        self._createHeizungFrame(lf, 1, padx, pady)
 
     def _createKuecheLabelframe(self, parent, padx, pady):
-        lfKueche = ttk.Labelframe(parent, text='Küche')
+        s = ttk.Style()
+        s.configure('ital.TLabelframe.Label', font=('courier', 13, 'italic'))
+        lfKueche = ttk.Labelframe(parent, text='Küche', style='ital.TLabelframe')
         lfKueche.grid(column=0, row=0, sticky='nswe', padx=padx, pady=pady)
         c = r = 0
         padx = (1, padx)
+
         ##### Art der Küche
         MyLabel(lfKueche, 'Küche ist', c, r, 'nswe', 'w', padx, pady)
         c += 1
         cbo = MyCombobox(lfKueche)
         cbo.setItems(('', 'Küchenzeile im Wohnraum', 'eigener Raum', 'Wohnküche'))
         cbo.setIndex(0)
+        cbo.registerModifyCallback(self._onModified)
         cbo.grid(column=c, row=r, columnspan=3, sticky='nswe', padx=padx, pady=pady)
         self._cboKueche = cbo
 
@@ -144,41 +203,115 @@ class WohnungDetailsView(ttk.Frame):
                       'Herd, Kühlschrank, Geschirrspüler'))
         cbo.setWidth(26)
         cbo.setIndex(0)
+        cbo.registerModifyCallback(self._onModified)
         cbo.grid(column=c, row=r, sticky='nswe', padx=padx, pady=pady)
         self._cboKuechenGeraete = cbo
 
     def _createBadLabelframe(self, parent, padx, pady):
-        lfBad = ttk.Labelframe(parent, text='Bad')
+        lfBad = ttk.Labelframe(parent, text='Bad', style='ital.TLabelframe')
         lfBad.grid(column=1, row=0, sticky='nswe', padx=padx, pady=pady)
         c = r = 0
         padx = (1, padx)
 
+        cb = ttk.Checkbutton(lfBad, text='Tageslichtbad', variable=self._ivarTageslicht)
+        cb.grid(column=c, row=r, columnspan=2, sticky='nswe', padx=padx, pady=pady)
+        self._cbTageslichtbad
+
+        r += 1
+        cb = ttk.Checkbutton(lfBad, text='Dusche', variable=self._ivarDusche)
+        cb.grid(column=c, row=r, sticky='nswe', padx=padx, pady=pady)
+        self._cbDusche
+
+        c += 1
+        cb = ttk.Checkbutton(lfBad, text='Wanne', variable=self._ivarWanne)
+        cb.grid(column=c, row=r, sticky='nswe', padx=padx, pady=pady)
+        self._cbWanne
+
+        c += 1
+        cb = ttk.Checkbutton(lfBad, text='Bidet', variable=self._ivarBidet)
+        cb.grid(column=c, row=r, sticky='nswe', padx=padx, pady=pady)
+        self._cbBidet
+
+    def _createHeizungFrame(self, lf, row, padx, pady) -> None:
+        f = ttk.Frame(lf)
+        f.grid(column=0, row=row, sticky='nswe', padx=padx, pady=pady)
+
+        padx = (0, padx)
+        MyLabel(f, 'Heizung:', 0, 0, 'nswe', 'w', padx, pady)
+        cbo = MyCombobox(f)
+        cbo.setItems(('', 'Gas-Etagenheizung', 'Oel Zentral',
+                      'Gas Zentral', 'Fernwaerme', 'Nachtspeicher'))
+        cbo.setIndex(1)
+        cbo.registerModifyCallback(self._onModified)
+        cbo.grid(column=1, row=0, sticky='nswe', padx=padx, pady=pady)
+        self._cboHeizung = cbo
+
     def _createZubehoerFrame(self, row, padx, pady):
-        lf = ttk.Labelframe(self, text='Weitere Merkmale der Wohnung')
-        lf.grid(column=0, row=row, sticky='nswe', padx=padx, pady=pady)
+        lf = ttk.Labelframe(self, text='Weitere Merkmale der Wohnung', style='my.TLabelframe')
+        lf.grid(column=0, row=row, sticky='nswe', padx=padx, pady=(pady+8, pady))
         c = r = 0
         padx = (1, padx)
 
         ########### Balkon
-        MyLabel(lf, 'Balkon: ', c, r, 'nswe', 'w', padx, pady)
+        MyLabel(lf, 'Balkon: ', c, r, 'nsw', 'w', padx, pady)
         c += 1
         cbo = MyCombobox(lf)
         cbo.setItems(('', 'Keiner', 'Nord', 'Ost', 'Süd', 'West'))
         cbo.setWidth(7)
         cbo.setIndex(0)
+        cbo.registerModifyCallback(self._onModified)
         cbo.grid(column=c, row=r, sticky='nswe', padx=padx, pady=pady)
         self._cboBalkon = cbo
 
-    def _createBemerkung(self, row, padx, pady):
-        pass
+        c += 1
+        cb = ttk.Checkbutton(lf, text='Kellerabteil', variable=self._ivarKellerabteil)
+        cb.grid(column=c, row=r, sticky='nswe', padx=(28, 5), pady=pady)
+        self._cbKellerabteil = cb
+
+        c += 1
+        MyLabel(lf, 'Garage: ', c, r, 'nswe', 'w', (28, 5), pady)
+        c += 1
+        cbo = MyCombobox(lf)
+        cbo.setItems(('', 'Keine', 'Stellplatz', 'TG-Stellplatz', 'Garage'))
+        cbo.setWidth(13)
+        cbo.setIndex(0)
+        cbo.registerModifyCallback(self._onModified)
+        cbo.grid(column=c, row=r, sticky='nswe', padx=padx, pady=pady)
+        self._cboGarage = cbo
+
+    def _createBemerkungFrame(self, row, padx, pady):
+        lf = ttk.Labelframe(self, text='Sonstiges', style='my.TLabelframe')
+        lf.grid(column=0, row=row, sticky='nswe', padx=padx, pady=(pady + 8, pady))
+        lf.columnconfigure(0, weight=1)
+
+        padx = (1, padx)
+        txt = MyText(lf)
+        txt['height'] = 3
+        txt.registerModifyCallback(self._onModified)
+        txt.grid(column=0, row=0, sticky='nswe', padx=padx, pady=pady)
+
+        scrollb = ttk.Scrollbar(lf, command=txt.yview)
+        scrollb.grid(column=1, row=0, sticky='nsew')
+        txt['yscrollcommand'] = scrollb.set  ##todo: doesn't work
+
+        self._txtBemerkung = txt
 
     def _createButtons(self, row, padx, pady):
-        pass
+        btn = ttk.Button(self, text='Speichern', command=self._onSave)
+        btn.grid(column=0, row=row, sticky='ne', padx=padx, pady=pady)
+        self._btnOk = btn
+        self.setOkButtonEnabled(False)
+
+    def _onSave(self):
+        print('onSave')
 
     def setData(self, details: XWohnungDetails):
         self._details = details
         bez = details.ort + ', ' + details.strasse +  ', ' + details.whg_bez
         self._lblIdent.setValue(bez)
+
+        self.setOkButtonEnabled(False)
+        self._isModified = False
 
 def test():
     from business import DataProvider, DataError
