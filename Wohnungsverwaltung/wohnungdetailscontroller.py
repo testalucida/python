@@ -43,7 +43,7 @@ def test():
 
     ctrl = WohnungDetailsController(dp, wv)
     ctrl.startWork()
-    ctrl.wohnungSelected(1)
+    ctrl.wohnungSelected(10)
 
     root.mainloop()
 

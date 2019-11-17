@@ -64,7 +64,6 @@ class WohnungDetailsView(ttk.Frame):
                 v.trace('w', self._onModified)
 
     def _onModified(self, *args):
-        print('_onModified')
         self._isModified = True
         self.setOkButtonEnabled(True)
 
@@ -292,7 +291,7 @@ class WohnungDetailsView(ttk.Frame):
 
         scrollb = ttk.Scrollbar(lf, command=txt.yview)
         scrollb.grid(column=1, row=0, sticky='nsew')
-        txt['yscrollcommand'] = scrollb.set  ##todo: doesn't work
+        txt['yscrollcommand'] = scrollb.set
 
         self._txtBemerkung = txt
 
@@ -304,14 +303,41 @@ class WohnungDetailsView(ttk.Frame):
 
     def _onSave(self):
         print('onSave')
+        self.setOkButtonEnabled(False)
 
     def setData(self, details: XWohnungDetails):
         self._details = details
         bez = details.ort + ', ' + details.strasse +  ', ' + details.whg_bez
         self._lblIdent.setValue(bez)
 
+        self._cboEtage.setValue(details.etage)
+        self._ieAnteil.setValue(details.anteil)
+        self._teIbanWEG.setValue(details.iban_weg)
+        self._cboZimmer.setValue(details.zimmer)
+        self._ieQm.setValue(details.qm)
+        # Ausstattung +++++++++++
+        self._cboKueche.setValue(details.kueche)
+        self._ivarEbk.set(1 if details.ebk == 'J' else 0)
+        self._cboKuechenGeraete.setValue(details.kuechengeraete)
+        self._ivarTageslicht.set(1 if details.tageslichtbad == 'J' else 0)
+        self._ivarDusche.set(1 if details.dusche == 'J' else 0)
+        self._ivarWanne.set(1 if details.badewanne == 'J' else 0)
+        self._ivarBidet.set(1 if details.bidet == 'J' else 0)
+        self._cboHeizung.setValue(details.heizung)
+        # Zubehör +++++++++++++
+        self._cboBalkon.setValue(details.balkon)
+        self._ivarKellerabteil.set(1 if details.kellerabteil == 'J' else 0)
+        self._cboGarage.setValue(details.garage)
+        self._ivarAufzug.set(1 if details.aufzug == 'J' else 0)
+        # Bemerkumg +++++++++++
+        self._txtBemerkung.setValue(details.bemerkung)
+
         self.setOkButtonEnabled(False)
         self._isModified = False
+
+    def getData(self) -> XWohnungDetails:
+        d = self._details
+        d.etage = self._cboEtage.getValue()
 
 def test():
     from business import DataProvider, DataError

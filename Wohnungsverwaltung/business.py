@@ -144,8 +144,6 @@ class DataProvider:
             get(Server.SERVER + 'business.php?q=whg_detail&id=' + str(whg_id) + '&user=' +
                 self.__user )
         data: dict = self._getReadRetValOrRaiseException(resp)
-        if data['angeschafft_am']:
-            data['angeschafft_am'] = datehelper.convertIsoToEur(data['angeschafft_am'])
         details = XWohnungDetails(data)
         return details
 
