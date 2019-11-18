@@ -566,8 +566,17 @@ class DataProvider:
     '''
     update wohnung details
     '''
-    def updateWohnungDetails(self, data: XWohnungDetails):
-        pass
+    def updateWohnungDetails(self, data: XWohnungDetails) -> int:
+        q = 'update_wohnung_detail'
+        p = data.bemerkung.find('\'')
+        if p > -1:
+            data.bemerkung = data.bemerkung[:p] + '\\' + data.bemerkung[p:]
+        resp = self.__session. \
+            post(Server.SERVER + 'business.php?q=' + q + '&user=' + self.__user,
+                 data=data.getValuesAsDict())
+        retval = self._getWriteRetValOrRaiseException(resp)
+
+        return int(retval.object_id())
 
     '''
     insert afa

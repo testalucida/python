@@ -230,7 +230,16 @@ class MyText(Text, GetterSetter):
             self._cbfnc(self, evt)
 
     def getValue(self) -> any:
-        return self.get('1.0', 'end')
+        """
+        #########comment stackoverflow:############
+        It is impossible to remove the final newline that is
+        automatically added by the text widget.
+        – Bryan Oakley Jan 13 '18 at 14:09
+
+        ==> that's why we do it here:
+        """
+        s = self.get('1.0', 'end')
+        return s[:-1]
 
     def setValue(self, val: str) -> None:
         self.clear()

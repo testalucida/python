@@ -15,12 +15,15 @@ class WohnungDetailsController:
         self._view.registerSaveCallback(self._onSave)
 
     def _onSave(self, data: XWohnungDetails) -> None:
-        print(data.getValuesAsDict())
         msg = self._validate(data)
         if msg:
             messagebox.showerror('Falsche Eingabe', msg)
             return
-        self._dataProvider.updateWohnungDetails(data)
+
+        try:
+            self._dataProvider.updateWohnungDetails(data)
+        except WvException as ex:
+            messagebox.showerror("Speichern fehlgeschlagen", ex.message())
 
     def _validate(self, data: XWohnungDetails) -> str or None:
         return None

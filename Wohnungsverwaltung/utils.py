@@ -53,6 +53,12 @@ def getAnlagenVPath():
     global _anlagenvpath
     return _anlagenvpath
 
+# def sanitize(**dic) -> dict:
+#     for k, v in dic.values():
+#         if type(v) == str:
+#             if '\'' in v:
+#                 v = v.replace()
+
 def test():
     user = getUser()
     print(user)

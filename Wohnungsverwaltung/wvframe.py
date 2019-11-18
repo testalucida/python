@@ -8,6 +8,7 @@ import utils
 try:
     from editabletable import GenericEditableTable, Mappings
     #print('editabletable imported')
+    from wohnungdetailsview import WohnungDetailsView
     from stammdatenview import StammdatenView
     #print('stammdatenview imported')
     from veranlagungview import VeranlagungView
@@ -28,6 +29,7 @@ class WV(ttk.Frame):
         root.rowconfigure(0, weight=1)
         self.grid(column=0, row=0, sticky=(N, W, E, S))
         self._tree = None
+        self._wohnungDetailsView: WohnungDetailsView = None
         self._rechnungTableView: GenericEditableTable = None
         self._monatlicheTableView: GenericEditableTable = None
         self._sonstigeTableView: GenericEditableTable = None
@@ -148,11 +150,20 @@ class WV(ttk.Frame):
 
         self._notebook = book
 
+        self._createWohnungDetailsTab(pages[PAGE_WOHNUNG])
         self._createStammdatenTab(pages[PAGE_STAMMDATEN])
         self._createRechnungenTab(pages[PAGE_RECHUNGEN])
         self._createMonatlicheTab(pages[PAGE_MTL_EIN_AUS])
         self._createSonstigeTab(pages[PAGE_SONST_EIN_AUS])
         self._createVeranlagungTab(pages[PAGE_VERANLAGUNG])
+
+    def _createWohnungDetailsTab(self, wohnungDetailsPage:ttk.Frame):
+        wghview = WohnungDetailsView(wohnungDetailsPage)
+        wghview.grid(column=0, row=0, sticky='nwe', padx=10, pady=10)
+        self._wohnungDetailsView = wghview
+
+        wohnungDetailsPage.rowconfigure(0, weight=1)
+        wohnungDetailsPage.columnconfigure(0, weight=1)
 
     def _createRechnungenTab(self, rechnungPage:ttk.Frame):
         #Rechnung-Tabelle
@@ -323,6 +334,9 @@ class WV(ttk.Frame):
 
     def setStatusText(self, text: str):
         self._statusbar['text'] = text
+
+    def getWohnungDetailsView(self) -> WohnungDetailsView:
+        return self._wohnungDetailsView
 
     def getRechnungTableView(self) -> GenericEditableTable:
         return self._rechnungTableView

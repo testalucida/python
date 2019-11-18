@@ -4,6 +4,7 @@ import libs
 import utils
 from wvframe import WV, WohnungAction
 from business import DataProvider, WvException
+from wohnungdetailscontroller import WohnungDetailsController
 from rgcontroller import RechnungController
 from mtleacontroller import MtlEinAusController
 from sonsteacontroller import SonstEinAusController
@@ -22,6 +23,7 @@ class WvController:
     def __init__(self, wv: WV):
         self._wv = wv
         self._dataProvider = DataProvider()
+        self._wohnungdetailscontroller = None
         self._rgcontroller = None
         self._mtleacontroller = None
         self._sonsteacontroller = None
@@ -34,6 +36,11 @@ class WvController:
         self._wv.registerAnlageVActionCallback(self.onAnlageVAction)
         self._connect()
         self._loadTree()
+
+        self._wohnungdetailscontroller = WohnungDetailsController(self._dataProvider,
+                                                self._wv.getWohnungDetailsView())
+
+        self._wohnungdetailscontroller.startWork()
 
         self._rgcontroller = RechnungController(self._dataProvider,
                                                 self._wv.getRechnungTableView())
@@ -141,7 +148,7 @@ class WvController:
     def _deleteWohnung(self, whg_id: int) -> None:
         self._dataProvider.deleteWohnung(whg_id)
         self._loadTree()
-
+        self._wohnungdetailscontroller.wohnungSelected(-1)
         self._rgcontroller.wohnungSelected(-1)
         self._mtleacontroller.wohnungSelected(-1)
         self._sonsteacontroller.wohnungSelected(-1)
@@ -153,6 +160,7 @@ class WvController:
         root = self._wv.master
         root.config(cursor='clock')
         root.update()
+        self._wohnungdetailscontroller.wohnungSelected(whg_id)
         self._rgcontroller.wohnungSelected(whg_id)
         self._mtleacontroller.wohnungSelected(whg_id)
         self._sonsteacontroller.wohnungSelected(whg_id)
