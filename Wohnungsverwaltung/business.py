@@ -564,6 +564,12 @@ class DataProvider:
         return int(retval.object_id())
 
     '''
+    update wohnung details
+    '''
+    def updateWohnungDetails(self, data: XWohnungDetails):
+        pass
+
+    '''
     insert afa
     '''
     def insertAfaData(self, afa_dict):

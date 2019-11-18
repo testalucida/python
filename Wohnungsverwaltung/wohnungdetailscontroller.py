@@ -11,10 +11,21 @@ class WohnungDetailsController:
         self._view: WohnungDetailsView = view
         self._whg_id: int = -1
 
-    def startWork(self):
-        pass
+    def startWork(self) -> None:
+        self._view.registerSaveCallback(self._onSave)
 
-    def _loadData(self):
+    def _onSave(self, data: XWohnungDetails) -> None:
+        print(data.getValuesAsDict())
+        msg = self._validate(data)
+        if msg:
+            messagebox.showerror('Falsche Eingabe', msg)
+            return
+        self._dataProvider.updateWohnungDetails(data)
+
+    def _validate(self, data: XWohnungDetails) -> str or None:
+        return None
+
+    def _loadData(self) -> None:
         try:
             details: XWohnungDetails = \
                 self._dataProvider.getWohnungDetails(self._whg_id)
@@ -22,7 +33,7 @@ class WohnungDetailsController:
         except WvException as ex:
             messagebox.showerror("Uuuups!", ex.message())
 
-    def wohnungSelected(self, whg_id: int):
+    def wohnungSelected(self, whg_id: int) -> None:
         self._whg_id = whg_id
         self._loadData()
 

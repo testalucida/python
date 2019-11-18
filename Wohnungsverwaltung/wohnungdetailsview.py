@@ -52,10 +52,16 @@ class WohnungDetailsView(ttk.Frame):
         self._btnOk = None
         # called after any modification
         self._isModified = False
+        self._saveCallback = None
 
         self.columnconfigure(0, weight=1)
         self._createUI()
         self._setIntVarTracebacks()
+
+    def registerSaveCallback(self, cbfunc):
+        #function to be called back has to accept
+        # 1 Argument: XWohnnungDetails
+        self._saveCallback = cbfunc
 
     def _setIntVarTracebacks(self):
         d = self.__dict__
@@ -302,7 +308,9 @@ class WohnungDetailsView(ttk.Frame):
         self.setOkButtonEnabled(False)
 
     def _onSave(self):
-        print('onSave')
+        if self._saveCallback:
+            data = self.getData()
+            self._saveCallback(data)
         self.setOkButtonEnabled(False)
 
     def setData(self, details: XWohnungDetails):
@@ -338,6 +346,24 @@ class WohnungDetailsView(ttk.Frame):
     def getData(self) -> XWohnungDetails:
         d = self._details
         d.etage = self._cboEtage.getValue()
+        d.anteil = self._ieAnteil.getValue()
+        d.iban_weg = self._teIbanWEG.getValue()
+        d.zimmer = self._cboZimmer.getValue()
+        d.kueche = self._cboKueche.getValue()
+        d.ebk = 'J' if self._ivarEbk.get() > 0 else 'N'
+        d.kuechengeraete = self._cboKuechenGeraete.getValue()
+        d.balkon = self._cboBalkon.getValue()
+        d.heizung = self._cboHeizung.getValue()
+        d.qm = self._ieQm.getValue()
+        d.bemerkung = self._txtBemerkung.getValue()
+        d.tageslichtbad = 'J' if self._ivarTageslicht.get() > 0 else 'N'
+        d.badewanne = 'J' if self._ivarWanne.get() > 0 else 'N'
+        d.dusche = 'J' if self._ivarDusche.get() > 0 else 'N'
+        d.bidet = 'J' if self._ivarBidet.get() > 0 else 'N'
+        d.kellerabteil = 'J' if self._ivarKellerabteil.get() > 0 else 'N'
+        d.aufzug = 'J' if self._ivarAufzug.get() > 0 else 'N'
+        d.garage = self._cboGarage.getValue()
+        return d
 
 def test():
     from business import DataProvider, DataError

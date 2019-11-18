@@ -68,7 +68,6 @@ class XWohnungDetails(XInterface):
         self.kuechengeraete = ''
         self.balkon = ''
         self.heizung = ''
-        self.zusatz = ''
         self.qm = ''
         self.bemerkung = ''
         self.tageslichtbad = ''
