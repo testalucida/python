@@ -1,6 +1,28 @@
 from typing import Dict, List, Text
 from xinterface import XInterface, XInterfaceList
 
+class XMietverhaeltnis:
+    def __init__(self, dic: Dict[str, str] = None):
+        self.mv_id = -1
+        self.whg_id = -1
+        # Identifikation der Wohnung
+        self.strasse = ''
+        self.plz = ''
+        self.ort = ''
+        self.whg_bez = ''
+        ##########
+        self.name = ''
+        self.vorname = ''
+        self.perso_nr = ''
+        self.tel = ''
+        self.mailto = ''
+        self.iban = '' # Konto des Mieters
+        self.vermietet_ab = ''
+        self.vermietet_bis = ''
+        self.kaution = -1
+        self.kaution_angelegt_bei = ''
+        self.bemerkung = ''
+
 class XVermieter(XInterface):
     def __init__(self, dic: Dict[str, str] = None):
         self.vermieter_id = 0
@@ -187,6 +209,8 @@ class XErhaltungsaufwand:
     def roundAufwaende(self):
         for v in self._switch.values():
             self.__dict__[v] = round(self.__dict__[v])
+
+
 
 
 def test():

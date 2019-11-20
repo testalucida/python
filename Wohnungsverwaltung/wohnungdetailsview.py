@@ -1,10 +1,9 @@
 from tkinter import *
 from tkinter import ttk
 from interfaces import XWohnungDetails
-from mywidgets import MyText
 
 try:
-    from mywidgets import TextEntry, IntEntry, FloatEntry, MyLabel, MyCombobox
+    from mywidgets import TextEntry, IntEntry, FloatEntry, MyLabel, MyCombobox, MyText
     from mycalendar import DateEntry
     import datehelper
 except ImportError:
