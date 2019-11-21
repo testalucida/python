@@ -11,6 +11,7 @@ from sonsteacontroller import SonstEinAusController
 from grundsteuercontroller import GrundsteuerController
 from stammdatenview import StammdatenAction
 from stammdatencontroller import StammdatenController
+from mietverhaeltniscontroller import MietverhaeltnisController
 from veranlagungcontroller import VeranlagungController
 from wohnungdialogcontroller import WohnungDialogController
 from wohnungdialog import WohnungDialog
@@ -29,6 +30,7 @@ class WvController:
         self._sonsteacontroller = None
         self._grundsteuercontroller = None
         self._stammdatencontroller = None
+        self._mietverhaeltniscontroller = None
         self._veranlagungcontroller = None
 
     def startWork(self) -> None:
@@ -61,6 +63,10 @@ class WvController:
         self._stammdatencontroller = StammdatenController(self._dataProvider,
                                                           self._wv.getStammdatenView())
         self._stammdatencontroller.startWork()
+
+        self._mietverhaeltniscontroller = MietverhaeltnisController(
+                        self._dataProvider, self._wv.getMonatlicheTableView())
+        self._mietverhaeltniscontroller.startWork()
 
         self._veranlagungcontroller = VeranlagungController(self._dataProvider,
                                                             self._wv.getVeranlagungView())
@@ -153,6 +159,7 @@ class WvController:
         self._mtleacontroller.wohnungSelected(-1)
         self._sonsteacontroller.wohnungSelected(-1)
         self._grundsteuercontroller.wohnungSelected(-1)
+        self._mietverhaeltniscontroller.clear()
         self._stammdatencontroller.clear()
         self._veranlagungcontroller.clear()
 
@@ -166,14 +173,17 @@ class WvController:
         self._sonsteacontroller.wohnungSelected(whg_id)
         self._grundsteuercontroller.wohnungSelected(whg_id)
         self._stammdatencontroller.wohnungSelected(whg_id)
+        self._mietverhaeltniscontroller.wohnungSelected(whg_id)
         self._veranlagungcontroller.wohnungSelected(whg_id)
         root.configure(cursor='')
         root.update()
 
     def _onNoWohnungClicked(self):
         self._stammdatencontroller.clear()
+        self._wohnungdetailscontroller.clear()
         self._rgcontroller.clear()
         self._mtleacontroller.clear()
         self._sonsteacontroller.clear()
         self._grundsteuercontroller.clear()
+        self._mietverhaeltniscontroller.clear()
         self._veranlagungcontroller.clear()

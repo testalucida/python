@@ -40,6 +40,10 @@ class WohnungDetailsController:
         self._whg_id = whg_id
         self._loadData()
 
+    def clear(self):
+        # called by wvcontroller. Clear view and all member variables
+        pass
+
 
 def test():
     from business import DataProvider, DataError

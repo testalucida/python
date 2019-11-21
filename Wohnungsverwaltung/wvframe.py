@@ -12,9 +12,7 @@ try:
     from stammdatenview import StammdatenView
     #print('stammdatenview imported')
     from veranlagungview import VeranlagungView
-    #print('veranlagungview imported')
-    # from wvcontroller import WvController
-    # print('wvcontroller imported')
+    from mietverhaeltnisview import MietverhaeltnisView
 except ImportError:
     print("couldn't import some stuff.")
 
@@ -36,6 +34,7 @@ class WV(ttk.Frame):
         self._grundsteuerTableView: GenericEditableTable = None
         self._stammdatenView: StammdatenView = None
         self._veranlagungView: VeranlagungView = None
+        self._mietverhaeltnisView: MietverhaeltnisView = None
         self._wohnungClickedCallback = None
         self._noWohnungClickedCallback = None
         self._wohnungActionCallback = None
@@ -155,6 +154,7 @@ class WV(ttk.Frame):
         self._createRechnungenTab(pages[PAGE_RECHUNGEN])
         self._createMonatlicheTab(pages[PAGE_MTL_EIN_AUS])
         self._createSonstigeTab(pages[PAGE_SONST_EIN_AUS])
+        self._createMietverhaeltnisTab(pages[PAGE_MIETEVERHAELTNIS])
         self._createVeranlagungTab(pages[PAGE_VERANLAGUNG])
 
     def _createWohnungDetailsTab(self, wohnungDetailsPage:ttk.Frame):
@@ -213,6 +213,13 @@ class WV(ttk.Frame):
 
         stammdatenPage.rowconfigure(0, weight=1)
         stammdatenPage.columnconfigure(0, weight=1)
+
+    def _createMietverhaeltnisTab(self, mietverhPage: ttk.Frame):
+        mvh = MietverhaeltnisView(mietverhPage)
+        mvh.grid(column=0, row=0, sticky='nswe', padx=5, pady=5)
+        self._mietverhaeltnisView = mvh
+        #mietverhPage.rowconfigure(0, weight=1)
+        mietverhPage.columnconfigure(0, weight=1)
 
     def _createVeranlagungTab(self, veranlPage: ttk.Frame):
         vv = VeranlagungView(veranlPage)
@@ -352,6 +359,9 @@ class WV(ttk.Frame):
 
     def getStammdatenView(self) -> StammdatenView:
         return self._stammdatenView
+
+    def getMietverhaeltnisView(self) -> MietverhaeltnisView:
+        return self._mietverhaeltnisView
 
     def getVeranlagungView(self) -> VeranlagungView:
         return self._veranlagungView

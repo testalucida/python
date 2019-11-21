@@ -9,7 +9,7 @@ try:
 except ImportError:
     print("couldn't import my widgets.")
 
-class WohnungDetailsView(ttk.Frame):
+class WohnungDetailsView (ttk.Frame):
     def __init__(self, parent: ttk.Frame):
         ttk.Frame.__init__(self, parent)
         self._details: XWohnungDetails = None

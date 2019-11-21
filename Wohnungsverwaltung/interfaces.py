@@ -11,10 +11,11 @@ class XMietverhaeltnis:
         self.ort = ''
         self.whg_bez = ''
         ##########
+        self.anrede = ''
         self.name = ''
         self.vorname = ''
-        self.perso_nr = ''
-        self.tel = ''
+        self.ausweis_id = ''
+        self.telefon = ''
         self.mailto = ''
         self.iban = '' # Konto des Mieters
         self.vermietet_ab = ''

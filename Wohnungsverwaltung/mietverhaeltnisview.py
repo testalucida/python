@@ -12,12 +12,13 @@ class MietverhaeltnisView(ttk.Frame):
     def __init__(self, parent: ttk.Frame):
         ttk.Frame.__init__(self, parent)
         self._lblIdent = None
+        self._cboAnrede = None # todo
         self._teName = None
         self._teVorname = None
-        self._tePersoNr = None
-        self._tel = None
-        self._mailto = None
-        self._iban = None
+        self._teAusweisId = None
+        self._teTelefon = None
+        self._teMailto = None
+        self._teIban = None
         self._deVermietetAb = None
         self._deVermietetBis = None
         self._ieKaution = None
@@ -31,7 +32,8 @@ class MietverhaeltnisView(ttk.Frame):
         self._createUI()
 
     def _createUI(self):
-        padx = pady = 5
+        padx = 10
+        pady = 5
         self._lblIdent = self._createWohnungIdent(padx, pady)
         self._style_labelframe = ttk.Style()
         self._style_labelframe.\
@@ -60,8 +62,17 @@ class MietverhaeltnisView(ttk.Frame):
 
         padx=(5,6)
         pady=(5,5)
-        ######### Name
         col = row = 0
+        ######### Anrede
+        MyLabel(lf, 'Anrede:', col, row, 'nswe', 'w', padx, pady)
+        col += 1
+        cbo = MyCombobox(lf)
+        cbo.setItems(('Frau', 'Herr'))
+        cbo.setWidth(4)
+        cbo.grid(column=col, row=row, sticky='nsw', padx=padx, pady=pady)
+        self._cboAnrede = cbo
+        ######### Name
+        col += 1
         MyLabel(lf, 'Name:', col, row, 'nswe', 'w', padx, pady)
         col += 1
         te = TextEntry(lf, col, row, 'nswe', padx, pady)
@@ -73,7 +84,8 @@ class MietverhaeltnisView(ttk.Frame):
         te = TextEntry(lf, col, row, 'nswe', padx, pady)
 
         ######### Perso-Nr.
-        col += 1
+        row += 1
+        col = 0
         MyLabel(lf, 'Personalausweis-Nr.:', col, row, 'nswe', 'w', padx, pady)
         col += 1
         te = TextEntry(lf, col, row, 'nswe', padx, pady)
