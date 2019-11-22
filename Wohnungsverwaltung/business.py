@@ -13,7 +13,7 @@ from interfaces import \
     XSonstigeKosten, XSonstigeKostenList, \
     XZurechnung, XImmoStammdaten, XMtlEinnahmen, XMtlEinnahmenList, \
     XAfa, XWohnungDaten, XVermieter, XVerwalter, XVermieterList, XVerwalterList, \
-    XWohnungDetails
+    XWohnungDetails, XMietverhaeltnis, XMietverhaeltnisList
 
 # def testRequests():
 #     s = requests.Session() #create a persistent session
@@ -254,6 +254,18 @@ class DataProvider:
                 str(whg_id) + '&user=' + self.__user)
         gs_data = self._getReadRetValOrRaiseException(resp)
         return gs_data
+
+    def getMietverhaeltnisse(self, whg_id: int) -> XMietverhaeltnisList:
+        resp = self.__session. \
+            get(Server.SERVER + 'business.php?q=mietverhaeltnisse&id=' +
+                str(whg_id) + '&user=' + self.__user)
+        data = self._getReadRetValOrRaiseException(resp)
+        l = XMietverhaeltnisList(XMietverhaeltnis, data)
+        for mv in l.getList():
+            mv.vermietet_ab = datehelper.convertIsoToEur(mv.vermietet_ab)
+            if mv.vermietet_bis:
+                mv.vermietet_bis = datehelper.convertIsoToEur(mv.vermietet_bis)
+        return l
 
     # def getVermieterData(self, whg_id: int):
     #     resp = self.__session. \
@@ -805,6 +817,26 @@ class DataProvider:
         return retval
 
     '''
+    insert Mietverhältnis
+    '''
+    def insertMietverhaeltnis(self, data:XMietverhaeltnis) -> None:
+        resp = self.__session. \
+            post(Server.SERVER + 'business.php?q=insert_mietverhaeltnis&user=' + self.__user,
+                 data=data.getValuesAsDict())
+
+        self._getWriteRetValOrRaiseException(resp)
+
+    '''
+    update Mietverhältnis
+    '''
+    def updateMietverhaeltnis(self, data: XMietverhaeltnis) -> None:
+        resp = self.__session. \
+            post(Server.SERVER + 'business.php?q=update_mietverhaeltnis&user=' + self.__user,
+                 data=data.getValuesAsDict())
+
+        self._getWriteRetValOrRaiseException(resp)
+
+    '''
     insert verwalter
     '''
     def insertVerwalter(self, data:XVerwalter) -> None:
@@ -812,9 +844,7 @@ class DataProvider:
             post(Server.SERVER + 'business.php?q=insert_verwalter&user=' + self.__user,
                  data=data.getValuesAsDict())
 
-        retval = self._getWriteRetValOrRaiseException(resp)
-
-        return retval
+        self._getWriteRetValOrRaiseException(resp)
 
     '''
     update verwalter
@@ -824,9 +854,7 @@ class DataProvider:
             post(Server.SERVER + 'business.php?q=update_verwalter&user=' + self.__user,
                  data=data.getValuesAsDict())
 
-        retval = self._getWriteRetValOrRaiseException(resp)
-
-        return retval
+        self._getWriteRetValOrRaiseException(resp)
 
     ###########################################################################
 

@@ -1,4 +1,4 @@
-from typing import Dict, List, Text
+from typing import Dict, List, Text, Any
 
 class XInterface:
     def __init__(self, dic: Dict[str, any]):
@@ -27,7 +27,7 @@ class XInterface:
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 class XInterfaceList:
-    def __init__(self, klass: type, li: List[XInterface] = None):
+    def __init__(self, klass: type, li: List[Dict[str, Any]] = None):
         self._type = klass
         self._list = list()
         if li:
@@ -49,6 +49,9 @@ class XInterfaceList:
 
     def get(self, idx: int) -> XInterface:
         return self._list[idx]
+
+    def len(self) -> int:
+        return len(self._list)
 
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

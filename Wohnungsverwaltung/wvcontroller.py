@@ -65,7 +65,7 @@ class WvController:
         self._stammdatencontroller.startWork()
 
         self._mietverhaeltniscontroller = MietverhaeltnisController(
-                        self._dataProvider, self._wv.getMonatlicheTableView())
+                        self._dataProvider, self._wv.getMietverhaeltnisView())
         self._mietverhaeltniscontroller.startWork()
 
         self._veranlagungcontroller = VeranlagungController(self._dataProvider,

@@ -1,8 +1,10 @@
 from tkinter import *
 from tkinter import ttk
+from interfaces import XMietverhaeltnis
 
 try:
-    from mywidgets import TextEntry, IntEntry, FloatEntry, MyLabel, MyCombobox, MyText
+    from mywidgets import TextEntry, IntEntry, FloatEntry, MyLabel, \
+        MyCombobox, MyText
     from mycalendar import DateEntry
     import datehelper
 except ImportError:
@@ -11,8 +13,9 @@ except ImportError:
 class MietverhaeltnisView(ttk.Frame):
     def __init__(self, parent: ttk.Frame):
         ttk.Frame.__init__(self, parent)
+        self._data: XMietverhaeltnis = None
         self._lblIdent = None
-        self._cboAnrede = None # todo
+        self._cboAnrede = None
         self._teName = None
         self._teVorname = None
         self._teAusweisId = None
@@ -71,17 +74,20 @@ class MietverhaeltnisView(ttk.Frame):
         cbo.setWidth(4)
         cbo.grid(column=col, row=row, sticky='nsw', padx=padx, pady=pady)
         self._cboAnrede = cbo
+
         ######### Name
         col += 1
         MyLabel(lf, 'Name:', col, row, 'nswe', 'w', padx, pady)
         col += 1
         te = TextEntry(lf, col, row, 'nswe', padx, pady)
+        self._teName = te
 
         ######### Vorname
         col += 1
         MyLabel(lf, 'Vorname:', col, row, 'nswe', 'w', padx, pady)
         col += 1
         te = TextEntry(lf, col, row, 'nswe', padx, pady)
+        self._teVorname = te
 
         ######### Perso-Nr.
         row += 1
@@ -89,6 +95,7 @@ class MietverhaeltnisView(ttk.Frame):
         MyLabel(lf, 'Personalausweis-Nr.:', col, row, 'nswe', 'w', padx, pady)
         col += 1
         te = TextEntry(lf, col, row, 'nswe', padx, pady)
+        self._teAusweisId = te
 
         ######## Telefon
         row += 1
@@ -96,6 +103,7 @@ class MietverhaeltnisView(ttk.Frame):
         MyLabel(lf, 'Telefon:', col, row, 'nswe', 'w', padx, pady)
         col += 1
         te = TextEntry(lf, col, row, 'nswe', padx, pady)
+        self._teTelefon = te
 
         ######### mailto
         col += 1
@@ -103,6 +111,7 @@ class MietverhaeltnisView(ttk.Frame):
         col += 1
         te = TextEntry(lf, col, row, 'nswe', padx, pady)
         te.grid(columnspan=2)
+        self._teMailto = te
 
         ######## Bankverbindung
         row += 1
@@ -111,6 +120,7 @@ class MietverhaeltnisView(ttk.Frame):
         col += 1
         te = TextEntry(lf, col, row, 'nswe', padx, pady)
         te.grid(columnspan=2)
+        self._teIban = te
 
     def _createMietvertragFrame(self, row, xmargins: int, topmargin: int, bottommargin: int):
         padx=xmargins
@@ -127,6 +137,7 @@ class MietverhaeltnisView(ttk.Frame):
         de = DateEntry(lf)
         de.grid(column=col, row=row, sticky='nswe', padx=padx, pady=pady)
         de.setWidth(10)
+        self._deVermietetAb = de
 
         ######### Vermietung befristet bis
         col += 1
@@ -135,6 +146,7 @@ class MietverhaeltnisView(ttk.Frame):
         de = DateEntry(lf)
         de.grid(column=col, row=row, sticky='nsw', padx=padx, pady=pady)
         de.setWidth(10)
+        self._deVermietetBis = de
 
         ######## Kaution
         row += 1
@@ -144,12 +156,14 @@ class MietverhaeltnisView(ttk.Frame):
         ie = IntEntry(lf)
         ie.grid(column=col, row=row, sticky='nswe', padx=padx, pady=pady)
         ie.setWidth(5)
+        self._ieKaution = ie
 
         ######### bei welcher Bank
         col += 1
         MyLabel(lf, 'hinterlegt bei:', col, row, 'nswe', 'w', padx, pady)
         col += 1
         te = TextEntry(lf, col, row, 'nswe', padx, pady)
+        self._teAngelegtBei = te
 
     def _createBemerkung(self, row, xmargins: int, topmargin: int, bottommargin: int):
         padx = xmargins
@@ -167,6 +181,7 @@ class MietverhaeltnisView(ttk.Frame):
         scrollb = ttk.Scrollbar(lf, command=txt.yview)
         scrollb.grid(column=1, row=0, sticky='nsew')
         txt['yscrollcommand'] = scrollb.set
+        self._txtBemerkung = txt
 
         self._txtBemerkung = txt
 
@@ -183,7 +198,41 @@ class MietverhaeltnisView(ttk.Frame):
         self.setOkButtonEnabled(True)
 
     def _onSave(self):
-        print('save')
+        if self._saveCallback:
+            data = self.getData()
+            self._saveCallback(data)
+
+    def setData(self, data: XMietverhaeltnis):
+        self._data = data
+        self._cboAnrede.setValue(data.anrede)
+        self._teName.setValue(data.name)
+        self._teVorname.setValue(data.vorname)
+        self._teAusweisId.setValue(data.ausweis_id)
+        self._teTelefon.setValue(data.telefon)
+        self._teMailto.setValue(data.mailto)
+        self._teIban.setValue(data.iban)
+        self._deVermietetAb.setValue(data.vermietet_ab)
+        if data.vermietet_bis:
+            self._deVermietetBis.setValue(data.vermietet_bis)
+        self._ieKaution.setValue(data.kaution)
+        self._teAngelegtBei.setValue(data.kaution_angelegt_bei)
+        self._txtBemerkung.setValue(data.bemerkung)
+
+    def getData(self):
+        data = self._data
+        data.anrede = self._cboAnrede.getValue()
+        data.name = self._teName.getValue()
+        data.vorname = self._teVorname.getValue()
+        data.ausweis_id = self._teAusweisId.getValue()
+        data.telefon = self._teTelefon.getValue()
+        data.mailto = self._teMailto.getValue()
+        data.iban = self._teIban.getValue()
+        data.vermietet_ab = self._deVermietetAb.getValue()
+        data.vermietet_bis = self._deVermietetBis.getValue()
+        data.kaution = self._ieKaution.getValue()
+        data.kaution_angelegt_bei = self._teAngelegtBei.getValue()
+        data.bemerkung = self._txtBemerkung.getValue()
+        return data
 
     def registerSaveCallback(self, cbfunc):
         #function to be called back has to accept

@@ -23,6 +23,11 @@ class XMietverhaeltnis:
         self.kaution = -1
         self.kaution_angelegt_bei = ''
         self.bemerkung = ''
+        XInterface.__init__(self, dic)
+
+class XMietverhaeltnisList(XInterfaceList):
+    def __init__(self, klass: type, li: list = None):
+        XInterfaceList.__init__(self, XMietverhaeltnis, li)
 
 class XVermieter(XInterface):
     def __init__(self, dic: Dict[str, str] = None):
