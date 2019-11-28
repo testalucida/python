@@ -15,7 +15,6 @@ class MietverhaeltnisController:
         self._whg_id: int = -1
 
     def startWork(self) -> None:
-        print('MietverhaeltnisController.startWork')
         self._view.registerSaveCallback(self._onSave)
 
     def _onSave(self, data: XMietverhaeltnis) -> None:
@@ -25,12 +24,22 @@ class MietverhaeltnisController:
             return
 
         try:
-            #self._dataProvider.updateWohnungDetails(data)
-            pass
+            if data.mv_id <= 0:
+                self._dataProvider.insertMietverhaeltnis(data)
+            else:
+                self._dataProvider.updateMietverhaeltnis(data)
         except WvException as ex:
             messagebox.showerror("Speichern fehlgeschlagen", ex.message())
+        except Exception as x:
+            msg = type(x).__name__ + " in MietverhaeltnisController._onSave:\n" + \
+                   x.args[0]
+            messagebox.showerror("Speichern fehlgeschlagen", msg)
 
     def _validate(self, data: XMietverhaeltnis) -> str or None:
+        if not data.anrede: return "Anrede fehlt."
+        if not data.name: return "Name fehlt."
+        if not data.vorname: return "Vorname fehlt."
+        if not data.vermietet_ab: return "Mietbeginn fehlt."
         return None
 
     def _loadData(self) -> None:

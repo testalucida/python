@@ -820,6 +820,9 @@ class DataProvider:
     insert Mietverhältnis
     '''
     def insertMietverhaeltnis(self, data:XMietverhaeltnis) -> None:
+        data.vermietet_ab = datehelper.convertEurToIso(data.vermietet_ab)
+        if data.vermietet_bis:
+            data.vermietet_bis = datehelper.convertEurToIso(data.vermietet_bis)
         resp = self.__session. \
             post(Server.SERVER + 'business.php?q=insert_mietverhaeltnis&user=' + self.__user,
                  data=data.getValuesAsDict())
@@ -830,6 +833,9 @@ class DataProvider:
     update Mietverhältnis
     '''
     def updateMietverhaeltnis(self, data: XMietverhaeltnis) -> None:
+        data.vermietet_ab = datehelper.convertEurToIso(data.vermietet_ab)
+        if data.vermietet_bis:
+            data.vermietet_bis = datehelper.convertEurToIso(data.vermietet_bis)
         resp = self.__session. \
             post(Server.SERVER + 'business.php?q=update_mietverhaeltnis&user=' + self.__user,
                  data=data.getValuesAsDict())

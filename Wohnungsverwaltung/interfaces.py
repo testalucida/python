@@ -1,7 +1,7 @@
 from typing import Dict, List, Text
 from xinterface import XInterface, XInterfaceList
 
-class XMietverhaeltnis:
+class XMietverhaeltnis(XInterface):
     def __init__(self, dic: Dict[str, str] = None):
         self.mv_id = -1
         self.whg_id = -1
@@ -96,7 +96,7 @@ class XWohnungDetails(XInterface):
         self.kuechengeraete = ''
         self.balkon = ''
         self.heizung = ''
-        self.qm = ''
+        self.qm = 0
         self.bemerkung = ''
         self.tageslichtbad = ''
         self.badewanne = ''

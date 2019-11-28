@@ -6,12 +6,13 @@ class XInterface:
             selfdict = self.__dict__
             for key in selfdict:
                 try:
-                    if type(selfdict[key]) == int:
-                        selfdict[key] = int(dic[key])
-                    elif type(selfdict[key]) == float:
-                        selfdict[key] = float(dic[key])
-                    else:
-                        selfdict[key] = dic[key]
+                    if dic[key] is not None:
+                        if type(selfdict[key]) == int:
+                            selfdict[key] = int(dic[key])
+                        elif type(selfdict[key]) == float:
+                            selfdict[key] = float(dic[key])
+                        else:
+                            selfdict[key] = dic[key]
                 except:
                     pass # ok. Not each of selfdict's keys has to be part of dic.
 
