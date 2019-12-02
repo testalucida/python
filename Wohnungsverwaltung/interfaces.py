@@ -10,14 +10,16 @@ class XMietverhaeltnis(XInterface):
         self.plz = ''
         self.ort = ''
         self.whg_bez = ''
-        ##########
+        # Mieterdaten
         self.anrede = ''
         self.name = ''
         self.vorname = ''
+        self.geboren_am = ''
         self.ausweis_id = ''
         self.telefon = ''
         self.mailto = ''
         self.iban = '' # Konto des Mieters
+        # Mietverhältnisdaten
         self.vermietet_ab = ''
         self.vermietet_bis = ''
         self.kaution = -1

@@ -18,6 +18,7 @@ class MietverhaeltnisView(ttk.Frame):
         self._cboAnrede = None
         self._teName = None
         self._teVorname = None
+        self._teGeboren_am = None
         self._teAusweisId = None
         self._teTelefon = None
         self._teMailto = None
@@ -92,12 +93,21 @@ class MietverhaeltnisView(ttk.Frame):
         te.registerModifyCallback(self._onModified)
         self._teVorname = te
 
-        ######### Perso-Nr.
+        ######### Geburtstag
         row += 1
         col = 0
+        MyLabel(lf, 'Geburtstag:', col, row, 'nswe', 'w', padx, pady)
+        col += 1
+        te = TextEntry(lf, col, row, 'nswe', padx, pady)
+        te.registerModifyCallback(self._onModified)
+        self._teGeboren_am = te
+
+        ######### Perso-Nr.
+        col += 1
         MyLabel(lf, 'Personalausweis-Nr.:', col, row, 'nswe', 'w', padx, pady)
         col += 1
         te = TextEntry(lf, col, row, 'nswe', padx, pady)
+        te.grid(columnspan=2)
         te.registerModifyCallback(self._onModified)
         self._teAusweisId = te
 
@@ -220,6 +230,7 @@ class MietverhaeltnisView(ttk.Frame):
         self._cboAnrede.setValue(data.anrede)
         self._teName.setValue(data.name)
         self._teVorname.setValue(data.vorname)
+        self._teGeboren_am.setValue(data.geboren_am)
         self._teAusweisId.setValue(data.ausweis_id)
         self._teTelefon.setValue(data.telefon)
         self._teMailto.setValue(data.mailto)
@@ -239,6 +250,7 @@ class MietverhaeltnisView(ttk.Frame):
         data.anrede = self._cboAnrede.getValue()
         data.name = self._teName.getValue()
         data.vorname = self._teVorname.getValue()
+        data.geboren_am = self._teGeboren_am.getValue()
         data.ausweis_id = self._teAusweisId.getValue()
         data.telefon = self._teTelefon.getValue()
         data.mailto = self._teMailto.getValue()

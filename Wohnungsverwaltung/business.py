@@ -262,6 +262,7 @@ class DataProvider:
         data = self._getReadRetValOrRaiseException(resp)
         l = XMietverhaeltnisList(XMietverhaeltnis, data)
         for mv in l.getList():
+            mv.geboren_am = datehelper.convertIsoToEur(mv.geboren_am)
             mv.vermietet_ab = datehelper.convertIsoToEur(mv.vermietet_ab)
             if mv.vermietet_bis:
                 mv.vermietet_bis = datehelper.convertIsoToEur(mv.vermietet_bis)
@@ -820,6 +821,7 @@ class DataProvider:
     insert Mietverhältnis
     '''
     def insertMietverhaeltnis(self, data:XMietverhaeltnis) -> None:
+        data.geboren_am = datehelper.convertEurToIso(data.geboren_am)
         data.vermietet_ab = datehelper.convertEurToIso(data.vermietet_ab)
         if data.vermietet_bis:
             data.vermietet_bis = datehelper.convertEurToIso(data.vermietet_bis)
@@ -833,6 +835,7 @@ class DataProvider:
     update Mietverhältnis
     '''
     def updateMietverhaeltnis(self, data: XMietverhaeltnis) -> None:
+        data.geboren_am = datehelper.convertEurToIso(data.geboren_am)
         data.vermietet_ab = datehelper.convertEurToIso(data.vermietet_ab)
         if data.vermietet_bis:
             data.vermietet_bis = datehelper.convertEurToIso(data.vermietet_bis)

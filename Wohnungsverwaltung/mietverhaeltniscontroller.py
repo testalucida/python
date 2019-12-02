@@ -39,6 +39,7 @@ class MietverhaeltnisController:
         if not data.anrede: return "Anrede fehlt."
         if not data.name: return "Name fehlt."
         if not data.vorname: return "Vorname fehlt."
+        if not data.geboren_am: return "Geburtsdatum fehlt (für Kautionskonto)."
         if not data.vermietet_ab: return "Mietbeginn fehlt."
         return None
 
