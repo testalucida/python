@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import libs
 import utils
+from functools import partial
 from wvframe import WV, WohnungAction
 from business import DataProvider, WvException
 from wohnungdetailscontroller import WohnungDetailsController
