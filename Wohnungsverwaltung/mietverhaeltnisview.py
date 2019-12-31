@@ -27,6 +27,8 @@ class MietverhaeltnisView(ttk.Frame):
         self._deVermietetBis = None
         self._ieKaution = None
         self._teAngelegtBei = None
+        self._txtInseratText = None
+        self._teInseriertBei = None
         self._txtBemerkung = None
         self._btnOk = None
         self._style_labelframe = None
@@ -45,8 +47,9 @@ class MietverhaeltnisView(ttk.Frame):
 
         self._createMieterFrame(1, 10, 15, 10)
         self._createMietvertragFrame(2, 10, 15, 10)
-        self._createBemerkung(3, 10, 15, 10)
-        self._createButtons(4, 10, 10, 10)
+        self._createInseratText(3, 10, 15, 10)
+        self._createBemerkung(4, 10, 15, 10)
+        self._createButtons(5, 10, 10, 10)
 
     def _createWohnungIdent(self, padx, pady) -> ttk.Label:
         lbl = MyLabel(self, text='', column=0, row=0, sticky='nswe',
@@ -186,6 +189,30 @@ class MietverhaeltnisView(ttk.Frame):
         te.registerModifyCallback(self._onModified)
         self._teAngelegtBei = te
 
+    def _createInseratText(self, row, xmargins: int, topmargin: int, bottommargin: int):
+        padx = xmargins
+        pady = (topmargin, bottommargin)
+        lf = ttk.LabelFrame(self, text='Inserat', style='my.TLabelframe')
+        lf.grid(column=0, row=row, sticky='nswe', padx=padx, pady=pady)
+        lf.columnconfigure(1, weight=1)
+        lf.columnconfigure(3, weight=1)
+        row = col = 0
+        MyLabel(lf, 'Text:', col, row, 'nw', 'w', padx, pady)
+        col += 1
+        txt = MyText(lf)
+        txt['height'] = 6
+        txt['width'] = 50
+        txt.registerModifyCallback(self._onModified)
+        txt.grid(column=col, row=row, sticky='nswe', padx=padx, pady=pady)
+        self._txtInseratText = txt
+
+        col += 1
+        MyLabel(lf, 'inseriert bei:', col, row, 'nw', 'w', padx, pady)
+        col += 1
+        te = TextEntry(lf, col, row, 'nwe', padx, pady)
+        te.registerModifyCallback(self._onModified)
+        self._teInseriertBei = te
+
     def _createBemerkung(self, row, xmargins: int, topmargin: int, bottommargin: int):
         padx = xmargins
         pady = (topmargin, bottommargin)
@@ -227,6 +254,8 @@ class MietverhaeltnisView(ttk.Frame):
 
     def setData(self, data: XMietverhaeltnis):
         self._data = data
+        self._lblIdent.setValue(data.ort + ', ' +
+                                data.strasse + ' ' + data.whg_bez)
         self._cboAnrede.setValue(data.anrede)
         self._teName.setValue(data.name)
         self._teVorname.setValue(data.vorname)
@@ -241,6 +270,10 @@ class MietverhaeltnisView(ttk.Frame):
             self._deVermietetBis.setValue(data.vermietet_bis)
         self._ieKaution.setValue(data.kaution)
         self._teAngelegtBei.setValue(data.kaution_angelegt_bei)
+        if data.inserat_text:
+            self._txtInseratText.setValue(data.inserat_text)
+        if data.inseriert_bei:
+            self._teInseriertBei.setValue(data.inseriert_bei)
         self._txtBemerkung.setValue(data.bemerkung)
         self._isModified = False
         self.setOkButtonEnabled(False)
@@ -259,6 +292,8 @@ class MietverhaeltnisView(ttk.Frame):
         data.vermietet_bis = self._deVermietetBis.getValue()
         data.kaution = self._ieKaution.getValue()
         data.kaution_angelegt_bei = self._teAngelegtBei.getValue()
+        data.inserat_text = self._txtInseratText.getValue()
+        data.inseriert_bei = self._teInseriertBei.getValue()
         data.bemerkung = self._txtBemerkung.getValue()
         return data
 

@@ -24,6 +24,8 @@ class XMietverhaeltnis(XInterface):
         self.vermietet_bis = ''
         self.kaution = -1
         self.kaution_angelegt_bei = ''
+        self.inserat_text = ''
+        self.inseriert_bei = ''
         self.bemerkung = ''
         XInterface.__init__(self, dic)
 
