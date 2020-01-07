@@ -31,8 +31,13 @@ class MietverhaeltnisView(ttk.Frame):
         self._teInseriertBei = None
         self._txtBemerkung = None
         self._btnOk = None
+        self._btnNewMieter = None
+        self._btnPrev = None
+        self._btnNext = None
         self._style_labelframe = None
         self._saveCallback = None
+        self._newMieterCallback = None
+        self._previousNextMieterCallback = None
 
         self.columnconfigure(0, weight=1)
         self._createUI()
@@ -234,10 +239,30 @@ class MietverhaeltnisView(ttk.Frame):
         self._txtBemerkung = txt
 
     def _createButtons(self, row, rightmargin: int, topmargin: int, bottommargin: int):
+        f = ttk.LabelFrame(self, borderwidth=0)
+        f.grid(column = 0, row = row, sticky='nswe', padx=topmargin, pady=bottommargin)
+        f.columnconfigure(0, weight=1)
+        f.columnconfigure(1, weight=1)
+        f.columnconfigure(2, weight=1)
+        f.columnconfigure(3, weight=1)
+        r = 0
         padx=(0, rightmargin)
         pady=(topmargin, bottommargin)
-        btn = ttk.Button(self, text='Speichern', command=self._onSave)
-        btn.grid(column=0, row=row, sticky='ne', padx=padx, pady=pady)
+        col = 0
+        btn = ttk.Button(f, text='<<', command=self._onPreviousMieter)
+        btn.grid(column=col, row=r, sticky='nswe', padx=padx, pady=pady)
+        self._btnPrev = btn
+        col += 1
+        btn = ttk.Button(f, text='>>', command=self._onNextMieter)
+        btn.grid(column=col, row=r, sticky='nswe', padx=(0, 50), pady=pady)
+        self._btnNext = btn
+        col += 1
+        btn = ttk.Button(f, text='Neuen Mieter erfassen', command=self._onNewMieter)
+        btn.grid(column=col, row=r, sticky='nswe', padx=padx, pady=pady)
+        self._btnNewMieter = btn
+        col += 1
+        btn = ttk.Button(f, text='Speichern', command=self._onSave)
+        btn.grid(column=col, row=r, sticky='nswe', padx=padx, pady=pady)
         self._btnOk = btn
         self.setOkButtonEnabled(False)
 
@@ -245,10 +270,42 @@ class MietverhaeltnisView(ttk.Frame):
         self._isModified = True
         self.setOkButtonEnabled(True)
 
+    def _onPreviousMieter(self):
+        if self._previousNextMieterCallback:
+            data = self.getData()
+            self._previousNextMieterCallback(data, +1)
+
+    def _onNextMieter(self):
+        if self._previousNextMieterCallback:
+            data = self.getData()
+            self._previousNextMieterCallback(data, -1)
+
+    def _onNewMieter(self):
+        if self._newMieterCallback:
+            data = self.getData()
+            self._newMieterCallback(data)
+
     def _onSave(self):
         if self._saveCallback:
             data = self.getData()
             self._saveCallback(data)
+        self._isModified = False
+        self.setOkButtonEnabled(False)
+
+    def clear(self):
+        self._data = None
+        self._teName.clear()
+        self._teVorname.clear()
+        self._teGeboren_am.clear()
+        self._teAusweisId.clear()
+        self._teTelefon.clear()
+        self._teMailto.clear()
+        self._teIban.clear()
+        self._deVermietetAb.clear()
+        self._deVermietetBis.clear()
+        self._ieKaution.clear()
+        self._teAngelegtBei.clear()
+        self._txtBemerkung.clear()
         self._isModified = False
         self.setOkButtonEnabled(False)
 
@@ -279,6 +336,7 @@ class MietverhaeltnisView(ttk.Frame):
         self.setOkButtonEnabled(False)
 
     def getData(self) -> XMietverhaeltnis:
+        if not self._data: return
         data = self._data
         data.anrede = self._cboAnrede.getValue()
         data.name = self._teName.getValue()
@@ -301,6 +359,16 @@ class MietverhaeltnisView(ttk.Frame):
         #function to be called back has to accept
         # 1 Argument: XMietverhaeltnis
         self._saveCallback = cbfunc
+
+    def registerNewMieterCallback(self, cbfunc):
+        # function to be called back has to accept
+        # 1 Argument: XMietverhaeltnis
+        self._newMieterCallback = cbfunc
+
+    def registerPreviousNextMieterCallback(self, cbfunc):
+        # function to be called back has to accept
+        # 1 Argument: XMietverhaeltnis
+        self._previousNextMieterCallback = cbfunc
 
     def setOkButtonEnabled(self, enabled: bool):
         self._btnOk['state'] = 'normal' if enabled else 'disabled'

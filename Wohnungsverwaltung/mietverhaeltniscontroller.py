@@ -16,6 +16,34 @@ class MietverhaeltnisController:
 
     def startWork(self) -> None:
         self._view.registerSaveCallback(self._onSave)
+        self._view.registerNewMieterCallback(self._onNewMieter)
+        self._view.registerPreviousNextMieterCallback(self._onPreviousNextMieter)
+
+    def _onNewMieter(self, data: XMietverhaeltnis) -> None:
+        self._view.clear()
+        mv = XMietverhaeltnis()
+        mv.whg_id = self._whg_id
+        self._mietverhaeltnisse.append(mv)
+        self._listIdx = self._mietverhaeltnisse.len() - 1
+        self._view.setData(self._mietverhaeltnisse.getList()[self._listIdx])
+
+    def _onPreviousNextMieter(self, data: XMietverhaeltnis, prevOrNext: int) -> None:
+        '''
+        reads previous or next mieter
+        :param data: data of currently shown mieter
+        :param prevOrNext: +1: previous mieter
+                           -1: next mieter
+        :return: None
+        '''
+        if not self._mietverhaeltnisse or \
+                self._mietverhaeltnisse.len() == 0 or \
+                self._listIdx + prevOrNext < 0 or \
+                self._listIdx + prevOrNext >= self._mietverhaeltnisse.len():
+            messagebox.showerror("Nicht unterstützte Aktion", "Blättern nicht möglich")
+            return
+
+        self._listIdx += prevOrNext
+        self._view.setData(self._mietverhaeltnisse.getList()[self._listIdx])
 
     def _onSave(self, data: XMietverhaeltnis) -> None:
         msg = self._validate(data)
@@ -59,7 +87,10 @@ class MietverhaeltnisController:
 
     def clear(self):
         # called by wvcontroller: clear view and all member variables
-        print('MietverhaeltnisController.clear')
+        self._view.clear()
+        self._whg_id = -1
+        self._listIdx = 0
+        self._mietverhaeltnisse = None
 
 
 def test():

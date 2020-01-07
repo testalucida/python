@@ -48,6 +48,9 @@ class XInterfaceList:
     def getList(self) -> List[XInterface]:
         return self._list
 
+    def append(self, interface: XInterface):
+        self._list.append(interface)
+
     def get(self, idx: int) -> XInterface:
         return self._list[idx]
 
