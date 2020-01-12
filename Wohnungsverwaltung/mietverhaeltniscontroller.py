@@ -53,7 +53,7 @@ class MietverhaeltnisController:
 
         try:
             if data.mv_id <= 0:
-                self._dataProvider.insertMietverhaeltnis(data)
+                data.mv_id = self._dataProvider.insertMietverhaeltnis(data)
             else:
                 self._dataProvider.updateMietverhaeltnis(data)
         except WvException as ex:

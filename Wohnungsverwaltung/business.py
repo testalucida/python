@@ -820,7 +820,7 @@ class DataProvider:
     '''
     insert Mietverhältnis
     '''
-    def insertMietverhaeltnis(self, data:XMietverhaeltnis) -> None:
+    def insertMietverhaeltnis(self, data:XMietverhaeltnis) -> int:
         data.geboren_am = datehelper.convertEurToIso(data.geboren_am)
         data.vermietet_ab = datehelper.convertEurToIso(data.vermietet_ab)
         if data.vermietet_bis:
@@ -829,7 +829,8 @@ class DataProvider:
             post(Server.SERVER + 'business.php?q=insert_mietverhaeltnis&user=' + self.__user,
                  data=data.getValuesAsDict())
 
-        self._getWriteRetValOrRaiseException(resp)
+        writeRetVal: WriteRetVal = self._getWriteRetValOrRaiseException(resp)
+        return int(writeRetVal.object_id())
 
     '''
     update Mietverhältnis
