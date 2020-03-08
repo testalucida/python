@@ -7,8 +7,11 @@ from wvframe import WV
 from wvcontroller import WvController
 
 def main():
+    from tkinter import PhotoImage
     #print("path: ", sys.path)
     root = Tk()
+    icon = PhotoImage(file="./images/haus_18x16.png")
+    root.call('wm', 'iconphoto', root._w, icon)
 
     if 'win' not in sys.platform:
         style = ttk.Style()

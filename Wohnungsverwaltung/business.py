@@ -199,8 +199,7 @@ class DataProvider:
         resp = self.__session. \
             get(Server.SERVER + 'business.php?q=uebersicht_rechnungen&id=' +
                 str( whg_id ) + '&user=' + self.__user)
-        # self._checkException(resp)
-        # rg_list = json.loads(resp.content)
+
         rg_list = self._getReadRetValOrRaiseException(resp)
         rg_list = self._getDictEurDate(rg_list, 'rg_datum', 'rg_bezahlt_am')
         return rg_list
@@ -209,8 +208,7 @@ class DataProvider:
         resp = self.__session. \
             get(Server.SERVER + 'business.php?q=mtl_ein_aus_data&id=' +
                 str(whg_id) + '&user=' + self.__user)
-        # self._checkException(resp)
-        # mea_data = json.loads(resp.content)
+
         mea_data = self._getReadRetValOrRaiseException(resp)
         mea_data = self._getDictEurDate(mea_data, 'gueltig_ab', 'gueltig_bis')
         return mea_data
@@ -219,8 +217,7 @@ class DataProvider:
         resp = self.__session. \
             get(Server.SERVER + 'business.php?q=sonst_ein_aus_data&id=' +
                 str(whg_id) + '&user=' + self.__user)
-        # self._checkException(resp)
-        # sea_data = json.loads(resp.content)
+      
         sea_data = self._getReadRetValOrRaiseException(resp)
         return sea_data
 

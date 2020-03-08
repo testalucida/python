@@ -1,5 +1,12 @@
 from typing import Dict, List, Text
+from enum import Enum, IntEnum
 from xinterface import XInterface, XInterfaceList
+
+Vergleichswert = IntEnum('Vergleichswert',
+                         'nettomiete nk_voraus hg_voraus rechng '
+                         'nk_abrechng hg_abrechng '
+                         'ergebnis '
+                         'nettomiete_qm nk_qm hg_qm rueck_qm')
 
 class XMietverhaeltnis(XInterface):
     def __init__(self, dic: Dict[str, str] = None):
@@ -159,7 +166,6 @@ class XMtlHausgeldList(XInterfaceList):
     def __init__(self, klass: type, li: list = None):
         XInterfaceList.__init__(self, XMtlHausgeld, li)
 
-
 class XHausgeldAdjustment(XInterface):
     def __init__(self, dic: dict = None):
         self.sea_id = None
@@ -173,7 +179,6 @@ class XHausgeldAdjustment(XInterface):
 class XHausgeldAdjustmentList(XInterfaceList):
     def __init__(self, klass: type, li: list = None):
         XInterfaceList.__init__(self, XHausgeldAdjustment, li)
-
 
 class XSonstigeKosten(XInterface):
     def __init__(self, dic: dict = None):
