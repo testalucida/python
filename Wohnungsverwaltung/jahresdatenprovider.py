@@ -1,4 +1,5 @@
 from business import DataProviderBase, Server
+from interfaces import Vergleichswert, XJahresdaten
 import utils
 
 class JahresdatenProvider(DataProviderBase):
@@ -33,11 +34,58 @@ class JahresdatenProvider(DataProviderBase):
         mea_data = self._getDictEurDate(mea_data, 'gueltig_ab', 'gueltig_bis')
         return mea_data
 
+    def getRechnungenJahr(self, jahr:int, whg_id:int = None):
+        """
+        :param jahr:
+        :param whg_id:
+        :return: a list of dictionaries:
+        [
+          {'whg_id': '1',
+           'betrag': '222.00',
+           'verteilung_jahre': '1',
+           'year_bezahlt_am': '2019'
+          },
+          {...
+          }
+        ]
+        """
+        resp = self._session. \
+            get(Server.SERVER + 'business.php?q=rechng_jahr&jahr=' +
+                str(jahr) + '&id=' + str(whg_id) + '&user=' + self._user)
+        rg_list = self._getReadRetValOrRaiseException(resp)
+
+        return rg_list
+
+    def getSonstigeEinAusJahr(self, jahr:int, whg_id:int):
+        """
+        :param jahr:
+        :param whg_id:
+        :return: a list of dictionaries:
+        [
+            {
+                'whg_id': '1',
+                'betrag': '500.00',
+                'ein_aus': 'a',
+                'art_kurz': 'sonderum'
+            },
+            {...
+            }
+        ]
+        """
+        resp = self._session. \
+            get(Server.SERVER + 'business.php?q=sonst_ein_aus_jahr&jahr=' +
+                str(jahr) + '&id=' + str(whg_id) + '&user=' + self._user)
+        sea_list = self._getReadRetValOrRaiseException(resp)
+
+        return sea_list
+
 #+++++++++++++++++++++++++++++++++++++++++++++
 
 if __name__ == '__main__':
     prov = JahresdatenProvider()
     prov.connect(utils.getUser())
 
-    data = prov.getMtlEinAusJahr(2019, 2)
+    #data = prov.getMtlEinAusJahr(2019, 2)
+    #rechng = prov.getRechnungenJahr(2019, 1)
+    sea_list = prov.getSonstigeEinAusJahr(2019, 1)
     print(data)

@@ -6,7 +6,26 @@ Vergleichswert = IntEnum('Vergleichswert',
                          'nettomiete nk_voraus hg_voraus rechng '
                          'nk_abrechng hg_abrechng '
                          'ergebnis '
-                         'nettomiete_qm nk_qm hg_qm rueck_qm')
+                         'nettomiete_qm nk_qm '
+                         'hg_netto_qm rueck_qm hg_ges_qm')
+
+class XJahresdaten(XInterface):
+    def _init__(self, dic:Dict[str, str] = None):
+        self.jahr = -1
+        self.whg_id = -1
+        self.netto_miete = -1
+        self.nk_abschlag = -1
+        self.hg_abschlag = -1
+        self.rechng = -1
+        self.nk_abrechng = -1
+        self.hg_abrechng = -1
+        self.ergebnis = -1
+        self.netto_miete_qm = -1
+        self.nk_qm = -1
+        self.hg_netto_qm = -1
+        self.ruecklage_qm = -1
+        self.hg_ges_qm = -1
+
 
 class XMietverhaeltnis(XInterface):
     def __init__(self, dic: Dict[str, str] = None):
