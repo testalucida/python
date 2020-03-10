@@ -305,11 +305,14 @@ class MietverhaeltnisView(ttk.Frame):
         self._deVermietetBis.clear()
         self._ieKaution.clear()
         self._teAngelegtBei.clear()
+        self._txtInseratText.clear()
+        self._teInseriertBei.clear()
         self._txtBemerkung.clear()
         self._isModified = False
         self.setOkButtonEnabled(False)
 
     def setData(self, data: XMietverhaeltnis):
+        self.clear()
         self._data = data
         self._lblIdent.setValue(data.ort + ', ' +
                                 data.strasse + ' ' + data.whg_bez)

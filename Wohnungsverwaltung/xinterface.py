@@ -25,6 +25,10 @@ class XInterface:
     def getValuesAsDict(self) -> dict:
         return self.__dict__
 
+    def print(self) -> None:
+        for key, val in self.__dict__.items():
+            print(key, ': ', val)
+
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 class XInterfaceList:

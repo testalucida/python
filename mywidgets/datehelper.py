@@ -97,13 +97,16 @@ def getLastYears(cnt: int) -> list:
         yearlist.append(current - n)
     return yearlist
 
+def getTodayAsIsoString() -> str:
+    return date.today().isoformat()
+
 def getNumberOfMonths(d1: str, d2: str, year: int) -> int:
     """
     gets the number of months within the period beginning on d1 and
     ending on d2 which are in the given year
     NOTE: the day of month will not be considered.
-          If year is 2019 and d1 is '2019-01-31' d1 will be counted.
-          If year is 2019 and d2 is '2019-12-01' d2 will be counted.
+          If year is 2019 and d1 is '2019-01-31' january '19 will be counted.
+          If year is 2019 and d2 is '2019-12-01' december '19 will be counted.
     :param d1: date the period is beginning. Must be given as iso string 'YYYY-MM-DD'
     :param d2: date the period is ending. Must be given as iso string 'YYYY-MM-DD'
     :param year: a four digit integer like 2019
@@ -135,6 +138,7 @@ def addDays(mydate: date, cntDays: int) -> date:
 
 
 def test():
+    s = getTodayAsIsoString()
     d1 = '2018-01-01'
     d2 = '2018-12-01'
     cnt = getNumberOfMonths(d1, d2, 2018)

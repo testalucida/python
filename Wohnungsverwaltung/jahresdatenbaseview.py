@@ -176,23 +176,31 @@ class JahresdatenBaseView(ttk.Frame):
         self._createOut(lf, Vergleichswert.ergebnis, r, 22)
 
         r += 1
+        #########  Sonderumlagen #####################
+        lbl = MyLabel(lf, text='Sonderumlagen', column=c, row=r,
+                      sticky='nw', anchor='w', padx=1, pady=25)
+        lbl['style'] = 'fat.TLabel'
+        self._rowList.append((r, 22))
+        self._createOut(lf, Vergleichswert.sonderumlage, r, 22)
+
+        r += 1
         #########  Ein-/Auszahlungen je qm #####################
         lbl = MyLabel(lf, text='Ein-/Auszahlungen\nje qm u. Monat', column=c, row=r,
                       sticky='nw', anchor='w', padx=1, pady=pady)
         lbl['style'] = 'fat.TLabel'
 
         r += 1
-        lbl = MyLabel(lf, text='Netto-Miete', column=c, row=r, sticky='nw',
+        lbl = MyLabel(lf, text='Nettomiete', column=c, row=r, sticky='nw',
                       anchor='w', padx=padx, pady=pady)
         self._createOut(lf, Vergleichswert.nettomiete_qm, r, pady)
 
         r += 1
-        lbl = MyLabel(lf, text='Nebenkosten', column=c, row=r, sticky='nw',
+        lbl = MyLabel(lf, text='NK', column=c, row=r, sticky='nw',
                       anchor='w', padx=padx, pady=pady)
         self._createOut(lf, Vergleichswert.nk_qm, r, pady)
 
         r += 1
-        lbl = MyLabel(lf, text='Hausgeld netto', column=c, row=r, sticky='nw',
+        lbl = MyLabel(lf, text='HG netto', column=c, row=r, sticky='nw',
                       anchor='w', padx=padx, pady=pady)
         self._createOut(lf, Vergleichswert.hg_netto_qm, r, pady)
 
@@ -276,6 +284,7 @@ def test():
     jv.setValue(Vergleichswert.nk_abrechng, 2019, 127)
     jv.setValue(Vergleichswert.hg_abrechng, 2019, -220)
     jv.setValue(Vergleichswert.ergebnis, 2019, 455)
+    jv.setValue(Vergleichswert.sonderumlage, 2019, 500)
     jv.setValue(Vergleichswert.nettomiete_qm, 2019, 7.3)
     jv.setValue(Vergleichswert.nk_qm, 2019, 2.05)
     jv.setValue(Vergleichswert.hg_netto_qm, 2019, 2.12)

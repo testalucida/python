@@ -33,7 +33,7 @@ class WohnungDetailsController:
             details: XWohnungDetails = \
                 self._dataProvider.getWohnungDetails(self._whg_id)
             self._view.setData(details)
-        except WvException as ex:
+        except Exception as ex:
             messagebox.showerror("Uuuups!", ex.message())
 
     def wohnungSelected(self, whg_id: int) -> None:

@@ -77,8 +77,7 @@ class MietverhaeltnisController:
                 self._dataProvider.getMietverhaeltnisse(self._whg_id)
             self._mietverhaeltnisse = mietverhaeltnisse
             self._view.setData(mietverhaeltnisse.getList()[self._listIdx])
-
-        except WvException as ex:
+        except Exception as ex:
             messagebox.showerror("Uuuups!", ex.message())
 
     def wohnungSelected(self, whg_id: int) -> None:

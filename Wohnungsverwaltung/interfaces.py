@@ -6,26 +6,83 @@ Vergleichswert = IntEnum('Vergleichswert',
                          'nettomiete nk_voraus hg_voraus rechng '
                          'nk_abrechng hg_abrechng '
                          'ergebnis '
+                         'sonderumlage '
                          'nettomiete_qm nk_qm '
                          'hg_netto_qm rueck_qm hg_ges_qm')
 
-class XJahresdaten(XInterface):
-    def _init__(self, dic:Dict[str, str] = None):
-        self.jahr = -1
-        self.whg_id = -1
-        self.netto_miete = -1
-        self.nk_abschlag = -1
-        self.hg_abschlag = -1
-        self.rechng = -1
-        self.nk_abrechng = -1
-        self.hg_abrechng = -1
-        self.ergebnis = -1
-        self.netto_miete_qm = -1
-        self.nk_qm = -1
-        self.hg_netto_qm = -1
-        self.ruecklage_qm = -1
-        self.hg_ges_qm = -1
+class XEinAusJahr():
+    def __init__(self):
+        self.netto_miete = 0
+        self.nk_abschlag = 0
+        self.hg_abschlag = 0
 
+class XSonstigeJahressummen():
+    def __init__(self):
+        self.nk_abrechnung = 0
+        self.hg_abrechnung = 0
+        self.sonst_kosten = 0
+        self.sonderumlage = 0
+        self.abloese = 0
+
+class XJahresdaten():
+    def __init__(self):
+        self.jahr = 0
+        self.whg_id = 0
+        self.netto_miete = 0
+        self.nk_abschlag = 0
+        self.hg_abschlag = 0
+        self.rechng = 0
+        self.nk_abrechng = 0
+        self.hg_abrechng = 0
+        self.ergebnis = 0
+        self.netto_miete_qm = 0
+        self.nk_qm = 0
+        self.hg_netto_qm = 0
+        self.ruecklage_qm = 0
+        self.hg_ges_qm = 0
+
+class XMtlEinAusJahr(XInterface):
+    def __init__(self, dic:Dict[str, str] = None):
+        self.jahr = 0
+        self.whg_id = 0
+        self.gueltig_ab = ''
+        self.gueltig_bis = ''
+        self.netto_miete = 0.0
+        self.nk_abschlag = 0.0
+        self.hg_netto_abschlag = 0.0
+        self.ruecklage_zufuehr = 0.0
+        self.hg_brutto = 0.0
+        XInterface.__init__(self, dic)
+
+class XMtlEinAusJahrList(XInterfaceList):
+    def __init__(self, klass: type, li: list = None):
+        XInterfaceList.__init__(self, XMtlEinAusJahr, li)
+
+class XRechnungKurz(XInterface):
+    def __init__(self, dic:Dict[str, str] = None):
+        self.jahr = 0
+        self.whg_id = 0
+        self.betrag = 0.0
+        self.verteilung_jahre = 0
+        self.year_bezahlt_am = 0
+        XInterface.__init__(self, dic)
+
+class XRechnungKurzList(XInterfaceList):
+    def __init__(self, klass: type, li: list = None):
+        XInterfaceList.__init__(self, XRechnungKurz, li)
+
+class XSonstigeEinAusJahr(XInterface):
+    def __init__(self, dic:Dict[str, str] = None):
+        self.jahr = 0
+        self.whg_id = 0
+        self.betrag = 0.0
+        self.ein_aus = ''
+        self.art_kurz = ''
+        XInterface.__init__(self, dic)
+
+class XSonstigeEinAusJahrList(XInterfaceList):
+    def __init__(self, klass: type, li: list = None):
+        XInterfaceList.__init__(self, XSonstigeEinAusJahr, li)
 
 class XMietverhaeltnis(XInterface):
     def __init__(self, dic: Dict[str, str] = None):

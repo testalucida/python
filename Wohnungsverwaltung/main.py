@@ -43,7 +43,9 @@ if __name__ == '__main__':
 todo
 
 - Anlage V: in einem Dialog in Textform ausgeben
-- Tab Page Wohnungsdaten implementieren
-- Tab Page Vermietung implementieren
+- Tab Page Jahresdaten implementieren (für *eine* Wohnung)
+- Dialog Jahresdaten implementieren (Vergleich *aller* Wohnungen)
+- Bug: Tab Mietverhältnis: Inserat-Daten werden nicht gelöscht bei Änderung 
+       der Wohnungsselektion. Mietvertragsdaten offenbar auch nicht(?)
 
 """
