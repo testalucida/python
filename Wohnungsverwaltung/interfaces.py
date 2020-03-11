@@ -21,7 +21,7 @@ class XSonstigeJahressummen():
         self.nk_abrechnung = 0
         self.hg_abrechnung = 0
         self.sonst_kosten = 0
-        self.sonderumlage = 0
+        self.sonderumlagen = 0
         self.abloese = 0
 
 class XJahresdaten():
@@ -34,7 +34,9 @@ class XJahresdaten():
         self.rechng = 0
         self.nk_abrechng = 0
         self.hg_abrechng = 0
+        self.sonst_kosten = 0
         self.ergebnis = 0
+        self.sonderumlagen = 0
         self.netto_miete_qm = 0
         self.nk_qm = 0
         self.hg_netto_qm = 0

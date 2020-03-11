@@ -92,13 +92,14 @@ class Server:
     SERVER: str = ''
 
 #+++++++++++++++++++++++++++++++++++++++++++++
-
+global_user = ''
+#+++++++++++++++++++++++++++++++++++++++++++++
 class DataProviderBase:
     JSONERROR: int = -2
 
     def __init__(self):
         self._session = requests.Session()
-        self._user = ''
+        self._user = global_user
 
     def __del__(self):
         self.disconnect()
@@ -112,6 +113,8 @@ class DataProviderBase:
             raise ex
 
     def connect(self, user) -> None:
+        global global_user
+        global_user = user
         Server.SERVER = Server.LOCALHOST if user == 'test' else Server.REMOTE
         self._user = user
         #d = {'user':user, 'password':pwd}
@@ -205,39 +208,15 @@ class DataProviderBase:
 #+++++++++++++++++++++++++++++++++++++++++++++
 
 class DataProvider(DataProviderBase):
-    # JSONERROR: int = -2
-    #
-    # def __init__(self):
-    #     self.__session = requests.Session()
-    #     self.__user = ''
-    #
-    # def __del__(self):
-    #     self.disconnect()
-
-    # def _checkException(self, resp, additionalText: str = None) -> None:
-    #     if resp.status_code != 200 or not resp.content:
-    #         msg = resp.text
-    #         if additionalText:
-    #             msg = ''.join((msg, '\n', additionalText))
-    #         ex = ServiceException(resp.status_code, msg)
-    #         raise ex
-
-    # def connect(self, user) -> None:
-    #     Server.SERVER = Server.LOCALHOST if user == 'test' else Server.REMOTE
-    #     self.__user = user
-    #     #d = {'user':user, 'password':pwd}
-    #     d = {'user': user}
-    #     resp = self.__session.post(Server.SERVER + 'login.php', data=d )
-    #     #resp = self.__session.post(SERVER + 'testecho.php', data=d)
-    #     if resp.status_code != 200:
-    #         msg = ''.join(('Error on connecting user ', user, '\nServer says: ', resp.text))
-    #         raise ServiceException(resp.status_code, msg)
-
-    # def disconnect(self):
-    #     self.__session.close()
-
     def __init__(self):
         DataProviderBase.__init__(self)
+
+    @classmethod
+    def createFromExistingConnection(cls):
+        global global_user
+        dp = DataProvider()
+        dp.connect(global_user)
+        return dp
 
     def getWohnungsUebersicht(self) -> list:
         """
@@ -279,8 +258,9 @@ class DataProvider(DataProviderBase):
             'whg_bez': '3. OG rechts', 
             'einhwert_az': '24106630826488', 
             'angeschafft_am': None,
-            'steuerl_zurechng_ehemann: 100,
-            'steuerl_zurechng_ehefrau: 0
+            'steuerl_zurechng_ehemann': 100,
+            'steuerl_zurechng_ehefrau': 0,
+            'qm': 50
         }
         """
         if data['angeschafft_am']:
@@ -989,87 +969,6 @@ class DataProvider(DataProviderBase):
                  data=data.getValuesAsDict())
 
         self._getWriteRetValOrRaiseException(resp)
-
-    ###########################################################################
-
-    # def _getDictCopyIsoDate(self, orig: dict, *keys) -> dict:
-    #     copy = dict(orig)
-    #     for key in keys:
-    #         copy[key] = datehelper.convertEurToIso(copy[key])
-    #     return copy
-    #
-    # def _getDictEurDate(self, origList: list, *keys) -> list:
-    #     for dic in origList:
-    #         for key in keys:
-    #             if dic[key]:
-    #                 dic[key] = datehelper.convertIsoToEur(dic[key])
-    #     return origList
-    #
-    # def _getReadRetValOrRaiseException(self, resp) -> any:
-    #     if resp.status_code != 200:
-    #         serviceError = None
-    #         if resp.status_code == 500:
-    #             msg = 'Requested service not found.\n\n' + self._getStack()
-    #             serviceError = ServiceException(500, msg)
-    #         else:
-    #             msg = resp.text + '\n\n' + self._getStack()
-    #             serviceError = ServiceException( resp.status_code, msg )
-    #
-    #         raise serviceError
-    #
-    #     ret = None
-    #     try:
-    #         ret = json.loads(resp.content)
-    #     except ValueError as e:
-    #         msg: str = ''.join((str(type(e)), ': ', e.args[0]))
-    #         msg += '\n\n'
-    #         msg += self._getStack()
-    #         raise ServiceException(str(self.JSONERROR), msg)
-    #     except Exception as x:
-    #         msg = '' if not resp.content else resp.content
-    #         msg += '\n\n'
-    #         msg += self._getStack()
-    #         dataError = DataError(resp.status_code, msg)
-    #         raise dataError
-    #
-    #     if ret is None:
-    #         msg = 'Service call provided no content (None)\n\n' + self._getStack()
-    #         raise WvException(resp.status_code, msg)
-    #
-    #     return ret
-    #
-    # def _getStack(self) -> str:
-    #     stacklist = traceback.format_stack()
-    #     stack = 'Stacktrace:\n'
-    #     start = len(stacklist)
-    #     start = start - 4 if start > 3 else 0
-    #     for e in stacklist[start:]:
-    #         stack += e
-    #         stack += '\n'
-    #     return stack
-    #
-    # def _getWriteRetValOrRaiseException(self, resp):
-    #     if resp.status_code != 200:
-    #         serviceError = ServiceException( resp.status_code, resp.text )
-    #         print(serviceError.toString())
-    #         raise serviceError
-    #
-    #     dic = {}
-    #     try:
-    #         dic = json.loads(resp.content)
-    #     except ValueError as e:
-    #         print(e)
-    #         msg: str = ''.join((str(type(e)), ': ', e.args[0]))
-    #         print(msg)
-    #         raise ServiceException(str(self.JSONERROR), msg)
-    #
-    #     if dic['rc'] != 0:
-    #         dataError = DataError(dic)
-    #         raise dataError
-    #
-    #     return WriteRetVal(dic['rc'], dic['obj_id'])
-
-
 
 ######### For testing purposes only ########################
 #
