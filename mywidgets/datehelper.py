@@ -112,9 +112,12 @@ def getNumberOfMonths(d1: str, d2: str, year: int) -> int:
     :param year: a four digit integer like 2019
     :return: number of months
     """
-    start = dateutil.parser.parse(d1)
-    dt = start
-    end = dateutil.parser.parse(d2)
+    start:datetime = dateutil.parser.parse(d1)
+    dt:datetime = start
+    end:datetime = dateutil.parser.parse(d2)
+    if end.year > year:
+        d2 = str(year) + "-12-31"
+        end = dateutil.parser.parse(d2)
 
     while dt.year < year:
         dt = addMonths(dt, 1)
@@ -139,9 +142,9 @@ def addDays(mydate: date, cntDays: int) -> date:
 
 def test():
     s = getTodayAsIsoString()
-    d1 = '2018-01-01'
-    d2 = '2018-12-01'
-    cnt = getNumberOfMonths(d1, d2, 2018)
+    d1 = '2019-12-01'
+    d2 = '2020-03-10'
+    cnt = getNumberOfMonths(d1, d2, 2019)
     print(cnt)
 
 if __name__ == '__main__':

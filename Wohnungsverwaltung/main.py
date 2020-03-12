@@ -45,7 +45,11 @@ todo
 - Anlage V: in einem Dialog in Textform ausgeben
 - Tab Page Jahresdaten implementieren (für *eine* Wohnung)
 - Dialog Jahresdaten implementieren (Vergleich *aller* Wohnungen)
-- Bug: Tab Mietverhältnis: Inserat-Daten werden nicht gelöscht bei Änderung 
-       der Wohnungsselektion. Mietvertragsdaten offenbar auch nicht(?)
-
+- Bug: Wohnung löschen geht nicht
+- Bug: Löschen der letzten Rechnung: Fehler wird gemeldet, 
+       letzte Rechnung bleibt stehen, ist beim neuen LAden
+       dann aber doch weg
+- zusätzliche Plausi bei Mtl. Ein-Auszahlungen: Es darf keine Änderung
+  von Miete, NK, HG WÄHREND eines Monats geben, sonst laufen die Jahresdaten
+  und die AnlageV-Berechnung falsch.
 """
