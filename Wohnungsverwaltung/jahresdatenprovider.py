@@ -1,6 +1,7 @@
 from typing import Dict, List
 from business import DataProviderBase, Server, DataProvider
 from interfaces import Vergleichswert, \
+    XWohnungMinimal, XWohnungMinimalList, \
     XMtlEinAusJahr, XMtlEinAusJahrList, \
     XRechnungKurz, XRechnungKurzList, \
     XSonstigeEinAusJahr, XSonstigeEinAusJahrList
@@ -26,9 +27,9 @@ class SonstigeJahressummen():
         self.abloese = 0
 
 class Jahresdaten():
-    def __init__(self):
-        self.jahr = 0
-        self.whg_id = 0
+    def __init__(self, whg_id:int, jahr:int):
+        self.whg_id = whg_id
+        self.jahr = jahr
         self.netto_miete = 0
         self.nk_abschlag = 0
         self.hg_abschlag = 0
@@ -68,9 +69,18 @@ class JahresdatenCollection():
                 return data
         raise Exception(str(jahr) + " not found in Collection")
 
+class JahresdatenCollectionList():
+    def __init__(self):
+        self._list = []
+
+    def append(self, coll:JahresdatenCollection):
+        self._list.append(coll)
+
+
 class JahresdatenProvider(DataProviderBase):
     def __init__(self):
         DataProviderBase.__init__(self)
+        self._coll_list:List[JahresdatenCollection] = None
 
     def getJahresdaten(self,
                        jahr_von:int,
@@ -88,13 +98,14 @@ class JahresdatenProvider(DataProviderBase):
                  Jahresdaten objects as are defined by the subtraction
                  jahr_bis - jahr_von + 1.
         """
-        coll:JahresdatenCollection = None
+        self._coll_list: List[JahresdatenCollection] = \
+            self._createCollectionList(jahr_von, jahr_bis, whg_id)
+
         for jahr in range(jahr_von, jahr_bis+1):
-            data:Jahresdaten = Jahresdaten()
-            data.jahr = jahr
-            data.whg_id = whg_id
             #summation of monthly revenues and expenses
-            einausjahr:EinAusJahr = self._getEinAusJahr(jahr, whg_id)
+            eajlist:List[EinAusJahr] = self._getEinAusJahr(jahr, whg_id)
+            self._assignEinAusJahrValues(eajlist)
+
             data.netto_miete = einausjahr.netto_miete
             data.nk_abschlag = einausjahr.nk_abschlag
             data.hg_abschlag = einausjahr.hg_abschlag
@@ -108,15 +119,43 @@ class JahresdatenProvider(DataProviderBase):
             data.sonderumlagen = sonst_summen.sonderumlagen
             li.append(data)
 
-        return coll
+        return self._coll_list
+    
+    def _assignEinAusJahrValues(self, eajlist:List[EinAusJahr]) -> None:
+        """
+        class EinAusJahr():
+            def __init__(self, jahr:int, whg_id:int):
+                self.jahr = jahr
+                self.whg_id = whg_id
+                self.netto_miete = 0
+                self.nk_abschlag = 0
+                self.hg_abschlag = 0
+        """
+        for eaj in eajlist:
+            pass
 
-    def _getWohnungsdaten(self, whg_id:int) -> None:
-        dp = DataProvider.createFromExistingConnection()
-        dic = dp.getWohnungIdentifikation(whg_id)
-        self._qm = dic['qm']
-        self._wohnungident = dic['ort'] + '\n' + \
-                             dic['strasse'] + '\n' + \
-                             dic['whg_bez']
+    def _createCollectionList(self, jahr_von:int, jahr_bis:int, whg_id:int) \
+            -> List[JahresdatenCollection]:
+        l: List[JahresdatenCollection] = [] #top container for all JahresdatenCollections
+        whglist:XWohnungMinimalList = self._getWohnungsdaten()
+        for whg in whglist:
+            if whg_id == 0 or whg.whg_id == whg_id:
+                #create a JahresdatenCollection for each whg_id:
+                coll = JahresdatenCollection(whg.whg_id)
+                l.append(coll)
+                for jahr in range(jahr_von, jahr_bis+1):
+                    #create Jahresdaten for each year for every whg_id
+                    data = Jahresdaten(whg.whg_id, jahr)
+                    coll.append(data)
+        return l
+
+    def _getWohnungsdaten(self) -> XWohnungMinimalList:
+        resp = self._session. \
+            get(Server.SERVER + 'business.php?q=wohnungen_minimal&user=' + self._user)
+
+        wlist = XWohnungMinimalList(XWohnungMinimal,
+                                    self._getReadRetValOrRaiseException(resp))
+        return wlist
 
     def _getEinAusJahr(self, jahr:int, whg_id:int = 0) -> List[EinAusJahr]:
         """

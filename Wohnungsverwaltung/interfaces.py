@@ -53,6 +53,21 @@ class XSonstigeEinAusJahrList(XInterfaceList):
     def __init__(self, klass: type, li: list = None):
         XInterfaceList.__init__(self, XSonstigeEinAusJahr, li)
 
+class XWohnungMinimal(XInterface):
+    def __init__(self, dic: Dict[str, str] = None):
+        self.whg_id = 0
+        self.plz = ''
+        self.ort = ''
+        self.strasse = ''
+        self.whg_bez = ''
+        self.qm = 0
+        self.angeschafft_am = ''
+        XInterface.__init__(self, dic)
+
+class XWohnungMinimalList(XInterfaceList):
+    def __init__(self, klass: type, li: list = None):
+        XInterfaceList.__init__(self, XWohnungMinimal, li)
+
 class XMietverhaeltnis(XInterface):
     def __init__(self, dic: Dict[str, str] = None):
         self.mv_id = -1
