@@ -12,8 +12,8 @@ Vergleichswert = IntEnum('Vergleichswert',
 
 class XMtlEinAusJahr(XInterface):
     def __init__(self, dic:Dict[str, str] = None):
-        self.jahr = 0
         self.whg_id = 0
+        self.jahr = 0
         self.gueltig_ab = ''
         self.gueltig_bis = ''
         self.netto_miete = 0.0

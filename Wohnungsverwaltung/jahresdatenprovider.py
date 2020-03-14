@@ -9,23 +9,23 @@ import utils
 import datehelper
 
 class EinAusJahr():
-    def __init__(self, jahr:int, whg_id:int):
-        self.jahr = jahr
+    def __init__(self, whg_id:int, jahr:int):
         self.whg_id = whg_id
+        self.jahr = jahr
         self.netto_miete = 0
         self.nk_abschlag = 0
         self.hg_abschlag = 0
-
+#+++++++++++++++++++++++++++++++++++++++++++++
 class SonstigeJahressummen():
-    def __init__(self, jahr:int, whg_id:int):
-        self.jahr = jahr
+    def __init__(self, whg_id:int, jahr:int):
         self.whg_id = whg_id
+        self.jahr = jahr
         self.nk_abrechnung = 0
         self.hg_abrechnung = 0
         self.sonst_kosten = 0
         self.sonderumlagen = 0
         self.abloese = 0
-
+#+++++++++++++++++++++++++++++++++++++++++++++
 class Jahresdaten():
     def __init__(self, whg_id:int, jahr:int):
         self.whg_id = whg_id
@@ -44,31 +44,47 @@ class Jahresdaten():
         self.hg_netto_qm = 0
         self.ruecklage_qm = 0
         self.hg_ges_qm = 0
-
+#+++++++++++++++++++++++++++++++++++++++++++++
 class Rechnungssumme():
-    def __init__(self, jahr:int, whg_id:int):
-        self.jahr = jahr
+    def __init__(self, whg_id:int, jahr:int):
         self.whg_id = whg_id
+        self.jahr = jahr
         self.betrag = 0
-
+#+++++++++++++++++++++++++++++++++++++++++++++
 class JahresdatenCollection():
     """
-    A collection containing all Jahresdaten of exactly one property (whg_id)
+    A collection containing all Jahresdaten concerning ONE property (whg_id), n years
     """
     def __init__(self, whg_id:int):
         self.whg_id = whg_id
-        self.wohnungIdent = ''
-        self.dataList = []
+        self._wohnungIdent = ''
+        self._qm = 0
+        self._dataList = []
+
+    def getWhgId(self) -> int:
+        return self.whg_id
+
+    def setWohnungIdent(self, ident:str) -> None:
+        self._wohnungIdent = ident
+
+    def getWohnungIdent(self) -> str:
+        return self._wohnungIdent
+
+    def setQm(self, qm:int) -> None:
+        self._qm = qm
+
+    def getQm(self) -> int:
+        return self._qm
 
     def append(self, jahresdaten:Jahresdaten) -> None:
-        self.dataList.append(jahresdaten)
+        self._dataList.append(jahresdaten)
 
-    def get(self, jahr:int) -> Jahresdaten:
-        for data in self.dataList:
+    def getJahresdaten(self, jahr:int) -> Jahresdaten:
+        for data in self._dataList:
             if data.jahr == jahr:
                 return data
         raise Exception(str(jahr) + " not found in Collection")
-
+#+++++++++++++++++++++++++++++++++++++++++++++
 class JahresdatenCollectionList():
     def __init__(self):
         self._list = []
@@ -76,78 +92,121 @@ class JahresdatenCollectionList():
     def append(self, coll:JahresdatenCollection):
         self._list.append(coll)
 
+    def getWhgId(self) -> int:
+        return self._list[0].getWhgId()
 
+#+++++++++++++++++++++++++++++++++++++++++++++
 class JahresdatenProvider(DataProviderBase):
     def __init__(self):
         DataProviderBase.__init__(self)
-        self._coll_list:List[JahresdatenCollection] = None
 
-    def getJahresdaten(self,
-                       jahr_von:int,
-                       jahr_bis:int,
-                       whg_id:int = 0) -> List[JahresdatenCollection]:
+    def getJahresdaten(self, whg_id: int, jahr_von: int, jahr_bis: int = None) \
+            -> JahresdatenCollection:
+        pass
+
+    def getJahresdatenAlleWohnungen(self, jahr_von:int, jahr_bis:int = None) \
+            -> List[JahresdatenCollection]:
         """
+        Gets Jahresdaten objects of all active properties for the years
+        given by jahr_von and jahr_bis
         :param jahr_von:
-        :param jahr_bis:
-        :param whg_id: if whg_id > 0: Jahresdaten are provided for this whg_id.
-                       if whg_id == 0: Jahresdaten are provided for all active
-                       property objects.
-        :return: a list of as many JahresdatenCollection objects as are concerned
-                 by argument whg_id.
-                 Each JahresdatenCollection contains as many
-                 Jahresdaten objects as are defined by the subtraction
-                 jahr_bis - jahr_von + 1.
+        :param jahr_bis: if not given, current year is assumed.
+        :return: A list of JahresdatenCollection*s, one for each property.
+                 Each JahresdatenCollection contains as many Jahresdaten objects
+                 as are defined by the substraction year_bis - year_von + 1
         """
-        self._coll_list: List[JahresdatenCollection] = \
-            self._createCollectionList(jahr_von, jahr_bis, whg_id)
+        #create the collection list to be returned:
+        coll_list: List[JahresdatenCollection] = []  # top container for all JahresdatenCollections
+        #get the involved properties (whg_id et al.):
+        whglist: XWohnungMinimalList = self._getWohnungsdaten()
+        for whg in whglist:
+            # get Jahresdaten for each property
+            jdcoll:JahresdatenCollection = \
+                self._getJahresdatenCollection(whg, jahr_von, jahr_bis)
+            self._coll_list.append(jdcoll)
 
-        for jahr in range(jahr_von, jahr_bis+1):
-            #summation of monthly revenues and expenses
-            eajlist:List[EinAusJahr] = self._getEinAusJahr(jahr, whg_id)
-            self._assignEinAusJahrValues(eajlist)
+        return coll_list
 
-            data.netto_miete = einausjahr.netto_miete
-            data.nk_abschlag = einausjahr.nk_abschlag
-            data.hg_abschlag = einausjahr.hg_abschlag
-            #summation of bills and withdrawels of reserve fund
-            data.rechng = self._getRechnungssummenJahr(jahr, whg_id)
-            #summation of clearings
-            sonst_summen:SonstigeJahressummen = \
-                self._getSonstigeJahressummen(jahr, whg_id)
-            data.nk_abrechng = sonst_summen.nk_abrechnung
-            data.hg_abrechng = sonst_summen.hg_abrechnung
-            data.sonderumlagen = sonst_summen.sonderumlagen
-            li.append(data)
+    def _getJahresdatenCollection(self, whg:XWohnungMinimal,
+                                  jahr_von:int, jahr_bis:int = None) \
+                                  -> JahresdatenCollection:
+        #create new JahresdatenCollection for given property whg
+        jdcoll = JahresdatenCollection(whg.whg_id)
+        jdcoll.setWohnungIdent(self._getWohnungIdent(whg))
+        jdcoll.setQm(whg.qm)
 
-        return self._coll_list
+        #summation of monthly revenues and expenses
+        eajlist:List[EinAusJahr] = self._getEinAusJahre(whg_id, jahr_von)
+        self._assignEinAusJahrValues(jdcoll, eajlist)
+
+        #summation of bills and withdrawels of reserve fund
+        rslist:List[Rechnungssumme] = \
+            self._getRechnungssummenJahre(whg_id, jahr_von, jahr_bis)
+        self._assignRechnungssummen(jdcoll, rslist)
+
+        #summation of clearings
+        sonst_summen:SonstigeJahressummen = \
+            self._getSonstigeJahressummen(jahr, whg_id)
+        data.nk_abrechng = sonst_summen.nk_abrechnung
+        data.hg_abrechng = sonst_summen.hg_abrechnung
+        data.sonderumlagen = sonst_summen.sonderumlagen
+
+        return jdcoll
     
-    def _assignEinAusJahrValues(self, eajlist:List[EinAusJahr]) -> None:
+    def _assignEinAusJahrValues(self, jdcoll:JahresdatenCollection,
+                                eajlist:List[EinAusJahr]) -> None:
         """
+        Assign the values of eajlist to JahresdatenCollection jdcoll
+        :param eajlist: contains EinAusJahr objects concerning ONE property,
+                        n years
+        :return:  None
+
         class EinAusJahr():
             def __init__(self, jahr:int, whg_id:int):
-                self.jahr = jahr
                 self.whg_id = whg_id
+                self.jahr = jahr
                 self.netto_miete = 0
                 self.nk_abschlag = 0
                 self.hg_abschlag = 0
         """
-        for eaj in eajlist:
-            pass
+        for einausjahr in eajlist:
+            jd:Jahresdaten = jdcoll.getJahresdaten(eaj.jahr)
+            jd.netto_miete = einausjahr.netto_miete
+            jd.nk_abschlag = einausjahr.nk_abschlag
+            jd.hg_abschlag = einausjahr.hg_abschlag
 
-    def _createCollectionList(self, jahr_von:int, jahr_bis:int, whg_id:int) \
-            -> List[JahresdatenCollection]:
-        l: List[JahresdatenCollection] = [] #top container for all JahresdatenCollections
-        whglist:XWohnungMinimalList = self._getWohnungsdaten()
-        for whg in whglist:
-            if whg_id == 0 or whg.whg_id == whg_id:
-                #create a JahresdatenCollection for each whg_id:
-                coll = JahresdatenCollection(whg.whg_id)
-                l.append(coll)
-                for jahr in range(jahr_von, jahr_bis+1):
-                    #create Jahresdaten for each year for every whg_id
-                    data = Jahresdaten(whg.whg_id, jahr)
-                    coll.append(data)
-        return l
+    def _assignRechnungssummen(self, jdcoll: JahresdatenCollection,
+                                rslist: List[Rechnungssumme]) -> None:
+        """
+        Assign the values of rslist to JahresdatenCollection jdcoll
+        :param rslist: contains Rechnungssumme objects concerning ONE property,
+                        n years
+        :return:  None
+
+        class Rechnungssumme():
+            def __init__(self, whg_id:int, jahr:int):
+                self.whg_id = whg_id
+                self.jahr = jahr
+                self.betrag = 0
+        """
+        for rs in rslist:
+            jd: Jahresdaten = jdcoll.getJahresdaten(rs.jahr)
+            jd.rechng = rs.betrag
+
+    # def _createCollectionList(self, jahr_von:int, jahr_bis:int, whg_id:int) \
+    #         -> List[JahresdatenCollection]:
+    #     l: List[JahresdatenCollection] = [] #top container for all JahresdatenCollections
+    #     whglist:XWohnungMinimalList = self._getWohnungsdaten()
+    #     for whg in whglist:
+    #         if whg_id == 0 or whg.whg_id == whg_id:
+    #             #create a JahresdatenCollection for each whg_id:
+    #             coll = JahresdatenCollection(whg.whg_id)
+    #             l.append(coll)
+    #             for jahr in range(jahr_von, jahr_bis+1):
+    #                 #create Jahresdaten for each year for every whg_id
+    #                 data = Jahresdaten(whg.whg_id, jahr)
+    #                 coll.append(data)
+    #     return l
 
     def _getWohnungsdaten(self) -> XWohnungMinimalList:
         resp = self._session. \
@@ -157,24 +216,28 @@ class JahresdatenProvider(DataProviderBase):
                                     self._getReadRetValOrRaiseException(resp))
         return wlist
 
-    def _getEinAusJahr(self, jahr:int, whg_id:int = 0) -> List[EinAusJahr]:
+    def _getWohnungIdent(self, whg_min:XWohnungMinimalList) -> str:
+        ident = whg_min.ort + "\n" + \
+                whg_min.strasse + "\n" + \
+                whg_min.whg_bez
+        return ident
+
+    def _getEinAusJahre(self, whg_id:int, jahr_von:int) -> List[EinAusJahr]:
         """
-        Gets a list containing one EinAusJahr object for each wohnung involved.
-        If whg_id is specified (whg_id > 0) only one EinAusJahr object
-        will be provided.
-        :param jahr:
+        Gets a list containing one EinAusJahr object for each year involved.
+        :param jahr_von:
         :param whg_id:
         :return: a list containing at least one EinAusJahr object
         """
         l = []
-        mea_list: XMtlEinAusJahrList = self._getMtlEinAusJahr(jahr, whg_id)
+        mea_list: XMtlEinAusJahrList = self._getMtlEinAusJahre(whg_id, jahr_von)
         einausjahr:EinAusJahr = None
-        whg_id_memo = 0
+        jahr_memo = 0
         for mea in mea_list.getList():
-            if mea.whg_id != whg_id_memo:
-                einausjahr = EinAusJahr(jahr, mea.whg_id)
+            if mea.jahr != jahr_memo:
+                einausjahr = EinAusJahr(whg_id, einausjahr.jahr)
                 l.append(einausjahr)
-                whg_id_memo = mea.whg_id
+                jahr_memo = mea.jahr
             #each mea represents a record in table mtl_ein_aus which is or was
             #valid through a period of year jahr.
             #We have to check the number of months the record was valid
@@ -189,16 +252,16 @@ class JahresdatenProvider(DataProviderBase):
 
         return l
 
-    def _getMtlEinAusJahr(self, jahr:int, whg_id:int = 0) -> XMtlEinAusJahrList:
+    def _getMtlEinAusJahre(self, whg_id:int, jahr_von:int) -> XMtlEinAusJahrList:
         """
-        Gets all monthly expenses and revenues of year jahr and wohnung whg_id.
-        If no whg_id is specified (whg_id is 0) all monthly expenses and revenues
-        of year jahr and *all* active wohnungen in table wohnung are provided.
-        :param jahr:
+        Gets all monthly expenses and revenues for property whg_int,
+        beginning from year jahr_von.
         :param whg_id:
+        :param jahr_von:
         :return: a list of suchlike dictionaries:
         [
             {'whg_id': '2',
+             'jahr': 2019
              'gueltig_ab': '16.11.2019',
              'gueltig_bis': '17.11.2019',
              'netto_miete': '132.00',
@@ -214,43 +277,44 @@ class JahresdatenProvider(DataProviderBase):
         period specified by gueltig_ab and gueltig_bis.
         """
         resp = self._session. \
-            get(Server.SERVER + 'business.php?q=mtl_ein_aus_jahr&jahr=' +
-                str(jahr) + '&id=' + str(whg_id) + '&user=' + self._user)
+            get(Server.SERVER + 'business.php?q=mtl_ein_aus_jahre&id=' +
+                str(whg_id) + '&jahr_von=' + str(jahr) + '&user=' + self._user)
 
         mea_data = self._getReadRetValOrRaiseException(resp)
-        #mea_data = self._getDictEurDate(mea_data, 'gueltig_ab', 'gueltig_bis')
         mea_list = XMtlEinAusJahrList(XMtlEinAusJahr, mea_data)
 
         return mea_list
 
-    def _getRechnungssummenJahr(self, jahr:int, whg_id:int) -> List[Rechnungssumme]:
+    def _getRechnungssummenJahre(self, whg_id:int, jahr_von:int, jahr_bis:int) \
+            -> List[Rechnungssumme]:
         """
-        Gets a Rechnungssumme object of each involved Wohnung.
-        If whg_id is specified, the returned list will only contain one Rechnungssumme.
-        :param jahr:
-        :param whg_id: if whg_id is 0, a Rechnungssumme of each Wohnung in the database
-                       will be returned.
-        :return: list of Rechnungssumme objects
+        Gets a Rechnungssumme object of each involved Year.
+        :param whg_id:
+        :param jahr_von:
+        :param jahr_bis:
+        :return: list of Rechnungssumme objects, one for each year
         """
         l = []
-        rg_list:XRechnungKurzList = self._getRechnungenJahr(jahr, whg_id)
+        rg_list:XRechnungKurzList = self._getRechnungenJahre(jahr, whg_id)
         rg_sum:Rechnungssumme = None
-        whg_id_memo = 0
+        jahr_memo = 0
         for rg in rg_list.getList():
-            if rg.whg_id != whg_id_memo:
-                rg_sum = Rechnungssumme(jahr, rg.whg_id)
+            if rg.jahr != jahr_memo:
+                rg_sum = Rechnungssumme(rg.whg_id, rg.jahr)
                 l.append(rg_sum)
-                whg_id_memo = rg.whg_id
+                jahr_memo = rg.jahr
             anteil = rg.betrag / rg.verteilung_jahre
             rg_sum.betrag += int(round(anteil))
         return l
 
-    def _getRechnungenJahr(self, jahr:int, whg_id:int = None) -> XRechnungKurzList:
+    def _getRechnungenJahre(self, whg_id:int, jahr_von:int, jahr_bis:int = None) \
+            -> XRechnungKurzList:
         """
-        Liefert alle Rechnungen und Entnahmen aus Rücklagen im
-        Laufe des Jahres jahr.
-        :param jahr:
+        Liefert for Wohnung whg_d alle Rechnungen und Entnahmen aus Rücklagen im
+        Laufe der Jahre jahr_von bis jahr_bis.
         :param whg_id:
+        :param jahr_von:
+        :param jahr_bis:
         :return: a list of dictionaries:
         [
           {'whg_id': '1',
@@ -263,7 +327,7 @@ class JahresdatenProvider(DataProviderBase):
         ]
         """
         resp = self._session. \
-            get(Server.SERVER + 'business.php?q=rechng_jahr&jahr=' +
+            get(Server.SERVER + 'business.php?q=rechng_jahre&jahr=' +
                 str(jahr) + '&id=' + str(whg_id) + '&user=' + self._user)
         rg_data = self._getReadRetValOrRaiseException(resp)
         rg_list = XRechnungKurzList(XRechnungKurz, rg_data)
