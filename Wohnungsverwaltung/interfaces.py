@@ -42,8 +42,8 @@ class XRechnungKurzList(XInterfaceList):
 
 class XSonstigeEinAusJahr(XInterface):
     def __init__(self, dic:Dict[str, str] = None):
-        self.jahr = 0
         self.whg_id = 0
+        self.jahr = 0
         self.betrag = 0.0
         self.ein_aus = ''
         self.art_kurz = ''
