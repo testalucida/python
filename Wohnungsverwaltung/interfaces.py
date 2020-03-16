@@ -8,7 +8,7 @@ Vergleichswert = IntEnum('Vergleichswert',
                          'ergebnis '
                          'sonderumlage '
                          'nettomiete_qm nk_qm '
-                         'hg_netto_qm rueck_qm hg_ges_qm')
+                         'hg_ges_qm rueck_qm')
 
 class XMtlEinAusJahr(XInterface):
     def __init__(self, dic:Dict[str, str] = None):
@@ -20,6 +20,8 @@ class XMtlEinAusJahr(XInterface):
         self.nk_abschlag = 0.0
         self.hg_netto_abschlag = 0.0
         self.ruecklage_zufuehr = 0.0
+        #summation of hg_netto_abschlag and
+        #ruecklage_zufuehr:
         self.hg_brutto = 0.0
         XInterface.__init__(self, dic)
 

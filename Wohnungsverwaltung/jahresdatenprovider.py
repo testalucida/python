@@ -14,7 +14,10 @@ class EinAusJahr():
         self.jahr = jahr
         self.netto_miete = 0
         self.nk_abschlag = 0
-        self.hg_abschlag = 0
+        self.hg_netto_abschlag = 0
+        self.ruecklage_zufuehr = 0
+        ##summation of hg_netto_abschlag and ruecklage_zufuehr:
+        self.hg_brutto = 0
 #+++++++++++++++++++++++++++++++++++++++++++++
 class SonstigeJahressummen():
     def __init__(self, whg_id:int, jahr:int):
@@ -32,7 +35,9 @@ class Jahresdaten():
         self.jahr = jahr
         self.netto_miete = 0
         self.nk_abschlag = 0
-        self.hg_abschlag = 0
+        self.hg_netto_abschlag = 0
+        self.ruecklage_zufuehr = 0
+        self.hg_brutto = 0
         self.rechng = 0
         self.nk_abrechng = 0
         self.hg_abrechng = 0
@@ -41,9 +46,10 @@ class Jahresdaten():
         self.sonderumlagen = 0
         self.netto_miete_qm = 0
         self.nk_qm = 0
-        self.hg_netto_qm = 0
-        self.ruecklage_qm = 0
         self.hg_ges_qm = 0
+        #thereof ruecklage:
+        self.ruecklage_qm = 0
+
 #+++++++++++++++++++++++++++++++++++++++++++++
 class Rechnungssumme():
     def __init__(self, whg_id:int, jahr:int):
@@ -159,7 +165,7 @@ class JahresdatenProvider(DataProviderBase):
         self._calculateErgebnis(jdcoll)
 
         #costs and revenues per qm:
-        #self._calculateQm(jdcoll)
+        self._calculateQm(jdcoll)
 
         return jdcoll
     
@@ -177,13 +183,17 @@ class JahresdatenProvider(DataProviderBase):
                 self.jahr = jahr
                 self.netto_miete = 0
                 self.nk_abschlag = 0
-                self.hg_abschlag = 0
+                self.hg_netto_abschlag = 0
+                self.ruecklage_zufuehr = 0
+                self.hg_brutto = 0
         """
         for einausjahr in eajlist:
             jd:Jahresdaten = jdcoll.getJahresdaten(einausjahr.jahr)
             jd.netto_miete = einausjahr.netto_miete
             jd.nk_abschlag = einausjahr.nk_abschlag
-            jd.hg_abschlag = einausjahr.hg_abschlag
+            jd.hg_netto_abschlag = einausjahr.hg_netto_abschlag
+            jd.ruecklage_zufuehr = einausjahr.ruecklage_zufuehr
+            jd.hg_brutto = einausjahr.hg_brutto
 
     def _assignRechnungssummen(self, jdcoll: JahresdatenCollection,
                                 rslist: List[Rechnungssumme]) -> None:
@@ -266,8 +276,10 @@ class JahresdatenProvider(DataProviderBase):
                         getNumberOfMonths(mea.gueltig_ab, mea.gueltig_bis, jahr)
                     einausjahr.netto_miete += (cnt * int(mea.netto_miete))
                     einausjahr.nk_abschlag += (cnt * int(mea.nk_abschlag))
-                    einausjahr.hg_abschlag += (cnt * int(mea.hg_brutto))
-
+                    einausjahr.hg_netto_abschlag += (cnt * int(mea.hg_netto_abschlag))
+                    einausjahr.ruecklage_zufuehr += (cnt * int(mea.ruecklage_zufuehr))
+                    einausjahr.hg_brutto = \
+                        einausjahr.hg_netto_abschlag + einausjahr.ruecklage_zufuehr
         return l
 
     def _getMtlEinAusJahre(self, whg_id:int, jahr_von:int) -> XMtlEinAusJahrList:
@@ -456,16 +468,21 @@ class JahresdatenProvider(DataProviderBase):
         """
         for jd in jdcoll.getJahresdatenList():
             jd.ergebnis = jd.netto_miete + jd.nk_abschlag + jd.nk_abrechng - \
-                          jd.rechng - \
-                          (jd.hg_abschlag + jd.hg_abrechng) - jd.sonst_kosten
+                          jd.rechng - jd.hg_brutto + jd.hg_abrechng - jd.sonst_kosten
 
-    def _calculatQm(self, jdcoll:JahresdatenCollection) -> None:
+    def _calculateQm(self, jdcoll:JahresdatenCollection) -> None:
         """
         calculates costs and revenues per qm
         :param jdcoll: JahresdatenCollection referred to one property, n years
         :return:
         """
-        pass
+        qm:int = jdcoll.getQm()
+        for jd in jdcoll.getJahresdatenList():
+            jd.netto_miete_qm = round(jd.netto_miete / qm, 2)
+            jd.nk_qm = round((jd.nk_abschlag + jd.nk_abrechng) / qm, 2)
+            jd.hg_ges_qm = round((jd.hg_brutto + jd.hg_abrechng) / qm, 2)
+            jd.ruecklage_qm = round(jd.ruecklage_zufuehr / qm, 2)
+
 #+++++++++++++++++++++++++++++++++++++++++++++
 
 if __name__ == '__main__':
@@ -477,12 +494,17 @@ if __name__ == '__main__':
         jd:Jahresdaten = coll.getJahresdaten(2019)
         print("Nettomiete: ", jd.netto_miete, "\n",
               "NK-Abschlag: ", jd.nk_abschlag, "\n",
-              "HG-Abschlag: ", jd.hg_abschlag, "\n",
+              "HG-Abschlag: ", jd.hg_brutto, "\n",
               "Rechnungssumme: ", jd.rechng, "\n",
               "Sonstige Kosten: ", jd.sonst_kosten, "\n",
               "NK-Abrechnung: ", jd.nk_abrechng, "\n",
               "HG-Abrechnung: ", jd.hg_abrechng, "\n",
               "Ergebnis: ", jd.ergebnis, "\n",
+              "Sonderumlagen: ", jd.sonderumlagen, "\n",
+              "Nettomiete / qm: ", jd.netto_miete_qm, "\n",
+              "NK / qm: ", jd.nk_qm, "\n",
+              "HG ges. / qm: ", jd.hg_ges_qm, "\n",
+              "davon Rücklagen: ", jd.ruecklage_qm, "\n",
               "\n")
     # l = prov._getSonstigeJahressummen(2019, 0)
     # for sj in l:

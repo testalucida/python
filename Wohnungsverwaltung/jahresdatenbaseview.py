@@ -200,19 +200,14 @@ class JahresdatenBaseView(ttk.Frame):
         self._createOut(lf, Vergleichswert.nk_qm, r, pady)
 
         r += 1
-        lbl = MyLabel(lf, text='HG netto', column=c, row=r, sticky='nw',
-                      anchor='w', padx=padx, pady=pady)
-        self._createOut(lf, Vergleichswert.hg_netto_qm, r, pady)
-
-        r += 1
-        lbl = MyLabel(lf, text='Rücklagen', column=c, row=r, sticky='nw',
-                      anchor='w', padx=padx, pady=pady)
-        self._createOut(lf, Vergleichswert.rueck_qm, r, pady)
-
-        r += 1
         lbl = MyLabel(lf, text='HG gesamt', column=c, row=r, sticky='nw',
                       anchor='w', padx=padx, pady=pady)
         self._createOut(lf, Vergleichswert.hg_ges_qm, r, pady)
+
+        r += 1
+        lbl = MyLabel(lf, text='davon Rücklagen', column=c, row=r, sticky='nw',
+                      anchor='w', padx=padx, pady=pady)
+        self._createOut(lf, Vergleichswert.rueck_qm, r, pady)
 
         return lf
 
@@ -248,7 +243,7 @@ class JahresdatenBaseView(ttk.Frame):
             lbl = OutputLabel(parent, id, self._yearlist[c], 1+c, row, padx, pady)
             if id == Vergleichswert.hg_voraus \
                     or id == Vergleichswert.rechng\
-                    or id == Vergleichswert.hg_netto_qm\
+                    or id == Vergleichswert.hg_ges_qm\
                     or id == Vergleichswert.rueck_qm:
                 lbl.setRedFont(False)
             if id == Vergleichswert.ergebnis:
@@ -287,9 +282,9 @@ def test():
     jv.setValue(Vergleichswert.sonderumlage, 2019, 500)
     jv.setValue(Vergleichswert.nettomiete_qm, 2019, 7.3)
     jv.setValue(Vergleichswert.nk_qm, 2019, 2.05)
-    jv.setValue(Vergleichswert.hg_netto_qm, 2019, 2.12)
-    jv.setValue(Vergleichswert.rueck_qm, 2019, 0.8)
     jv.setValue(Vergleichswert.hg_ges_qm, 2019, 2.92)
+    jv.setValue(Vergleichswert.rueck_qm, 2019, 0.8)
+
 
     #png = tk.PhotoImage(file="./images/haus_18x16.png")
     #root.tk.call('wm', 'iconphoto', root._w, png)
