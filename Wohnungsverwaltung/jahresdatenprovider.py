@@ -29,6 +29,12 @@ class SonstigeJahressummen():
         self.sonderumlagen = 0
         self.abloese = 0
 #+++++++++++++++++++++++++++++++++++++++++++++
+class Rechnungssumme():
+    def __init__(self, whg_id:int, jahr:int):
+        self.whg_id = whg_id
+        self.jahr = jahr
+        self.betrag = 0
+#+++++++++++++++++++++++++++++++++++++++++++++
 class Jahresdaten():
     def __init__(self, whg_id:int, jahr:int):
         self.whg_id = whg_id
@@ -49,13 +55,6 @@ class Jahresdaten():
         self.hg_ges_qm = 0
         #thereof ruecklage:
         self.ruecklage_qm = 0
-
-#+++++++++++++++++++++++++++++++++++++++++++++
-class Rechnungssumme():
-    def __init__(self, whg_id:int, jahr:int):
-        self.whg_id = whg_id
-        self.jahr = jahr
-        self.betrag = 0
 #+++++++++++++++++++++++++++++++++++++++++++++
 class JahresdatenCollection():
     """
@@ -91,26 +90,38 @@ class JahresdatenCollection():
                 return data
         raise Exception(str(jahr) + " not found in Collection")
 
+    def getYearCount(self) -> int:
+        return len(self._dataList)
+
+    def getYears(self) -> List[int]:
+        l = []
+        for jd in self.getJahresdatenList():
+            l.append(jd.jahr)
+
+        return l
+
     def getJahresdatenList(self) -> List[Jahresdaten]:
         return self._dataList
-#+++++++++++++++++++++++++++++++++++++++++++++
-class JahresdatenCollectionList():
-    def __init__(self):
-        self._list = []
-
-    def append(self, coll:JahresdatenCollection):
-        self._list.append(coll)
-
-    def getWhgId(self) -> int:
-        return self._list[0].getWhgId()
 #+++++++++++++++++++++++++++++++++++++++++++++
 class JahresdatenProvider(DataProviderBase):
     def __init__(self):
         DataProviderBase.__init__(self)
 
     def getJahresdaten(self, whg_id: int, jahr_von: int, jahr_bis: int = None) \
-            -> JahresdatenCollection:
-        pass
+            -> List[JahresdatenCollection]:
+        coll_list: List[JahresdatenCollection] = [] # will contain only one
+                                                    # JahresdatenCollection
+        if jahr_bis is None:
+            jahr_bis = datehelper.getCurrentYear()
+        #fetch list even if we need only one XWohnungMinimal
+        whglist: XWohnungMinimalList = self._getWohnungsdaten()
+        for whg in whglist.getList(): # search for the one and only
+            if whg.whg_id == whg_id:
+                jdcoll: JahresdatenCollection = \
+                    self._getJahresdatenCollection(whg, jahr_von, jahr_bis)
+                coll_list.append(jdcoll)
+                return coll_list
+        raise Exception("No such whg_id: " + str(whg_id))
 
     def getJahresdatenAlleWohnungen(self, jahr_von:int, jahr_bis:int = None) \
             -> List[JahresdatenCollection]:
@@ -123,6 +134,9 @@ class JahresdatenProvider(DataProviderBase):
                  Each JahresdatenCollection contains as many Jahresdaten objects
                  as are defined by the substraction year_bis - year_von + 1
         """
+        if jahr_bis is None:
+            jahr_bis = datehelper.getCurrentYear()
+
         #create the collection list to be returned:
         coll_list: List[JahresdatenCollection] = []  # top container for all JahresdatenCollections
         #get the involved properties (whg_id et al.):
@@ -491,8 +505,10 @@ if __name__ == '__main__':
 
     l:List[JahresdatenCollection] = prov.getJahresdatenAlleWohnungen(2019, 2019)
     for coll in l:
+        print("Wohnung: ", coll.getWhgId(), "/", coll.getWohnungIdent().replace("\n", " "))
         jd:Jahresdaten = coll.getJahresdaten(2019)
-        print("Nettomiete: ", jd.netto_miete, "\n",
+        print("Jahr: ", jd.jahr)
+        print(">> Nettomiete: ", jd.netto_miete, "\n",
               "NK-Abschlag: ", jd.nk_abschlag, "\n",
               "HG-Abschlag: ", jd.hg_brutto, "\n",
               "Rechnungssumme: ", jd.rechng, "\n",
@@ -504,7 +520,7 @@ if __name__ == '__main__':
               "Nettomiete / qm: ", jd.netto_miete_qm, "\n",
               "NK / qm: ", jd.nk_qm, "\n",
               "HG ges. / qm: ", jd.hg_ges_qm, "\n",
-              "davon Rücklagen: ", jd.ruecklage_qm, "\n",
+              "\tdavon Rücklagen: ", jd.ruecklage_qm, "\n",
               "\n")
     # l = prov._getSonstigeJahressummen(2019, 0)
     # for sj in l:

@@ -5,11 +5,13 @@ import utils
 from functools import partial
 from wvframe import WV, WohnungAction
 from business import DataProvider, WvException
+from jahresdatenprovider import JahresdatenProvider
 from wohnungdetailscontroller import WohnungDetailsController
 from rgcontroller import RechnungController
 from mtleacontroller import MtlEinAusController
 from sonsteacontroller import SonstEinAusController
 from grundsteuercontroller import GrundsteuerController
+from jahresdatencontroller import JahresdatenController
 from stammdatenview import StammdatenAction
 from stammdatencontroller import StammdatenController
 from mietverhaeltniscontroller import MietverhaeltnisController
@@ -25,11 +27,13 @@ class WvController:
     def __init__(self, wv: WV):
         self._wv = wv
         self._dataProvider = DataProvider()
+        self._jahresdatenProvider = JahresdatenProvider()
         self._wohnungdetailscontroller = None
         self._rgcontroller = None
         self._mtleacontroller = None
         self._sonsteacontroller = None
         self._grundsteuercontroller = None
+        self._jahresdatencontroller = None
         self._stammdatencontroller = None
         self._mietverhaeltniscontroller = None
         self._veranlagungcontroller = None
@@ -81,6 +85,11 @@ class WvController:
             registerWohnungDatenChangedCallback(
                 self._stammdatencontroller.onWohnungDatenChangedByOthers)
 
+        self._jahresdatencontroller = \
+            JahresdatenController(self._jahresdatenProvider,
+                                self._wv.getJahresdatenView())
+        self._jahresdatencontroller.startWork()
+
     def _connect(self):
         # import os
         # #check if a configuration file exists. If so, connect remote, else local.
@@ -91,6 +100,7 @@ class WvController:
         # if os.path.isfile(configfile): user = 'd02bacec'
         #self._dataProvider.connect(user)
         self._dataProvider.connect(utils.getUser())
+        self._jahresdatenProvider.connect(utils.getUser())
 
     def _loadTree(self):
         whg_list = self._dataProvider.getWohnungsUebersicht()
@@ -159,6 +169,7 @@ class WvController:
         self._rgcontroller.wohnungSelected(-1)
         self._mtleacontroller.wohnungSelected(-1)
         self._sonsteacontroller.wohnungSelected(-1)
+        self._jahresdatencontroller.wohnungSelected(-1)
         self._grundsteuercontroller.wohnungSelected(-1)
         self._mietverhaeltniscontroller.clear()
         self._stammdatencontroller.clear()
@@ -173,6 +184,7 @@ class WvController:
         self._mtleacontroller.wohnungSelected(whg_id)
         self._sonsteacontroller.wohnungSelected(whg_id)
         self._grundsteuercontroller.wohnungSelected(whg_id)
+        self._jahresdatencontroller.wohnungSelected(whg_id)
         self._stammdatencontroller.wohnungSelected(whg_id)
         self._mietverhaeltniscontroller.wohnungSelected(whg_id)
         self._veranlagungcontroller.wohnungSelected(whg_id)
@@ -186,5 +198,6 @@ class WvController:
         self._mtleacontroller.clear()
         self._sonsteacontroller.clear()
         self._grundsteuercontroller.clear()
+        self._jahresdatencontroller.clear()
         self._mietverhaeltniscontroller.clear()
         self._veranlagungcontroller.clear()

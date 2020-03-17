@@ -158,6 +158,9 @@ class MyLabel(ttk.Label, ConvenianceMethods):
     def setValue(self, value: str) -> None:
         self['text'] = value
 
+    def clear(self) -> None:
+        self.setValue('')
+
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 class ModifyTracer:

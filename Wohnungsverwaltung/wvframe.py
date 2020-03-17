@@ -13,6 +13,7 @@ try:
     #print('stammdatenview imported')
     from veranlagungview import VeranlagungView
     from mietverhaeltnisview import MietverhaeltnisView
+    from jahresdatenview import JahresdatenView
 except ImportError:
     print("couldn't import some stuff.")
 
@@ -35,6 +36,7 @@ class WV(ttk.Frame):
         self._stammdatenView: StammdatenView = None
         self._veranlagungView: VeranlagungView = None
         self._mietverhaeltnisView: MietverhaeltnisView = None
+        self._jahresdatenView: JahresdatenView = None
         self._wohnungClickedCallback = None
         self._noWohnungClickedCallback = None
         self._wohnungActionCallback = None
@@ -129,19 +131,22 @@ class WV(ttk.Frame):
         PAGE_RECHUNGEN = 2
         PAGE_MTL_EIN_AUS = 3
         PAGE_SONST_EIN_AUS = 4
-        PAGE_MIETEVERHAELTNIS = 5
-        PAGE_VERANLAGUNG = 6
+        PAGE_JAHRESDATEN = 5
+        PAGE_MIETEVERHAELTNIS = 6
+        PAGE_VERANLAGUNG = 7
 
         book = ttk.Notebook(parent)
         book.grid(column=0, row=0, sticky=(N,S,W,E))
         pages = (ttk.Frame(), ttk.Frame(), ttk.Frame(),
-                 ttk.Frame(), ttk.Frame(), ttk.Frame(), ttk.Frame())
+                 ttk.Frame(), ttk.Frame(), ttk.Frame(),
+                 ttk.Frame(), ttk.Frame())
 
         book.add(pages[PAGE_STAMMDATEN], text='Stammdaten')
         book.add(pages[PAGE_WOHNUNG], text='Wohnung')
         book.add(pages[PAGE_RECHUNGEN], text='Rechnungen / Rücklage-Entnahmen')
         book.add(pages[PAGE_MTL_EIN_AUS], text='Monatliche Ein-/Auszahlungen')
         book.add(pages[PAGE_SONST_EIN_AUS], text='Sonstige Ein-/Auszahlungen')
+        book.add(pages[PAGE_JAHRESDATEN], text='Jahresübersicht')
         book.add(pages[PAGE_MIETEVERHAELTNIS], text='Mietverhältnis')
         book.add(pages[PAGE_VERANLAGUNG], text='Veranlagung')
         book.columnconfigure(0, weight = 1)
@@ -154,6 +159,7 @@ class WV(ttk.Frame):
         self._createRechnungenTab(pages[PAGE_RECHUNGEN])
         self._createMonatlicheTab(pages[PAGE_MTL_EIN_AUS])
         self._createSonstigeTab(pages[PAGE_SONST_EIN_AUS])
+        self._createJahresdatenTab(pages[PAGE_JAHRESDATEN])
         self._createMietverhaeltnisTab(pages[PAGE_MIETEVERHAELTNIS])
         self._createVeranlagungTab(pages[PAGE_VERANLAGUNG])
 
@@ -220,6 +226,12 @@ class WV(ttk.Frame):
         self._mietverhaeltnisView = mvh
         #mietverhPage.rowconfigure(0, weight=1)
         mietverhPage.columnconfigure(0, weight=1)
+
+    def _createJahresdatenTab(self, jahresdatenPage: ttk.Frame):
+        jdv = JahresdatenView(jahresdatenPage)
+        jdv.grid(column=0, row=0, sticky='nswe', padx=5, pady=5)
+        jahresdatenPage.columnconfigure(0, weight=1)
+        self._jahresdatenView = jdv
 
     def _createVeranlagungTab(self, veranlPage: ttk.Frame):
         vv = VeranlagungView(veranlPage)
@@ -362,6 +374,9 @@ class WV(ttk.Frame):
 
     def getMietverhaeltnisView(self) -> MietverhaeltnisView:
         return self._mietverhaeltnisView
+
+    def getJahresdatenView(self) -> JahresdatenView:
+        return self._jahresdatenView
 
     def getVeranlagungView(self) -> VeranlagungView:
         return self._veranlagungView
