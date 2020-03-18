@@ -12,6 +12,7 @@ from mtleacontroller import MtlEinAusController
 from sonsteacontroller import SonstEinAusController
 from grundsteuercontroller import GrundsteuerController
 from jahresdatencontroller import JahresdatenController
+from wohnungvergleichdialog import WohnungVergleichDialog
 from stammdatenview import StammdatenAction
 from stammdatencontroller import StammdatenController
 from mietverhaeltniscontroller import MietverhaeltnisController
@@ -41,6 +42,7 @@ class WvController:
     def startWork(self) -> None:
         self._wv.registerWohnungActionCallback(self.onWohnungMenuAction)
         self._wv.registerAnlageVActionCallback(self.onAnlageVAction)
+        self._wv.registerJahresuebersichtActionCallback(self.onJahresuebersichtAction)
         self._connect()
         self._loadTree()
 
@@ -153,6 +155,11 @@ class WvController:
 
         dlg = AnlageVAuswahlDialog(self._wv, itemList)
         dlg.registerCallback(_onOk)
+
+    def onJahresuebersichtAction(self) -> None:
+        l = self._jahresdatenProvider.getJahresdatenAlleWohnungen(2019, 2019)
+        dlg = WohnungVergleichDialog(self._wv)
+        dlg.setValues(l)
 
     def _wohnungActionCompleted(self, dlg: WohnungDialog,
                                 action: StammdatenAction,

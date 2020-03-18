@@ -41,6 +41,7 @@ class WV(ttk.Frame):
         self._noWohnungClickedCallback = None
         self._wohnungActionCallback = None
         self._anlageVActionCallback = None
+        self._jahresuebersichtActionCallback = None
         self._createUI(root)
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
@@ -68,7 +69,8 @@ class WV(ttk.Frame):
         menu.add_cascade(label="Stammdaten", menu=filemenu)
 
         extrasmenu = Menu(menu, tearoff=0)
-        extrasmenu.add_command(label="Jahresübersicht für Wohnung erstellen...")
+        extrasmenu.add_command(label="Jahresübersicht für Wohnung erstellen...",
+                               command = self._onJahresuebersicht)
         menu.add_cascade(label="Extras", menu=extrasmenu)
 
         anlvmenu = Menu(menu, tearoff=0)
@@ -292,6 +294,10 @@ class WV(ttk.Frame):
         if self._anlageVActionCallback:
             self._anlageVActionCallback()
 
+    def _onJahresuebersicht(self):
+        if self._jahresuebersichtActionCallback:
+            self._jahresuebersichtActionCallback()
+
     def _doWohnungActionCallback(self, action: WohnungAction):
         if self._wohnungActionCallback:
             whg_id = -1
@@ -350,6 +356,9 @@ class WV(ttk.Frame):
 
     def registerAnlageVActionCallback(self, callback):
         self._anlageVActionCallback = callback
+
+    def registerJahresuebersichtActionCallback(self, callback):
+        self._jahresuebersichtActionCallback = callback
 
     def setStatusText(self, text: str):
         self._statusbar['text'] = text
