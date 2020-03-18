@@ -116,6 +116,7 @@ class JahresdatenBaseView(ttk.Frame):
         self._padx = 20
         self._pady = 3
         self._outputLabelframe:ttk.Frame = None
+        self._createStyles()
 
     def setValues(self, jdcoll_list:List[JahresdatenCollection]) -> None:
         """
@@ -151,8 +152,6 @@ class JahresdatenBaseView(ttk.Frame):
             self.setValue(Vergleichswert.rueck_qm, whg_id, j, jd.ruecklage_qm)
 
     def _createUI(self, padx, pady) -> None:
-        self._createStyles()
-
         r = c = 0
         lf = ttk.Frame(self)
         lf.grid(column=c, row=r, sticky='nswe', padx=10, pady=10)
@@ -274,9 +273,16 @@ class JahresdatenBaseView(ttk.Frame):
 
     def clear(self):
         if self._outputLabelframe:
-            for ch_type, ch in self._outputLabelframe.children.items():
-                if type(ch) is OutputLabel or type(ch) is MyLabel:
-                    ch.clear()
+            self._outputLabelframe.destroy()
+            self._outputLabelframe = None
+        #     for ch_type, ch in self._outputLabelframe.children.items():
+        #         if type(ch) is OutputLabel or type(ch) is MyLabel:
+        #             ch.clear()
+                    ##ch.destroy()
+        self._jdcoll_list = None
+        self._nWhg = 0
+        self._nYears = 0
+        self._yearlist = None
 
     def setValue(self, vw:Vergleichswert, whg_id:int, year:int, newVal:int) -> None:
         for ch_type, ch in self._outputLabelframe.children.items():

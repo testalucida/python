@@ -28,7 +28,7 @@ class JahresdatenView(ttk.Frame):
         self._jahresdatenbaseview = view
 
         btn = ttk.Button(self, text="Jahresübersicht ermitteln", command=self._onJahresdatenClick)
-        btn.grid(column=0, row=1, sticky='nswe', padx=padx, pady=pady)
+        btn.grid(column=0, row=1, sticky='swe', padx=padx, pady=pady)
         self._button = btn
         self.setButtonEnabled(False)
 
