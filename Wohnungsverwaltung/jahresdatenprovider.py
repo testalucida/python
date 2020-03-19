@@ -491,11 +491,12 @@ class JahresdatenProvider(DataProviderBase):
         :return:
         """
         qm:int = jdcoll.getQm()
-        for jd in jdcoll.getJahresdatenList():
-            jd.netto_miete_qm = round(jd.netto_miete / qm, 2)
-            jd.nk_qm = round((jd.nk_abschlag + jd.nk_abrechng) / qm, 2)
-            jd.hg_ges_qm = round((jd.hg_brutto + jd.hg_abrechng) / qm, 2)
-            jd.ruecklage_qm = round(jd.ruecklage_zufuehr / qm, 2)
+        if qm and qm > 0:
+            for jd in jdcoll.getJahresdatenList():
+                jd.netto_miete_qm = round(jd.netto_miete / qm, 2)
+                jd.nk_qm = round((jd.nk_abschlag + jd.nk_abrechng) / qm, 2)
+                jd.hg_ges_qm = round((jd.hg_brutto + jd.hg_abrechng) / qm, 2)
+                jd.ruecklage_qm = round(jd.ruecklage_zufuehr / qm, 2)
 
 #+++++++++++++++++++++++++++++++++++++++++++++
 
