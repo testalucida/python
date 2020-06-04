@@ -120,7 +120,7 @@ class DataProviderBase:
         #d = {'user':user, 'password':pwd}
         d = {'user': user}
         resp = self._session.post(Server.SERVER + 'login.php', data=d)
-        #resp = self.__session.post(SERVER + 'testecho.php', data=d)
+        #resp = self._session.post('http://localhost/kendelweb/dev/php/testecho.php', data=d )
         if resp.status_code != 200:
             msg = ''.join(('Error on connecting user ', user, '\nServer says: ', resp.text))
             raise ServiceException(resp.status_code, msg)

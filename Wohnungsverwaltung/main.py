@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from libs import *
-from utils import *
+#from utils import *
+import utils
 
 from wvframe import WV
 from wvcontroller import WvController
@@ -23,7 +24,7 @@ def main():
     ctrl = WvController(wv)
     ctrl.startWork()
 
-    wv.setStatusText("Bereit")
+    wv.setStatusText("Angemeldeter Benutzer: " + utils.getUser())
 
     #width = root.winfo_screenwidth()
     #width = root.winfo_width()
