@@ -3,15 +3,15 @@
 from libs import *
 #from utils import *
 import utils
+import os
 
 from wvframe import WV
 from wvcontroller import WvController
 
 def main():
     from tkinter import PhotoImage
-    #print("path: ", sys.path)
     root = Tk()
-    icon = PhotoImage(file="./images/haus_18x16.png")
+    icon = PhotoImage(file=utils.getScriptPath() + "/images/haus_18x16.png")
     root.call('wm', 'iconphoto', root._w, icon)
 
     if 'win' not in sys.platform:
@@ -38,6 +38,9 @@ def main():
     wv.mainloop()
 
 if __name__ == '__main__':
+    print("path: ", sys.path)
+    print("current work directory: ", os.getcwd())
+    print("scriptpath: ", utils.getScriptPath())
     main()
 
 """
