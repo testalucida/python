@@ -26,6 +26,7 @@ class VeranlagungView(ttk.Frame):
         #self._sonstigeKosten = None
         self._btnSave = None
         self._btnCreateAnlageV = None
+        self._btnShowAnlageVData = None
 
         self._isAfaInitialized = False
         self._isAfaModified = False
@@ -82,7 +83,11 @@ class VeranlagungView(ttk.Frame):
 
     def _onCreateAnlageVPressed(self):
         if self._createAnlageV_callback:
-            self._createAnlageV_callback(self.getVeranlagData())
+            self._createAnlageV_callback(self.getVeranlagData(), False)
+
+    def _onSimulatePressed(self):
+        if self._createAnlageV_callback:
+            self._createAnlageV_callback(self.getVeranlagData(), True)
 
     def _createGui(self):
         padx=pady=5
@@ -226,27 +231,6 @@ class VeranlagungView(ttk.Frame):
     def _createWerbungskostenLabelframe(self, padx: int, pady: int) -> ttk.Labelframe:
         lf = ttk.Labelframe(self,
                             text='Verwaltung gem. Anlage V Zeile 47')
-
-        # MyLabel(lf,
-        #         'Verwaltungskosten inkl. Bankspesen '
-        #         'gem. Betriebskostenabrechnung: ',
-        #         0, 0, 'nswe', 'e', padx, pady)
-        # f = IntEntry(lf)
-        # f.setBackground('AfA.TEntry', 'lightyellow')
-        # f.grid(column=1, row=0, sticky='w', padx=padx, pady=pady)
-        # f['width'] = 5
-        # f.registerModifyCallback(self._onAfaModified)
-        # self._verwaltkosten = f
-
-        # MyLabel(lf, 'Sonstige Kosten (Fahrten, Tel., '
-        #             'allg. Rep. gem. Betriebskostenabrechnung): ', 0, 1,
-        #         'nswe', 'e', padx, pady)
-        # f = IntEntry(lf)
-        # f.grid(column=1, row=1, sticky='w', padx=padx, pady=pady)
-        # f.setWidth(5)
-        # f.registerModifyCallback(self._onAfaModified)
-        # self._sonstigeKosten = f
-
         return lf
 
     def _createButtonFrame(self, parent, padx: int, pady: int) -> ttk.Frame:
@@ -259,6 +243,12 @@ class VeranlagungView(ttk.Frame):
                          command=self._onCreateAnlageVPressed)
         btn.grid(column=1, row=0, pady=pady)
         self._btnCreateAnlageV = btn
+
+        btn = ttk.Button(f, text='Simuliere Erstellung',
+                         command = self._onSimulatePressed)
+        btn.grid(column=2, row=0, pady=pady)
+        self._btnShowAnlageVData = btn
+
         return f
 
     def clearAll(self):

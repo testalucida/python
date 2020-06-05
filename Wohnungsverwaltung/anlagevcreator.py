@@ -1,6 +1,7 @@
 from business import DataProvider, DataError, ServiceException
 from anlagevdata import AnlageVData
 from anlagevwriter import AnlageVWriter
+from typing import List, Dict
 
 class AnlageVCreator:
     def __init__(self, vj, dataprovider: DataProvider, savepath: str = None):
@@ -8,6 +9,14 @@ class AnlageVCreator:
         self._savepath = savepath
         self._dataProvider = dataprovider
         self._anlagevwriter = None
+
+    def getAnlageVData(self, whg_id, anlage_nr) -> List:
+        anlagevdata = AnlageVData(whg_id,
+                                  anlage_nr,
+                                  self._vj,
+                                  None,
+                                  self._dataProvider)
+        return anlagevdata.getAnlageVData()
 
     def createAnlage(self, whg_id, anlage_nr):
         if not self._savepath:

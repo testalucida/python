@@ -56,4 +56,5 @@ todo
 - zusätzliche Plausi bei Mtl. Ein-Auszahlungen: Es darf keine Änderung
   von Miete, NK, HG WÄHREND eines Monats geben, sonst laufen die Jahresdaten
   und die AnlageV-Berechnung falsch.
+- Verwalter neu/ändern implementieren
 """

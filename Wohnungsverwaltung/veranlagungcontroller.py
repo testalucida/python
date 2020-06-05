@@ -4,9 +4,11 @@ from tkinter import messagebox
 from veranlagungview import VeranlagungView
 from stammdatenview import StammdatenAction
 from interfaces import XWohnungDaten
+from typing import Dict, List
 #from anlagevdata import AnlageVData
 #from anlagevwriter import AnlageVWriter
 from anlagevcreator import AnlageVCreator
+from anlagevpreviewdialog import AnlageVPreviewDialog
 
 import datehelper
 
@@ -47,13 +49,13 @@ class VeranlagungController:
     def clear(self):
         self._view.clearAll()
 
-    def _onCreateAnlageV(self, afa: dict):
+    def _onCreateAnlageV(self, afa: dict, checkOnly: bool = False):
         """
         Validates data.
         Opens dialog to ask for the path the AnlageV is to save into.
         Instantiates AnlageVData.
         Instantiates AnlageVWriter.
-        Reports to the using after having ended
+        Reports to the user after having ended
         :param afa:
         :return:
         """
@@ -62,16 +64,28 @@ class VeranlagungController:
             messagebox.showerror('Anlage V kann nicht erstellt werden', msg)
             return
 
-        self._createAnlageV()
+        self._createAnlageV(checkOnly)
 
-    def _createAnlageV(self):
+    def _showAnlageVDataDialog(self, data: Dict):
+        dlg = AnlageVPreviewDialog(data)
+
+    def _createAnlageV(self, checkOnly: bool = False):
         anlcreator = AnlageVCreator(self._vj, self._dataProvider)
         try:
-            anlcreator.createAnlage(self._whg_id, 1)
-            anlcreator.endCreate()
-            msg = 'Anlage V wurde im Verzeichnis ' + anlcreator.getSavePath() + \
-                  ' erstellt.'
-            messagebox.showinfo('Verarbeitung beendet', msg)
+            if checkOnly:
+                msg_and_datadict: List = anlcreator.getAnlageVData(self._whg_id, 1)
+                msg: str = msg_and_datadict[0]
+                if len(msg) > 0:
+                    messagebox.showerror('Anlage V hat Fehler', msg)
+                else:
+                    datadict: List = msg_and_datadict[1]
+                    self._showAnlageVDataDialog(datadict)
+            else:
+                anlcreator.createAnlage(self._whg_id, 1)
+                anlcreator.endCreate()
+                msg = 'Anlage V wurde im Verzeichnis ' + anlcreator.getSavePath() + \
+                      ' erstellt.'
+                messagebox.showinfo('Verarbeitung beendet', msg)
         except:
             msg = 'Fehler beim Erstellen der Anlage V'
             messagebox.showerror('Verarbeitung abgebrochen', msg)

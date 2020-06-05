@@ -219,6 +219,10 @@ class AnlageVData:
         self._stammdaten = None
         self._summe_einnahmen = 0
         self._summe_wk = 0
+        self._logtext = ""
+
+        self._xdatadict['vj'] = self._vj
+        self._xdatadict['zeilen'] = dict()
 
     # def _checkForSavePath(self) -> None:
     #     """
@@ -255,9 +259,8 @@ class AnlageVData:
 
         #self._checkForSavePath()
         now = datetime.datetime.now()
-        data: XImmoStammdaten = \
-                self._dataProvider.getAnlageVData_1_to_8(self._whg_id, self._vj)
-        self._stammdaten = data
+        self._getStammdaten()
+        data: XImmoStammdaten = self._stammdaten
 
         self._wohnungIdent = ''.join((data.plz, ' ', data.ort,
                                       ', ', data.strasse, ' / ', data.whg_bez))
@@ -276,13 +279,12 @@ class AnlageVData:
         self._writeLog(''.join(('>>>> ', self._wohnungIdent, ' <<<<')))
         self._writeLog('')
 
-        self._xdatadict['vj'] = self._vj
-        self._xdatadict['zeilen'] = dict()
+        self.getAnlageVData()
+        if len(self._logtext) > 0:
+            self._log.write(self._logtext)
+        else:
+            self._log.write("Keine Fehler entdeckt.")
 
-        self._getZeile_1_to_8()
-        self._getZeile_9_to_14_mtlEinn()
-        self._sectionWerbungskosten()
-        self._getZeile_23_24_ueberschuss_zurechnung()
         jsonfile = self._writeInterface()
 
         now = datetime.datetime.now()
@@ -291,9 +293,31 @@ class AnlageVData:
 
         return jsonfile
 
+    def getAnlageVData(self) -> List:
+        """
+        Ermittelt die AnlageV-Daten für die übergebene Wohnung und das
+        übergebene Veranlagungsjahr.
+        :return: Eine Liste, die eine Fehlermeldung enthält (Index 0)
+                 und das Dictionary mit den ermittelten Werten für die Anlage V
+                 (Index 1).
+                 Die Fehlermeldung ist leer, wenn keine Unstimmigkeiten entdeckt wurden.
+        """
+        self._getStammdaten()
+        self._getZeile_1_to_8()
+        self._getZeile_9_to_14_mtlEinn()
+        self._sectionWerbungskosten()
+        self._getZeile_23_24_ueberschuss_zurechnung()
+        return (self._logtext, self._xdatadict)
+
+    def _getStammdaten(self) -> None:
+        self._stammdaten: XImmoStammdaten = \
+            self._dataProvider.getAnlageVData_1_to_8(self._whg_id, self._vj)
+
     def _writeLog(self, txt: str) -> None:
-        txt = ''.join((txt, '\n'))
-        self._log.write(txt)
+        # txt = ''.join((txt, '\n'))
+        # self._log.write(txt)
+        self._logtext += txt
+        self._logtext += "\n"
 
     def _writeInterface(self) -> str:
         jsonfile = self._savePath + "/anlagevdata_" + self._fileIdent + ".json"
@@ -344,7 +368,7 @@ class AnlageVData:
                              ('An Angehörige vermietet', data.isverwandt))
         self._createZeile(8, ('Gesamtwohnfläche', '' if not data.qm else data.qm))
 
-    def _log_missing_data_1_to_8(self, data: XImmoStammdaten) -> bool:
+    def _log_missing_data_1_to_8(self, data: XImmoStammdaten) -> None:
         log = self._writeLog
         if not data.einhwert_az:
             log('Einheitswert-Aktenzeichen fehlt.')
@@ -401,7 +425,7 @@ class AnlageVData:
         self._createZeile(21, ('Summe der Einnahmen', einnahme))
         self._summe_einnahmen = einnahme
 
-    def _log_missing_data_9_to_14(self, xmelist: XMtlEinnahmenList):
+    def _log_missing_data_9_to_14(self, xmelist: XMtlEinnahmenList) -> str:
         log = self._writeLog
         if len(xmelist.getList()) == 0:
             log('!Keine monatlichen Einnahmen vorhanden!')
@@ -410,7 +434,7 @@ class AnlageVData:
         firstgueltigab = lastgueltigbis = ''
         for xme in xmelist.getList():
             if firstgueltigab == '' or xme.gueltig_ab < firstgueltigab:
-               firstgueltigab = xme.gueltig_ab
+                firstgueltigab = xme.gueltig_ab
             if lastgueltigbis == '' or xme.gueltig_bis > lastgueltigbis:
                 lastgueltigbis = xme.gueltig_bis
             if not xme.netto_miete:
