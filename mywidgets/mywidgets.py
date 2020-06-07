@@ -4,6 +4,7 @@ from tkinter import font
 from typing import Dict, List, Any, Tuple
 from abc import ABC, abstractmethod
 from collections import UserList
+import textwrap
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 class ToolTip(object):
@@ -537,12 +538,15 @@ class TableView(ttk.Treeview):
             val = item['values'][colnr]
             #val represents a cell value.
             #measure it and store its width into colinfolist
-            (w, h) = (f.measure(str(val)), f.metrics("linespace"))
-            if w > maxw:
-                maxw = w
+            parts: List = str(val).splitlines()
+            for part in parts:
+                (w, h) = (f.measure(part), f.metrics("linespace"))
+                if w > maxw:
+                    maxw = w
 
         #self.column(colnr)['width'] = maxw
         self.setColumnWidth(columnName, maxw)
+        self.setColumnStretch(columnName, True)
 
     def updateRow(self, iid: str, newValues: dict) -> None:
         for colName, newVal in newValues.items():
@@ -896,26 +900,68 @@ def floattest(root):
     fe = FloatEntry(root)
     fe.grid(column=1, row=0, sticky='nswe', padx=10, pady=10)
 
+#####################################################################
+
+class ScrolledCanvas(ttk.Frame):
+    def __init__(self, parent):
+        ttk.Frame.__init__(self, parent)
+        self.canvas = Canvas(parent, borderwidth=0, background="#ffffff")
+        self.canvas.bind_all("<Button-4>", self._on_mousewheel)
+        self.canvas.bind_all("<Button-5>", self._on_mousewheel)
+        self.frame = ttk.Frame(self.canvas) #, background="#ffffff")
+
+        self.vsb = ttk.Scrollbar(parent, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=self.vsb.set)
+        #self.vsb.pack(side="right", fill="y")
+        self.vsb.grid(row=0, column=1, sticky='ns')
+
+        self.hsb = ttk.Scrollbar(parent, orient="horizontal", command=self.canvas.xview)
+        self.canvas.configure(xscrollcommand=self.hsb.set)
+        #self.hsb.pack(side="bottom", fill="x")
+        self.hsb.grid(row=1, column=0, sticky='we')
+
+        #self.canvas.pack(side="left", fill="both", expand=True)
+        self.canvas.grid(row=0, column=0, sticky='nswe')
+
+        self.canvas.create_window((4,4), window=self.frame, anchor="nw",
+                                  tags="self.frame")
+
+        self.frame.bind("<Configure>", self.onFrameConfigure)
+
+    def _on_mousewheel(self, event):
+        self.canvas.yview_scroll(-1 if event.num == 4 else 1, "units")
+
+    def getParent(self) -> ttk.Frame:
+        return self.frame
+
+    def testpopulate(self):
+        '''Put in some fake data'''
+        for row in range(100):
+            Label(self.frame, text="%s" % row, width=3, borderwidth="1",
+                     relief="solid").grid(row=row, column=0)
+            t="this is the second column for row %s" %row
+            Label(self.frame, text=t).grid(row=row, column=1)
+
+    def onFrameConfigure(self, event):
+        '''Reset the scroll region to encompass the inner frame'''
+        # region = self.canvas.bbox("all")
+        # scregion = (region[0], region[1] + 30, region[2], region[3])
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        # self.canvas.configure(scrollregion=scregion)
 
 def main():
     root = Tk()
     #tableTest(root)
     root.rowconfigure(0, weight=1)
     root.columnconfigure(0, weight=1)
-    checkableItemTest(root)
-    #floattest(root)
-    #inttest(root)
-
-    # txt = MyText(root)
-    # txt.setMyId('v_bla')
-    # txt.grid(column=0, row=0, sticky='nswe')
     #
-    # txt.setValue('bac')
-    # txt.clear()
-    # txt.insert('1.0', 'abcde')
-    # txt.setValue('the old brown fox jumps over the lazy dog.')
-    #print('myId: ', txt.getMyId())
+    # f = test_scrolled_canvas(root)
+    # f.grid(row=0, column=0, sticky='nswe')
 
+
+    sc = ScrolledCanvas(root)
+    sc.grid(row=0, column=0, sticky='nswe')
+    sc.testpopulate()
     root.mainloop()
 
 if __name__ == '__main__':

@@ -9,6 +9,7 @@ from typing import Dict, List
 #from anlagevwriter import AnlageVWriter
 from anlagevcreator import AnlageVCreator
 from anlagevpreviewdialog import AnlageVPreviewDialog
+from anlagevtableview import AnlageVData
 
 import datehelper
 
@@ -66,8 +67,9 @@ class VeranlagungController:
 
         self._createAnlageV(checkOnly)
 
-    def _showAnlageVDataDialog(self, data: Dict):
-        dlg = AnlageVPreviewDialog(data)
+    def _showAnlageVDataDialog(self, msg: str, data: Dict):
+        avdata = AnlageVData(data)
+        dlg = AnlageVPreviewDialog(self._view, msg, avdata)
 
     def _createAnlageV(self, checkOnly: bool = False):
         anlcreator = AnlageVCreator(self._vj, self._dataProvider)
@@ -75,11 +77,8 @@ class VeranlagungController:
             if checkOnly:
                 msg_and_datadict: List = anlcreator.getAnlageVData(self._whg_id, 1)
                 msg: str = msg_and_datadict[0]
-                if len(msg) > 0:
-                    messagebox.showerror('Anlage V hat Fehler', msg)
-                else:
-                    datadict: List = msg_and_datadict[1]
-                    self._showAnlageVDataDialog(datadict)
+                datadict: List = msg_and_datadict[1]
+                self._showAnlageVDataDialog(msg, datadict)
             else:
                 anlcreator.createAnlage(self._whg_id, 1)
                 anlcreator.endCreate()
