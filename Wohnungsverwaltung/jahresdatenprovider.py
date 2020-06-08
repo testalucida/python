@@ -493,10 +493,10 @@ class JahresdatenProvider(DataProviderBase):
         qm:int = jdcoll.getQm()
         if qm and qm > 0:
             for jd in jdcoll.getJahresdatenList():
-                jd.netto_miete_qm = round(jd.netto_miete / qm, 2)
-                jd.nk_qm = round((jd.nk_abschlag + jd.nk_abrechng) / qm, 2)
-                jd.hg_ges_qm = round((jd.hg_brutto + jd.hg_abrechng) / qm, 2)
-                jd.ruecklage_qm = round(jd.ruecklage_zufuehr / qm, 2)
+                jd.netto_miete_qm = round(jd.netto_miete / 12 / qm, 2)
+                jd.nk_qm = round((jd.nk_abschlag + jd.nk_abrechng) / 12 / qm, 2)
+                jd.hg_ges_qm = round((jd.hg_brutto + jd.hg_abrechng) / 12 / qm, 2)
+                jd.ruecklage_qm = round(jd.ruecklage_zufuehr / 12 / qm, 2)
 
 #+++++++++++++++++++++++++++++++++++++++++++++
 

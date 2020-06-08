@@ -16,8 +16,9 @@ class JahresdatenController:
         pass
 
     def _onGetJahresdaten(self) -> None:
+        y = datehelper.getCurrentYear()
         l: List[JahresdatenCollection] = \
-            self._dataProvider.getJahresdaten(self._whg_id, 2018, 2020)
+            self._dataProvider.getJahresdaten(self._whg_id, y-2, y)
         self._view.setValues(l)
 
     def wohnungSelected(self, whg_id: int) -> None:
