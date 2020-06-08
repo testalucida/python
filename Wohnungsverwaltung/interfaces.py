@@ -3,7 +3,7 @@ from enum import Enum, IntEnum
 from xinterface import XInterface, XInterfaceList
 
 Vergleichswert = IntEnum('Vergleichswert',
-                         'nettomiete nk_voraus hg_voraus rechng '
+                         'nettomiete nk_voraus hg_voraus rechng sonst_kosten '
                          'nk_abrechng hg_abrechng '
                          'ergebnis '
                          'sonderumlage '

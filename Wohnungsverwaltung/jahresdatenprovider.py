@@ -288,10 +288,10 @@ class JahresdatenProvider(DataProviderBase):
                         mea.gueltig_bis = datehelper.getTodayAsIsoString()
                     cnt = datehelper. \
                         getNumberOfMonths(mea.gueltig_ab, mea.gueltig_bis, jahr)
-                    einausjahr.netto_miete += (cnt * int(mea.netto_miete))
-                    einausjahr.nk_abschlag += (cnt * int(mea.nk_abschlag))
-                    einausjahr.hg_netto_abschlag += (cnt * int(mea.hg_netto_abschlag))
-                    einausjahr.ruecklage_zufuehr += (cnt * int(mea.ruecklage_zufuehr))
+                    einausjahr.netto_miete += round(cnt * mea.netto_miete)
+                    einausjahr.nk_abschlag += round(cnt * mea.nk_abschlag)
+                    einausjahr.hg_netto_abschlag += round(cnt * mea.hg_netto_abschlag)
+                    einausjahr.ruecklage_zufuehr += round(cnt * mea.ruecklage_zufuehr)
                     einausjahr.hg_brutto = \
                         einausjahr.hg_netto_abschlag + einausjahr.ruecklage_zufuehr
         return l

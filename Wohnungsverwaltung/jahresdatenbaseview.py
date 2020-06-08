@@ -28,7 +28,7 @@ class OutputLabel(ttk.Label):
         self._configureStyles()
         self['anchor'] = 'e'
         self['style'] = 'black.TLabel'
-        self['width'] = 10
+        self['width'] = 8
 
     def _configureStyles(self):
         #default, white background:
@@ -142,6 +142,7 @@ class JahresdatenBaseView(ttk.Frame):
             self.setValue(Vergleichswert.nk_voraus, whg_id, j, jd.nk_abschlag)
             self.setValue(Vergleichswert.hg_voraus, whg_id, j, jd.hg_brutto)
             self.setValue(Vergleichswert.rechng, whg_id, j, jd.rechng)
+            self.setValue(Vergleichswert.sonst_kosten, whg_id, j, jd.sonst_kosten)
             self.setValue(Vergleichswert.nk_abrechng, whg_id, j, jd.nk_abrechng)
             self.setValue(Vergleichswert.hg_abrechng, whg_id, j, jd.hg_abrechng)
             self.setValue(Vergleichswert.ergebnis, whg_id, j, jd.ergebnis)
@@ -211,6 +212,11 @@ class JahresdatenBaseView(ttk.Frame):
         self._createOut(lf, Vergleichswert.rechng, r, 10)
 
         r += 1
+        lbl = MyLabel(lf, text='sonst. Kosten', column=c, row=r, sticky='nw',
+                      anchor='w', padx=padx, pady=pady)
+        self._createOut(lf, Vergleichswert.sonst_kosten, r, pady)
+
+        r += 1
         lbl = MyLabel(lf, text='NK-Abrechnung', column=c, row=r, sticky='nw',
                       anchor='w', padx=padx, pady=pady)
         self._createOut(lf, Vergleichswert.nk_abrechng, r, pady)
@@ -222,24 +228,26 @@ class JahresdatenBaseView(ttk.Frame):
 
         r += 1
         ###### Ergebnis ###################
+        py = (25,0)
         lbl = MyLabel(lf, text='Ergebnis', column=c, row=r,
-                      sticky='nw', anchor='w', padx=1, pady=25)
+                      sticky='nw', anchor='w', padx=1, pady=py)
         lbl['style'] = 'bigfat.TLabel'
         #self._rowList.append((r, 22))
-        self._createOut(lf, Vergleichswert.ergebnis, r, 22)
+        self._createOut(lf, Vergleichswert.ergebnis, r, py)
 
         r += 1
         #########  Sonderumlagen #####################
+        py = (15,0)
         lbl = MyLabel(lf, text='Sonderumlagen', column=c, row=r,
-                      sticky='nw', anchor='w', padx=1, pady=25)
+                      sticky='nw', anchor='w', padx=1, pady=py)
         lbl['style'] = 'fat.TLabel'
-        #self._rowList.append((r, 22))
-        self._createOut(lf, Vergleichswert.sonderumlage, r, 22)
+        self._createOut(lf, Vergleichswert.sonderumlage, r, py)
 
         r += 1
         #########  Ein-/Auszahlungen je qm #####################
+        py = (15,3)
         lbl = MyLabel(lf, text='Ein-/Auszahlungen\nje qm u. Monat', column=c, row=r,
-                      sticky='nw', anchor='w', padx=1, pady=pady)
+                      sticky='nw', anchor='w', padx=1, pady=py)
         lbl['style'] = 'fat.TLabel'
 
         r += 1
@@ -307,7 +315,7 @@ class JahresdatenBaseView(ttk.Frame):
         s.configure('year.TLabel', foreground='green')
         s.configure('year.TLabel', font=('courier', 13, ('italic', 'bold')))
 
-    def _createOut(self, parent:ttk.Frame, id:Vergleichswert, row:int, pady:int):
+    def _createOut(self, parent:ttk.Frame, id:Vergleichswert, row:int, pady:int or List):
         padx = 20
         col = 1
         for w in range(self._nWhg):
@@ -328,17 +336,14 @@ class JahresdatenBaseView(ttk.Frame):
 
 def test():
     import sys
-    #from PIL import Image
-    #
-    # filename = "./images/haus_18x16.png"
-    # img = Image.open(filename)
-    # img.save("./images/haus.ico")
 
     print("path: ", sys.path)
 
     prov = JahresdatenProvider()
     prov.connect(utils.getUser())
-    l:List[JahresdatenCollection] = prov.getJahresdatenAlleWohnungen(2019, 2020)
+    #l:List[JahresdatenCollection] = prov.getJahresdatenAlleWohnungen(2019, 2019)
+    # l = prov.getJahresdaten(6, 2018, 2020)
+    l = prov.getJahresdaten(6, 2018, 2020)
 
     root = Tk()
     #root.geometry('600x300')
@@ -351,28 +356,6 @@ def test():
     jv = JahresdatenBaseView(root)
     jv.grid(column=0, row=0, sticky='nswe', padx=10, pady=10)
     jv.setValues(l)
-
-    # jv.setValue(Vergleichswert.nettomiete, 1, 2019, 1234)
-    # jv.setValue(Vergleichswert.nk_voraus, 1, 2019, 3567)
-    # jv.setValue(Vergleichswert.hg_voraus, 1, 2019, 2214)
-    # jv.setValue(Vergleichswert.rechng, 1, 2019, 398)
-    # jv.setValue(Vergleichswert.nk_abrechng, 1, 2019, 127)
-    # jv.setValue(Vergleichswert.hg_abrechng, 1, 2019, -220)
-    # jv.setValue(Vergleichswert.ergebnis, 1, 2019, 455)
-    # jv.setValue(Vergleichswert.sonderumlage, 1, 2019, 500)
-    # jv.setValue(Vergleichswert.nettomiete_qm, 1, 2019, 7.3)
-    # jv.setValue(Vergleichswert.nk_qm, 1, 2019, 2.05)
-    # jv.setValue(Vergleichswert.hg_ges_qm, 1, 2019, 2.92)
-    # jv.setValue(Vergleichswert.rueck_qm, 1, 2019, 0.8)
-    #
-    # jv.setValue(Vergleichswert.sonderumlage, 3, 2020, 305)
-
-
-    #png = tk.PhotoImage(file="./images/haus_18x16.png")
-    #root.tk.call('wm', 'iconphoto', root._w, png)
-
-    # haus_ico = Image.open("./images/test.xpm")
-    # root.iconbitmap(haus_ico)
 
     root.mainloop()
 

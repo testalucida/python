@@ -1,6 +1,7 @@
 from jahresdatenview import JahresdatenView
 from jahresdatenprovider import JahresdatenProvider, JahresdatenCollection
 import datehelper
+from typing import List
 #++++++++++++++++++++++++++++++++++++++++++++++++
 
 class JahresdatenController:
