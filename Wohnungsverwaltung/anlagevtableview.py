@@ -212,7 +212,7 @@ testdict = \
     }
 }
 
-class AnlageVData:
+class AnlageVDataModel:
     def __init__(self, datadict):
         #self._keys = "zeilen"
         self._vj = datadict['vj']
@@ -226,15 +226,64 @@ class AnlageVData:
             #print(key, ": ")
             if self._isIterable(val):
                 for v in val:
-                    self._rowdict[r] = [key, v['name'], v['value'], "Keine Erläuterung.\n"
-                                                                    "Diese folgt später.\n"
-                                                                    "Vielleicht."]
+                    name = v['name']
+                    value = v['value']
+                    self._rowdict[r] = [key, name, value,
+                                        self._getComment(key, name, value)]
                     r += 1
                     #print( "\t", v)
             else: raise KeyError("Key " + key + " is not iterable")
 
         # for k, v in self._rowdict.items():
         #     print(k, v)
+
+    def _getComment(self, z:str, name:str, value:any) -> str:
+        """
+        :param z:  Zeilennummer des Formulars
+        :param name: Name des Formularfelds
+        :param value: Wert, der im Formularfeld eingetragen wird
+        :return: Erläuterung, wie der ausgewiesene Wert zustande kam
+        """
+        try:
+            numval = float(value)
+        except Exception:
+            try:
+                numval = int(value)
+            except:
+                return ""
+
+        cls = "AnlageVData."
+        dp = "DataProvider."
+        ret = " returns "
+        w = "whg_id"
+        stacktrace = ""
+        interface = ""
+        lf = "\n"
+        tab = "\t"
+        comment = ""
+        text = ""
+
+        if z == "9": #Mieteinnahmen
+            stacktrace = cls + "_getZeile_9_to_14_mtlEinn() ->" + lf + tab + \
+                         dp + "getAnlageVData_9_to_14_mtlEinn(whg_id, vj)"
+
+            interface = "(List of) XMtlEinnahmen: gueltig_ab, gueltig_bis, " \
+                        "*netto_miete*, ..."
+            comment = "Addition aller netto_miete im passenden Zeitraum"
+            text = stacktrace + lf + ret + lf + interface + lf + comment
+        if z == "13": #Nebenkostenabschlag saldiert mit Nach- u. Rückzahlg.
+            stacktrace = cls + "_getZeile_9_to_14_mtlEinn() ->" + lf + tab + \
+                         dp + "getAnlageVData_9_to_14_mtlEinn(whg_id, vj)"
+            interface = "XMtlEinnahmen: gueltig_ab, gueltig_bis, " \
+                        "*nk_abschlag*, ..."
+            comment = "Addition aller nk_abschlag im VJ"
+            text = stacktrace + lf + ret + lf + interface + lf + comment
+            stacktrace = lf + tab + tab + " -> " + \
+                    dp + "getAnlageVData_13_nkKorr(whg_id, vj)"
+            interface = "nkAdjustList: vj, betrag, art=NK-Nachzahlung, NK-Rückzahlung"
+            comment = "Saldierung aller Nach- u. Rückzahlungen im VJ"
+            text += lf + stacktrace + lf + ret + lf + interface + lf + comment
+        return text
 
     def _isIterable(self, val: any) -> bool:
         try:
@@ -268,11 +317,11 @@ class AnlageVTableView(ScrollableView):
     def __init__(self, parent):
         ScrollableView.__init__(self, parent)
         self._headers = ("Z#", "Feldbezeichnung", "Eingetragener Wert", "Erläuterung")
-        self._colW = (5, 35, 35, 50)
+        self._colW = (5, 35, 35, 100)
         self._data = None
         self._rowlist = [] #list of ttk.Frames representing a row each
 
-    def setData(self, data:AnlageVData) -> None:
+    def setData(self, data:AnlageVDataModel) -> None:
         cols = data.getColumns()
         self._provideHeaders(cols)
         rows = data.getRows()
@@ -318,11 +367,11 @@ class AnlageVTableView(ScrollableView):
 
 
 def test():
-    avdata = AnlageVData(testdict)
+    avdata = AnlageVDataModel(testdict)
     root = Tk()
     root.rowconfigure(0, weight=1)
     root.columnconfigure(0, weight=1)
-    root.geometry('1000x800')
+    root.geometry('1300x800')
     atv = AnlageVTableView(root)
     atv.grid(row=0, column=0, sticky='nswe', padx=3, pady=3)
     atv.setData(avdata)

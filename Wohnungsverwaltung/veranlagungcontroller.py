@@ -9,7 +9,7 @@ from typing import Dict, List
 #from anlagevwriter import AnlageVWriter
 from anlagevcreator import AnlageVCreator
 from anlagevpreviewdialog import AnlageVPreviewDialog
-from anlagevtableview import AnlageVData
+from anlagevtableview import AnlageVDataModel
 
 import datehelper
 
@@ -68,7 +68,7 @@ class VeranlagungController:
         self._createAnlageV(checkOnly)
 
     def _showAnlageVDataDialog(self, msg: str, data: Dict):
-        avdata = AnlageVData(data)
+        avdata = AnlageVDataModel(data)
         dlg = AnlageVPreviewDialog(self._view, msg, avdata)
 
     def _createAnlageV(self, checkOnly: bool = False):
@@ -375,6 +375,7 @@ class VeranlagungController:
             self._view.setWohnungData(d['angeschafft_am'], d['einhwert_az'],
                                       d['steuerl_zurechng_mann'],
                                       d['steuerl_zurechng_frau'])
+
 
 
 def test():

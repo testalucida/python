@@ -2,10 +2,10 @@ from tkinter import *
 from tkinter import ttk
 from functools import partial
 from typing import Dict
-from anlagevtableview import AnlageVTableView, AnlageVData
+from anlagevtableview import AnlageVTableView, AnlageVDataModel
 
 class AnlageVPreviewDialog(Toplevel):
-    def __init__(self, parent, msg: str, data: AnlageVData):
+    def __init__(self, parent, msg: str, data: AnlageVDataModel):
         Toplevel.__init__(self, parent)
         self._msg: str = "" if msg is None else msg
         self._anlagev_tableview:AnlageVTableView = None
@@ -43,7 +43,7 @@ class AnlageVPreviewDialog(Toplevel):
         xscrollbar.grid(row=1, column=0, sticky=E + W)
         yscrollbar = Scrollbar(parent)
         yscrollbar.grid(row=0, column=1, sticky=N + S)
-        txt = Text(parent, wrap=NONE, height=4,
+        txt = Text(parent, wrap=NONE, height=5,
                    xscrollcommand=xscrollbar.set,
                    yscrollcommand=yscrollbar.set)
         txt.grid(column=0, row=0, sticky='nswe', padx=5, pady=5)
