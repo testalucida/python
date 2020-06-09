@@ -1,7 +1,7 @@
 from tkinter import *
 from tkinter import ttk
 from typing import Dict, List
-from mywidgets import ScrolledCanvas
+from mywidgets import ScrollableView
 
 testdict = \
 {
@@ -264,9 +264,9 @@ class AnlageVData:
 #         self.C3 = "Wert"
 #         self.C4 = "Erläuterung"
 
-class AnlageVTableView(ScrolledCanvas):
+class AnlageVTableView(ScrollableView):
     def __init__(self, parent):
-        ScrolledCanvas.__init__(self, parent)
+        ScrollableView.__init__(self, parent)
         self._headers = ("Z#", "Feldbezeichnung", "Eingetragener Wert", "Erläuterung")
         self._colW = (5, 35, 35, 50)
         self._data = None
@@ -277,13 +277,13 @@ class AnlageVTableView(ScrolledCanvas):
         self._provideHeaders(cols)
         rows = data.getRows()
         for r in range(rows):
-            f = ttk.Frame(self.getParent())
+            f = ttk.Frame(self.clientarea)
             f.grid(row=r+1, column=0, columnspan=cols, sticky='nswe', padx=1, pady=1)
             #self._rowlist.append(f)
             self._provideColumnValues(f, data.getValues(r))
 
     def _provideHeaders(self, cols:int):
-        f = ttk.Frame(self.getParent())
+        f = ttk.Frame(self.clientarea)
         f.grid(row=0, column=0, columnspan=cols, sticky='nswe', padx=1, pady=1)
         s = ttk.Style()
         s.configure("header.Label", ipady=5, background="#000000")

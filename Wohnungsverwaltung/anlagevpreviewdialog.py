@@ -34,8 +34,8 @@ class AnlageVPreviewDialog(Toplevel):
         lf = ttk.Labelframe(self, text="Anlage V Daten")
         lf.columnconfigure(0, weight=1)
         lf.rowconfigure(0, weight=1)
-        _anlagev_tableview = AnlageVTableView(lf)
-        _anlagev_tableview.grid(row=0, column=0, sticky='nswe', padx=1, pady=1)
+        self._anlagev_tableview = AnlageVTableView(lf)
+        self._anlagev_tableview.grid(row=0, column=0, sticky='nswe', padx=1, pady=1)
         return lf
 
     def _createTextWidget(self, parent: ttk.Labelframe):

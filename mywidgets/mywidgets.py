@@ -900,68 +900,72 @@ def floattest(root):
     fe = FloatEntry(root)
     fe.grid(column=1, row=0, sticky='nswe', padx=10, pady=10)
 
-#####################################################################
+######################################################################
 
-class ScrolledCanvas(ttk.Frame):
+class ScrollableView(Frame):
+    """
+    This is a Frame containing a Canvas and two Scrollbar objects.
+    !!!!!!!
+    NOTE: you *must not* add widgets to this ScrollableView,
+          instead use ScrollableView.clientarea!
+    !!!!!!!
+    """
     def __init__(self, parent):
-        ttk.Frame.__init__(self, parent)
-        self.canvas = Canvas(parent, borderwidth=0, background="#ffffff")
-        self.canvas.bind_all("<Button-4>", self._on_mousewheel)
-        self.canvas.bind_all("<Button-5>", self._on_mousewheel)
-        self.frame = ttk.Frame(self.canvas) #, background="#ffffff")
+        Frame.__init__(self, parent)
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(0, weight=1)
 
-        self.vsb = ttk.Scrollbar(parent, orient="vertical", command=self.canvas.yview)
-        self.canvas.configure(yscrollcommand=self.vsb.set)
-        #self.vsb.pack(side="right", fill="y")
-        self.vsb.grid(row=0, column=1, sticky='ns')
+        self.xsc = Scrollbar(self, orient=HORIZONTAL)
+        self.xsc.grid(row=1, column=0, sticky='we')
 
-        self.hsb = ttk.Scrollbar(parent, orient="horizontal", command=self.canvas.xview)
-        self.canvas.configure(xscrollcommand=self.hsb.set)
-        #self.hsb.pack(side="bottom", fill="x")
-        self.hsb.grid(row=1, column=0, sticky='we')
+        self.ysc = Scrollbar(self)
+        self.ysc.grid(row=0, column=1, sticky='ns')
 
-        #self.canvas.pack(side="left", fill="both", expand=True)
-        self.canvas.grid(row=0, column=0, sticky='nswe')
+        c = Canvas(self, bg="#ffffff",
+                         xscrollcommand=self.xsc.set,
+                         yscrollcommand=self.ysc.set)
+        c.grid(row=0, column=0, sticky='nswe', padx=0, pady=0)
 
-        self.canvas.create_window((4,4), window=self.frame, anchor="nw",
-                                  tags="self.frame")
+        ## this is the frame you have to use as parent if you want
+        ## to add widgets to this ScrollableView
+        self.clientarea = Frame(c)
+        #+++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-        self.frame.bind("<Configure>", self.onFrameConfigure)
+        #to add tkinter widgets to a canvas, use create_window:
+        c.create_window((4, 4), window=self.clientarea, anchor="nw",
+                        tags="self.clientarea")
 
-    def _on_mousewheel(self, event):
+        self.clientarea.bind("<Configure>", self._onFrameConfigure)
+        self.clientarea.bind('<Enter>', self._bindToMousewheel)
+        self.clientarea.bind('<Leave>', self._unbindFromMousewheel)
+
+        self.xsc.config(command=c.xview)
+        self.ysc.config(command=c.yview)
+        self.canvas = c
+
+    def _onFrameConfigure(self, event):
+        """Reset the scroll region to encompass the inner frame"""
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def _bindToMousewheel(self, event):
+        self.canvas.bind_all("<Button-4>", self._onMousewheel)
+        self.canvas.bind_all("<Button-5>", self._onMousewheel)
+
+    def _unbindFromMousewheel(self, event):
+        self.canvas.unbind_all("<Button-4>")
+        self.canvas.unbind_all("<Button-5>")
+
+    def _onMousewheel(self, event):
         self.canvas.yview_scroll(-1 if event.num == 4 else 1, "units")
 
-    def getParent(self) -> ttk.Frame:
-        return self.frame
-
-    def testpopulate(self):
-        '''Put in some fake data'''
-        for row in range(100):
-            Label(self.frame, text="%s" % row, width=3, borderwidth="1",
-                     relief="solid").grid(row=row, column=0)
-            t="this is the second column for row %s" %row
-            Label(self.frame, text=t).grid(row=row, column=1)
-
-    def onFrameConfigure(self, event):
-        '''Reset the scroll region to encompass the inner frame'''
-        # region = self.canvas.bbox("all")
-        # scregion = (region[0], region[1] + 30, region[2], region[3])
-        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-        # self.canvas.configure(scrollregion=scregion)
+###########################################################
 
 def main():
     root = Tk()
     #tableTest(root)
     root.rowconfigure(0, weight=1)
     root.columnconfigure(0, weight=1)
-    #
-    # f = test_scrolled_canvas(root)
-    # f.grid(row=0, column=0, sticky='nswe')
 
-
-    sc = ScrolledCanvas(root)
-    sc.grid(row=0, column=0, sticky='nswe')
-    sc.testpopulate()
     root.mainloop()
 
 if __name__ == '__main__':
