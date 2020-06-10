@@ -7,9 +7,10 @@ from anlagevtableview import AnlageVTableView, AnlageVDataModel
 class AnlageVPreviewDialog(Toplevel):
     def __init__(self, parent, msg: str, data: AnlageVDataModel):
         Toplevel.__init__(self, parent)
+        self.geometry('1300x800')
         self._msg: str = "" if msg is None else msg
         self._anlagev_tableview:AnlageVTableView = None
-        self.title('Anlage V Simulation')
+        self.title('Anlage V Simulation: VJ ' + str(data.vj))
         self._createUI()
         if data:
             self._anlagev_tableview.setData(data)

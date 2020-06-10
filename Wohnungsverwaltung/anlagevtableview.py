@@ -7,19 +7,19 @@ testdict = \
 {
     "vj": 2018,
     "zeilen": {
-        "1": [
+        1: [
             {
                 "name": "Name",
                 "value": "Kendel"
             }
         ],
-        "2": [
+        2: [
             {
                 "name": "Vorname",
                 "value": "Martin"
             }
         ],
-        "3": [
+        3: [
             {
                 "name": "Steuernummer",
                 "value": "217/235/50499"
@@ -29,7 +29,7 @@ testdict = \
                 "value": "1"
             }
         ],
-        "4": [
+        4: [
             {
                 "name": "Stra\u00dfe, Hausnummer",
                 "value": "Mendelstr. 24 / 3. OG rechts (Whg 8 - S\u00fcd)"
@@ -39,7 +39,7 @@ testdict = \
                 "value": "13.05.1997"
             }
         ],
-        "5": [
+        5: [
             {
                 "name": "Postleitzahl",
                 "value": "90429"
@@ -49,13 +49,13 @@ testdict = \
                 "value": "N\u00fcrnberg"
             }
         ],
-        "6": [
+        6: [
             {
                 "name": "Einheitswert-Aktenzeichen",
                 "value": "24101153470240083"
             }
         ],
-        "7": [
+        7: [
             {
                 "name": "Als Ferienwohnung genutzt",
                 "value": "2"
@@ -65,31 +65,31 @@ testdict = \
                 "value": "2"
             }
         ],
-        "8": [
+        8: [
             {
                 "name": "Gesamtwohnfl\u00e4che",
                 "value": "52"
             }
         ],
-        "9": [
+        9: [
             {
                 "name": "Mieteinnahmen ohne Umlagen",
                 "value": "4920"
             }
         ],
-        "13": [
+        13: [
             {
                 "name": "Umlagen, verrechnet mit Erstattungen",
                 "value": "1200"
             }
         ],
-        "21": [
+        21: [
             {
                 "name": "Summe der Einnahmen",
                 "value": "6120"
             }
         ],
-        "33": [
+        33: [
             {
                 "name": "linear",
                 "value": "X"
@@ -111,13 +111,13 @@ testdict = \
                 "value": "1126"
             }
         ],
-        "39": [
+        39: [
             {
                 "name": "voll_abzuziehende",
                 "value": "0"
             }
         ],
-        "41": [
+        41: [
             {
                 "name": "gesamtaufwand_vj",
                 "value": "0"
@@ -127,31 +127,31 @@ testdict = \
                 "value": "0"
             }
         ],
-        "42": [
+        42: [
             {
                 "name": "vj_minus_4",
                 "value": "0"
             }
         ],
-        "43": [
+        43: [
             {
                 "name": "vj_minus_3",
                 "value": "0"
             }
         ],
-        "44": [
+        44: [
             {
                 "name": "vj_minus_2",
                 "value": "0"
             }
         ],
-        "45": [
+        45: [
             {
                 "name": "vj_minus_1",
                 "value": "860"
             }
         ],
-        "46": [
+        46: [
             {
                 "name": "grundsteuer_txt",
                 "value": "Grundsteuer"
@@ -161,7 +161,7 @@ testdict = \
                 "value": "44"
             }
         ],
-        "47": [
+        47: [
             {
                 "name": "hausgeld",
                 "value": "Hausgeld OHNE Zuf\u00fchrg. R\u00fccklagen"
@@ -171,7 +171,7 @@ testdict = \
                 "value": "991"
             }
         ],
-        "49": [
+        49: [
             {
                 "name": "sonst_kost",
                 "value": "Porto, Fahrtkosten, H&G etc."
@@ -181,25 +181,25 @@ testdict = \
                 "value": "68"
             }
         ],
-        "22": [
+        22: [
             {
                 "name": "summe_werbungskosten",
                 "value": "3089"
             }
         ],
-        "50": [
+        50: [
             {
                 "name": "summe_werbungskosten",
                 "value": "3089"
             }
         ],
-        "23": [
+        23: [
             {
                 "name": "ueberschuss",
                 "value": "3031"
             }
         ],
-        "24": [
+        24: [
             {
                 "name": "zurechng_mann",
                 "value": "3031"
@@ -215,7 +215,7 @@ testdict = \
 class AnlageVDataModel:
     def __init__(self, datadict):
         #self._keys = "zeilen"
-        self._vj = datadict['vj']
+        self.vj = datadict['vj']
         self._datadict = datadict['zeilen']
         self._rowdict = dict()
         self._makeTable(datadict['zeilen'])
@@ -237,7 +237,7 @@ class AnlageVDataModel:
         # for k, v in self._rowdict.items():
         #     print(k, v)
 
-    def _getComment(self, z:str, name:str, value:any) -> str:
+    def _getComment(self, z:int, name:str, value:any) -> str:
         """
         :param z:  Zeilennummer des Formulars
         :param name: Name des Formularfelds
@@ -256,7 +256,7 @@ class AnlageVDataModel:
         tab = "\t"
         text = ""
 
-        if z == "9": #Mieteinnahmen
+        if z == 9: #Mieteinnahmen
             #AnlageVData._getZeile_9_to_14_mtlEinn() ->
             #   DataProvider.getAnlageVData_9_to_14_mtlEinn(whg_id, vj)
             #       returns XMtlEinnahmenList (gueltig_ab, gueltig_bis, netto_miete,
@@ -270,7 +270,7 @@ class AnlageVDataModel:
                   "and year(gueltig_ab) <= <vj>" + lf + \
                   "order by gueltig_ab asc"
             text = comment + lf + "SQL:" + lf + sql
-        elif z == "13": #Nebenkostenabschlag saldiert mit Nach- u. Rückzahlg.
+        elif z == 13: #Nebenkostenabschlag saldiert mit Nach- u. Rückzahlg.
             #NK-Abschläge werden im gleichen Serviceaufruf wie bei Zeile 9 ermittelt
             #(nur 1 call)
             #danach Berechnung der NK-Korrekturen über den Service
@@ -287,11 +287,11 @@ class AnlageVDataModel:
                   "and art.art_kurz in ('nk_nachz', 'nk_rueck')\n"\
                   "and vj = $vj"
             text = comment + lf + "SQL:" + lf + sql
-        elif z == "21":
+        elif z == 21:
             text = "Summe der Werte aus den Zeilen 9 u. 13"
-        elif z == "33":
+        elif z == 33:
             text = "AfA: Alle Zeilenwerte aus Tabelle afa"
-        elif z == "39":
+        elif z == 39:
             comment = "Voll abzuziehender Erhaltungsaufwand:\n" \
                       "Addition aller Rechnungsbeträge, die im VJ bezahlt wurden (rg_bezahlt_am) UND\n\t" \
                       "die nicht auf mehrere Jahre zu verteilen sind." \
@@ -304,16 +304,16 @@ class AnlageVDataModel:
                   "where whg_id = $whg_id\n"\
                   "order by rg_datum desc"
             text = comment + lf + "SQL:" + lf + sql
-        elif z == "41":
+        elif z == 41:
             if name == "gesamtaufwand_vj":
                 text = "Auf bis zu 5 Jahre zu verteilender Gesamtaufwand,\n" \
                        "der *im VJ* entstanden ist (Formularfeld 57)."
 
             else:
                 text = "Anteiliger Betrag für das VJ (Formularfeld 38)."
-        elif z == "42" or z == "43" or z == "44" or z == "45":
+        elif z == 42 or z == 43 or z == 44 or z == 45:
             text = "Anteilige Beträge aus Rechnungen vergangener VJ."
-        elif z == "47": #Formularzeile "Verwaltungskosten".
+        elif z == 47: #Formularzeile "Verwaltungskosten".
             comment = "Summe der monatlichen Hausgeldzahlungen OHNE Rücklagenanteil, \n" \
                       "bereinigt um Nach- und Rückzahlungen,\n" \
                       "eingetragen in der Zeile Verwaltungskosten.";
@@ -331,7 +331,7 @@ class AnlageVDataModel:
                   "and art.art_kurz in ('hg_nachz', 'hg_rueck')\n"\
                   "and vj = $vj"
             text = comment + lf + "SQL:" + lf + sql
-        elif z == "49":
+        elif z == 49:
             comment = "Addiert werden die Beträge aller Datensätze des VJ\n" \
                       "mit der Art 'Sonstige Kosten'."
             sql = "select ..., vj, betrag\n"\
@@ -341,7 +341,7 @@ class AnlageVDataModel:
                   "and art.art_kurz = 'sonst_kost'\n"\
                   "and vj = $vj"
             text = comment + lf + "SQL:" + lf + sql
-        elif z == "22":
+        elif z == 22:
             text = "Summe der Werbungskosten:\n" \
                   "AfA + \n" \
                   "voll abzuziehende Aufwände + \n" \
@@ -349,9 +349,9 @@ class AnlageVDataModel:
                   "Grundsteuer + \n" \
                   "Verwaltungskosten (Hausgeld ohne Zuf. Rücklagen) + \n" \
                   "Sonstige Kosten"
-        elif z == "50":
+        elif z == 50:
             text = "Übertrag aus Zeile 22"
-        elif z == "23":
+        elif z == 23:
             text = "Überschuss:\n" \
                    "Summe der Einnahmen - Summe der Werbungskosten (Zeile 22)\n" \
                    "Summe der Einnahmen errechnet sich zu\n\t" \
@@ -380,12 +380,7 @@ class AnlageVDataModel:
     def getColumns(self) -> int:
         return len(self._rowdict[0])
 
-# class Columns:
-#     def __init__(self):
-#         self.C1 = "Z#"
-#         self.C2 = "Bezeichnung"
-#         self.C3 = "Wert"
-#         self.C4 = "Erläuterung"
+#########################################################################
 
 class AnlageVTableView(ScrollableView):
     def __init__(self, parent):
