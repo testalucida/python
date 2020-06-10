@@ -252,37 +252,111 @@ class AnlageVDataModel:
             except:
                 return ""
 
-        cls = "AnlageVData."
-        dp = "DataProvider."
-        ret = " returns "
-        w = "whg_id"
-        stacktrace = ""
-        interface = ""
         lf = "\n"
         tab = "\t"
-        comment = ""
         text = ""
 
         if z == "9": #Mieteinnahmen
-            stacktrace = cls + "_getZeile_9_to_14_mtlEinn() ->" + lf + tab + \
-                         dp + "getAnlageVData_9_to_14_mtlEinn(whg_id, vj)"
+            #AnlageVData._getZeile_9_to_14_mtlEinn() ->
+            #   DataProvider.getAnlageVData_9_to_14_mtlEinn(whg_id, vj)
+            #       returns XMtlEinnahmenList (gueltig_ab, gueltig_bis, netto_miete,
+            #                                   nk_abschlag)
+            comment = "Addition des Feldes netto_miete über alle Datensätze\n" \
+                      "im passenden Zeitraum"
+            sql = "select ..., netto_miete, ..." + lf + \
+                  "from mtl_ein_aus " + lf + \
+                  "where whg_id = <id>" + lf + \
+                  "and (gueltig_bis is null or year(gueltig_bis) >= <vj>)" + lf + \
+                  "and year(gueltig_ab) <= <vj>" + lf + \
+                  "order by gueltig_ab asc"
+            text = comment + lf + "SQL:" + lf + sql
+        elif z == "13": #Nebenkostenabschlag saldiert mit Nach- u. Rückzahlg.
+            #NK-Abschläge werden im gleichen Serviceaufruf wie bei Zeile 9 ermittelt
+            #(nur 1 call)
+            #danach Berechnung der NK-Korrekturen über den Service
+            #DataProider.getAnlageVData_13_nkKorr(whg_id, vj)
+            #   returns nkAdjustList: vj, betrag, art=NK-Nachzahlung, NK-Rückzahlung
+            comment = "Addition des Feldes nk_abschlag über alle Datensätze\n" \
+                      "im passenden Zeitraum.\n" \
+                      "Dann Saldierung aller Nach- u.Rückzahlungen im VJ und \n" \
+                      "Verrechnung mit der Summe der NK-Abschläge."
+            sql = "select ..., betrag, art.art, art.ein_aus\n"\
+                  "from sonstige_ein_aus sea\n"\
+                  "inner join sea_art art on art.art_id = sea.art_id\n"\
+                  "where sea.whg_id = $whg_id\n"\
+                  "and art.art_kurz in ('nk_nachz', 'nk_rueck')\n"\
+                  "and vj = $vj"
+            text = comment + lf + "SQL:" + lf + sql
+        elif z == "21":
+            text = "Summe der Werte aus den Zeilen 9 u. 13"
+        elif z == "33":
+            text = "AfA: Alle Zeilenwerte aus Tabelle afa"
+        elif z == "39":
+            comment = "Voll abzuziehender Erhaltungsaufwand:\n" \
+                      "Addition aller Rechnungsbeträge, die im VJ bezahlt wurden (rg_bezahlt_am) UND\n\t" \
+                      "die nicht auf mehrere Jahre zu verteilen sind." \
+                      "Ist eine Rechnung auf mehrere Jahre zu verteilen,\n" \
+                      "wird nur der anteilige Betrag ausgegeben.\n" \
+                      "Beachte: Entnahmen aus den Rücklagen werden als (Dummy-)Rechnung gespeichert\n" \
+                      "\tund hier berücksichtigt."
+            sql = "select ..., rg_datum, betrag, verteilung_jahre, rg_bezahlt_am, ...\n"\
+                  "from rechnung\n"\
+                  "where whg_id = $whg_id\n"\
+                  "order by rg_datum desc"
+            text = comment + lf + "SQL:" + lf + sql
+        elif z == "41":
+            if name == "gesamtaufwand_vj":
+                text = "Auf bis zu 5 Jahre zu verteilender Gesamtaufwand,\n" \
+                       "der *im VJ* entstanden ist (Formularfeld 57)."
 
-            interface = "(List of) XMtlEinnahmen: gueltig_ab, gueltig_bis, " \
-                        "*netto_miete*, ..."
-            comment = "Addition aller netto_miete im passenden Zeitraum"
-            text = stacktrace + lf + ret + lf + interface + lf + comment
-        if z == "13": #Nebenkostenabschlag saldiert mit Nach- u. Rückzahlg.
-            stacktrace = cls + "_getZeile_9_to_14_mtlEinn() ->" + lf + tab + \
-                         dp + "getAnlageVData_9_to_14_mtlEinn(whg_id, vj)"
-            interface = "XMtlEinnahmen: gueltig_ab, gueltig_bis, " \
-                        "*nk_abschlag*, ..."
-            comment = "Addition aller nk_abschlag im VJ"
-            text = stacktrace + lf + ret + lf + interface + lf + comment
-            stacktrace = lf + tab + tab + " -> " + \
-                    dp + "getAnlageVData_13_nkKorr(whg_id, vj)"
-            interface = "nkAdjustList: vj, betrag, art=NK-Nachzahlung, NK-Rückzahlung"
-            comment = "Saldierung aller Nach- u. Rückzahlungen im VJ"
-            text += lf + stacktrace + lf + ret + lf + interface + lf + comment
+            else:
+                text = "Anteiliger Betrag für das VJ (Formularfeld 38)."
+        elif z == "42" or z == "43" or z == "44" or z == "45":
+            text = "Anteilige Beträge aus Rechnungen vergangener VJ."
+        elif z == "47": #Formularzeile "Verwaltungskosten".
+            comment = "Summe der monatlichen Hausgeldzahlungen OHNE Rücklagenanteil, \n" \
+                      "bereinigt um Nach- und Rückzahlungen,\n" \
+                      "eingetragen in der Zeile Verwaltungskosten.";
+            sql = "select ..., gueltig_ab, gueltig_bis, hg_netto_abschlag\n" \
+                  "from mtl_ein_aus\n"\
+                  "where whg_id = $whg_id\n"\
+                  "and (gueltig_bis is null or year(gueltig_bis) >= $vj)\n"\
+                  "and year(gueltig_ab) <= $vj\n"\
+                  "order by gueltig_ab asc\n" \
+                  "...und\n" \
+                  "select ..., vj, betrag, art.art, art.ein_aus\n"\
+                  "from sonstige_ein_aus sea\n"\
+                  "inner join sea_art art on art.art_id = sea.art_id\n"\
+                  "where sea.whg_id = $whg_id\n"\
+                  "and art.art_kurz in ('hg_nachz', 'hg_rueck')\n"\
+                  "and vj = $vj"
+            text = comment + lf + "SQL:" + lf + sql
+        elif z == "49":
+            comment = "Addiert werden die Beträge aller Datensätze des VJ\n" \
+                      "mit der Art 'Sonstige Kosten'."
+            sql = "select ..., vj, betrag\n"\
+                  "from sonstige_ein_aus sea\n"\
+                  "inner join sea_art art on art.art_id = sea.art_id\n"\
+                  "where sea.whg_id = $whg_id\n"\
+                  "and art.art_kurz = 'sonst_kost'\n"\
+                  "and vj = $vj"
+            text = comment + lf + "SQL:" + lf + sql
+        elif z == "22":
+            text = "Summe der Werbungskosten:\n" \
+                  "AfA + \n" \
+                  "voll abzuziehende Aufwände + \n" \
+                  "anteilige Aufwände aus Vorjahren + \n" \
+                  "Grundsteuer + \n" \
+                  "Verwaltungskosten (Hausgeld ohne Zuf. Rücklagen) + \n" \
+                  "Sonstige Kosten"
+        elif z == "50":
+            text = "Übertrag aus Zeile 22"
+        elif z == "23":
+            text = "Überschuss:\n" \
+                   "Summe der Einnahmen - Summe der Werbungskosten (Zeile 22)\n" \
+                   "Summe der Einnahmen errechnet sich zu\n\t" \
+                   "Netto-Miete des VJ saldiert mit den NK-Nach- u. Rückzahlungen."
+
         return text
 
     def _isIterable(self, val: any) -> bool:

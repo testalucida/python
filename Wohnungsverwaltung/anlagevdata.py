@@ -246,7 +246,8 @@ class AnlageVData:
             - vereinnahmte Nebenkostenabschläge
             - bezahlte Hausgelder ohne Rücklagen-Zuführung
             - vereinnahmte und verausgabte NK- und Hausgeld-
-              Abrechnungen (die das Vj-Vorjahr betreffen)
+              Abrechnungen (die das Vj-Vorjahr betreffen,
+              aber im VJ berücksichtigt werden)
             - Rechnungen
             - sonstige Einnahmen und Ausgaben, Grundsteuer etc.
             - AfA-Informationen
