@@ -5,11 +5,24 @@ from libs import *
 import utils
 import os
 
+#from sign_in import SignInDialog
 from wvframe import WV
 from wvcontroller import WvController
+#from business import DataProvider
+
+root = None
+ctrl:WvController = None
+
+def onFirstShow(evt):
+    global ctrl
+    if not ctrl.startWork():
+        global root
+        root.destroy()
+
 
 def main():
     from tkinter import PhotoImage
+    global root
     root = Tk()
     icon = PhotoImage(file=utils.getScriptPath() + "/images/haus_18x16.png")
     root.call('wm', 'iconphoto', root._w, icon)
@@ -19,23 +32,43 @@ def main():
         style.theme_use('clam')
 
     wv = WV(root)
-    wv.setNotebookTab(0)
-
+    global ctrl
     ctrl = WvController(wv)
-    ctrl.startWork()
-
-    wv.setStatusText("Angemeldeter Benutzer: " + utils.getUser())
-
-    #width = root.winfo_screenwidth()
-    #width = root.winfo_width()
-    #height = int(root.winfo_screenheight()/2)
-    #root.geometry('%sx%s' % (900, height))
-
-    #wv.bind("<Visibility>", show)
+    #wv.after(1, lambda: dlg.focus_force())
 
     root.option_add('*Dialog.msg.font', 'Helvetica 11')
+    wv.bind("<Visibility>", onFirstShow)
 
-    wv.mainloop()
+    root.mainloop()
+
+# def main():
+#     from tkinter import PhotoImage
+#     root = Tk()
+#     icon = PhotoImage(file=utils.getScriptPath() + "/images/haus_18x16.png")
+#     root.call('wm', 'iconphoto', root._w, icon)
+#
+#     if 'win' not in sys.platform:
+#         style = ttk.Style()
+#         style.theme_use('clam')
+#
+#     wv = WV(root)
+#     wv.setNotebookTab(0)
+#
+#     ctrl = WvController(wv)
+#     ctrl.startWork()
+#
+#     wv.setStatusText("Angemeldeter Benutzer: " + utils.getUser())
+#
+#     #width = root.winfo_screenwidth()
+#     #width = root.winfo_width()
+#     #height = int(root.winfo_screenheight()/2)
+#     #root.geometry('%sx%s' % (900, height))
+#
+#     #wv.bind("<Visibility>", show)
+#
+#     root.option_add('*Dialog.msg.font', 'Helvetica 11')
+#
+#     wv.mainloop()
 
 if __name__ == '__main__':
     print("path: ", sys.path)
@@ -46,7 +79,6 @@ if __name__ == '__main__':
 """
 todo
 
-- Anlage V: in einem Dialog in Textform ausgeben
 - Tab Page Jahresdaten implementieren (für *eine* Wohnung)
 - Dialog Jahresdaten implementieren (Vergleich *aller* Wohnungen)
 - Bug: Wohnung löschen geht nicht

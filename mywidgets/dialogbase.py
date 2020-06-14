@@ -36,6 +36,7 @@ class DialogBase(Toplevel):
         # create a frame containing OK and Cancel buttons
         okBtn = ttk.Button(parent, text='OK', command=self.onOk)
         okBtn.grid(column=0, row=0, sticky='sw', padx=3)
+        self.bind('<Return>', (lambda e, b=okBtn: b.invoke()))
 
         cancelBtn = ttk.Button(parent, text='Cancel', command=self.onCancel)
         cancelBtn.grid(column=1, row=0, sticky='sw')
@@ -63,6 +64,13 @@ class DialogBase(Toplevel):
 
     def setPosition(self, x: int, y: int) -> None:
         self.geometry("+%d+%d" % (x , y ))
+
+    def setPositionCentered(self) -> None:
+        ws = self.winfo_screenwidth()
+        hs = self.winfo_screenheight()
+        x = (ws / 2)
+        y = (hs / 2)
+        self.setPosition(x, y)
 
     def getClientArea(self) -> ttk.Frame:
         return self.clientArea

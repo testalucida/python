@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+from tkinter import messagebox
 import libs
 import utils
 from functools import partial
@@ -23,6 +24,7 @@ from anlagevauswahldialog import AnlageVAuswahlDialog
 from interfaces import XWohnungDaten
 from anlagevcreatorbatch import AnlageVCreatorBatch
 from mywidgets import CheckableItemList
+from sign_in import SignInDialog
 
 class WvController:
     def __init__(self, wv: WV):
@@ -39,11 +41,13 @@ class WvController:
         self._mietverhaeltniscontroller = None
         self._veranlagungcontroller = None
 
-    def startWork(self) -> None:
+    def startWork(self) -> bool:
+        if not self.connect():
+            return False
         self._wv.registerWohnungActionCallback(self.onWohnungMenuAction)
         self._wv.registerAnlageVActionCallback(self.onAnlageVAction)
         self._wv.registerJahresuebersichtActionCallback(self.onJahresuebersichtAction)
-        self._connect()
+        #self._connect()
         self._loadTree()
 
         self._wohnungdetailscontroller = WohnungDetailsController(self._dataProvider,
@@ -92,10 +96,38 @@ class WvController:
                                 self._wv.getJahresdatenView())
         self._jahresdatencontroller.startWork()
 
+        return True
+
+    def connect(self) -> bool:
+        rc: bool = True
+        def onOkCancel(ok:bool):
+            nonlocal rc
+            if not ok:
+                rc = False
+            else:
+                l = dlg.getNameAndPassword()
+                name = l[0]
+                pwd = l[1]
+                try:
+                    self._dataProvider.connect(name, pwd)
+                    self._jahresdatenProvider.connect(name, pwd)
+                    rc = True
+                except:
+                    if messagebox.askquestion("Name oder Passwort falsch", "Nochmal versuchen?") == "yes":
+                        dlg.destroy()
+                        self.connect()
+                    else:
+                        rc = False
+
+        dlg = SignInDialog(self._wv)
+        dlg.setOkCancelCallback(onOkCancel)
+        dlg.setName(utils.getUser())
+        dlg.setPosition(500, 350)
+        dlg.wait_window()
+        return rc
+
+
     def _connect(self):
-        #todo
-        # show sign-in dialog
-        # add password argument to DataProvider.connect()
         self._dataProvider.connect(utils.getUser())
         self._jahresdatenProvider.connect(utils.getUser())
 

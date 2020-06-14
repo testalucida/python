@@ -112,13 +112,13 @@ class DataProviderBase:
             ex = ServiceException(resp.status_code, msg)
             raise ex
 
-    def connect(self, user) -> None:
+    def connect(self, user:str, pwd:str) -> None:
         global global_user
         global_user = user
         Server.SERVER = Server.LOCALHOST if user == 'test' else Server.REMOTE
         self._user = user
-        #d = {'user':user, 'password':pwd}
-        d = {'user': user}
+        d = {'user':user, 'password':pwd}
+        #d = {'user': user}
         resp = self._session.post(Server.SERVER + 'login.php', data=d)
         #resp = self._session.post('http://localhost/kendelweb/dev/php/testecho.php', data=d )
         if resp.status_code != 200:
