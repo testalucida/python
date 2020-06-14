@@ -93,14 +93,9 @@ class WvController:
         self._jahresdatencontroller.startWork()
 
     def _connect(self):
-        # import os
-        # #check if a configuration file exists. If so, connect remote, else local.
-        # scriptpath = os.path.realpath(__file__)
-        # scriptdir = scriptpath.replace('/wvcontroller.py', '')
-        # configfile = scriptdir + '/connect_remote'
-        # user = 'test'
-        # if os.path.isfile(configfile): user = 'd02bacec'
-        #self._dataProvider.connect(user)
+        #todo
+        # show sign-in dialog
+        # add password argument to DataProvider.connect()
         self._dataProvider.connect(utils.getUser())
         self._jahresdatenProvider.connect(utils.getUser())
 

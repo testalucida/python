@@ -11,5 +11,6 @@
     <content url="file:///usr/local/lib/python3.8/dist-packages" />
     <orderEntry type="jdk" jdkName="Python 3.8 (Wohnungsverwaltung)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="mywidgets" />
   </component>
 </module>

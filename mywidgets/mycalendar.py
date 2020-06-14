@@ -225,12 +225,11 @@ class CalendarDialog(Toplevel):
         #sets a function which is to be called when user hits OK
         self._callback = callback
 
-    def setCalendarCallback(self, callback):
-        #sets a function which will be called when
-        #  - a date is selected and OK is hit
-        #  - Calendar instance is destroyed
-        self._calendarCallback = callback
-        #TODO: call this method on OK and destroy
+    # def setCalendarCallback(self, callback):
+    #     #sets a function which will be called when
+    #     #  - a date is selected and OK is hit
+    #     #  - Calendar instance is destroyed
+    #     self._calendarCallback = callback
 
     def setDate(self, date: datetime.date, selectDay: bool = True) -> None:
         #shows the month of the given date and marks the day.
