@@ -115,7 +115,7 @@ class DataProviderBase:
     def connect(self, user:str, pwd:str) -> None:
         global global_user
         global_user = user
-        Server.SERVER = Server.LOCALHOST if user == 'test' else Server.REMOTE
+        Server.SERVER = Server.LOCALHOST if user == 'martin' else Server.REMOTE
         self._user = user
         d = {'user':user, 'password':pwd}
         #d = {'user': user}

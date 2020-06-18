@@ -1,6 +1,6 @@
 import os
 import sys
-from tkinter import Tk, ttk
+from tkinter import Tk, ttk, constants
 from tkinter import messagebox
 from typing import Dict, List
 from functools import partial

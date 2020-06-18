@@ -111,6 +111,7 @@ class WvController:
                 try:
                     self._dataProvider.connect(name, pwd)
                     self._jahresdatenProvider.connect(name, pwd)
+                    self._wv.setStatusText("Angemeldeter Benutzer: " + name)
                     rc = True
                 except:
                     if messagebox.askquestion("Name oder Passwort falsch", "Nochmal versuchen?") == "yes":

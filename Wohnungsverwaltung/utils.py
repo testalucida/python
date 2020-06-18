@@ -24,7 +24,7 @@ def _providePathsAndUser():
 
     # check if a configuration file exists. If so, connect remote, else local.
     configfile = _scriptdir + '/connect_remote'
-    _user = 'd02bacec' if os.path.isfile(configfile) else 'test'
+    _user = 'd02bacec' if os.path.isfile(configfile) else 'martin'
 
 _providePathsAndUser()
 sys.path.append(_mywidgetspath)

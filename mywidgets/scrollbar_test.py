@@ -66,6 +66,64 @@ def populate(sv:ScrollableView):
         l = Label(c, text="Nasty text besides the number in the first column")
         l.grid(row=r, column=1, sticky='nswe', padx=3, pady=3)
 
+
+def test2():
+    root = Tk()
+    root.rowconfigure(0, weight=1)
+    root.columnconfigure(0, weight=1)
+    root.geometry('400x400')
+    f = Frame(root)
+    f.rowconfigure(0, weight=1)
+    f.columnconfigure(0, weight=1)
+    f.grid(row=0, column=0, sticky='nswe', padx=2, pady=2)
+
+    sv = ScrollableView(f)
+    sv.grid(row=0, column=0, sticky='nswe', padx=3, pady=3)
+    c = sv.clientarea
+
+    s = ttk.Style()
+    s.configure("test.TFrame", background="#c200ae")
+
+    f2 = ttk.Frame(c)
+    f2.rowconfigure(0, weight=1)
+    f2.columnconfigure(0, weight=1)
+    f2.grid(row=0, column=0, sticky='nswe', padx=3, pady=3)
+    f2['style'] = 'test.TFrame'
+
+    l = Label(f2, text="Ich bin Label eins.")
+    l.grid(row=0, column=0, sticky='nw', padx=5, pady=5)
+
+    l = Label(f2, text="Ich bin Label zwei.")
+    l.grid(row=1, column=0, sticky='nw', padx=5, pady=5)
+
+    f3 = ttk.Frame(c)
+    f3.rowconfigure(0, weight=1)
+    f3.columnconfigure(0, weight=1)
+    f3.grid(row=0, column=1, sticky='nswe', padx=3, pady=3)
+    f3['style'] = 'test.TFrame'
+
+    l = Label(f3, text="Ich bin Label drei.")
+    l.grid(row=0, column=0, sticky='nw', padx=5, pady=5)
+
+    l = Label(f3, text="Ich bin Label vier.")
+    l.grid(row=1, column=0, sticky='nw', padx=5, pady=5)
+
+    l = Label(f3, text="Ich bin Label fünf.")
+    l.grid(row=2, column=0, sticky='nw', padx=5, pady=5)
+
+    f4 = ttk.Frame(c)
+    f4.rowconfigure(0, weight=1)
+    f4.columnconfigure(0, weight=1)
+    f4.grid(row=0, column=2, sticky='nswe', padx=3, pady=3)
+    f4['style'] = 'test.TFrame'
+
+    for i in range(30):
+        l = Label(f4, text="Ich bin Label " + str(i) + ".")
+        l.grid(row=i, column=0, sticky='nw', padx=5, pady=5)
+
+    root.mainloop()
+
+
 def test():
     root = Tk()
     root.rowconfigure(0, weight=1)
@@ -95,4 +153,4 @@ def test():
     root.mainloop()
 
 if __name__ == '__main__':
-    test()
+    test2()

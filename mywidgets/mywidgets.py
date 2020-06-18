@@ -924,11 +924,15 @@ class ScrollableView(Frame):
         c = Canvas(self, bg="#ffffff",
                          xscrollcommand=self.xsc.set,
                          yscrollcommand=self.ysc.set)
+        # c.rowconfigure(0, weight=1)
+        # c.columnconfigure(0, weight=1)
         c.grid(row=0, column=0, sticky='nswe', padx=0, pady=0)
 
         ## this is the frame you have to use as parent if you want
         ## to add widgets to this ScrollableView
         self.clientarea = Frame(c)
+        self.clientarea.rowconfigure(0, weight=1)
+        self.clientarea.columnconfigure(0, weight=1)
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++
 
         #to add tkinter widgets to a canvas, use create_window:
@@ -966,6 +970,24 @@ def main():
     root.rowconfigure(0, weight=1)
     root.columnconfigure(0, weight=1)
 
+    f = ttk.Frame(root)
+    f.rowconfigure(0, weight=1)
+    f.columnconfigure(0, weight=1)
+    f.grid(row=0, column=0, sticky='nswe', padx=3, pady=3)
+
+    s = ScrollableView(f)
+    s.grid(row=0, column=0, sticky='nswe', padx=3, pady=3)
+    ca = s.clientarea
+
+    f1 = ttk.Frame(ca)
+    f1.rowconfigure(0, weight=1)
+    f1.columnconfigure(0, weight=1)
+    f1.grid(row=0, column=0, sticky='nswe', padx=3, pady=3)
+    s = ttk.Style()
+    s.configure("test.TFrame", background="#c200ae")
+    f1['style'] = "test.TFrame"
+
+    root.geometry('400x400+500+200')
     root.mainloop()
 
 if __name__ == '__main__':
