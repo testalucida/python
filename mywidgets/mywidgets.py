@@ -3,8 +3,8 @@ from tkinter import ttk, scrolledtext, Text
 from tkinter import font
 from typing import Dict, List, Any, Tuple
 from abc import ABC, abstractmethod
-from collections import UserList
-import textwrap
+# from collections import UserList
+# import textwrap
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 class ToolTip(object):
@@ -217,7 +217,60 @@ class TextEntry(ttk.Entry, GetterSetter, ConvenianceMethods, ModifyTracer):
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-class MyText(Text, GetterSetter):
+class MyText2(Text, GetterSetter):
+    def __init__(self, parent, cnf={}):
+        Text.__init__(self, parent, cnf)
+        self._myId = None
+        self._cbfnc = None
+        self.bind('<<TextModified>>', self._onModify)
+
+        # https://stackoverflow.com/questions/40617515/python-tkinter-text-modified-callback
+        # create a proxy for the underlying widget
+        self._orig = self._w + "_orig"
+        self.tk.call("rename", self._w, self._orig)
+        self.tk.createcommand(self._w, self._proxy)
+
+    def _proxy(self, command, *args):
+        cmd = (self._orig, command) + args
+        result = self.tk.call(cmd)
+
+        if command in ("insert", "delete", "replace"):
+            self.event_generate("<<TextModified>>")
+
+        return result
+
+    def registerModifyCallback(self, cbfnc) -> None:
+        #the given callback function has to take 1 argument:
+        #  -  evt: Event
+        self._cbfnc = cbfnc
+
+    def _onModify(self, event ):
+        if self._cbfnc:
+            self._cbfnc( event )
+
+    def getValue(self) -> any:
+        """
+        #########comment stackoverflow:############
+        It is impossible to remove the final newline that is
+        automatically added by the text widget.
+        – Bryan Oakley Jan 13 '18 at 14:09
+
+        ==> that's why we do it here:
+        """
+        s = self.get('1.0', 'end')
+        return s[:-1]
+
+    def setValue(self, val: str) -> None:
+        self.clear()
+        if val:
+            self.insert('1.0', val)
+
+    def clear(self) -> None:
+        self.delete('1.0', 'end')
+
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+class MyText(Text, GetterSetter): # DEPRECATED -- use MyText2 instead
     def __init__(self, parent):
         Text.__init__(self, parent)
         self._myId = None
@@ -936,7 +989,7 @@ class ScrollableView(Frame):
         #+++++++++++++++++++++++++++++++++++++++++++++++++++++
 
         #to add tkinter widgets to a canvas, use create_window:
-        c.create_window((4, 4), window=self.clientarea, anchor="nw",
+        c.create_window((0, 0), window=self.clientarea, anchor="nw",
                         tags="self.clientarea")
 
         self.clientarea.bind("<Configure>", self._onFrameConfigure)
