@@ -3,28 +3,40 @@ from tkinter import ttk
 from tkinter.font import families
 from tkinter import simpledialog
 from tkinter import PhotoImage
+from enum import Enum
 from mywidgets import ToolTip
 from noteeditor import NoteEditor
 from notestree import NotesTree
 
 
+class ToolAction( Enum ):
+    NEW_TOPFOLDER = 1
+    NEW_NOTE = 2
+    SEARCH = 3
+    SAVE_LOCAL = 4
+    SAVE_REMOTE = 5
+    SAVE_AS = 6
+    FONT_BOLD = 7
+    FONT_ITALIC = 8
+
 class MainFrame(Frame):
     def __init__(self, parent, cnf={}, **kw):
         Frame.__init__(self, parent, cnf, **kw)
-        self._toolbar = self._createToolBar(self, 0)
+        self.toolbar = self._createToolBar(self, 0)
         self._panedWin, self._leftPane, self._rightPane = self._createPanedWindow(self, 1, 0)
         self.tree = self._createTree( self._leftPane )
-        self._edi = self._createNoteEditor( self._rightPane )
-        self._statusbar = self._createStatusBar(self, 2)
+        self.edi: NoteEditor = self._createNoteEditor( self._rightPane )
+        self.statusbar = self._createStatusBar(self, 2)
         self.rowconfigure(1, weight=1)
         self.columnconfigure( 0, weight=1 )
+        self._toolActionCallback = None
 
     def _createToolBar(self, parent, row:int) -> Frame:
         #images from "https://icons8.com/icons/"
         tb = Frame(self)
         tb.grid(row=row, column=0, sticky='nwe', padx=3, pady=3)
-        self._createToolButton( tb, 0, "/home/martin/Projects/python/notes/images/new_folder_30.png", "Create new top level folder", self._onNewFolder )
-        self._createToolButton( tb, 1, "/home/martin/Projects/python/notes/images/new_30.png", "Create new note", self._onNew )
+        self._createToolButton( tb, 0, "/home/martin/Projects/python/notes/images/new_folder_30.png", "Create new top level folder", self._onNewTopFolder )
+        self._createToolButton( tb, 1, "/home/martin/Projects/python/notes/images/new_30.png", "Create new note", self._onNewNote )
         self._createToolButton( tb, 2, "/home/martin/Projects/python/notes/images/search_30.png", "Search in notes", self._onSearch )
         self._createToolButton( tb, 3, "/home/martin/Projects/python/notes/images/save_30.png", "Save local", self._onSaveLocal )
         self._createToolButton( tb, 4, "/home/martin/Projects/python/notes/images/save_to_cloud_30.png", "Save all notes to server",  self._onSaveRemote )
@@ -48,8 +60,6 @@ class MainFrame(Frame):
 
     def _createPanedWindow(self, parent, row:int, column:int):
         pw = ttk.PanedWindow(parent, orient=HORIZONTAL)
-        #pw.rowconfigure(0, weight=1)
-        #pw.columnconfigure(1, weight=1)
         pw.grid( row=row, column=column, sticky='nswe' )
         lp = Frame( pw, width=150 )
         lp.columnconfigure( 0, weight=1 )
@@ -66,16 +76,12 @@ class MainFrame(Frame):
 
     def _createTree(self, parent):
         tree = NotesTree( parent )
-        # tree['columns'] = ('id')
-        # tree['displaycolumns'] = []
-        # tree.heading('#0', text='All Notes', anchor=W)
-        # tree.column("#0", minwidth=100 )
+        #### TEST #######
         top = tree.addFolder( '', 1, text='Apache Webserver' )
         tree.addFolder( top, 2, text='restart' )
         tree.addFolder( '', 3, text='php Debugger' )
         tree.addFolder( '', 4, text ='miniconda3' )
-        # tree.bind("<Button-3>", self._onTreeViewClicked)
-        # tree.bind('<<TreeviewSelect>>', self._onTreeItemClicked)
+        ##### TEST END  ########
         tree.grid( column=0, row=0, sticky='nswe' )
         return tree
 
@@ -89,28 +95,40 @@ class MainFrame(Frame):
         sb.grid(column=0, row=row, sticky='swe')
         return sb
 
-    def _onNewFolder( self ):
-        s = simpledialog.askstring( "New top level folder", "Name of new folder:", initialvalue="" )
-        if s:
-            self.tree.addFolder( '', 0, s )
+    def _onNewTopFolder( self ):
+        self._doToolActionCallback( ToolAction.NEW_TOPFOLDER )
+        # s = simpledialog.askstring( "New top level folder", "Name of new folder:", initialvalue="" )
+        # if s:
+        #     self.tree.addFolder( '', 0, s )
 
-    def _onNew( self ):
-        print( "onNew" )
+    def _onNewNote( self ):
+        self._doToolActionCallback( ToolAction.NEW_NOTE )
 
     def _onSearch( self ):
-        print( "onSearch" )
+        self._doToolActionCallback( ToolAction.SEARCH )
 
     def _onSaveAs( self ):
-        print( "onSaveAs")
+        self._doToolActionCallback( ToolAction.SAVE_AS )
 
     def _onSaveLocal( self ):
-        print( "onSaveLocal" )
+        self._doToolActionCallback( ToolAction.SAVE_LOCAL )
 
     def _onSaveRemote( self ):
-        print( "onSaveRemote")
+        self._doToolActionCallback( ToolAction.SAVE_REMOTE )
 
     def _onBold( self ):
-        print( "onBold" )
+        self._doToolActionCallback( ToolAction.FONT_BOLD )
 
     def _onItalic( self ):
-        print( "onItalic" )
+        self._doToolActionCallback( ToolAction.FONT_ITALIC )
+
+    def _doToolActionCallback( self, action:ToolAction ):
+        if self._toolActionCallback:
+            self._toolActionCallback( action )
+
+    def setToolActionCallback( self, callback ):
+        """
+        register a callback function which is called whenever a toolbar button is hit.
+        This function has to accept one argument, the ToolAction value
+        """
+        self._toolActionCallback = callback

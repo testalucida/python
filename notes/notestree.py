@@ -40,19 +40,21 @@ class NotesTree( ttk.Treeview ):
         """
         self._cb = callback_func
 
-    def addFolder( self, iid_parent:str, id:int, text:str, image:PhotoImage=None ) -> str:
+    def addFolder( self, iid_parent:str, id:int, text:str, image:PhotoImage=None, alphabetically:bool=True ) -> str:
         """
-        Adds a folder tree item at the end of the child list
+        Adds a folder tree item either at the end of the child list or corresponding to its alphabetical value
         """
-        return self.insert( iid_parent, 'end', text=text, values=id, tags=('folder') )
+        if alphabetically: return self._insertAlphabetically( iid_parent, id, text, image, False )
+        else: return self.insert( iid_parent, 'end', text=text, values=id, tags=('folder') )
 
-    def addNote( self, iid_parent: str, id: int, text: str, image: PhotoImage = None ) -> str:
+    def addNote( self, iid_parent: str, id: int, text: str, image: PhotoImage = None, alphabetically:bool=True ) -> str:
         """
-        Adds a note tree item at the end of the child list
+        Adds a note tree item either at the end of the child list or corresponding to its alphabetical value
         """
-        return self.insert( iid_parent, 'end', text=text, values=id, tags=('note') )
+        if alphabetically: return self._insertAlphabetically( iid_parent, id, text, image, True )
+        else: return self.insert( iid_parent, 'end', text=text, values=id, tags=('note') )
 
-    def insertAlphabetically( self, iid_parent:str, id:int, text:str, image:PhotoImage=None ) -> str:
+    def _insertAlphabetically( self, iid_parent:str, id:int, text:str, image:PhotoImage=None, isNote:bool=True ) -> str:
         """
         Inserts a new item under the given parent at a position according to its alphabetical value
         """
@@ -63,9 +65,9 @@ class NotesTree( ttk.Treeview ):
             item:Dict = self.item( iid )
             t = item['text'].lower()
             if tl < t:
-                return self.insert( iid_parent, index, text=text, values=id )
+                return self.insert( iid_parent, index, text=text, values=id, tags='note' if isNote else 'folder' )
             index += 1
-        return self.addFolder( iid_parent, id, text )
+        return ( self.addNote( iid_parent, id, text, None, False ) if isNote else self.addFolder( iid_parent, id, text, None, False ) )
 
 
     def remove( self, iid:str ):
@@ -142,13 +144,13 @@ def test():
     t = NotesTree( root )
     t.grid( row=0, column=0, sticky='nswe' )
 
+    t.addFolder( '', 3, text='php Debugger' )
+    t.addFolder( '', 4, text='miniconda3' )
     top = t.addFolder( '', 1, text='Apache Webserver' )
     t.addFolder( top, 2, text='restart' )
-    t.addFolder( '', 4, text='miniconda3' )
     t.addFolder( '', 5, text='Minibagger' )
-    t.addFolder( '', 3, text='php Debugger' )
-    t.insertAlphabetically( '', 7, text='C++' )
-    t.insertAlphabetically( '', 8, text='Zorro' )
+    t.addFolder( '', 7, text='C++' )
+    t.addFolder( '', 8, text='Zorro' )
 
     children = t.get_children( '' )
     print( children )
