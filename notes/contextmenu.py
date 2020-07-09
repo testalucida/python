@@ -1,70 +1,57 @@
-import tkinter # Tkinter -> tkinter in Python 3
+import tkinter as tk
+from typing import Dict
+from functools import partial
 
-class FancyListbox(tkinter.Listbox):
-    def __init__(self, parent, *args, **kwargs):
-        tkinter.Listbox.__init__(self, parent, *args, **kwargs)
+class PopupMenu:
+    def __init__( self, parent ):
+        self._parent = parent
+        self._popmen : tk.Menu = None
+        self._commandDict:Dict = {}
+        #self._parent.bind( "<Button-3>", self.show )
 
-        self.popup_menu = tkinter.Menu(self, relief=tkinter.FLAT)
-        self.popup_menu.add_command(label="Delete",
-                                    command=self.delete_selected)
-        self.popup_menu.add_command(label="Select All",
-                                    command=self.select_all)
+    def addCommand( self, label:str, command, insertSeparator:bool=False ):
+        self._commandDict[label] = (command, insertSeparator)
 
-        self.bind("<Button-3>", self.popup) # Button-2 on Aqua
-
-    def popup(self, event):
-        self.popup_menu.tk_popup( event.x_root, event.y_root, 0 )
-        # try:
-        #     self.popup_menu.tk_popup(event.x_root, event.y_root, 0)
-        # finally:
-        #     self.popup_menu.grab_release()
-
-    def delete_selected(self):
-        for i in self.curselection()[::-1]:
-            self.delete(i)
-        self.popup_menu.grab_release()
-        self.popup_menu.destroy()
-
-    def select_all(self):
-        self.selection_set(0, 'end')
-
-def test2():
-    from tkinter import Tk, Label, Menu, Button
-
-    root = Tk()
-
-    w = Label( root, text="Right-click to display menu", width=40, height=20 )
-    w.pack()
-
-    # create a menu
-    popup = Menu( root, tearoff=1, title=" ", relief=tkinter.FLAT )
-    popup.add_command( label="Next" )  # , command=next) etc...
-    popup.add_command( label="Previous" )
-    popup.add_separator()
-    popup.add_command( label="Home" )
-
-    def do_popup( event ):
-        # display the popup menu
+    def show( self, event ):
+        self._popmen = tk.Menu( master=self._parent, tearoff=1, relief=tk.FLAT )
+        for lbl, val_list in self._commandDict.items():
+            cmd = val_list[0]
+            sep:bool = val_list[1]
+            self._popmen.add_command( label=lbl, command=partial( self._triggered, cmd ) )
+            if sep:
+                self._popmen.add_separator()
         try:
-            popup.tk_popup( event.x_root, event.y_root, 0 )
+            self._popmen.tk_popup( event.x_root, event.y_root, 0 )
         finally:
             # make sure to release the grab (Tk 8.0a1 only)
-            popup.grab_release()
+            self._popmen.grab_release()
 
-    w.bind( "<Button-3>", do_popup )
+    def _triggered( self, command ):
+        self._popmen.destroy()
+        self._popmen = None
+        command()
 
-    b = Button( root, text="Quit", command=root.destroy )
-    b.pack()
+
+def onCommand():
+    print( "onCommand" )
+
+def test3():
+    root = tk.Tk()
+    root.geometry( '400x400' )
+    root.columnconfigure( 0, weight=1 )
+    root.columnconfigure( 1, weight=1 )
+    root.rowconfigure( 0, weight=1 )
+    f1 = tk.Frame( root, background='#000000' )
+    f1.grid( row=0, column=0, sticky='nswe' )
+    f2 = tk.Frame( root, background='#ffffff' )
+    f2.grid( row=0, column=1, sticky='nswe' )
+
+    p = PopupMenu( f2 )
+    p.addCommand( "item 1", onCommand, True )
+    p.addCommand( "item 2", onCommand )
 
     root.mainloop()
 
-def test():
-    root = tkinter.Tk()
-    flb = FancyListbox(root, selectmode='multiple')
-    for n in range(10):
-        flb.insert('end', n)
-    flb.pack()
-    root.mainloop()
 
 if __name__ == '__main__':
-    test2()
+    test3()
