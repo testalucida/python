@@ -4,6 +4,8 @@ from tkinter.font import families
 from tkinter import simpledialog
 from tkinter import PhotoImage
 from enum import Enum
+import sys
+if not 'mywidgets' in sys.path: sys.path.append('/home/martin/Projects/python/mywidgets')
 from mywidgets import ToolTip
 from noteeditor import NoteEditor
 from notestree import NotesTree
@@ -76,12 +78,6 @@ class MainFrame(Frame):
 
     def _createTree(self, parent):
         tree = NotesTree( parent )
-        #### TEST #######
-        top = tree.addFolder( '', 1, text='Apache Webserver' )
-        tree.addFolder( top, 2, text='restart' )
-        tree.addFolder( '', 3, text='php Debugger' )
-        tree.addFolder( '', 4, text ='miniconda3' )
-        ##### TEST END  ########
         tree.grid( column=0, row=0, sticky='nswe' )
         return tree
 
@@ -97,9 +93,6 @@ class MainFrame(Frame):
 
     def _onNewTopFolder( self ):
         self._doToolActionCallback( ToolAction.NEW_TOPFOLDER )
-        # s = simpledialog.askstring( "New top level folder", "Name of new folder:", initialvalue="" )
-        # if s:
-        #     self.tree.addFolder( '', 0, s )
 
     def _onNewNote( self ):
         self._doToolActionCallback( ToolAction.NEW_NOTE )

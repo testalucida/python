@@ -1,5 +1,6 @@
 import sqlite3
 from typing import Any, List, Tuple
+from globals import NOTE, FOLDER
 
 class DbAccess:
     def __init__( self ):
@@ -19,19 +20,30 @@ class DbAccess:
         records = self._doRead( sql )
         return records[0][0]
 
-
     def insertFolder( self, parent_id:int, text:str,  commit:bool=True ) -> int:
         sql = "insert into folder (parent_id, text) values (%d, '%s');" % (parent_id, text)
         self._doWrite( sql, commit )
-        return self.getMaxId( "folder", "id" )
+        return self.getMaxId( FOLDER, "id" )
 
     def insertNote( self, parent_id:int, text:str, header:str, style="", commit:bool=True ) -> int:
         sql = "insert into note (parent_id, text, header, style) values (%d, '%s', '%s', '%s');" % (parent_id, text, header, style)
         self._doWrite( sql, commit )
-        return self.getMaxId( "note", "id" )
+        return self.getMaxId( NOTE, "id" )
 
     def updateNote( self, id:int, text:str, header:str, style:str="", commit:bool=True ) -> None:
-        sql = "update note set text='%s', header='%s', style='%s' where id = %d" % (id, text, header, style)
+        sql = "update note set text='%s', header='%s', style='%s' where id = %d" % (text, header, style, id)
+        self._doWrite( sql, commit )
+
+    def deleteNote( self, id:int, commit:bool=True ):
+        sql = "delete from note where id = " + str( id )
+        self._doWrite( sql, commit )
+
+    def deleteNotes( self, parent_id:int, commit:bool=True ):
+        sql = "delete from note where parent_id = " + str( parent_id )
+        self._doWrite( sql, commit )
+
+    def deleteFolder( self, folder_id:int, commit:bool=True ):
+        sql = "delete from folder where id = " + str( folder_id )
         self._doWrite( sql, commit )
 
     def insertTag( self, tag:str, commit:bool=True ):
@@ -43,9 +55,34 @@ class DbAccess:
         sql = "insert into ref_tag_note (note_id, tag_id) values (%d, %d);" % (note_id, tag_id)
         self._doWrite( sql, commit )
 
+    def commit( self ):
+        self._con.commit()
+
+    def getNoteFolderId( self, note_id:int ) -> int:
+        sql = "select parent_id from note where id = " + str( note_id )
+        record:List[Tuple] = self._doRead( sql )
+        return record[0][0]
+
+    def getNoteFolder( self, note_id:int ) -> (int, str):
+        sql = "select f.id, f.text from folder f " \
+              "inner join note n on n.parent_id = f.id where n.id = " + str( note_id )
+        record: List[Tuple] = self._doRead( sql )
+        if record:
+            return ( record[0][0], record[0][1] )
+        else:
+            return ( -1, "" )
+
     def getFolders( self, parent_id:int=0 ) -> List[Tuple]:
         sql = "select id, parent_id, text from folder where parent_id = %d" % (parent_id,)
         return self._doRead( sql )
+
+    def getHeaders( self ) -> List[Tuple]:
+        sql = "select id, parent_id, header from note;"
+        return self._doRead( sql )
+
+    # def getAllFolders( self ):
+    #     sql = "select id, parent_id, text from folder;"
+    #     return self._doRead( sql )
 
     def getNotes( self, parent_id:int=0 ) -> List[Tuple]:
         sql = "select n.id, n.parent_id, n.text, n.header, t.tag " \
@@ -84,6 +121,8 @@ class DbAccess:
 def test():
     db = DbAccess()
     db.open()
+    id:int = db.getNoteFolderId( 1 )
+    id, text = db.getNoteFolder( 1 )
     # db.insertNote( 0, "This is note 1", "Incredible Header" )
     #db.insertFolder( 1, "bla", "", True)
     #id = db.getMaxId( "folder", "id" )
@@ -92,6 +131,7 @@ def test():
     # db.insertTag( "webserver" )
     # db.insertTag( "krautwickel" )
     print( "Folders:\n", db.getFolders() )
+    print( "Headers:\n", db.getHeaders() )
     print( "Notes:\n", db.getNotes() )
     print( "Tags:\n", db.getTags() )
     db.close()

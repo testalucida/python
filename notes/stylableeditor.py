@@ -12,6 +12,7 @@ class StylableEditor( scrolledtext.ScrolledText ):
         self._myId = None
         self._cbfnc = None
         self.bind('<<TextModified>>', self._onModify)
+        self.isModified:bool = False
 
         # https://stackoverflow.com/questions/40617515/python-tkinter-text-modified-callback
         # create a proxy for the underlying widget
@@ -28,13 +29,14 @@ class StylableEditor( scrolledtext.ScrolledText ):
 
         return result
 
-    def registerModifyCallback(self, cbfnc) -> None:
+    def setModifyCallback(self, cbfnc) -> None:
         #the given callback function has to take 1 argument:
         #  -  evt: Event
         self._cbfnc = cbfnc
 
     def _onModify(self, event ):
         print("_onModify")
+        self.isModified = True
         if self._cbfnc:
             self._cbfnc( event )
 
@@ -54,6 +56,13 @@ class StylableEditor( scrolledtext.ScrolledText ):
         self.clear()
         if val:
             self.insert('1.0', val)
+
+    def getStyle( self ):
+        #todo
+        return None
+
+    def resetModified( self ):
+        self.isModified = False
 
     def clear(self) -> None:
         self.delete('1.0', 'end')
