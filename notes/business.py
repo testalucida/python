@@ -1,6 +1,7 @@
 from dbaccess import DbAccess
 from globals import NOTE, FOLDER
 from libs import *
+from note import Note
 
 class BusinessLogic:
     def __init__( self ):
@@ -41,16 +42,21 @@ class BusinessLogic:
         self._db.close()
         return id
 
-    def insertNote( self, parent_id:int, header:str, text:str, style:str=None, tags:str=None ) -> int:
+    def insertNote( self, note:Note ) -> Note:
+        """
+        Inserts a new created note and returns its id
+        """
         self._db.open()
-        #1. insert header and text into note
+        #1. insert header, text etc. into note
         #2. check if all tags exist in tag
         #3. possibly insert missing tags into tag
         #4. insert references between tags and notes into ref_tag_not
-        id:int = self._db.insertNote( parent_id, text, header, style, False )
+        #5. provides the given note with the new note's id and returns the given note object
+        id:int = self._db.insertNote( note.parent_id, note.text, note.header, note.style, False )
         self._db.commit()
         self._db.close()
-        return id
+        note.id = id
+        return note
 
     def deleteItem( self, id:int, itemspec:str ) -> None:
         self._db.open()

@@ -15,7 +15,7 @@ class Controller:
         self._status = mainframe.statusbar
         self._tree.setTreeCallback( self._treeCallback )
         self._mainframe.setToolActionCallback( self.toolActionCallback )
-        self._folder_id_iid_ref:Dict = {} #key: id, value: iid
+        self._folder_id_iid_ref:Dict = { 0: '' }  #key: id, value: iid
         self._imgFolder:PhotoImage = PhotoImage( file="/home/martin/Projects/python/notes/images/folder_16.png" )
         self._imgNote:PhotoImage = PhotoImage( file="/home/martin/Projects/python/notes/images/note_16.png" )
         self._business = BusinessLogic()
@@ -99,18 +99,27 @@ class Controller:
             
         if note.id <= 0:
             #new note, not yet saved
+            iid_parent = ''
             iid, id, text, itemspec = self._tree.getSelectedTreeItem()
             if iid == '0' or iid == '':
-                if messagebox.askyesno( "No Folder Selected", "Do you really wish to save this note outside any folder?" ):
-                    return #self._business.insertNote()
-                else: return
-
-            if not itemspec == FOLDER:
-                folder_id, foldername = self._business.getNoteFolder( id )
-            else:
-                foldername = text
-            if messagebox.askyesno( "Save Note", "Save this note in folder\n" + foldername + "?" ):
+                # no tree item selected
+                if not messagebox.askyesno( "No Folder Selected", "Do you really wish to save this note outside any folder?" ):
                     return
+            else: # a tree item is selected - is it a note or a folder?
+                if not itemspec == FOLDER:
+                    # another note is selected (and opened). Get that note's folder.
+                    folder_id, foldername = self._business.getNoteFolder( id )
+                    iid_parent = self._folder_id_iid_ref[folder_id]
+                else:
+                    # a folder is selected. Make sure the new note is to be saved in this folder.
+                    iid_parent = iid
+                    foldername = text
+
+                if not messagebox.askyesno( "Save Note", "Save this note in folder\n" + foldername + "?" ):
+                    return
+
+            self._business.insertNote( note )
+            self._tree.addNote( iid_parent, note.id, note.text, self._imgNote )
         else:
             #update an existing note
             pass
