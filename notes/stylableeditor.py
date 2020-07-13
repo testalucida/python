@@ -35,7 +35,7 @@ class StylableEditor( scrolledtext.ScrolledText ):
         self._cbfnc = cbfnc
 
     def _onModify(self, event ):
-        print("_onModify")
+        #print("_onModify")
         self.isModified = True
         if self._cbfnc:
             self._cbfnc( event )

@@ -14,7 +14,7 @@ class TreeAction(Enum):
 class NotesTree( ttk.Treeview ):
     def __init__( self, parent, **kwargs ):
         ttk.Treeview.__init__( self, parent, **kwargs )
-        self['columns'] = ( 'id' )
+        self['columns'] = ( 'id', )
         self['displaycolumns'] = []
         self.heading( '#0', text='All Notes', anchor=W )
         self.column( "#0", minwidth=100 )
@@ -47,14 +47,16 @@ class NotesTree( ttk.Treeview ):
         Adds a folder tree item either at the end of the child list or corresponding to its alphabetical value
         """
         if alphabetically: return self._insertAlphabetically( iid_parent, id, text, image, False )
-        else: return self.insert( iid_parent, 'end', text=text, values=id, tags=(FOLDER), image=image )
+        else: return self.insert( iid_parent, 'end', text=text, values=id, tags=(FOLDER,), image=image )
 
     def addNote( self, iid_parent: str, id: int, text: str, image: PhotoImage=None, alphabetically:bool=True ) -> str:
         """
-        Adds a note tree item either at the end of the child list or corresponding to its alphabetical value
+        Adds a note tree item either at the end of the child list or corresponding to its alphabetical value.
+        In any case after the folders.
+        text: header of the note
         """
         if alphabetically: return self._insertAlphabetically( iid_parent, id, text, image, True )
-        else: return self.insert( iid_parent, 'end', text=text, values=id, tags=(NOTE), image=image )
+        else: return self.insert( iid_parent, 'end', text=text, values=id, tags=(NOTE,), image=image )
 
     def _insertAlphabetically( self, iid_parent:str, id:int, text:str, image:PhotoImage=None, isNote:bool=True ) -> str:
         """
@@ -65,12 +67,15 @@ class NotesTree( ttk.Treeview ):
         index:int = 0
         for iid in children:
             item:Dict = self.item( iid )
-            t = item['text'].lower()
-            if tl < t:
-                return self.insert( iid_parent, index, text=text, values=id, tags='note' if isNote else 'folder', image=image )
-            index += 1
+            if isNote and item['tags'][0] == FOLDER:
+                index += 1
+                continue
+            else:
+                t = item['text'].lower()
+                if tl < t:
+                    return self.insert( iid_parent, index, text=text, values=id, tags='note' if isNote else 'folder', image=image )
+                index += 1
         return ( self.addNote( iid_parent, id, text, image, False ) if isNote else self.addFolder( iid_parent, id, text, image, False ) )
-
 
     def remove( self, iid:str ):
         """
