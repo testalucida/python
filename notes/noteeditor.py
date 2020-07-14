@@ -11,10 +11,12 @@ class NoteEditor( Frame ):
         self.rowconfigure( 1, weight=1 )
         padx = pady = 3
         self._teTitle:TextEntry = self._createTitle( self, 0, 0, padx, pady )
+        self._teTitle.registerModifyCallback( self.onTitleOrTagsChanged )
         self._edi:StylableEditor = self._createEditor( self, 1, 0, 2, padx, pady )
         self._teTags:TextEntry = self._createTags( self, 2, 0, padx, pady )
+        self._teTags.registerModifyCallback( self.onTitleOrTagsChanged )
         self._note:Note = Note()
-        self._isChanged:bool = False
+        self._isTitleOrTagChanged:bool = False
 
     def _createTitle( self, parent, row, col, padx, pady ) -> TextEntry:
         Label( parent, text="Caption: " ).grid( row=row, column=col, sticky='nw', padx=padx, pady=pady )
@@ -28,6 +30,9 @@ class NoteEditor( Frame ):
         se.grid( row=row, column=col, columnspan=colspan, sticky='nswe', padx=padx, pady=pady)
         return se
 
+    def onTitleOrTagsChanged( self, *args ) -> None:
+        self.isTitleOrTagChanged = True
+
     def _createTags( self, parent, row, col, padx, pady ):
         Label( parent, text="Tags: " ).grid( row=row, column=col, sticky='nw', padx=padx, pady=pady )
         col += 1
@@ -37,6 +42,17 @@ class NoteEditor( Frame ):
 
     def setNote( self, note:Note ) -> None:
         self._note = note
+        self._teTitle.setValue( note.header )
+        self._edi.setValue( note.text )
+        self._teTags.setValue( note.tags )
+        self._applyStyle( note.style )
+        self.resetModified()
+
+    def _applyStyle( self, style:str ) -> None:
+        # applies style only after having set a note.
+        # don't use this method as style button callback
+        #todo
+        pass
 
     def getNote( self ) -> Note:
         self._note.header = self._teTitle.getValue()
@@ -45,9 +61,12 @@ class NoteEditor( Frame ):
         self._note.style = self._edi.getStyle()
         return self._note
 
-    def isModified( self ):
-        return self._edi.isModified
+    def isModified( self ) -> bool:
+        return ( self._edi.isModified or self._isTitleOrTagChanged )
 
+    def resetModified( self ) -> None:
+        self._isTitleOrTagChanged = False
+        self._edi.resetModified()
 
 def testNoteEditor():
     root = Tk()

@@ -17,6 +17,12 @@ class BusinessLogic:
         self._db.close()
         return folders
 
+    def getNote( self, note_id:int ) -> Note:
+        self._db.open()
+        note:Note = self._db.getNote( note_id )
+        self._db.close()
+        return note
+
     def getNoteFolderId( self, note_id:int ) -> int:
         self._db.open()
         id:int = self._db.getNoteFolderId( note_id )
@@ -57,6 +63,11 @@ class BusinessLogic:
         self._db.close()
         note.id = id
         return note
+
+    def updateNote( self, note:Note ) -> None:
+        self._db.open()
+        self._db.updateNote( note )
+        self._db.close()
 
     def deleteItem( self, id:int, itemspec:str ) -> None:
         self._db.open()

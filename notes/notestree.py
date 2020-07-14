@@ -10,6 +10,7 @@ class TreeAction(Enum):
     RENAME = 2
     DELETE = 3
     SELECT = 4
+    UNSELECT = 5
 
 class NotesTree( ttk.Treeview ):
     def __init__( self, parent, **kwargs ):
@@ -58,6 +59,9 @@ class NotesTree( ttk.Treeview ):
         if alphabetically: return self._insertAlphabetically( iid_parent, id, text, image, True )
         else: return self.insert( iid_parent, 'end', text=text, values=id, tags=(NOTE,), image=image )
 
+    def updateLabel( self, iid:str, label:str ) -> None:
+        self.item( iid, text=label )
+
     def _insertAlphabetically( self, iid_parent:str, id:int, text:str, image:PhotoImage=None, isNote:bool=True ) -> str:
         """
         Inserts a new item under the given parent at a position according to its alphabetical value
@@ -82,6 +86,10 @@ class NotesTree( ttk.Treeview ):
         Removes the given Item from the tree
         """
         self.delete( (iid,) )
+
+    def unsetSelection( self ) -> None:
+        #print( "NotesTree.unselectSelection ")
+        self.selection_remove( self.selection() )
 
     #################### callbacks for tree actions ########################
     def _onInsertFolder( self ):
@@ -123,7 +131,13 @@ class NotesTree( ttk.Treeview ):
 
     def _onTreeItemClicked( self, event ):
         #bound to virtual TreeviewSelect event
-        self._doCallback( TreeAction.SELECT )
+        action:TreeAction
+        if self.existsSelection():
+            action = TreeAction.SELECT
+        else:
+            action = TreeAction.UNSELECT
+        print( "NotesTree._onTreeItemClicked - action: ", "SELECT" if action == 4 else "UNSELECT" )
+        self._doCallback( action )
 
     def getSelectedId( self ) -> Tuple[str, int]:
         iid = self.selection()
@@ -133,7 +147,14 @@ class NotesTree( ttk.Treeview ):
         id: int = int( dic['values'][0] )
         return ( iid, id )
 
+    def existsSelection( self ) -> bool:
+        return len( self.selection() )
+
     def getSelectedTreeItem(self) -> Tuple[str, id, str, str]:
+        """
+        Gets the selected item.
+        The returned tuple contains iid, id, label and tags.
+        """
         iid = self.selection()
         if len( iid ) == 0:
             return ( '0', 0, '', '' )

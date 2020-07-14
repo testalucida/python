@@ -16,7 +16,10 @@ def main():
     root.columnconfigure(0, weight=1)
     f = MainFrame(root)
     f.grid( row=0, column=0, sticky='nswe', padx=3, pady=3)
+
     Controller( f ).startWork()
+
+    root.option_add( '*Dialog.msg.font', 'Helvetica 11' )
 
     root.mainloop()
 

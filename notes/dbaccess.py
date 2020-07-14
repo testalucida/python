@@ -1,6 +1,7 @@
 import sqlite3
 from typing import Any, List, Tuple
 from globals import NOTE, FOLDER
+from note import Note
 
 class DbAccess:
     def __init__( self ):
@@ -30,8 +31,9 @@ class DbAccess:
         self._doWrite( sql, commit )
         return self.getMaxId( NOTE, "id" )
 
-    def updateNote( self, id:int, text:str, header:str, style:str="", commit:bool=True ) -> None:
-        sql = "update note set text='%s', header='%s', style='%s' where id = %d" % (text, header, style, id)
+    def updateNote( self, note:Note, commit:bool=True ) -> None:
+        sql = "update note set text='%s', header='%s', style='%s' where id = %d" \
+              % (note.text, note.header, note.style, note.id)
         self._doWrite( sql, commit )
 
     def deleteNote( self, id:int, commit:bool=True ):
@@ -57,6 +59,13 @@ class DbAccess:
 
     def commit( self ):
         self._con.commit()
+
+    def getNote( self, id:int ) -> Note:
+        sql = "select id, parent_id, header, text, style from note where id = " + str( id )
+        record:List[Tuple] = self._doRead( sql )
+        note:Note = Note()
+        note.id, note.parent_id, note.header, note.text, note.style = record[0]
+        return note
 
     def getNoteFolderId( self, note_id:int ) -> int:
         sql = "select parent_id from note where id = " + str( note_id )
