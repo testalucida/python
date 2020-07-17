@@ -5,6 +5,8 @@ from tkinter.font import Font, ITALIC, BOLD, NORMAL
 import sys
 if not 'mywidgets' in sys.path: sys.path.append('/home/martin/Projects/python/mywidgets')
 
+def testa( event ):
+    print( "testa" )
 
 class StylableEditor( scrolledtext.ScrolledText ):
     def __init__(self, parent, **kw):
@@ -12,6 +14,7 @@ class StylableEditor( scrolledtext.ScrolledText ):
         self._myId = None
         self._cbfnc = None
         self.bind('<<TextModified>>', self._onModify)
+        #self.bind( '<Control-s>', testa )
         self.isModified:bool = False
 
         # https://stackoverflow.com/questions/40617515/python-tkinter-text-modified-callback

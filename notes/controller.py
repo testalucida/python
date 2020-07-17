@@ -2,7 +2,7 @@ from tkinter import simpledialog, messagebox, PhotoImage
 from enum import Enum
 from mainframe import MainFrame, ToolAction
 from noteeditor import NoteEditor
-from notestree import NotesTree, TreeAction
+from notestree import NotesTree, TreeAction, TreeItem
 from note import Note
 from business import BusinessLogic
 from libs import *
@@ -19,6 +19,7 @@ class Controller:
         self._mainframe = mainframe
         self._tree:NotesTree = mainframe.tree
         self._edi:NoteEditor = mainframe.edi
+        self._edi.setCtrlSCallback( self.onCtrlS )
         self._status = mainframe.statusbar
         self._tree.setTreeCallback( self._treeCallback )
         self._mainframe.setToolActionCallback( self.toolActionCallback )
@@ -50,32 +51,62 @@ class Controller:
             self._note_id_iid_ref[id] = self._tree.addNote( iid_parent, id, header, self._imgNote )
 
 
-    def _treeCallback( self, iid, id, action:TreeAction, itemName:str, itemspec:str ) -> None:
+    # def _treeCallback( self, iid, id, action:TreeAction, itemName:str, itemspec:str ) -> None:
+    #     # itemspec: FOLDER or NOTE
+    #     if action == TreeAction.DELETE:
+    #         self.deleteItem( iid, id, itemspec )
+    #     elif action == TreeAction.SELECT:
+    #        self._handleTreeItemSelection( itemspec, id )
+    #     elif action == TreeAction.MOVE:
+    #         #todo
+    #         pass
+
+    def _treeCallback( self, action:TreeAction, treeItems:List[TreeItem]  ) -> None:
         # itemspec: FOLDER or NOTE
+        nItems:int = len( treeItems )
         if action == TreeAction.DELETE:
-            self.deleteItem( iid, id, itemspec )
+            if nItems == 1:
+                self.deleteItem( treeItems[0] )
+            else:
+                self.deleteItems( treeItems )
         elif action == TreeAction.SELECT:
-           #print( "Controller._treeCallback - TreeAction.SELECT" )
-           self._handleTreeItemSelection( itemspec, id )
+            treeItem = treeItems[0]
+            if nItems > 1 or treeItem.isNote == False:
+                return
+            self._handleOneNoteSelection( treeItem )
+        elif action == TreeAction.MOVE:
+           self._moveAction( treeItems )
 
-    def _handleTreeItemSelection( self, itemspec:str, id:int ) -> None:
-        if itemspec == NOTE:
-            #before changing the displayed note, check if there are unsaved changes:
-            if self._edi.isModified():
-                note:Note = self._edi.getNote()
-                if messagebox.askyesno( "Unsaved Changes", "Note '" + note.header + "' has been modified.\nSave changes?" ):
-                    self.saveNoteLocalAction()
+    def _handleOneNoteSelection( self, treeItem:TreeItem ) -> None:
+        #before changing the displayed note, check if there are unsaved changes:
+        if self._edi.isModified():
+            note:Note = self._edi.getNote()
+            if messagebox.askyesno( "Unsaved Changes", "Note '" + note.header + "' has been modified.\nSave changes?" ):
+                self.saveNoteLocalAction()
 
-            #show selected note:
-            note: Note = self._business.getNote( id )
-            self._edi.setNote( note )
+        #show selected note:
+        note: Note = self._business.getNote( treeItem.id )
+        self._edi.setNote( note )
 
-    def deleteItem( self, item:str, id:int, itemspec ):
-        q =  "Really delete this folder and all its content?" if itemspec == FOLDER else \
-            "Really delete this note?"
-        if messagebox.askyesno( "Confirmation Prompt", q, icon='warning' ):
-            self._business.deleteItem( id, itemspec )
-            self._tree.remove( item )
+    def _moveAction( self, treeItems:List[TreeItem] ):
+        self._getMoveTarget( 0, '' )
+
+    def deleteItems( self, treeItems:List[TreeItem] ):
+        yes = messagebox.askyesno( "Confirmation Prompt", "Really delete the selected items?", icon='warning' )
+        if not yes: return
+
+        for item in treeItems:
+            self.deleteItem( item, False )
+
+    def deleteItem( self, treeItem:TreeItem, ask:bool = True ):
+        yes:bool = True
+        if ask:
+            q =  "Really delete this folder and all its content?" if treeItem.isNote == False else \
+                "Really delete this note?"
+            yes = messagebox.askyesno( "Confirmation Prompt", q, icon='warning' )
+        if yes:
+            self._business.deleteItem( treeItem.id, NOTE if treeItem.isNote else FOLDER )
+            self._tree.remove( treeItem.iid )
 
     def toolActionCallback( self, action:ToolAction ) -> None:
         if action == ToolAction.NEW_TOPFOLDER:
@@ -86,6 +117,8 @@ class Controller:
         if action == ToolAction.SAVE_LOCAL:
             self.saveNoteLocalAction()
 
+    def onCtrlS( self ):
+        self.saveNoteLocalAction()
 
     def newTopFolderAction( self ):
         s = simpledialog.askstring( "New top level folder", "Name of new folder:", initialvalue="" )

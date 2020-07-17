@@ -17,28 +17,40 @@ class NoteEditor( Frame ):
         self._teTags.registerModifyCallback( self.onTitleOrTagsChanged )
         self._note:Note = Note()
         self._isTitleOrTagChanged:bool = False
+        self._ctrl_s_callback = None
 
     def _createTitle( self, parent, row, col, padx, pady ) -> TextEntry:
         Label( parent, text="Caption: " ).grid( row=row, column=col, sticky='nw', padx=padx, pady=pady )
         col += 1
         title = TextEntry( parent )
         title.grid( row=row, column=col, sticky='nwe', padx=padx, pady=pady )
+        title.bind( '<Control-s>', self._onCtrlS )
         return title
 
     def _createEditor( self, parent, row, col, colspan, padx, pady ) -> StylableEditor:
         se = StylableEditor( parent )
         se.grid( row=row, column=col, columnspan=colspan, sticky='nswe', padx=padx, pady=pady)
+        se.bind( '<Control-s>', self._onCtrlS )
         return se
 
+    def setCtrlSCallback( self, cb ):
+        # the given callback function mustn't have any arguments.
+        self._ctrl_s_callback = cb
+
     def onTitleOrTagsChanged( self, *args ) -> None:
-        self.isTitleOrTagChanged = True
+        self._isTitleOrTagChanged = True
 
     def _createTags( self, parent, row, col, padx, pady ):
         Label( parent, text="Tags: " ).grid( row=row, column=col, sticky='nw', padx=padx, pady=pady )
         col += 1
         tags = TextEntry( parent )
         tags.grid( row=row, column=col, sticky='nwe', padx=padx, pady=pady )
+        tags.bind( '<Control-s>', self._onCtrlS )
         return tags
+
+    def _onCtrlS( self, event ):
+        if self._ctrl_s_callback:
+            self._ctrl_s_callback()
 
     def setNote( self, note:Note ) -> None:
         self._note = note

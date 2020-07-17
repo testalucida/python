@@ -4,6 +4,7 @@ from typing import Any, List, Tuple, Dict
 from enum import Enum
 from globals import NOTE, FOLDER
 from contextmenu import PopupMenu
+from note import Note
 
 class TreeAction(Enum):
     INSERT = 1
@@ -11,6 +12,15 @@ class TreeAction(Enum):
     DELETE = 3
     SELECT = 4
     UNSELECT = 5
+    MOVE = 6
+
+class TreeItem:
+    iid:str = ""
+    item:Dict = None
+    id:int = 0
+    label:str = ""
+    tags:str = ""
+    isNote:bool = False
 
 class NotesTree( ttk.Treeview ):
     def __init__( self, parent, **kwargs ):
@@ -20,25 +30,23 @@ class NotesTree( ttk.Treeview ):
         self.heading( '#0', text='All Notes', anchor=W )
         self.column( "#0", minwidth=100 )
         self.bind( "<Button-3>", self._onTreeViewRightClicked )
+        #self.bind( "<B1-Motion>", self._onMouseMove, add='+' )
         self.bind( '<<TreeviewSelect>>', self._onTreeItemClicked )
-        self._popmen = self._createPopup()
+        #self._popmen:PopupMenu # = self._createPopup()
         self._cb = None
 
-    def _createPopup( self ) -> PopupMenu:
-        pop = PopupMenu( self )
-        pop.addCommand( "Insert Folder...", self._onInsertFolder, True )
-        pop.addCommand( "Rename selected Item...", self._onRenameItem, True )
-        pop.addCommand( "Delete selected Item", self._onDeleteItem )
-        return pop
+    # def _createPopup( self ) -> PopupMenu:
+    #     pop = PopupMenu( self )
+    #     pop.addCommand( "Insert Folder...", self._onInsertFolder, True )
+    #     pop.addCommand( "Rename selected Item...", self._onRenameItem, True )
+    #     pop.addCommand( "Delete selected Item", self._onDeleteItem )
+    #     return pop
 
     def setTreeCallback( self, callback_func ) -> None:
         """
-        callback_func has to accept 5 arguments:
-        - item id (iid)
-        - id of tree entry (id of note or parent)
+        callback_func has to accept 2 arguments:
         - kind of action (rename, insert, delete) -> see class TreeAction
-        - in case of renaming the name of the item to rename and in case of inserting the name of the folder to insert
-        - kind of item: NOTE or FOLDER
+        - a list containing the selected TreeItem objects
         Callbacks will be performed before any changes of the tree.
         """
         self._cb = callback_func
@@ -48,7 +56,9 @@ class NotesTree( ttk.Treeview ):
         Adds a folder tree item either at the end of the child list or corresponding to its alphabetical value
         """
         if alphabetically: return self._insertAlphabetically( iid_parent, id, text, image, False )
-        else: return self.insert( iid_parent, 'end', text=text, values=id, tags=(FOLDER,), image=image )
+        else:
+            if image: return self.insert( iid_parent, 'end', text=text, values=id, tags=(FOLDER,), image=image )
+            else: return self.insert( iid_parent, 'end', text=text, values=id, tags=(FOLDER,) )
 
     def addNote( self, iid_parent: str, id: int, text: str, image: PhotoImage=None, alphabetically:bool=True ) -> str:
         """
@@ -77,7 +87,10 @@ class NotesTree( ttk.Treeview ):
             else:
                 t = item['text'].lower()
                 if tl < t:
-                    return self.insert( iid_parent, index, text=text, values=id, tags='note' if isNote else 'folder', image=image )
+                    if image:
+                        return self.insert( iid_parent, index, text=text, values=id, tags='note' if isNote else 'folder', image=image )
+                    else:
+                        return self.insert( iid_parent, index, text=text, values=id, tags='note' if isNote else 'folder')
                 index += 1
         return ( self.addNote( iid_parent, id, text, image, False ) if isNote else self.addFolder( iid_parent, id, text, image, False ) )
 
@@ -112,22 +125,40 @@ class NotesTree( ttk.Treeview ):
 
     def _onDeleteItem( self ):
         self._doCallback( TreeAction.DELETE )
-        # iid, id, label = self.getSelectedTreeItem()
-        # self._doCallback( iid, id, TreeAction.DELETE, label )
+
+    def _onMoveItem( self ):
+        self._doCallback( TreeAction.MOVE )
 
     ####################################################################################
 
     def _doCallback( self, action:TreeAction ) -> None:
-        iid, id, label, noteorfolder = self.getSelectedTreeItem()
+        treeItems:List[TreeItem] = self.getSelectedTreeItems()
         if self._cb:
-            self._cb( iid, id, action, label, noteorfolder )
+            self._cb( action, treeItems )
+
+    # def _onMouseMove( self, event ):
+    #     tuple:Tuple = self.getSelectedTreeItem()
+    #     if tuple[3] == FOLDER: return
+    #     moveto = self.index( self.identify_row( event.y ) )
+    #     for s in self.selection():
+    #         self.move( s, '', moveto )
 
     def _onTreeViewRightClicked( self, event ):
-        iid, id, label, noteorfolder = self.getSelectedTreeItem()
-        print( "onTreeViewRightClicked, iid=", iid )
-        if id > 0:
+        iids = self.getSelectedTreeItems()
+        n = len( iids )
+        if n == 0: return
+
+        pop = PopupMenu( self )
+        if len( iids ) == 1:
             # if there's a selection, we ask for renaming, deleting or inserting
-            self._popmen.show( event )
+            pop.addCommand( "Insert Folder...", self._onInsertFolder, True )
+            pop.addCommand( "Rename selected Item...", self._onRenameItem, True )
+            pop.addCommand( "Delete selected Item", self._onDeleteItem, True )
+            pop.addCommand( "Move selected Item to Folder...", self._onMoveItem )
+        else:
+            pop.addCommand( "Delete selected Items", self._onDeleteItem )
+
+        pop.show( event )
 
     def _onTreeItemClicked( self, event ):
         #bound to virtual TreeviewSelect event
@@ -152,16 +183,36 @@ class NotesTree( ttk.Treeview ):
 
     def getSelectedTreeItem(self) -> Tuple[str, id, str, str]:
         """
-        Gets the selected item.
+        Gets the first selected item.
         The returned tuple contains iid, id, label and tags.
         """
-        iid = self.selection()
-        if len( iid ) == 0:
+        iids = self.selection() #returns a list with selected iids or an empty list
+        if len( iids ) > 0:
+            iid = iids[0]
+        else:
             return ( '0', 0, '', '' )
-        dic = self.item( iid[0] )
-        id: int = int( dic['values'][0] )
-        tags:List = dic['tags']
-        return ( iid, id, dic['text'], tags[0] )
+        item = self.item( iid )
+        id: int = int( item['values'][0] )
+        tags:List = item['tags']
+        return ( iid, id, item['text'], tags[0] )
+
+    def getSelectedTreeItems(self) -> List[TreeItem]:
+        """
+        Returns the selected items, Note and/or Folder objects
+        """
+        selectedItems:List[TreeItem] = []
+        iids:Tuple = self.selection()
+        for iid in iids:
+            item = self.item( iid )
+            treeItem:TreeItem = TreeItem()
+            treeItem.iid = iid
+            treeItem.item = item
+            treeItem.id = int( item['values'][0] )
+            treeItem.isNote = True if item['tags'][0] == NOTE else False
+            selectedItems.append( treeItem )
+
+        return selectedItems
+
 
 def test():
     root = tk.Tk()

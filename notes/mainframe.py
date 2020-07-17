@@ -25,6 +25,7 @@ class MainFrame(Frame):
     def __init__(self, parent, cnf={}, **kw):
         Frame.__init__(self, parent, cnf, **kw)
         self.toolbar = self._createToolBar(self, 0)
+        #parent.bind( '<Control-slash>', self._onSaveLocal )
         self._panedWin, self._leftPane, self._rightPane = self._createPanedWindow(self, 1, 0)
         self.tree = self._createTree( self._leftPane )
         self.edi: NoteEditor = self._createNoteEditor( self._rightPane )
