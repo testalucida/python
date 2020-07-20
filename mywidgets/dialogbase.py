@@ -5,6 +5,7 @@ from tkinter import messagebox
 class DialogBase(Toplevel):
     def __init__(self, parent):
         Toplevel.__init__(self, parent)
+        self.attributes( '-topmost', 'true' )
         self.title("Dialog Base")
         self.bind('<Key>', self._onKeyHit) #handle escape key
         self.rowconfigure(0, weight=1)
@@ -57,8 +58,8 @@ class DialogBase(Toplevel):
         If None is returned, the dialog will be closed.
         If a string is returned it will be treated as validation violation message
         and will be displayed.
-        :param cbfunc:
-        :return:
+        :param cbfunc: function without argument
+        :return: str or None
         """
         self._validationcallback = cbfunc
 
@@ -79,7 +80,9 @@ class DialogBase(Toplevel):
         if self._validationcallback:
             msg = self._validationcallback()
             if msg:
+                self.attributes( '-topmost', 'false' )
                 messagebox.showerror("Eingabe unvollständig", msg)
+                self.attributes( '-topmost', 'true' )
                 return
 
         if self._callback:

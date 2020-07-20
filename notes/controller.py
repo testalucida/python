@@ -3,10 +3,12 @@ from enum import Enum
 from mainframe import MainFrame, ToolAction
 from noteeditor import NoteEditor
 from notestree import NotesTree, TreeAction, TreeItem
+from folderdialog import FolderDialog
 from note import Note
 from business import BusinessLogic
 from libs import *
 from globals import FOLDER, NOTE
+from images import ImageFactory #imgFolder, imgNote
 
 class SaveResult( Enum ):
     OK = 1,
@@ -25,11 +27,13 @@ class Controller:
         self._mainframe.setToolActionCallback( self.toolActionCallback )
         self._folder_id_iid_ref:Dict = { 0: '' }  #key: id, value: iid
         self._note_id_iid_ref:Dict = {} #key: id, value: iid
-        self._imgFolder:PhotoImage = PhotoImage( file="/home/martin/Projects/python/notes/images/folder_16.png" )
-        self._imgNote:PhotoImage = PhotoImage( file="/home/martin/Projects/python/notes/images/note_16.png" )
+        self._imgFolder:PhotoImage #= PhotoImage( file="/home/martin/Projects/python/notes/images/folder_16.png" )
+        self._imgNote:PhotoImage #= PhotoImage( file="/home/martin/Projects/python/notes/images/note_16.png" )
         self._business = BusinessLogic()
 
     def startWork( self ):
+        self._imgFolder = ImageFactory.getInstance().imgFolder
+        self._imgNote = ImageFactory.getInstance().imgNote
         # set tree's folders:
         self._setFolders( parent_id = 0, parent_iid = '' )
         self._setNotes()
@@ -50,17 +54,6 @@ class Controller:
             iid_parent = self._folder_id_iid_ref[parent_id]
             self._note_id_iid_ref[id] = self._tree.addNote( iid_parent, id, header, self._imgNote )
 
-
-    # def _treeCallback( self, iid, id, action:TreeAction, itemName:str, itemspec:str ) -> None:
-    #     # itemspec: FOLDER or NOTE
-    #     if action == TreeAction.DELETE:
-    #         self.deleteItem( iid, id, itemspec )
-    #     elif action == TreeAction.SELECT:
-    #        self._handleTreeItemSelection( itemspec, id )
-    #     elif action == TreeAction.MOVE:
-    #         #todo
-    #         pass
-
     def _treeCallback( self, action:TreeAction, treeItems:List[TreeItem]  ) -> None:
         # itemspec: FOLDER or NOTE
         nItems:int = len( treeItems )
@@ -75,7 +68,9 @@ class Controller:
                 return
             self._handleOneNoteSelection( treeItem )
         elif action == TreeAction.MOVE:
-           self._moveAction( treeItems )
+           self._moveAction( treeItems[0] )
+        elif action == TreeAction.INSERT:
+            self.newFolderAction( treeItems[0] )
 
     def _handleOneNoteSelection( self, treeItem:TreeItem ) -> None:
         #before changing the displayed note, check if there are unsaved changes:
@@ -88,8 +83,26 @@ class Controller:
         note: Note = self._business.getNote( treeItem.id )
         self._edi.setNote( note )
 
-    def _moveAction( self, treeItems:List[TreeItem] ):
-        self._getMoveTarget( 0, '' )
+    def _moveAction( self, treeItem:TreeItem ):
+        def _onOk( ok:bool ):
+            folder:TreeItem = folderDlg.getSelectedFolder()
+            if treeItem.isNote:
+                self._business.changeNoteParent( treeItem.id, folder.id )
+                self._tree.moveItem( treeItem.iid, folder.iid )
+            else:
+                self._business.changeFolderParent( treeItem.id, folder.id )
+                self._tree.moveItem( treeItem.iid, folder.iid )
+
+        folderDlg = FolderDialog( self._mainframe )
+        folderDlg.setOkCancelCallback( _onOk )
+
+    def _syncIdIIdReferences( self ):
+        #note id/iid references:
+        idlist:List[int] = self._business.getAllNoteIds()
+        self._note_id_iid_ref = [x for x in self._note_id_iid_ref if x in set( idlist )]
+        #folder id/iid references:
+        idlist = self._business.getAllFolderIds()
+        self._folder_id_iid_ref = [x for x in self._folder_id_iid_ref if x in set( idlist )]
 
     def deleteItems( self, treeItems:List[TreeItem] ):
         yes = messagebox.askyesno( "Confirmation Prompt", "Really delete the selected items?", icon='warning' )
@@ -107,6 +120,12 @@ class Controller:
         if yes:
             self._business.deleteItem( treeItem.id, NOTE if treeItem.isNote else FOLDER )
             self._tree.remove( treeItem.iid )
+            if treeItem.isNote:
+                self._note_id_iid_ref.pop( treeItem.id )
+            else:
+                #The deleted folder might have contained subfolders and notes.
+                #We have to synchronize _folder_id_iid_ref and _note_id_iid_ref.
+                self._syncIdIIdReferences()
 
     def toolActionCallback( self, action:ToolAction ) -> None:
         if action == ToolAction.NEW_TOPFOLDER:
@@ -125,6 +144,12 @@ class Controller:
         if s:
             id:int = self._business.createTopLevelFolder( s )
             self._tree.addFolder( '', id, s, self._imgFolder, True )
+
+    def newFolderAction( self, treeItem:TreeItem ):
+        s = simpledialog.askstring( "New folder", "Name of new folder:", initialvalue="" )
+        if s:
+            id: int = self._business.createFolder( s, treeItem.id, True )
+            self._tree.addFolder( treeItem.iid, id, s, self._imgFolder, True )
 
     def newNoteAction( self ):
         note:Note = self._edi.getNote()
@@ -151,7 +176,7 @@ class Controller:
         if note.id <= 0:
             #new note, not yet saved
             iid_parent = ''
-            iid, id, text, itemspec = self._tree.getSelectedTreeItem()
+            iid, id, text, itemspec = self._tree.getSelectedTreeItemAsTuple()
             if iid == '0' or iid == '':
                 # no tree item selected
                 if not messagebox.askyesno( "No Folder Selected", "Do you really wish to save this note outside any folder?" ):

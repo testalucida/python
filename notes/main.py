@@ -3,6 +3,7 @@ from tkinter.font import families
 from tkinter import PhotoImage
 from mainframe import MainFrame
 from controller import Controller
+import os
 
 print ('sys.version: ', sys.version)
 print ('sys.executable: ', sys.executable)
@@ -11,6 +12,10 @@ print ('sys.path: ', sys.path)
 
 def main():
     root = Tk()
+    scriptpath = os.path.realpath( __file__ )
+    imagepath = scriptpath.replace( "main.py", "images/notes.png" )
+    icon = PhotoImage( file=imagepath )
+    root.call('wm', 'iconphoto', root._w, icon)
     root.title( "Notes" )
     root.rowconfigure(0, weight=1)
     root.columnconfigure(0, weight=1)

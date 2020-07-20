@@ -7,11 +7,11 @@ class BusinessLogic:
     def __init__( self ):
         self._db = DbAccess()
 
-    def getFolders( self, parent_iid:int ) -> List[Tuple]:
+    def getFolders( self, parent_id:int ) -> List[Tuple]:
         # Returns a list of all folders belonging to a given parent_id
         # Each folder is represented by a Tuple containing parent_id, folder_id, text.
         self._db.open()
-        folders = self._db.getFolders( parent_iid )
+        folders = self._db.getFolders( parent_id )
         # for f in folders:
         #     print( f )
         self._db.close()
@@ -22,6 +22,18 @@ class BusinessLogic:
         note:Note = self._db.getNote( note_id )
         self._db.close()
         return note
+
+    def getAllNoteIds( self ) -> List[int]:
+        self._db.open()
+        idlist = self._db.getAllNoteIds()
+        self._db.close()
+        return idlist
+
+    def getAllFolderIds( self ) -> List[int]:
+        self._db.open()
+        idlist = self._db.getAllNoteIds()
+        self._db.close()
+        return idlist
 
     def getNoteFolderId( self, note_id:int ) -> int:
         self._db.open()
@@ -42,8 +54,11 @@ class BusinessLogic:
         return headers
 
     def createTopLevelFolder( self, name:str ) -> int:
+        return self.createFolder( name, 0, True )
+
+    def createFolder( self, name:str, parent_id:int, commit:bool=True ) -> int:
         self._db.open()
-        id: int = self._db.insertFolder( 0, text=name, commit=True )
+        id: int = self._db.insertFolder( parent_id, text=name, commit=commit )
         self._db.commit()
         self._db.close()
         return id
@@ -63,6 +78,16 @@ class BusinessLogic:
         self._db.close()
         note.id = id
         return note
+
+    def changeFolderParent( self, folder_id:int, newParent_id:int ) -> None:
+        self._db.open()
+        self._db.updateFolderParent( folder_id, newParent_id )
+        self._db.close()
+
+    def changeNoteParent( self, note_id:int, newParent_id:int ) -> None:
+        self._db.open()
+        self._db.updateNoteParent( note_id, newParent_id )
+        self._db.close()
 
     def updateNote( self, note:Note ) -> None:
         self._db.open()
@@ -87,8 +112,8 @@ class BusinessLogic:
         if len( childfolders ) > 0:
             for folder in childfolders:
                 self._deleteFolder( folder[0] )
-        else:
-            self._db.deleteFolder( id )
+
+        self._db.deleteFolder( id )
 
 def test():
     b = BusinessLogic()

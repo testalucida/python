@@ -43,7 +43,7 @@ class MainFrame(Frame):
         self._createToolButton( tb, 2, "/home/martin/Projects/python/notes/images/search_30.png", "Search in notes", self._onSearch )
         self._createToolButton( tb, 3, "/home/martin/Projects/python/notes/images/save_30.png", "Save local", self._onSaveLocal )
         self._createToolButton( tb, 4, "/home/martin/Projects/python/notes/images/save_to_cloud_30.png", "Save all notes to server",  self._onSaveRemote )
-        self._createToolButton( tb, 5, "/home/martin/Projects/python/notes/images/saveas_30.png", "Save as (locally)", self._onSaveAs )
+        #self._createToolButton( tb, 5, "/home/martin/Projects/python/notes/images/saveas_30.png", "Save as (locally)", self._onSaveAs )
         Label( tb, width=10 ).grid( row=0, column=6, padx=2, pady=2 )
         self._createToolButton( tb, 7, "/home/martin/Projects/python/notes/images/bold_24.png", "Selected text to bold", self._onBold )
         self._createToolButton( tb, 8, "/home/martin/Projects/python/notes/images/italic_24.png", "Selected text to italic", self._onItalic )

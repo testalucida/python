@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import Toplevel, Label
 from tkinter import ttk, W, FLAT, simpledialog, PhotoImage
 from typing import Any, List, Tuple, Dict
 from enum import Enum
@@ -21,6 +22,39 @@ class TreeItem:
     label:str = ""
     tags:str = ""
     isNote:bool = False
+#
+# class InsertPointer( object ):
+#     def __init__( self, mainwin ):
+#         # self.wm_attributes('-transparentcolor','black')
+#         # self.wm_attributes( '-transparentcolor', root['bg'] )
+#         self._frame = mainwin
+#         self._frame.bind( "<Button-1>", self._onLeftMouse )
+#         self._frame.bind( "<B1-Motion>", self._onMouseMove )
+#         self._frame.bind( "<ButtonRelease-1>", self._onMouseRelease )
+#         self._insertPtr:InsertPointer = None
+#
+#
+#     def _onLeftMouse( self, event ):
+#         print( "_onMouseMove")
+#
+#     def _onMouseMove( self, event ):
+#         print( "_onMouseMove")
+#
+#     def _onMouseRelease( self, event ):
+#         print( "_onMouseRelease" )
+#
+#     def setPosition(self, x: int, y: int) -> None:
+#         self.geometry("+%d+%d" % (x , y ))
+#
+#     def _createPointer( self ):
+#         # Leaves only the label and removes the app window
+#         self.wm_overrideredirect( True )
+#         # self.wm_geometry( "+%d+%d" % ( self._frame.winfo_rootx() + x, self._frame.winfo_rooty() + y ) )
+#         label = Label( self, text="Arrow", justify='left',
+#                        background='white', relief='solid', borderwidth=1,
+#                        font=("arial", "10", "normal") )
+#         label.pack( ipadx=1 )
+#
 
 class NotesTree( ttk.Treeview ):
     def __init__( self, parent, **kwargs ):
@@ -34,13 +68,6 @@ class NotesTree( ttk.Treeview ):
         self.bind( '<<TreeviewSelect>>', self._onTreeItemClicked )
         #self._popmen:PopupMenu # = self._createPopup()
         self._cb = None
-
-    # def _createPopup( self ) -> PopupMenu:
-    #     pop = PopupMenu( self )
-    #     pop.addCommand( "Insert Folder...", self._onInsertFolder, True )
-    #     pop.addCommand( "Rename selected Item...", self._onRenameItem, True )
-    #     pop.addCommand( "Delete selected Item", self._onDeleteItem )
-    #     return pop
 
     def setTreeCallback( self, callback_func ) -> None:
         """
@@ -72,27 +99,62 @@ class NotesTree( ttk.Treeview ):
     def updateLabel( self, iid:str, label:str ) -> None:
         self.item( iid, text=label )
 
-    def _insertAlphabetically( self, iid_parent:str, id:int, text:str, image:PhotoImage=None, isNote:bool=True ) -> str:
+    def openFolder( self, parent=None ) -> None:
+        self.item( parent, open=True )  # open parent
+        for child in self.get_children( parent ):
+            self.openFolder( child )  # recursively open children
+
+    def _insertAlphabetically( self, iid_parent: str, id: int, text: str, image: PhotoImage = None,
+                               isNote: bool = True ) -> str:
         """
         Inserts a new item under the given parent at a position according to its alphabetical value
         """
-        tl = text.lower()
-        children:Tuple = self.get_children( iid_parent )
-        index:int = 0
+        index = self._getIndex( iid_parent, text, isNote )
+
+        if image:
+            return self.insert( iid_parent, index, text=text, values=id,
+                                tags='note' if isNote else 'folder', image=image )
+        else:
+            return self.insert( iid_parent, index, text=text, values=id,
+                                tags='note' if isNote else 'folder' )
+
+
+    # def _insertAlphabetically( self, iid_parent:str, id:int, text:str, image:PhotoImage=None, isNote:bool=True ) -> str:
+    #     """
+    #     Inserts a new item under the given parent at a position according to its alphabetical value
+    #     """
+    #     tl = text.lower()
+    #     children:Tuple = self.get_children( iid_parent )
+    #     index:int = 0
+    #     for iid in children:
+    #         item:Dict = self.item( iid )
+    #         if isNote and item['tags'][0] == FOLDER:
+    #             index += 1
+    #             continue
+    #         else:
+    #             t = item['text'].lower()
+    #             if tl < t:
+    #                 if image:
+    #                     return self.insert( iid_parent, index, text=text, values=id, tags='note' if isNote else 'folder', image=image )
+    #                 else:
+    #                     return self.insert( iid_parent, index, text=text, values=id, tags='note' if isNote else 'folder')
+    #             index += 1
+    #     return ( self.addNote( iid_parent, id, text, image, False ) if isNote else self.addFolder( iid_parent, id, text, image, False ) )
+
+    def _getIndex( self, parent_iid:str, label2insert:str, isNote:bool=True ) -> int:
+        tl = label2insert.lower()
+        children: Tuple = self.get_children( parent_iid )
+        index: int = 0
         for iid in children:
-            item:Dict = self.item( iid )
+            item: Dict = self.item( iid )
             if isNote and item['tags'][0] == FOLDER:
-                index += 1
-                continue
+                pass
             else:
                 t = item['text'].lower()
                 if tl < t:
-                    if image:
-                        return self.insert( iid_parent, index, text=text, values=id, tags='note' if isNote else 'folder', image=image )
-                    else:
-                        return self.insert( iid_parent, index, text=text, values=id, tags='note' if isNote else 'folder')
-                index += 1
-        return ( self.addNote( iid_parent, id, text, image, False ) if isNote else self.addFolder( iid_parent, id, text, image, False ) )
+                    break
+            index += 1
+        return index
 
     def remove( self, iid:str ):
         """
@@ -100,9 +162,15 @@ class NotesTree( ttk.Treeview ):
         """
         self.delete( (iid,) )
 
+    def moveItem( self, iid:str, new_parent_iid:str ):
+        item = self.item( iid )
+        idx = self._getIndex( new_parent_iid, item['text'] )
+        self.move( iid, new_parent_iid, idx )
+
     def unsetSelection( self ) -> None:
         #print( "NotesTree.unselectSelection ")
         self.selection_remove( self.selection() )
+
 
     #################### callbacks for tree actions ########################
     def _onInsertFolder( self ):
@@ -167,7 +235,7 @@ class NotesTree( ttk.Treeview ):
             action = TreeAction.SELECT
         else:
             action = TreeAction.UNSELECT
-        print( "NotesTree._onTreeItemClicked - action: ", "SELECT" if action == 4 else "UNSELECT" )
+        #print( "NotesTree._onTreeItemClicked - action: ", "SELECT" if action == 4 else "UNSELECT" )
         self._doCallback( action )
 
     def getSelectedId( self ) -> Tuple[str, int]:
@@ -179,9 +247,9 @@ class NotesTree( ttk.Treeview ):
         return ( iid, id )
 
     def existsSelection( self ) -> bool:
-        return len( self.selection() )
+        return True if len( self.selection() ) > 0 else False
 
-    def getSelectedTreeItem(self) -> Tuple[str, id, str, str]:
+    def getSelectedTreeItemAsTuple(self) -> Tuple[str, id, str, str]:
         """
         Gets the first selected item.
         The returned tuple contains iid, id, label and tags.
@@ -196,6 +264,19 @@ class NotesTree( ttk.Treeview ):
         tags:List = item['tags']
         return ( iid, id, item['text'], tags[0] )
 
+    def getFirstSelectedTreeItem( self ) -> TreeItem or None:
+        iids: Tuple = self.selection()
+        if len( iids ) > 0:
+            item = self.item( iids[0] )
+            treeItem = TreeItem()
+            treeItem.iid = iids[0]
+            treeItem.item = item
+            treeItem.id = int( item['values'][0] )
+            treeItem.label = item['text']
+            treeItem.isNote = True if item['tags'][0] == NOTE else False
+            return treeItem
+        return None
+
     def getSelectedTreeItems(self) -> List[TreeItem]:
         """
         Returns the selected items, Note and/or Folder objects
@@ -208,6 +289,7 @@ class NotesTree( ttk.Treeview ):
             treeItem.iid = iid
             treeItem.item = item
             treeItem.id = int( item['values'][0] )
+            treeItem.label = item['text']
             treeItem.isNote = True if item['tags'][0] == NOTE else False
             selectedItems.append( treeItem )
 
@@ -233,7 +315,7 @@ def test():
     children = t.get_children( '' )
     print( children )
 
-    item = t.getSelectedTreeItem()
+    item = t.getSelectedTreeItemAsTuple()
     print( item )
 
     root.mainloop()
