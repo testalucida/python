@@ -63,7 +63,7 @@ class DbAccess:
         sql = "delete from folder where id = " + str( folder_id )
         self._doWrite( sql, commit )
 
-    def insertTag( self, tag:str, commit:bool=True ):
+    def insertTag( self, tag:str, commit:bool=True ) -> int:
         sql = "insert into tag (tag) values ('%s');" % (tag,)
         self._doWrite( sql, commit )
         return self.getMaxId( "tag", "tag_id" )
@@ -133,9 +133,15 @@ class DbAccess:
               "where n.parent_id = %d;" % (parent_id,)
         return self._doRead( sql )
 
-    def getTags( self ) -> List[Tuple]:
-        sql = "select tag_id, tag from tag "
-        return self._doRead( sql )
+    def getTags( self ) -> List[str]:
+        sql = "select tag from tag order by tag asc"
+        records:List[Tuple] = self._doRead( sql )
+        return [x[0] for x in records]
+
+    def getTagsForNote( self, note_id:int ) -> List[str]:
+        sql = "select tag from tag t inner join ref_tag_note r on t.tag_id = r.tag_id where r.note_id = " + str( note_id )
+        records: List[Tuple] = self._doRead( sql )
+        return [x[0] for x in records]
 
     def _doRead( self, sql:str ) -> List[Tuple]:
         self._cursor.execute( sql )

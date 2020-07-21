@@ -1,3 +1,5 @@
+from functools import cmp_to_key
+import locale
 from dbaccess import DbAccess
 from globals import NOTE, FOLDER
 from libs import *
@@ -20,6 +22,8 @@ class BusinessLogic:
     def getNote( self, note_id:int ) -> Note:
         self._db.open()
         note:Note = self._db.getNote( note_id )
+        tags:List[str] = self._db.getTagsForNote( note_id )
+        note.tags = self._makeTagString( tags )
         self._db.close()
         return note
 
@@ -65,7 +69,7 @@ class BusinessLogic:
 
     def insertNote( self, note:Note ) -> Note:
         """
-        Inserts a new created note and returns its id
+        Inserts a new created note and returns this note with supplied id
         """
         self._db.open()
         #1. insert header, text etc. into note
@@ -74,6 +78,12 @@ class BusinessLogic:
         #4. insert references between tags and notes into ref_tag_not
         #5. provides the given note with the new note's id and returns the given note object
         id:int = self._db.insertNote( note.parent_id, note.text, note.header, note.style, False )
+        tags = self._splitTags( note.tags )
+        tags = self._getTagsToInsert( tags )
+        for tag in tags:
+            tag_id:int = self._db.insertTag( tag, False )
+            self._db.insertRefTagNote( id, tag_id, False )
+
         self._db.commit()
         self._db.close()
         note.id = id
@@ -115,10 +125,37 @@ class BusinessLogic:
 
         self._db.deleteFolder( id )
 
+    def _splitTags( self, tags:str ) -> List[str]:
+        parts1 = tags.split()
+        parts2 = tags.split( "," )
+        parts3 = tags.split( ";" )
+        return list( set( parts1 + parts2 + parts3 ) )
+
+    def _getTagsToInsert( self, taglist:List[str] ):
+        #precondition: database is open
+        taglist = [x.lower() for x in taglist]
+        alltags:List[str] = self._db.getTags()
+        alltags = [x.lower() for x in alltags]
+        missing = [x for x in taglist if x not in alltags]
+        return missing
+
+    def _makeTagString( self, tags:List[str] ) -> str:
+        s: str = ""
+        for tag in tags:
+            s += tag
+            s += ", "
+        return s[:-2]
+
 def test():
     b = BusinessLogic()
-    folders = b.getFolders()
-    print( folders )
+    b._db.open()
+    taglist = b._getTagsToInsert( ["weird", "abraham", "webserver", "krautwickel"] )
+    b._db.close()
+    print( taglist )
+    s = b._makeTagString( ["abc", "def", "ghi"])
+    print( s )
+    # folders = b.getFolders()
+    # print( folders )
     #id:int = b.insertNote( 2, "Header Header Header", "Text Text Text" )
     #b.deleteItem( 2, FOLDER )
 

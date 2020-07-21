@@ -73,6 +73,10 @@ class NoteEditor( Frame ):
         self._note.style = self._edi.getStyle()
         return self._note
 
+    def clear( self ) -> None:
+        self._note = Note()
+        self.setNote( self._note )
+
     def isModified( self ) -> bool:
         return ( self._edi.isModified or self._isTitleOrTagChanged )
 

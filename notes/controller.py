@@ -122,6 +122,7 @@ class Controller:
             self._tree.remove( treeItem.iid )
             if treeItem.isNote:
                 self._note_id_iid_ref.pop( treeItem.id )
+                self._edi.clear()
             else:
                 #The deleted folder might have contained subfolders and notes.
                 #We have to synchronize _folder_id_iid_ref and _note_id_iid_ref.
@@ -198,6 +199,7 @@ class Controller:
 
             self._business.insertNote( note )
             self._tree.addNote( iid_parent, note.id, note.header, self._imgNote )
+            self._edi.resetModified()
             return SaveResult.OK
         else:
             #update an existing note
