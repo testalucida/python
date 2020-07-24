@@ -72,6 +72,9 @@ class DbAccess:
         sql = "insert into ref_tag_note (note_id, tag_id) values (%d, %d);" % (note_id, tag_id)
         self._doWrite( sql, commit )
 
+    def deleteTags( self, note_id:int, commit:bool=True ):
+        pass
+
     def commit( self ):
         self._con.commit()
 
@@ -137,6 +140,11 @@ class DbAccess:
         sql = "select tag from tag order by tag asc"
         records:List[Tuple] = self._doRead( sql )
         return [x[0] for x in records]
+
+    def getTagId( self, tag:str ) -> int:
+        sql = "select tag_id from tag where tag = '%s'" % (tag,)
+        record: List[Tuple] = self._doRead( sql )
+        return record[0][0]
 
     def getTagsForNote( self, note_id:int ) -> List[str]:
         sql = "select tag from tag t inner join ref_tag_note r on t.tag_id = r.tag_id where r.note_id = " + str( note_id )

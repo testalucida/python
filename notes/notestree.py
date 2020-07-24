@@ -8,7 +8,7 @@ from contextmenu import PopupMenu
 from note import Note
 
 class TreeAction(Enum):
-    INSERT = 1
+    INSERT_FOLDER = 1
     RENAME = 2
     DELETE = 3
     SELECT = 4
@@ -81,6 +81,7 @@ class NotesTree( ttk.Treeview ):
     def addFolder( self, iid_parent:str, id:int, text:str, image:PhotoImage=None, alphabetically:bool=True ) -> str:
         """
         Adds a folder tree item either at the end of the child list or corresponding to its alphabetical value
+        and returns its item id.
         """
         if alphabetically: return self._insertAlphabetically( iid_parent, id, text, image, False )
         else:
@@ -167,6 +168,10 @@ class NotesTree( ttk.Treeview ):
         idx = self._getIndex( new_parent_iid, item['text'] )
         self.move( iid, new_parent_iid, idx )
 
+    def setSelection( self, iid:str ) -> None:
+        self.unsetSelection()
+        self.selection_add( (iid,) )
+
     def unsetSelection( self ) -> None:
         #print( "NotesTree.unselectSelection ")
         self.selection_remove( self.selection() )
@@ -175,7 +180,7 @@ class NotesTree( ttk.Treeview ):
     #################### callbacks for tree actions ########################
     def _onInsertFolder( self ):
         #only folders can be inserted this way. Notes are inserted by saving the new or edited note.
-        self._doCallback( TreeAction.INSERT )
+        self._doCallback( TreeAction.INSERT_FOLDER )
         # # get selected folder, ask for new folder's name and insert it as child of the selected folder.
         # iid, id, label = self.getSelectedTreeItem()
         # s = simpledialog.askstring( "New folder", "Name of new folder:", initialvalue="" )

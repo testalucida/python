@@ -1,7 +1,7 @@
 from tkinter import *
 from typing import List
 from stylableeditor import StylableEditor
-from mywidgets import TextEntry
+from mywidgets import TextEntry, ToolTip
 from note import Note
 
 class NoteEditor( Frame ):
@@ -25,6 +25,7 @@ class NoteEditor( Frame ):
         title = TextEntry( parent )
         title.grid( row=row, column=col, sticky='nwe', padx=padx, pady=pady )
         title.bind( '<Control-s>', self._onCtrlS )
+        ToolTip( title, "This caption will be used to display this note in the tree")
         return title
 
     def _createEditor( self, parent, row, col, colspan, padx, pady ) -> StylableEditor:
@@ -46,6 +47,7 @@ class NoteEditor( Frame ):
         tags = TextEntry( parent )
         tags.grid( row=row, column=col, sticky='nwe', padx=padx, pady=pady )
         tags.bind( '<Control-s>', self._onCtrlS )
+        ToolTip( tags, "Enter as many comma-separated tags as you want" )
         return tags
 
     def _onCtrlS( self, event ):

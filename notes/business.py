@@ -78,11 +78,16 @@ class BusinessLogic:
         #4. insert references between tags and notes into ref_tag_not
         #5. provides the given note with the new note's id and returns the given note object
         id:int = self._db.insertNote( note.parent_id, note.text, note.header, note.style, False )
-        tags = self._splitTags( note.tags )
-        tags = self._getTagsToInsert( tags )
-        for tag in tags:
+        tags = self._splitTags( note.tags ) # all tags in note
+        newtags = self._getTagsToInsert( tags ) # tags not yet in database
+        for tag in newtags:
             tag_id:int = self._db.insertTag( tag, False )
             self._db.insertRefTagNote( id, tag_id, False )
+
+        oldtags = [x for x in tags if x not in newtags]  # tags existing in database
+        for tag in oldtags:
+            tag_id:int = self._db.getTagId( tag )
+            self._db.insertRefTagNote( id, tag_id )
 
         self._db.commit()
         self._db.close()
@@ -100,8 +105,15 @@ class BusinessLogic:
         self._db.close()
 
     def updateNote( self, note:Note ) -> None:
+        """
+        update note, its style, its caption and its tags
+        """
         self._db.open()
-        self._db.updateNote( note )
+        self._db.updateNote( note, False )
+        # for the sake of simplicity: delete note's tag references and insert them anew
+        self._db.deleteTags( note.id, False )
+
+        self._db.commit()
         self._db.close()
 
     def deleteItem( self, id:int, itemspec:str ) -> None:
@@ -126,10 +138,10 @@ class BusinessLogic:
         self._db.deleteFolder( id )
 
     def _splitTags( self, tags:str ) -> List[str]:
-        parts1 = tags.split()
-        parts2 = tags.split( "," )
-        parts3 = tags.split( ";" )
-        return list( set( parts1 + parts2 + parts3 ) )
+        parts = tags.split( "," )
+        parts = list( set( parts ) )
+        parts = [x.strip() for x in parts]
+        return parts
 
     def _getTagsToInsert( self, taglist:List[str] ):
         #precondition: database is open

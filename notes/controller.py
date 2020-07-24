@@ -69,7 +69,7 @@ class Controller:
             self._handleOneNoteSelection( treeItem )
         elif action == TreeAction.MOVE:
            self._moveAction( treeItems[0] )
-        elif action == TreeAction.INSERT:
+        elif action == TreeAction.INSERT_FOLDER:
             self.newFolderAction( treeItems[0] )
 
     def _handleOneNoteSelection( self, treeItem:TreeItem ) -> None:
@@ -198,7 +198,10 @@ class Controller:
                     return SaveResult.CANCEL
 
             self._business.insertNote( note )
-            self._tree.addNote( iid_parent, note.id, note.header, self._imgNote )
+            iid_note = self._tree.addNote( iid_parent, note.id, note.header, self._imgNote )
+            self._note_id_iid_ref[note.id] = iid_note
+            self._tree.openFolder( iid_parent )
+            self._tree.setSelection( iid_note )
             self._edi.resetModified()
             return SaveResult.OK
         else:

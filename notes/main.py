@@ -31,8 +31,6 @@ def main():
 
 """
 todo: 
-- create note, save it, then delete it: crashes
-- open note, then delete it: clear it from NoteEditor
 - update / delete note: take care of tags
 """
 
