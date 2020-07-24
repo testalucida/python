@@ -95,12 +95,12 @@ class BusinessLogic:
         newtags = self._getTagsToInsert( tags ) # tags not yet in database
         for tag in newtags:
             tag_id:int = self._db.insertTag( tag, False ) # insert new tag
-            self._db.insertRefTagNote( id, tag_id, False ) # create reference
+            self._db.insertRefTagNote( note_id, tag_id, False ) # create reference
 
         oldtags = [x for x in tags if x not in newtags]  # tags existing in database, references needed
         for tag in oldtags:
             tag_id:int = self._db.getTagId( tag )
-            self._db.insertRefTagNote( id, tag_id )
+            self._db.insertRefTagNote( note_id, tag_id )
 
     def changeFolderParent( self, folder_id:int, newParent_id:int ) -> None:
         self._db.open()
@@ -121,6 +121,7 @@ class BusinessLogic:
         # for the sake of simplicity: delete note's tag references and insert them anew
         self._db.deleteTagNoteReferences( note.id, False )
         self._handleTags( note.tags, note.id )
+        self._db.deleteUnreferencedTags( commit=False )
         self._db.commit()
         self._db.close()
 

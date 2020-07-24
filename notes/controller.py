@@ -136,6 +136,8 @@ class Controller:
             self.newNoteAction()
         if action == ToolAction.SAVE_LOCAL:
             self.saveNoteLocalAction()
+        if action == ToolAction.SAVE_REMOTE:
+            self.saveRemoteAction()
 
     def onCtrlS( self ):
         self.saveNoteLocalAction()
@@ -212,3 +214,6 @@ class Controller:
             item_iid = self._note_id_iid_ref[note.id]
             self._tree.updateLabel( item_iid, note.header )
             return SaveResult.OK
+
+    def saveRemoteAction( self ):
+        pass
