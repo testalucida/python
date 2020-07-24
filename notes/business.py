@@ -78,21 +78,29 @@ class BusinessLogic:
         #4. insert references between tags and notes into ref_tag_not
         #5. provides the given note with the new note's id and returns the given note object
         id:int = self._db.insertNote( note.parent_id, note.text, note.header, note.style, False )
-        tags = self._splitTags( note.tags ) # all tags in note
-        newtags = self._getTagsToInsert( tags ) # tags not yet in database
-        for tag in newtags:
-            tag_id:int = self._db.insertTag( tag, False )
-            self._db.insertRefTagNote( id, tag_id, False )
-
-        oldtags = [x for x in tags if x not in newtags]  # tags existing in database
-        for tag in oldtags:
-            tag_id:int = self._db.getTagId( tag )
-            self._db.insertRefTagNote( id, tag_id )
-
+        self._handleTags( note.tags, id )
         self._db.commit()
         self._db.close()
         note.id = id
         return note
+
+    def _handleTags( self, tags:str, note_id:int ) -> None:
+        """
+        gets tags of a note as string.
+        checks if there are tags not yet existing in database and inserts them if necessary.
+        creates all needed tag note references.
+        this method doesn't trigger a commit and relies on a previously opened database.
+        """
+        tags = self._splitTags( tags ) # converts tags from string to list
+        newtags = self._getTagsToInsert( tags ) # tags not yet in database
+        for tag in newtags:
+            tag_id:int = self._db.insertTag( tag, False ) # insert new tag
+            self._db.insertRefTagNote( id, tag_id, False ) # create reference
+
+        oldtags = [x for x in tags if x not in newtags]  # tags existing in database, references needed
+        for tag in oldtags:
+            tag_id:int = self._db.getTagId( tag )
+            self._db.insertRefTagNote( id, tag_id )
 
     def changeFolderParent( self, folder_id:int, newParent_id:int ) -> None:
         self._db.open()
@@ -111,17 +119,19 @@ class BusinessLogic:
         self._db.open()
         self._db.updateNote( note, False )
         # for the sake of simplicity: delete note's tag references and insert them anew
-        self._db.deleteTags( note.id, False )
-
+        self._db.deleteTagNoteReferences( note.id, False )
+        self._handleTags( note.tags, note.id )
         self._db.commit()
         self._db.close()
 
     def deleteItem( self, id:int, itemspec:str ) -> None:
         self._db.open()
         if itemspec == NOTE:
-            self._db.deleteNote( id )
+            self._db.deleteNote( id, False )
+            self._db.deleteTagNoteReferences( id, False )
+            self._db.deleteUnreferencedTags()
         else:
-            self._deleteFolder( id )
+            self._deleteFolder( id, False )
         self._db.commit()
         self._db.close()
 

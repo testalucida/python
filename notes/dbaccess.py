@@ -72,8 +72,17 @@ class DbAccess:
         sql = "insert into ref_tag_note (note_id, tag_id) values (%d, %d);" % (note_id, tag_id)
         self._doWrite( sql, commit )
 
-    def deleteTags( self, note_id:int, commit:bool=True ):
-        pass
+    def deleteTagNoteReferences( self, note_id:int, commit:bool=True ) -> None:
+        sql = "delete from ref_tag_note where note_id = " + str( note_id )
+        self._doWrite( sql, commit )
+
+    def deleteUnreferencedTags( self, commit:bool=True ) -> None:
+        """
+        checks if there are tags which are not referenced by any record in ref_tag_note
+        and deletes them
+        """
+        sql = "delete from tag where tag.tag_id not in (select ref_tag_note.tag_id from ref_tag_note )"
+        self._doWrite( sql, commit )
 
     def commit( self ):
         self._con.commit()
