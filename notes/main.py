@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter.font import families
-from tkinter import PhotoImage
+from tkinter import PhotoImage, messagebox
 from mainframe import MainFrame
 from controller import Controller
 import os
@@ -11,7 +11,14 @@ print ('sys.path: ', sys.path)
 
 
 def main():
+    def on_closing():
+        if ctrl.isNoteModified():
+            if messagebox.askokcancel( "Quit", "Do you want to quit?\nNote is modified." ):
+                root.destroy()
+        else: root.destroy()
+
     root = Tk()
+    root.protocol( "WM_DELETE_WINDOW", on_closing )
     scriptpath = os.path.realpath( __file__ )
     imagepath = scriptpath.replace( "main.py", "images/notes.png" )
     icon = PhotoImage( file=imagepath )
@@ -22,17 +29,15 @@ def main():
     f = MainFrame(root)
     f.grid( row=0, column=0, sticky='nswe', padx=3, pady=3)
 
-    Controller( f ).startWork()
+    ctrl = Controller( f )
+    ctrl.startWork()
 
     root.option_add( '*Dialog.msg.font', 'Helvetica 11' )
 
     root.mainloop()
 
-
-"""
-todo: 
-- update / delete note: take care of tags
-"""
+    ctrl.endWork()
+    print( "Database successfully uploaded to server." )
 
 
 def dummy_callback():

@@ -27,16 +27,26 @@ class Controller:
         self._mainframe.setToolActionCallback( self.toolActionCallback )
         self._folder_id_iid_ref:Dict = { 0: '' }  #key: id, value: iid
         self._note_id_iid_ref:Dict = {} #key: id, value: iid
-        self._imgFolder:PhotoImage #= PhotoImage( file="/home/martin/Projects/python/notes/images/folder_16.png" )
-        self._imgNote:PhotoImage #= PhotoImage( file="/home/martin/Projects/python/notes/images/note_16.png" )
+        self._imgFolder:PhotoImage = None #= PhotoImage( file="/home/martin/Projects/python/notes/images/folder_16.png" )
+        self._imgNote:PhotoImage = None #= PhotoImage( file="/home/martin/Projects/python/notes/images/note_16.png" )
         self._business = BusinessLogic()
 
     def startWork( self ):
+        #get us the last saved database
+        self._business.downloadDatabase()
+        self._business.initDatabase()
+
         self._imgFolder = ImageFactory.getInstance().imgFolder
         self._imgNote = ImageFactory.getInstance().imgNote
         # set tree's folders:
         self._setFolders( parent_id = 0, parent_iid = '' )
         self._setNotes()
+
+    def isNoteModified( self ) -> bool:
+        return self._edi.isModified()
+
+    def endWork( self ):
+        self._business.uploadDatabase()
 
     def _setFolders( self, parent_id:int, parent_iid:str ):
         folders: List[Tuple] = self._business.getFolders( parent_id )
@@ -171,7 +181,7 @@ class Controller:
         Save the note
         """
         note:Note = self._edi.getNote()
-        if len( note.header ) == 0:
+        if len( note.header ) == 0 and len( note.text ) == 0:
             if not messagebox.askyesno( "No Heading specified", "Do you really wish to save this note without caption?\n"
                                                                 "No text will be shown in the tree afterwards." ):
                 return SaveResult.NEED_CAPTION
@@ -216,4 +226,6 @@ class Controller:
             return SaveResult.OK
 
     def saveRemoteAction( self ):
-        pass
+        # first save changes local
+        #self.saveNoteLocalAction()
+        self._business.uploadDatabase()

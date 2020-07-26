@@ -4,9 +4,13 @@ from dbaccess import DbAccess
 from globals import NOTE, FOLDER
 from libs import *
 from note import Note
+from ftp import ftp
 
 class BusinessLogic:
     def __init__( self ):
+        self._db:DbAccess = None #DbAccess()
+
+    def initDatabase( self ):
         self._db = DbAccess()
 
     def getFolders( self, parent_id:int ) -> List[Tuple]:
@@ -132,14 +136,28 @@ class BusinessLogic:
             self._db.deleteTagNoteReferences( id, False )
             self._db.deleteUnreferencedTags()
         else:
-            self._deleteFolder( id, False )
+            self._deleteFolder( id )
         self._db.commit()
         self._db.close()
+
+    def uploadDatabase( self ):
+        try:
+            self._db.close()
+        except:
+            pass
+
+        f = ftp()
+        f.upload()
+
+    def downloadDatabase( self ):
+        f = ftp()
+        f.download()
 
     def _deleteFolder( self, id:int ):
         #First delete all notes of folder id.
         #Then get a list of all child folders and call this function
         #with each child folder id recursively.
+        # Method doesn't trigger a commit.
         self._db.deleteNotes( id, False )
         childfolders:List[tuple] = self._db.getFolders( id )
         if len( childfolders ) > 0:
