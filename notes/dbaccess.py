@@ -37,6 +37,7 @@ class DbAccess:
         self._doWrite( sql, commit )
 
     def insertNote( self, parent_id:int, text:str, header:str, style="", commit:bool=True ) -> int:
+        text = text.replace( "'", "''" )
         sql = "insert into note (parent_id, text, header, style) values (%d, '%s', '%s', '%s');" % (parent_id, text, header, style)
         self._doWrite( sql, commit )
         return self.getMaxId( NOTE, "id" )

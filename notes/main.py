@@ -72,3 +72,10 @@ def testFont():
 if __name__ == "__main__":
     #testPng()
     main()
+
+"""
+todo
+    - implement search function
+    - implement styles
+"""
+
