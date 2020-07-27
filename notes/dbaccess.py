@@ -37,14 +37,17 @@ class DbAccess:
         self._doWrite( sql, commit )
 
     def insertNote( self, parent_id:int, text:str, header:str, style="", commit:bool=True ) -> int:
+        header = header.replace( "'", "''" )
         text = text.replace( "'", "''" )
         sql = "insert into note (parent_id, text, header, style) values (%d, '%s', '%s', '%s');" % (parent_id, text, header, style)
         self._doWrite( sql, commit )
         return self.getMaxId( NOTE, "id" )
 
     def updateNote( self, note:Note, commit:bool=True ) -> None:
+        header = note.header.replace( "'", "''" )
+        text = note.text.replace( "'", "''" )
         sql = "update note set text='%s', header='%s', style='%s' where id = %d" \
-              % (note.text, note.header, note.style, note.id)
+              % (text, header, note.style, note.id)
         self._doWrite( sql, commit )
 
     def updateNoteParent( self, note_id: int, parent_id: int, commit: bool = True ) -> None:
@@ -65,6 +68,7 @@ class DbAccess:
         self._doWrite( sql, commit )
 
     def insertTag( self, tag:str, commit:bool=True ) -> int:
+        tag = tag.replace( "'", "''" )
         sql = "insert into tag (tag) values ('%s');" % (tag,)
         self._doWrite( sql, commit )
         return self.getMaxId( "tag", "tag_id" )

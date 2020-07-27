@@ -1,6 +1,6 @@
 from tkinter import *
 from typing import List
-from stylableeditor import StylableEditor
+from stylableeditor import StylableEditor, StyleAction
 from mywidgets import TextEntry, ToolTip
 from note import Note
 
@@ -61,6 +61,9 @@ class NoteEditor( Frame ):
         self._teTags.setValue( note.tags )
         self._applyStyle( note.style )
         self.resetModified()
+
+    def triggerStyleAction( self, styleAction:StyleAction ):
+        self._edi.triggerStyleAction( styleAction )
 
     def _applyStyle( self, style:str ) -> None:
         # applies style only after having set a note.

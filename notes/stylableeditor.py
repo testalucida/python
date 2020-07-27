@@ -2,11 +2,16 @@ import tkinter as tk
 from tkinter import ttk, FLAT
 from tkinter import scrolledtext 
 from tkinter.font import Font, ITALIC, BOLD, NORMAL
+from enum import Enum
 import sys
 if not 'mywidgets' in sys.path: sys.path.append('/home/martin/Projects/python/mywidgets')
 
 def testa( event ):
     print( "testa" )
+
+class StyleAction(Enum):
+    BOLD = 1,
+    ITALIC = 2
 
 class StylableEditor( scrolledtext.ScrolledText ):
     def __init__(self, parent, **kw):
@@ -60,8 +65,16 @@ class StylableEditor( scrolledtext.ScrolledText ):
         if val:
             self.insert('1.0', val)
 
+    def triggerStyleAction( self, styleAction:StyleAction ) -> None:
+        """
+        Applies or removes the triggered style to the selected text.
+        """
+        #todo
+        pass
+
     def getStyle( self ):
         #todo
+
         return None
 
     def resetModified( self ):

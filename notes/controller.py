@@ -9,6 +9,7 @@ from business import BusinessLogic
 from libs import *
 from globals import FOLDER, NOTE
 from images import ImageFactory #imgFolder, imgNote
+from stylableeditor import StyleAction
 
 class SaveResult( Enum ):
     OK = 1,
@@ -141,13 +142,17 @@ class Controller:
     def toolActionCallback( self, action:ToolAction ) -> None:
         if action == ToolAction.NEW_TOPFOLDER:
             self.newTopFolderAction()
-        if action == ToolAction.NEW_NOTE:
+        elif action == ToolAction.NEW_NOTE:
             #print( "Controller.toolActionCallback - ToolAction.NEW_NOTE" )
             self.newNoteAction()
-        if action == ToolAction.SAVE_LOCAL:
+        elif action == ToolAction.SAVE_LOCAL:
             self.saveNoteLocalAction()
-        if action == ToolAction.SAVE_REMOTE:
+        elif action == ToolAction.SAVE_REMOTE:
             self.saveRemoteAction()
+        elif action == ToolAction.FONT_BOLD:
+            self._edi.triggerStyleAction( StyleAction.BOLD )
+        elif action == ToolAction.FONT_ITALIC:
+            self._edi.triggerStyleAction( StyleAction.ITALIC )
 
     def onCtrlS( self ):
         self.saveNoteLocalAction()
