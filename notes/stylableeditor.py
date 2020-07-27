@@ -21,6 +21,9 @@ class StylableEditor( scrolledtext.ScrolledText ):
         self.bind('<<TextModified>>', self._onModify)
         #self.bind( '<Control-s>', testa )
         self.isModified:bool = False
+        self._boldfont = Font( self, self.cget( "font" ) )
+        self._boldfont.configure( weight="bold" )
+        self.tag_configure( "bold", font=self._boldfont )
 
         # https://stackoverflow.com/questions/40617515/python-tkinter-text-modified-callback
         # create a proxy for the underlying widget
@@ -30,7 +33,10 @@ class StylableEditor( scrolledtext.ScrolledText ):
 
     def _proxy(self, command, *args):
         cmd = (self._orig, command) + args
-        result = self.tk.call(cmd)
+        try:
+            result = self.tk.call(cmd)
+        except:
+            return
 
         if command in ("insert", "delete", "replace"):
             self.event_generate("<<TextModified>>")
@@ -69,13 +75,52 @@ class StylableEditor( scrolledtext.ScrolledText ):
         """
         Applies or removes the triggered style to the selected text.
         """
-        #todo
-        pass
-
-    def getStyle( self ):
+        if styleAction == StyleAction.BOLD:
+            self._toggleBoldAction()
         #todo
 
-        return None
+    def _toggleBoldAction( self ):
+        """
+        Toggle the bold state of the selected text
+        """
+        # toggle the bold state based on the first character
+        # in the selected range. If bold, unbold it. If not
+        # bold, bold it.
+        try:
+            current_tags = self.tag_names( "sel.first" )
+            if "bold" in current_tags:
+                # first char is bold, so unbold the range
+                self.tag_remove( "bold", "sel.first", "sel.last" )
+            else:
+                # first char is normal, so bold the whole selection
+                self.tag_add( "bold", "sel.first", "sel.last" )
+                #self.tag_add( "bold", "1.2", "1.5" )
+            #TEST
+            self.getStyle()
+        except:
+            return
+
+    def getStylesAsString( self ) -> str:
+        tagstring:str = ""
+        tagnames = self.tag_names() # get a tuple of tagnames
+        for tagname in tagnames:
+            if tagname != "sel":
+                tagstring += ( tagname + ":" )
+                ranges = self.tag_ranges( tagname )
+                for i in range( 0, len( ranges ), 2 ):
+                    start:str = str( ranges[i] )
+                    stop:str = str( ranges[i + 1] )
+                    tagstring += (start + "," + stop + ";")
+                tagstring = tagstring[:-1] #remove trailing ";"
+                tagstring += "$"
+        if len( tagstring ) > 0:
+            tagstring = tagstring[:-1] #remove trailing "$"
+        #print( "tagstring: ", tagstring )
+        return tagstring
+
+    def setStylesFromString( self, stylesstr:str ) -> None:
+        styles = stylesstr.split( "$" )
+        #todo
 
     def resetModified( self ):
         self.isModified = False

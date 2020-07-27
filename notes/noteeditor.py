@@ -68,14 +68,13 @@ class NoteEditor( Frame ):
     def _applyStyle( self, style:str ) -> None:
         # applies style only after having set a note.
         # don't use this method as style button callback
-        #todo
-        pass
+        self._edi.setStylesFromString( style )
 
     def getNote( self ) -> Note:
         self._note.header = self._teTitle.getValue()
         self._note.text = self._edi.getValue()
         self._note.tags = self._teTags.getValue()
-        self._note.style = self._edi.getStyle()
+        self._note.style = self._edi.getStylesAsString()
         return self._note
 
     def clear( self ) -> None:
