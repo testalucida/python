@@ -93,7 +93,7 @@ class DbAccess:
         self._con.commit()
 
     def getNote( self, id:int ) -> Note:
-        sql = "select id, parent_id, header, text, style from note where id = " + str( id )
+        sql = "select id, parent_id, header, text, coalesce(style, '') from note where id = " + str( id )
         record:List[Tuple] = self._doRead( sql )
         note:Note = Note()
         note.id, note.parent_id, note.header, note.text, note.style = record[0]

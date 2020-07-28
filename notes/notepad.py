@@ -21,6 +21,7 @@ class Notepad( ttk.Frame ):
         
         self.bold_btn:ttk.Button = None
         self.italic_btn:ttk.Button = None
+        self.red_btn:ttk.Button = None
         self.clear_btn:ttk.Button = None
         self.list_tags_btn:ttk.Button = None
         self.text:MyText2 = None
@@ -34,6 +35,7 @@ class Notepad( ttk.Frame ):
         self.bold_font = Font( family="Helvetica", size=12, weight="bold" )
         self.italic_font = Font( family="Helvetica", size=12, slant="italic" )
         self.bold_italic_font = Font( family="Helvetica", size=12, weight="bold", slant="italic" )
+
         
         self._create_text_widget( 1, 1 )
         self._configure_tags()
@@ -51,11 +53,14 @@ class Notepad( ttk.Frame ):
         self.italic_btn = ttk.Button( self.toolbar, text="I", style="italicbtn.TButton", width=2, command=self._make_italic )
         self.italic_btn.grid( row=0, column=1, sticky="w", padx=padx, pady=pady )
 
+        self.red_btn = ttk.Button( self.toolbar, text="R", width=2, command=self._make_red )
+        self.red_btn.grid( row=0, column=2, sticky="w", padx=padx, pady=pady )
+
         self.clear_btn = ttk.Button( self.toolbar, text="C", style="clearbtn.TButton", width=2, command=self._clear )
-        self.clear_btn.grid( row=0, column=2, sticky="w", padx=padx, pady=pady )
+        self.clear_btn.grid( row=0, column=3, sticky="w", padx=padx, pady=pady )
         
         self.list_tags_btn = ttk.Button( self.toolbar, text="List", command=self._on_list_tags )
-        self.list_tags_btn.grid( row=0, column=3, sticky='w', padx=8, pady=pady )
+        self.list_tags_btn.grid( row=0, column=4, sticky='w', padx=8, pady=pady )
         
     def _create_text_widget( self, padx, pady ) -> None:
         #self.text = MyText2( self, font=self.normal_font )
@@ -70,6 +75,7 @@ class Notepad( ttk.Frame ):
         self.text.tag_configure( "BOLD", font=self.bold_font )
         self.text.tag_configure( "ITALIC", font=self.italic_font )
         self.text.tag_configure( "BOLD_ITALIC", font=self.bold_italic_font )
+        self.text.tag_configure( "RED", foreground='red' )
         self.text.tag_bind( "BOLD", "<1>", self._on_bold )
 
     def _make_bold(self):
@@ -89,9 +95,17 @@ class Notepad( ttk.Frame ):
         except tk.TclError as err:
             print( err )
 
+    def _make_red( self ):
+        # tk.TclError exception is raised if no text is selected
+        try:
+            self.text.tag_add( "RED", "sel.first", "sel.last" )
+        except tk.TclError as err:
+            print( err )
+
     def _clear(self):
         self.text.tag_remove("BOLD",  "1.0", 'end')
         self.text.tag_remove("ITALIC", "1.0", 'end')
+        self.text.tag_remove( "RED", "1.0", 'end' )
     
     def _on_bold( self , e, t ):
         print( "on bold" )

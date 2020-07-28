@@ -3,15 +3,44 @@ from tkinter import ttk, FLAT
 from tkinter import scrolledtext 
 from tkinter.font import Font, ITALIC, BOLD, NORMAL
 from enum import Enum
+from typing import List, Tuple
 import sys
 if not 'mywidgets' in sys.path: sys.path.append('/home/martin/Projects/python/mywidgets')
 
 def testa( event ):
     print( "testa" )
 
+BOLD_ITALIC = "bold_italic"
+
+###########################################
 class StyleAction(Enum):
     BOLD = 1,
-    ITALIC = 2
+    ITALIC = 2,
+    RED_FOREGROUND = 3,
+    BLUE_FOREGROUND = 4,
+    GREEN_FOREGROUND = 5
+
+###########################################
+
+class StyleRanges:
+    def __init__( self ):
+        self._styles = {BOLD:[], ITALIC:[], BOLD_ITALIC:[]}
+
+    def add( self, style:str, startstop:Tuple ) -> None:
+        """
+        adds a style range.
+        style must be one of BOLD, ITALIC, BOLD_ITALIC
+        start and stop must be passed like "1.2"
+        """
+        self._styles[style].append( (startstop[0], startstop[1]) )
+
+    def get( self, style ) -> List[Tuple]:
+        """
+        returns all ranges of style add()ed previously
+        """
+        return self._styles[style]
+
+###############################################
 
 class StylableEditor( scrolledtext.ScrolledText ):
     def __init__(self, parent, **kw):
@@ -21,9 +50,20 @@ class StylableEditor( scrolledtext.ScrolledText ):
         self.bind('<<TextModified>>', self._onModify)
         #self.bind( '<Control-s>', testa )
         self.isModified:bool = False
+        # define some fonts
         self._boldfont = Font( self, self.cget( "font" ) )
         self._boldfont.configure( weight="bold" )
+        self._italicfont = Font( self, self.cget( "font" ) )
+        self._italicfont.configure( slant="italic" )
+        self._bolditalicfont = Font( self, self.cget( "font" ) )
+        self._bolditalicfont.configure( weight="bold", slant="italic" )
+        # configure tags
         self.tag_configure( "bold", font=self._boldfont )
+        self.tag_configure( "italic", font=self._italicfont )
+        self.tag_configure( "bold_italic", font=self._bolditalicfont )
+        self.tag_configure( "RED", foreground='red' )
+        self.tag_configure( "GREEN", foreground='green' )
+        self.tag_configure( "BLUE", foreground='blue' )
 
         # https://stackoverflow.com/questions/40617515/python-tkinter-text-modified-callback
         # create a proxy for the underlying widget
@@ -76,37 +116,90 @@ class StylableEditor( scrolledtext.ScrolledText ):
         Applies or removes the triggered style to the selected text.
         """
         if styleAction == StyleAction.BOLD:
-            self._toggleBoldAction()
-        #todo
+            self._handleFontStyle( "bold" )
+        elif styleAction == StyleAction.ITALIC:
+            self._handleFontStyle( "italic" )
+        elif styleAction == StyleAction.RED_FOREGROUND:
+            pass
+        elif styleAction == StyleAction.BLUE_FOREGROUND:
+            pass
+        elif styleAction == StyleAction.GREEN_FOREGROUND:
+            pass
 
-    def _toggleBoldAction( self ):
+    def _handleFontStyle( self, style:str ) -> None:
         """
-        Toggle the bold state of the selected text
+        # style may be "bold" or "italic".
+        # Basically the style action to take is determined by the first character
+        # in the selected range. If style is set, unset it. If not set, set it.
+        # It's more complicated if e.g. "bold" is to be set and "italic" is already set:
+        #    - compare the ranges of the two styles and take proper action, eg:
+
+                |      italic    |   -> set
+                4                15
+                        |      bold      |  -> to set according to selection
+                        8               20
+                ==> from 8 to 15: make italic and bold (tag "bold_italic")
+                ==> from 16 to 20: make bold (tag "bold")
         """
-        # toggle the bold state based on the first character
-        # in the selected range. If bold, unbold it. If not
-        # bold, bold it.
+        #get bold and italic fonts in the selection range
+        sr:StyleRanges = self._getFontStylesInRange( "sel.first", "sel.last" )
+        #
+        return
         try:
             current_tags = self.tag_names( "sel.first" )
-            if "bold" in current_tags:
+            if style in current_tags:
                 # first char is bold, so unbold the range
-                self.tag_remove( "bold", "sel.first", "sel.last" )
+                self.tag_remove( style, "sel.first", "sel.last" )
             else:
                 # first char is normal, so bold the whole selection
-                self.tag_add( "bold", "sel.first", "sel.last" )
-                #self.tag_add( "bold", "1.2", "1.5" )
+                self.tag_add( style, "sel.first", "sel.last" )
             #TEST
-            self.getStyle()
+            #self.getStylesAsString()
         except:
             return
+
+    def _getFontStylesInRange( self, start:str, stop:str ) -> StyleRanges:
+        """
+        Returns bold italic and bold_italic font styles within the given range
+        """
+        sr = StyleRanges()
+        for tagname in ( "bold", "italic", "bold_italic" ):
+            seq = self.tag_nextrange( tagname, start, stop )
+            while seq:
+                sr.add( tagname, seq )
+                start = seq[1]
+                seq = self.tag_nextrange( tagname, start, stop )
+
+        return sr
+
+    def _getFontStylesForIndexes( self, start:str, stop:str ) -> dict:
+        """
+        Returns a dictionary whose key is a "line.column" index
+        and whose value is a list of sequences (tuples)
+        """
+        stylelist = ( "bold", "italic", "bold_italic" )
+        d = {}
+        # iterate through all indexes and get the styles applied to them
+        idx = start
+        while idx < stop:
+            for stylename in stylelist:
+                seq = self.tag_nextrange( stylename, idx, idx )
+        return d
+
+    def testIterate( self, start, stop ):
+        idx = start
+        while idx < stop:
+            print( idx )
+            idx = self.index( idx + "+1c" )
 
     def getStylesAsString( self ) -> str:
         tagstring:str = ""
         tagnames = self.tag_names() # get a tuple of tagnames
         for tagname in tagnames:
             if tagname != "sel":
-                tagstring += ( tagname + ":" )
                 ranges = self.tag_ranges( tagname )
+                if len( ranges ) > 0:
+                    tagstring += ( tagname + ":" )
                 for i in range( 0, len( ranges ), 2 ):
                     start:str = str( ranges[i] )
                     stop:str = str( ranges[i + 1] )
@@ -119,8 +212,17 @@ class StylableEditor( scrolledtext.ScrolledText ):
         return tagstring
 
     def setStylesFromString( self, stylesstr:str ) -> None:
-        styles = stylesstr.split( "$" )
-        #todo
+        if not stylesstr: return
+
+        styles = stylesstr.split( "$" ) # -> bold:1.3,1.6;2.2.,3.4
+        for style in styles:
+            parts = style.split( ":") #parts[0]: bold  parts[1]:1.3,1.6;2.2,3.4
+            ranges = parts[1].split( ";" ) # -> ranges: 1.2,1.6
+            for range in ranges:
+                startstop = range.split( "," )
+                start = startstop[0]
+                stop = startstop[1]
+                self.tag_add( parts[0], start, stop )
 
     def resetModified( self ):
         self.isModified = False
@@ -165,6 +267,9 @@ def test():
                                                   15) )
 
     text_area.grid(column = 0, pady = 10, padx = 10)
+    ta = text_area
+    ta.insert( "1.0", "This is a bloody nonsense test text. Delete it or not, either one is fine." )
+    ta.testIterate( "1.3", "1.5" )
 
     # Placing cursor in the text area
     text_area.focus()

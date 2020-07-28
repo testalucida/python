@@ -10,6 +10,7 @@ from libs import *
 from globals import FOLDER, NOTE
 from images import ImageFactory #imgFolder, imgNote
 from stylableeditor import StyleAction
+from options import Options
 
 class SaveResult( Enum ):
     OK = 1,
@@ -31,10 +32,12 @@ class Controller:
         self._imgFolder:PhotoImage = None #= PhotoImage( file="/home/martin/Projects/python/notes/images/folder_16.png" )
         self._imgNote:PhotoImage = None #= PhotoImage( file="/home/martin/Projects/python/notes/images/note_16.png" )
         self._business = BusinessLogic()
+        self._options = Options()
 
     def startWork( self ):
-        #get us the last saved database
-        self._business.downloadDatabase()
+        if self._options.getOption( "download_db" ) == "1":
+            #get us the last saved database
+            self._business.downloadDatabase()
         self._business.initDatabase()
 
         self._imgFolder = ImageFactory.getInstance().imgFolder
@@ -47,7 +50,10 @@ class Controller:
         return self._edi.isModified()
 
     def endWork( self ):
-        self._business.uploadDatabase()
+        if self._options.getOption( "download_db" ) == "1":
+            #only upload db if downloaded previously
+            self._business.uploadDatabase()
+            print( "Database successfully uploaded to server." )
 
     def _setFolders( self, parent_id:int, parent_iid:str ):
         folders: List[Tuple] = self._business.getFolders( parent_id )

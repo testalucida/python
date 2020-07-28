@@ -37,7 +37,6 @@ def main():
     root.mainloop()
 
     ctrl.endWork()
-    print( "Database successfully uploaded to server." )
 
 
 def dummy_callback():
