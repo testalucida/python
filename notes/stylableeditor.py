@@ -25,6 +25,7 @@ class StyleAction(Enum):
 class StyleRanges:
     def __init__( self ):
         self._styles = {BOLD:[], ITALIC:[], BOLD_ITALIC:[]}
+        self._indexes = dict()
 
     def add( self, style:str, startstop:Tuple ) -> None:
         """
@@ -34,11 +35,24 @@ class StyleRanges:
         """
         self._styles[style].append( (startstop[0], startstop[1]) )
 
-    def get( self, style ) -> List[Tuple]:
+    def addStyleAtIndex( self, idx:str, tagname:str ) -> None:
+        self._indexes[idx] = tagname
+
+    def getRanges( self, style ) -> List[Tuple]:
         """
         returns all ranges of style add()ed previously
         """
         return self._styles[style]
+
+    def getStyleAt( self, idx:str ):
+        """
+        returns the applied style for index idx.
+        If no style is applied, returns an empty string
+        """
+        try:
+            return self._indexes[idx]
+        except:
+            return ""
 
 ###############################################
 
@@ -143,6 +157,9 @@ class StylableEditor( scrolledtext.ScrolledText ):
         """
         #get bold and italic fonts in the selection range
         sr:StyleRanges = self._getFontStylesInRange( "sel.first", "sel.last" )
+        if style in (BOLD, ITALIC, BOLD_ITALIC):
+            self._toggleFontStyle( style, sr, "self.first", "sel.last" )
+
         #
         return
         try:
@@ -158,6 +175,21 @@ class StylableEditor( scrolledtext.ScrolledText ):
         except:
             return
 
+    def _toggleFontStyle( self, style:str, start:str, stop:str, styleranges:StyleRanges ) -> None:
+        if self.isSet( style, start ):
+            self._unsetFontStyle( style, start, stop, styleranges )
+
+    def isSet( self, style:str, idx:str ) -> bool:
+        seq = self.tag_nextrange( style, idx, idx )
+        return True if seq else False
+
+    def _unsetFontStyle( self, style:str, start:str, stop:str, styleRanges:StyleRanges ):
+        """
+        removes the given style within the given range defined by start and stop.
+        Takes style "bold_italic" into account: if bold_italic is set and bold is to be removed,
+        italic will remain. If italic is to be removed, bold will remain.
+        """
+
     def _getFontStylesInRange( self, start:str, stop:str ) -> StyleRanges:
         """
         Returns bold italic and bold_italic font styles within the given range
@@ -167,24 +199,15 @@ class StylableEditor( scrolledtext.ScrolledText ):
             seq = self.tag_nextrange( tagname, start, stop )
             while seq:
                 sr.add( tagname, seq )
-                start = seq[1]
+                idx = self.index( seq[0] ) # begin of sequence
+                eos = seq[1] # end of sequence
+                while idx < eos:
+                    sr.addStyleAtIndex( idx, tagname )
+                    idx = self.index( idx + "+1c" )
+                start = eos
                 seq = self.tag_nextrange( tagname, start, stop )
 
         return sr
-
-    def _getFontStylesForIndexes( self, start:str, stop:str ) -> dict:
-        """
-        Returns a dictionary whose key is a "line.column" index
-        and whose value is a list of sequences (tuples)
-        """
-        stylelist = ( "bold", "italic", "bold_italic" )
-        d = {}
-        # iterate through all indexes and get the styles applied to them
-        idx = start
-        while idx < stop:
-            for stylename in stylelist:
-                seq = self.tag_nextrange( stylename, idx, idx )
-        return d
 
     def testIterate( self, start, stop ):
         idx = start
