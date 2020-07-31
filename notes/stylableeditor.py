@@ -258,11 +258,13 @@ class StylableEditor( scrolledtext.ScrolledText ):
             self._setFontStyle( style, start, stop )
 
     def isSet( self, style:str, idx:str ) -> bool:
-        seq = self.tag_nextrange( style, idx, idx )
+        # seq = self.tag_nextrange( style, idx, idx ) # returns an empty tuple :-o
         # Note: even if style is not set, a tuple of len == 1 will be given.
         # The one and only element of that tuple is the string "None".
         # That contradicts to the tag_nextrange documentation, which pretends to return an empty string.
-        return True if len( seq ) > 1 else False
+        #return True if len( seq ) > 1 else False
+        stylelist = self.tag_names( idx )
+        return True if style in stylelist else False
 
     def _unsetFontStyle( self, style:str, start:str, stop:str ):
         """
@@ -288,6 +290,7 @@ class StylableEditor( scrolledtext.ScrolledText ):
     def _setFontStyle( self, style: str, start: str, stop: str ):
         """
         applies the given style to the given range.
+        start and stop are expected in the form "line.column"
         If bold is already set and italic is to add remove bold and set BOLD_ITALIC.
         If italic is already set and bold is to add remove bold and set BOLD_ITALIC.
 
@@ -296,7 +299,7 @@ class StylableEditor( scrolledtext.ScrolledText ):
 
             |   |         |  |             -> ranges where another style is already set. Replace that style by BOLD_ITALIC
         """
-        while self.index( start ) < self.index( stop ):
+        while self.compare( start, "<", stop ):
             tag = self._styleRanges.getFontStyleAndRange( start, stop )
             if tag.name == "":
                 # no style applied at start. Apply style.
@@ -313,10 +316,12 @@ class StylableEditor( scrolledtext.ScrolledText ):
             start = tag.range.stop
 
     def testIterate( self, start, stop ):
-        idx = start
-        while idx < stop:
+        idx = self.index( start )
+        stop = self.index( stop )
+        while self.compare( idx,  "<", stop ):
             print( idx )
             idx = self.index( idx + "+1c" )
+        print( "READY." )
 
     def getStylesAsString( self ) -> str:
         tagstring:str = ""
@@ -394,8 +399,8 @@ def test():
 
     text_area.grid(column = 0, pady = 10, padx = 10)
     ta = text_area
-    ta.insert( "1.0", "This is a bloody nonsense test text. Delete it or not, either one is fine." )
-    ta.testIterate( "1.3", "1.5" )
+    ta.insert( "1.0", "This is a bloody nonsense test text.\nDelete it or not,\n either one is fine." )
+    ta.testIterate( "1.0", "end" )
 
     # Placing cursor in the text area
     text_area.focus()
