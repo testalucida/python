@@ -1,9 +1,9 @@
 import tkinter as tk
-from tkinter import ttk, FLAT
+from tkinter import ttk, FLAT, Text
 from tkinter import scrolledtext 
 from tkinter.font import Font, ITALIC, BOLD, NORMAL
 from enum import Enum
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Sequence
 import sys
 if not 'mywidgets' in sys.path: sys.path.append('/home/martin/Projects/python/mywidgets')
 
@@ -13,6 +13,7 @@ def testa( event ):
 BOLD_ITALIC = "bold_italic"
 
 ###########################################
+
 class StyleAction(Enum):
     BOLD = 1,
     ITALIC = 2,
@@ -22,37 +23,113 @@ class StyleAction(Enum):
 
 ###########################################
 
-class StyleRanges:
-    def __init__( self ):
-        self._styles = {BOLD:[], ITALIC:[], BOLD_ITALIC:[]}
-        self._indexes = dict()
+class Range:
+    def __init__( self, start:str="", stop:str="" ):
+        self.start: str = start  # index like "1.2"
+        self.stop: str = stop  # index like "1.8"
 
-    def add( self, style:str, startstop:Tuple ) -> None:
+class Tag:
+    def __init__( self, name="", start="", stop="" ):
+        self.name:str = name
+        self.range:Range = Range( start, stop )
+
+
+class StyleRanges:
+    def __init__( self, text:Text ):
+        self._text:Text = text
+        self._styles = {BOLD:[], ITALIC:[], BOLD_ITALIC:[]}
+        self._indexes:Dict[str, List[str]] = dict() # key = index, value = list of applied styles (fontstyles and fontcolors)
+
+    def _add( self, style:str, startstop:Tuple ) -> None:
         """
         adds a style range.
         style must be one of BOLD, ITALIC, BOLD_ITALIC
         start and stop must be passed like "1.2"
         """
-        self._styles[style].append( (startstop[0], startstop[1]) )
+        #self._styles[style].append( (startstop[0], startstop[1]) )
+        rng:Range = Range( startstop[0], startstop[1] )
+        self._styles[style].append( rng )
 
-    def addStyleAtIndex( self, idx:str, tagname:str ) -> None:
-        self._indexes[idx] = tagname
+    def _addStyleAtIndex( self, idx:str, tagname:str ) -> None:
+        self._indexes[idx].append( tagname )
 
-    def getRanges( self, style ) -> List[Tuple]:
+    def getRanges( self, style:str ) -> List[Range]:
         """
         returns all ranges of style add()ed previously
         """
         return self._styles[style]
 
-    def getStyleAt( self, idx:str ):
+    def getRangesWithin( self, style:str, start:str, stop:str ) -> List[Range]:
         """
-        returns the applied style for index idx.
-        If no style is applied, returns an empty string
+        returns the ranges of the given style - if any - within the given sequence determined by start and stop
         """
-        try:
-            return self._indexes[idx]
-        except:
-            return ""
+        self._collectFontStylesInRange( (style,), start, stop )
+        return self._styles[style]
+
+    def getFontStyleAt( self, idx:str ) -> str:
+        """
+        Returns the fontstyle (one of BOLD, ITALIC, BOLD_ITALIC) applied to index idx
+        Pls note that only one style at a time can be applied to a given index
+        """
+        tag_names = self._text.tag_names( idx )
+        tag_names = [x for x in tag_names if x in (BOLD, ITALIC, BOLD_ITALIC)]
+        return "" if len( tag_names ) == 0 else tag_names[0]
+
+    def getFontStyleAndRange( self, start:str, stop:str ) -> Tag:
+        """
+        Returns a tag object referring to the style found at index start. That style's end will be
+        detected and provided to the returned tag object.
+        If no style is applied at all, the returned tag object's name will be an empty string.
+        It's irrelevant if that style starts before start, start will be returned as start index.
+        Even if style ends after stop, stop will be provided as end point of the returned tag's range.
+        Pls note that 0 or 1 fontstyle may be applied to a given index (BOLD, ITALIC or BOLD_ITALIC), not more.
+        """
+        style = self.getFontStyleAt( start )  # BOLD, ITALIC, BOLD_ITALIC or ""
+        tag = Tag( style )
+        tag.range.start = start
+        if style == "":
+            # no style applied.
+            # Check for the start of the first applied style which marks the end of
+            # the range no style is applied to.
+            tag.range.stop = stop
+            for style in ( BOLD, ITALIC, BOLD_ITALIC ):
+                seq = self._text.tag_nextrange( style, start, stop )
+                if len( seq ) > 1 and seq[0] < tag.range.stop:
+                    tag.range.stop = seq[0]
+        else:
+            seq = self._text.tag_nextrange( style, start, stop )
+            print( "style: ", style, "seq: ", seq )
+            tag.range.stop = seq[1]
+        return tag
+
+
+    def getFontStyles( self, start:str, stop:str ) -> Dict[str, List[Range]]:
+        """
+        returns a dictionary whose key is a style name and whose value is a list containing all ranges
+        the style is applied to.
+        """
+        self._collectFontStylesInRange( (BOLD, ITALIC, BOLD_ITALIC), start, stop )
+        return self._styles
+
+    def _collectFontStylesInRange( self, styleList:tuple, start:str, stop:str ) :
+        """
+        collects the given font styles within the given range for further processing
+        styleList may contain one or more of (BOLD, ITALIC, BOLD_ITALIC)
+        """
+        txt = self._text
+        for tagname in styleList:
+            seq = txt.tag_nextrange( tagname, start, stop )
+            while len( seq ) > 1:
+                self._add( tagname, seq )
+                idx = txt.index( seq[0] ) # begin of sequence
+                eos = seq[1] # end of sequence
+                while idx < eos:
+                    self._addStyleAtIndex( idx, tagname )
+                    idx = txt.index( idx + "+1c" )
+                start = eos
+                seq = txt.tag_nextrange( tagname, start, stop )
+
+
 
 ###############################################
 
@@ -78,6 +155,7 @@ class StylableEditor( scrolledtext.ScrolledText ):
         self.tag_configure( "RED", foreground='red' )
         self.tag_configure( "GREEN", foreground='green' )
         self.tag_configure( "BLUE", foreground='blue' )
+        self._styleRanges:StyleRanges = StyleRanges( self )
 
         # https://stackoverflow.com/questions/40617515/python-tkinter-text-modified-callback
         # create a proxy for the underlying widget
@@ -155,10 +233,8 @@ class StylableEditor( scrolledtext.ScrolledText ):
                 ==> from 8 to 15: make italic and bold (tag "bold_italic")
                 ==> from 16 to 20: make bold (tag "bold")
         """
-        #get bold and italic fonts in the selection range
-        sr:StyleRanges = self._getFontStylesInRange( "sel.first", "sel.last" )
         if style in (BOLD, ITALIC, BOLD_ITALIC):
-            self._toggleFontStyle( style, sr, "self.first", "sel.last" )
+            self._toggleFontStyle( style, self.index( "sel.first" ), self.index( "sel.last" ) )
 
         #
         return
@@ -175,39 +251,66 @@ class StylableEditor( scrolledtext.ScrolledText ):
         except:
             return
 
-    def _toggleFontStyle( self, style:str, start:str, stop:str, styleranges:StyleRanges ) -> None:
+    def _toggleFontStyle( self, style:str, start:str, stop:str ) -> None:
         if self.isSet( style, start ):
-            self._unsetFontStyle( style, start, stop, styleranges )
+            self._unsetFontStyle( style, start, stop )
+        else:
+            self._setFontStyle( style, start, stop )
 
     def isSet( self, style:str, idx:str ) -> bool:
         seq = self.tag_nextrange( style, idx, idx )
-        return True if seq else False
+        # Note: even if style is not set, a tuple of len == 1 will be given.
+        # The one and only element of that tuple is the string "None".
+        # That contradicts to the tag_nextrange documentation, which pretends to return an empty string.
+        return True if len( seq ) > 1 else False
 
-    def _unsetFontStyle( self, style:str, start:str, stop:str, styleRanges:StyleRanges ):
+    def _unsetFontStyle( self, style:str, start:str, stop:str ):
         """
         removes the given style within the given range defined by start and stop.
         Takes style "bold_italic" into account: if bold_italic is set and bold is to be removed,
         italic will remain. If italic is to be removed, bold will remain.
         """
+        self.tag_remove( style, start, stop )
+        if style in (BOLD, ITALIC):
+            rangelist:List[Range] = self._styleRanges.getRangesWithin( BOLD_ITALIC, start, stop )
+            if len( rangelist ) > 0:
+                styleToSet:str = ITALIC if style == BOLD else BOLD
+                """
+                |                     |    --> in this sequence style BOLD or ITALIC was removed
+                start                 stop
+                
+                  |     |    |  |          --> in this sequences BOLD_ITALIC was set. We have to set styleToSet here
+                  r1    r1   r2 r2
+                """
+                for rng in rangelist:
+                    self.tag_add( styleToSet, rng.start, rng.stop )
 
-    def _getFontStylesInRange( self, start:str, stop:str ) -> StyleRanges:
+    def _setFontStyle( self, style: str, start: str, stop: str ):
         """
-        Returns bold italic and bold_italic font styles within the given range
-        """
-        sr = StyleRanges()
-        for tagname in ( "bold", "italic", "bold_italic" ):
-            seq = self.tag_nextrange( tagname, start, stop )
-            while seq:
-                sr.add( tagname, seq )
-                idx = self.index( seq[0] ) # begin of sequence
-                eos = seq[1] # end of sequence
-                while idx < eos:
-                    sr.addStyleAtIndex( idx, tagname )
-                    idx = self.index( idx + "+1c" )
-                start = eos
-                seq = self.tag_nextrange( tagname, start, stop )
+        applies the given style to the given range.
+        If bold is already set and italic is to add remove bold and set BOLD_ITALIC.
+        If italic is already set and bold is to add remove bold and set BOLD_ITALIC.
 
-        return sr
+        |                                | -> Range to set style
+        start                            stop
+
+            |   |         |  |             -> ranges where another style is already set. Replace that style by BOLD_ITALIC
+        """
+        while self.index( start ) < self.index( stop ):
+            tag = self._styleRanges.getFontStyleAndRange( start, stop )
+            if tag.name == "":
+                # no style applied at start. Apply style.
+                self.tag_add( style, tag.range.start, tag.range.stop )
+            else:
+                # BOLD, ITALIC or BOLD_ITALIC set
+                if tag.name in ( BOLD, ITALIC ):
+                    if tag.name != style:
+                        # if BOLD or ITALIC, remove it and set BOLD_ITALIC
+                        self.tag_remove( tag.name, tag.range.start, tag.range.stop )
+                        print( "_setFontStyle: adding bold_italic from %s to %s" % (tag.range.start, tag.range.stop) )
+                        self.tag_add( BOLD_ITALIC, tag.range.start, tag.range.stop )
+                # BOLD_ITALIC can be ignored.
+            start = tag.range.stop
 
     def testIterate( self, start, stop ):
         idx = start
