@@ -159,6 +159,14 @@ class Controller:
             self._edi.triggerStyleAction( StyleAction.BOLD )
         elif action == ToolAction.FONT_ITALIC:
             self._edi.triggerStyleAction( StyleAction.ITALIC )
+        elif action == ToolAction.FONT_RED:
+            self._edi.triggerStyleAction( StyleAction.RED_FOREGROUND )
+        elif action == ToolAction.FONT_BLUE:
+            self._edi.triggerStyleAction( StyleAction.BLUE_FOREGROUND )
+        elif action == ToolAction.FONT_GREEN:
+            self._edi.triggerStyleAction( StyleAction.GREEN_FOREGROUND )
+        elif action == ToolAction.FONT_BLACK:
+            self._edi.triggerStyleAction( StyleAction.BLACK_FOREGROUND )
 
     def onCtrlS( self ):
         self.saveNoteLocalAction()

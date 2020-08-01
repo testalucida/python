@@ -11,6 +11,10 @@ def testa( event ):
     print( "testa" )
 
 BOLD_ITALIC = "bold_italic"
+RED = "red"
+GREEN = "green"
+BLUE = "blue"
+BLACK = "black"
 
 ###########################################
 
@@ -20,6 +24,7 @@ class StyleAction(Enum):
     RED_FOREGROUND = 3,
     BLUE_FOREGROUND = 4,
     GREEN_FOREGROUND = 5
+    BLACK_FOREGROUND = 6
 
 ###########################################
 
@@ -155,9 +160,10 @@ class StylableEditor( scrolledtext.ScrolledText ):
         self.tag_configure( "bold", font=self._boldfont )
         self.tag_configure( "italic", font=self._italicfont )
         self.tag_configure( "bold_italic", font=self._bolditalicfont )
-        self.tag_configure( "RED", foreground='red' )
-        self.tag_configure( "GREEN", foreground='green' )
-        self.tag_configure( "BLUE", foreground='blue' )
+        self.tag_configure( RED, foreground='red' )
+        self.tag_configure( GREEN, foreground='green' )
+        self.tag_configure( BLUE, foreground='blue' )
+        #self.tag_configure( BLACK, foreground='black' )
         self._styleRanges:StyleRanges = StyleRanges( self )
 
         # https://stackoverflow.com/questions/40617515/python-tkinter-text-modified-callback
@@ -215,11 +221,13 @@ class StylableEditor( scrolledtext.ScrolledText ):
         elif styleAction == StyleAction.ITALIC:
             self._handleFontStyle( "italic" )
         elif styleAction == StyleAction.RED_FOREGROUND:
-            pass
+            self._handleFontColor( RED )
         elif styleAction == StyleAction.BLUE_FOREGROUND:
-            pass
+            self._handleFontColor( BLUE )
         elif styleAction == StyleAction.GREEN_FOREGROUND:
-            pass
+            self._handleFontColor( GREEN )
+        elif styleAction == StyleAction.BLACK_FOREGROUND:
+            self._handleFontColor( BLACK )
 
     def _handleFontStyle( self, style:str ) -> None:
         """
@@ -239,20 +247,7 @@ class StylableEditor( scrolledtext.ScrolledText ):
         if style in (BOLD, ITALIC, BOLD_ITALIC):
             self._toggleFontStyle( style, self.index( "sel.first" ), self.index( "sel.last" ) )
 
-        #
         return
-        try:
-            current_tags = self.tag_names( "sel.first" )
-            if style in current_tags:
-                # first char is bold, so unbold the range
-                self.tag_remove( style, "sel.first", "sel.last" )
-            else:
-                # first char is normal, so bold the whole selection
-                self.tag_add( style, "sel.first", "sel.last" )
-            #TEST
-            #self.getStylesAsString()
-        except:
-            return
 
     def _toggleFontStyle( self, style:str, start:str, stop:str ) -> None:
         if self.isSet( style, start ):
@@ -319,6 +314,21 @@ class StylableEditor( scrolledtext.ScrolledText ):
                         self.tag_add( BOLD_ITALIC, tag.range.start, tag.range.stop )
                 # BOLD_ITALIC can be ignored.
             start = tag.range.stop
+
+    def _handleFontColor( self, fontcolor:str ) -> None:
+        self._unsetFontColors( "sel.first", "sel.last" )
+        if fontcolor != BLACK:
+            self._setFontColor( fontcolor, "sel.first", "sel.last" )
+
+    def _setFontColor( self, fontcolor:str, start:str, stop:str ):
+        self.tag_add( fontcolor, start, stop )
+
+    def _unsetFontColors( self, start:str, stop:str ):
+        for color in (BLUE, RED, GREEN):
+            try:
+                self.tag_remove( color, start, stop )
+            except:
+                pass
 
     def testIterate( self, start, stop ):
         idx = self.index( start )
