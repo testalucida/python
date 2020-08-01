@@ -97,11 +97,14 @@ class StyleRanges:
                 if len( seq ) > 1 and seq[0] < tag.range.stop:
                     tag.range.stop = seq[0]
         else:
-            seq = self._text.tag_nextrange( style, start, stop )
-            print( "style: ", style, "seq: ", seq )
-            tag.range.stop = seq[1]
+            startsandstops = self._text.tag_ranges( style )
+            for i in range( 0, len( startsandstops ), 2 ):
+                s = startsandstops[i]
+                e = startsandstops[i+1]
+                if self._text.compare( s, "<=", start ) and self._text.compare( e, ">=", tag.range.start ):
+                    tag.range.stop = e if self._text.compare( e, "<=", stop ) else stop
+                    break
         return tag
-
 
     def getFontStyles( self, start:str, stop:str ) -> Dict[str, List[Range]]:
         """
@@ -264,7 +267,7 @@ class StylableEditor( scrolledtext.ScrolledText ):
         # That contradicts to the tag_nextrange documentation, which pretends to return an empty string.
         #return True if len( seq ) > 1 else False
         stylelist = self.tag_names( idx )
-        return True if style in stylelist else False
+        return True if style in stylelist or ( style in (BOLD, ITALIC) and BOLD_ITALIC in stylelist ) else False
 
     def _unsetFontStyle( self, style:str, start:str, stop:str ):
         """
@@ -272,20 +275,22 @@ class StylableEditor( scrolledtext.ScrolledText ):
         Takes style "bold_italic" into account: if bold_italic is set and bold is to be removed,
         italic will remain. If italic is to be removed, bold will remain.
         """
-        self.tag_remove( style, start, stop )
-        if style in (BOLD, ITALIC):
-            rangelist:List[Range] = self._styleRanges.getRangesWithin( BOLD_ITALIC, start, stop )
-            if len( rangelist ) > 0:
-                styleToSet:str = ITALIC if style == BOLD else BOLD
-                """
-                |                     |    --> in this sequence style BOLD or ITALIC was removed
-                start                 stop
-                
-                  |     |    |  |          --> in this sequences BOLD_ITALIC was set. We have to set styleToSet here
-                  r1    r1   r2 r2
-                """
-                for rng in rangelist:
-                    self.tag_add( styleToSet, rng.start, rng.stop )
+        """
+        Processing:
+        Inspect the different style ranges within start-stop.
+            - unset style ranges with matching style
+            - ignore style ranges with different style (except BOLD_ITALIC if style to unset is not BOLD_ITALIC)
+            - BOLD_ITALIC style ranges: remove BOLD_ITALIC and set ITALIC if style to unset is BOLD or set BOLD 
+              if style to unset is ITALIC.
+        """
+        while self.compare( start, "<", stop ):
+            tag = self._styleRanges.getFontStyleAndRange( start, stop )
+            if tag.name == style:
+                self.tag_remove( style, tag.range.start, tag.range.stop )
+            elif tag.name == BOLD_ITALIC:
+                self.tag_remove( BOLD_ITALIC, tag.range.start, tag.range.stop )
+                self.tag_add( BOLD if style == ITALIC else ITALIC, tag.range.start, tag.range.stop )
+            start = tag.range.stop
 
     def _setFontStyle( self, style: str, start: str, stop: str ):
         """
@@ -310,7 +315,7 @@ class StylableEditor( scrolledtext.ScrolledText ):
                     if tag.name != style:
                         # if BOLD or ITALIC, remove it and set BOLD_ITALIC
                         self.tag_remove( tag.name, tag.range.start, tag.range.stop )
-                        print( "_setFontStyle: adding bold_italic from %s to %s" % (tag.range.start, tag.range.stop) )
+                        #print( "_setFontStyle: adding bold_italic from %s to %s" % (tag.range.start, tag.range.stop) )
                         self.tag_add( BOLD_ITALIC, tag.range.start, tag.range.stop )
                 # BOLD_ITALIC can be ignored.
             start = tag.range.stop

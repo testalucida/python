@@ -13,7 +13,7 @@ print ('sys.path: ', sys.path)
 def main():
     def on_closing():
         if ctrl.isNoteModified():
-            if messagebox.askokcancel( "Quit", "Do you want to quit?\nNote is modified." ):
+            if messagebox.askyesno( "Quit", "Do you want to quit?\nNote is modified." ):
                 root.destroy()
         else: root.destroy()
 
