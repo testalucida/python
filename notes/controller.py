@@ -167,6 +167,8 @@ class Controller:
             self._edi.triggerStyleAction( StyleAction.GREEN_FOREGROUND )
         elif action == ToolAction.FONT_BLACK:
             self._edi.triggerStyleAction( StyleAction.BLACK_FOREGROUND )
+        elif action == ToolAction.MARK_AS_LINK:
+            self._edi.triggerStyleAction( StyleAction.MARK_AS_LINK )
 
     def onCtrlS( self ):
         self.saveNoteLocalAction()

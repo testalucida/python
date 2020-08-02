@@ -1,9 +1,12 @@
 import tkinter as tk
-from tkinter import ttk, FLAT, Text
+from tkinter import ttk, FLAT, Text, CURRENT
 from tkinter import scrolledtext 
 from tkinter.font import Font, ITALIC, BOLD, NORMAL
 from enum import Enum
 from typing import List, Tuple, Dict, Sequence
+import webbrowser
+from functools import partial
+
 import sys
 if not 'mywidgets' in sys.path: sys.path.append('/home/martin/Projects/python/mywidgets')
 
@@ -19,12 +22,13 @@ BLACK = "black"
 ###########################################
 
 class StyleAction(Enum):
-    BOLD = 1,
-    ITALIC = 2,
-    RED_FOREGROUND = 3,
-    BLUE_FOREGROUND = 4,
+    BOLD = 1
+    ITALIC = 2
+    RED_FOREGROUND = 3
+    BLUE_FOREGROUND = 4
     GREEN_FOREGROUND = 5
     BLACK_FOREGROUND = 6
+    MARK_AS_LINK = 7
 
 ###########################################
 
@@ -137,7 +141,45 @@ class StyleRanges:
                 start = eos
                 seq = txt.tag_nextrange( tagname, start, stop )
 
+#######################################################
 
+class HyperlinkManager:
+    # copied from http://effbot.org/zone/tkinter-text-hyperlink.htm
+    def __init__(self, text):
+        self.text = text
+        self.text.tag_config("hyper", foreground="blue", underline=1)
+        self.text.tag_bind("hyper", "<Enter>", self._enter)
+        self.text.tag_bind("hyper", "<Leave>", self._leave)
+        self.text.tag_bind("hyper", "<Button-1>", self._click)
+        self.reset()
+
+    def reset(self):
+        self.links = {}
+
+    def add(self, action):
+        # add an action to the manager.  returns tags to use in
+        # associated text widget
+        tag = "hyper-%d" % len(self.links)
+        self.links[tag] = action
+        return "hyper", tag
+
+    def addSelectionAsHyperlink( self, callback ):
+        link = self.text.selection_get()
+        twotags = self.add( partial( callback, link ) )
+        self.text.tag_add( twotags[0], "sel.first", "sel.last" )
+        self.text.tag_add( twotags[1], "sel.first", "sel.last" )
+
+    def _enter(self, event):
+        self.text.config(cursor="hand2")
+
+    def _leave(self, event):
+        self.text.config(cursor="")
+
+    def _click(self, event):
+        for tag in self.text.tag_names(CURRENT):
+            if tag[:6] == "hyper-":
+                self.links[tag]()
+                return
 
 ###############################################
 
@@ -165,6 +207,7 @@ class StylableEditor( scrolledtext.ScrolledText ):
         self.tag_configure( BLUE, foreground='blue' )
         #self.tag_configure( BLACK, foreground='black' )
         self._styleRanges:StyleRanges = StyleRanges( self )
+        self._hyperlink = HyperlinkManager( self )
 
         # https://stackoverflow.com/questions/40617515/python-tkinter-text-modified-callback
         # create a proxy for the underlying widget
@@ -228,6 +271,8 @@ class StylableEditor( scrolledtext.ScrolledText ):
             self._handleFontColor( GREEN )
         elif styleAction == StyleAction.BLACK_FOREGROUND:
             self._handleFontColor( BLACK )
+        elif styleAction == StyleAction.MARK_AS_LINK:
+            self._toggleLink()
 
     def _handleFontStyle( self, style:str ) -> None:
         """
@@ -330,6 +375,23 @@ class StylableEditor( scrolledtext.ScrolledText ):
             except:
                 pass
 
+    def _toggleLink( self ):
+        # cur = self.index( "insert" )
+        # start = self.index( cur + "wordstart")
+        # end = self.index( cur + "wordend" )
+        # link = self.get( start, end )
+        # link = self.get( "sel.first", "sel.last" )
+        sel = self.selection_get()
+        if sel:
+            self._hyperlink.addSelectionAsHyperlink( self._openUrl )
+        # link = self.selection_get()
+        # twotags = self._hyperlink.add( partial( self._openUrl, link ) )
+        # self.tag_add( twotags[0], "sel.first", "sel.last" )
+        # self.tag_add( twotags[1], "sel.first", "sel.last" )
+
+    def _openUrl( self, url ):
+        webbrowser.open_new_tab( url )
+
     def testIterate( self, start, stop ):
         idx = self.index( start )
         stop = self.index( stop )
@@ -346,12 +408,12 @@ class StylableEditor( scrolledtext.ScrolledText ):
                 ranges = self.tag_ranges( tagname )
                 if len( ranges ) > 0:
                     tagstring += ( tagname + ":" )
-                for i in range( 0, len( ranges ), 2 ):
-                    start:str = str( ranges[i] )
-                    stop:str = str( ranges[i + 1] )
-                    tagstring += (start + "," + stop + ";")
-                tagstring = tagstring[:-1] #remove trailing ";"
-                tagstring += "$"
+                    for i in range( 0, len( ranges ), 2 ):
+                        start:str = str( ranges[i] )
+                        stop:str = str( ranges[i + 1] )
+                        tagstring += (start + "," + stop + ";")
+                    tagstring = tagstring[:-1] #remove trailing ";"
+                    tagstring += "$"
         if len( tagstring ) > 0:
             tagstring = tagstring[:-1] #remove trailing "$"
         #print( "tagstring: ", tagstring )
@@ -392,6 +454,10 @@ class StylableEditor( scrolledtext.ScrolledText ):
 
 ##################################################################
 def test():
+    def click1( url ):
+        print( "click 1" )
+        webbrowser.open_new_tab( url )
+
     win = tk.Tk()
     win.title("ScrolledText Widget")
 
@@ -411,10 +477,17 @@ def test():
                                 height = 10,
                                 font = ("Times New Roman",
                                                   15) )
-
+    hyperlink = HyperlinkManager( text_area )
     text_area.grid(column = 0, pady = 10, padx = 10)
     ta = text_area
-    ta.insert( "1.0", "This is a bloody nonsense test text.\nDelete it or not,\n either one is fine." )
+    ta.insert( "1.0", "This is a bloody nonsense test text.\nDelete it or not,\n either one is fine.\n"
+                      "Look here: " )
+    hp = hyperlink.add( partial( click1, "www.kendelweb.de" ) )
+    ta.tag_add( hp[0], "1.0", "1.4" )
+    ta.tag_add( hp[1], "1.0", "1.4" )
+    ta.insert( "insert", "link", hyperlink.add( partial( click1, "www.kendelweb.de" ) ) )
+    #ta.insert( "insert", "\n\n" )
+
     ta.testIterate( "1.0", "end" )
 
     # Placing cursor in the text area

@@ -20,10 +20,11 @@ class ToolAction( Enum ):
     SAVE_AS = 6
     FONT_BOLD = 7
     FONT_ITALIC = 8
-    FONT_RED = 9
-    FONT_GREEN = 10
-    FONT_BLUE = 11
-    FONT_BLACK = 12
+    MARK_AS_LINK = 9
+    FONT_RED = 10
+    FONT_GREEN = 11
+    FONT_BLUE = 12
+    FONT_BLACK = 13
 
 class MainFrame(Frame):
     def __init__(self, parent, cnf={}, **kw):
@@ -51,10 +52,11 @@ class MainFrame(Frame):
         Label( tb, width=10 ).grid( row=0, column=6, padx=2, pady=2 )
         self._createToolButton( tb, 7, "/home/martin/Projects/python/notes/images/bold_24.png", "Selected text to bold", self._onBold )
         self._createToolButton( tb, 8, "/home/martin/Projects/python/notes/images/italic_24.png", "Selected text to italic", self._onItalic )
-        self._createToolButton( tb, 9, "/home/martin/Projects/python/notes/images/red_24.png", "Selected text to red", self._onRed )
-        self._createToolButton( tb, 10, "/home/martin/Projects/python/notes/images/blue_24.png", "Selected text to blue", self._onBlue )
-        self._createToolButton( tb, 11, "/home/martin/Projects/python/notes/images/green_24.png", "Selected text to green", self._onGreen )
-        self._createToolButton( tb, 12, "/home/martin/Projects/python/notes/images/black_24.png", "Selected text to black", self._onBlack )
+        self._createToolButton( tb, 9, "/home/martin/Projects/python/notes/images/link_24.png", "Selected text to hyperlink", self._onLink )
+        self._createToolButton( tb, 10, "/home/martin/Projects/python/notes/images/red_24.png", "Selected text to red", self._onRed )
+        self._createToolButton( tb, 11, "/home/martin/Projects/python/notes/images/blue_24.png", "Selected text to blue", self._onBlue )
+        self._createToolButton( tb, 12, "/home/martin/Projects/python/notes/images/green_24.png", "Selected text to green", self._onGreen )
+        self._createToolButton( tb, 13, "/home/martin/Projects/python/notes/images/black_24.png", "Selected text to black", self._onBlack )
         return tb
 
     def _createToolButton( self, parent, col, path_to_image:str, tooltip:str=None, command=None ) -> Button:
@@ -122,6 +124,9 @@ class MainFrame(Frame):
 
     def _onItalic( self ):
         self._doToolActionCallback( ToolAction.FONT_ITALIC )
+
+    def _onLink( self ):
+        self._doToolActionCallback( ToolAction.MARK_AS_LINK )
 
     def _onRed( self ):
         self._doToolActionCallback( ToolAction.FONT_RED )
