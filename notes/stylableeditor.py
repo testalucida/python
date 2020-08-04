@@ -371,7 +371,7 @@ class StylableEditor( scrolledtext.ScrolledText ):
             while self.compare( idxA, ">", "1.0" ):
                 c = self.get( idxA, self.index( idxA + "+1c" ) )
                 if c in (" ", "\n", "\t"):
-                    idxA = self.index( idxA + "+1c")
+                    idxA = self.index( idxA + "+1c" )
                     break
                 idxA = self.index( idxA + "-1c" )
 
