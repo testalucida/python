@@ -1,6 +1,6 @@
 from tkinter import *
 from functools import partial
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 from mywidgets import ScrollableView
 
@@ -15,12 +15,16 @@ class DrawingPane( ScrollableView ):
         self['bg'] = "yellow"
         self.canvas = Canvas( self.clientarea )
         self.canvas['bg'] = "black"
+        self._startX = 0
+        self._startY = 0
+
 
 class Controller:
     def __init__( self, canvas:MyCanvas ):
         self.canvas = canvas
         self.canvas.bind( "<Button-1>", self.onCanvasLeftMouse )
-        self._selections:List[id] = list()
+        self._selections:Dict[int, int] = {} # key: id of selected object; value: id of selection rectangle
+        self._connections:Dict[int,List[int]] = {} # key: object id; value: list of line id's related to key object
         self._event_handled:bool = False
 
     def onCanvasLeftMouse( self, evt:Event ):
@@ -36,19 +40,24 @@ class Controller:
         - clear selection list
         :return:
         """
-        #todo: remove focus rects
-        self._selections.clear()
+        ids = list( self._selections.keys() )
+        for id in ids:
+            self._unselect( id )
 
     def _select( self, id ):
-        self._drawFocusRect( id )
-        self._selections.append( id )
+        rect:int = self._drawFocusRect( id )
+        self._selections[id] = rect
 
     def _unselect( self, id ):
-        #todo: redraw polygon id
-        self._selections.remove( id )
+        sel_rect:int = self._selections[id]
+        self.canvas.delete( sel_rect )
+        self._selections.pop( id )
+
+    def isSelected( self, id:int ) -> bool:
+        return ( id in self._selections )
 
     def onMouseEnter( self, id:int, evt:Event ):
-        print( "onEnter: ", id )
+        self.canvas["cursor"] = "hand2"
 
         # self.canvas["cursor"] = "fleur" # ok for moving object around
         # self.canvas["cursor"] = "sizing" # ok for resizing at the edges
@@ -61,13 +70,12 @@ class Controller:
 
 
     def onMouseLeave( self, id:int, evt:Event ):
-        print( "onLeave: ", id )
         self.canvas["cursor"] = "arrow"
 
     def onMouseMove( self, id: int, evt: Event ):
-        print( "onMove: ", id )
         #self.canvas["cursor"] = "fleur"
-        self._setCursor( id, evt.x, evt.y )
+        #self._setCursor( id, evt.x, evt.y )
+        pass
 
     def onLeftMouse( self, id:int, evt:Event ) -> None:
         """
@@ -78,14 +86,15 @@ class Controller:
             state: 1 == Shift
             state: 4 == Ctrl
         """
-        print( "onLeftMouse: ", id, " -- event: ", evt, "; state=", evt.state )
-        if evt.state & 1 == 1 or evt.state & 4 == 4: #Shift or Ctrl pressed
-            self._select( id )
-        else:
-            self._clearSelections()
-            self._select( id )
-        #coords:List[float] = self.canvas.coords( id )
-        #print( coords )
+        #print( "onLeftMouse: ", id, " -- event: ", evt, "; state=", evt.state )
+        if not self.isSelected( id ):
+            if evt.state & 1 == 1 or evt.state & 4 == 4: #Shift or Ctrl pressed
+                self._select( id )
+            else:
+                self._clearSelections()
+                self._select( id )
+        self._startX = evt.x
+        self._startY = evt.y
         """
         unfortunately, this event is propagated to Canvas and this controller's onCanvasLeftMouse is callback'ed.
         That results in clearing the selection list. To prevent that we set _event_handled to True.
@@ -94,13 +103,58 @@ class Controller:
 
 
     def onDrag( self, id:int, evt:Event ):
-        print( "drag %d: x_root=%d, x=%d -- y_root=%d, y=%d" % (id, evt.x_root, evt.x, evt.y_root, evt.y) )
+        #print( "drag %d: x_root=%d, x=%d -- y_root=%d, y=%d" % (id, evt.x_root, evt.x, evt.y_root, evt.y) )
+        # drag amount
+        dx = evt.x - self._startX
+        dy = evt.y - self._startY
+        #drag item
+        self.canvas.move( id, dx, dy )
+        #drag selection rectangle
+        rect = self._selections[id]
+        self.canvas.move( rect, dx, dy )
+        #update connections
+        self._updateConnections( id, dx, dy )
+        # update startX and startY
+        self._startX += dx
+        self._startY += dy
 
-    def _drawFocusRect( self, id:int ) -> None:
-        vertices:Tuple[Tuple[float,float]] = self._getFocusRectCoords( id )
-        print( vertices )
+    def _updateConnections( self, id:int, dx, dy ) -> None:
+        # get center of item's surrounding rectangle
+        selrect_coords:Tuple[Tuple[float,float]] = self._getSelectionRectCoords( id )
+        conn_list:List[int] = self._connections[id]
+        for conn in conn_list:
+            # get coords of connection line
+            coords:List[float] = self.canvas.coords( conn )
+            xy:Tuple[float,float] = (coords[0], coords[1])
+            if self._isPointInRect( xy, selrect_coords ):
+                coords[0] += dx
+                coords[1] += dy
+                self.canvas.coords( conn, coords )
 
-    def _getFocusRectCoords( self, id:int ) -> Tuple[Tuple[float,float]]:
+    def _isPointInRect( self, point:Tuple[float,float], rect:Tuple[Tuple[float,float]] ) -> bool:
+        px = point[0]
+        py = point[1]
+        if px >= rect[0][0] and px <= rect[1][0] and \
+           py >= rect[0][1] and px <= rect[1][1]:
+           return True
+        return False
+
+    def _drawFocusRect( self, id:int ) -> int:
+        vertices:Tuple[Tuple[float,float]] = self._getSelectionRectCoords( id )
+        sel:int = self.canvas.create_rectangle( vertices, outline='yellow', width=2 )
+        return sel
+
+    def _getSelectionRectCenter( self, id:int ):
+        rect:Tuple[Tuple[float,float]] = self._getSelectionRectCoords( id )
+        x1:float = rect[0][0]
+        x2: float = rect[1][0]
+        y1: float = rect[0][1]
+        y2: float = rect[1][1]
+        x = ( x1 + x2 ) / 2
+        y = ( y1 + y2 ) / 2
+        return ( x, y )
+
+    def _getSelectionRectCoords( self, id:int ) -> Tuple[Tuple[float, float]]:
         polycoords:List[float] = self.canvas.coords( id )
         xmin, ymin = 9999, 9999
         xmax, ymax = 0, 0
@@ -117,7 +171,7 @@ class Controller:
                 elif val > ymax: ymax = val
                 n = 0
         #define focus rect coordinates from min and max x and y values
-        return( (xmin, ymin), (xmax, ymin), (xmax, ymax), (xmin, ymax) )
+        return( (xmin, ymin), (xmax, ymax) )
 
     def _setCursor( self, id:int, mouse_x:int, mouse_y:int ) -> None:
         crsr = ""
@@ -135,11 +189,42 @@ class Controller:
 
     def createPolygon( self, vertices:List[Tuple[int,int]] ):
         poly = self.canvas.create_polygon( vertices )
-        self.canvas.tag_bind( poly, "<Enter>", partial( self.onMouseEnter, poly ) )
-        self.canvas.tag_bind( poly, "<Leave>", partial( self.onMouseLeave, poly ) )
-        self.canvas.tag_bind( poly, "<Motion>", partial( self.onMouseMove, poly ) )
-        self.canvas.tag_bind( poly, "<Button-1>", partial( self.onLeftMouse, poly ) )
-        self.canvas.tag_bind( poly, "<B1-Motion>", partial( self.onDrag, poly ) )
+        self._bind( poly )
+        return poly
+
+    def createOval( self, topLeftX:float, topLeftY:float, bottomRightX:float, bottomRightY:float, **kw ) -> int:
+        """kw e.g. fill='red' """
+        oval = self.canvas.create_oval( topLeftX, topLeftY, bottomRightX, bottomRightY, kw )
+        self._bind( oval )
+        return oval
+
+    def createLine( self, *args, **kw ) -> int:
+        """Create line with coordinates x1,y1,...,xn,yn."""
+        line = self.canvas.create_line( args, kw )
+        self._bind( line )
+        return line
+
+    def connect( self, id1:int, id2:int, conn_name:str="" ) -> int:
+        x1, y1 = self._getSelectionRectCenter( id1 )
+        x2, y2 =  self._getSelectionRectCenter( id2 )
+        line = self.createLine( x1, y1, x2, y2 )
+        # connect id1 and id2 with line
+        self._connect( id1, line )
+        self._connect( id2, line )
+        return line
+
+    def _connect( self, id:int, line:int ) -> None:
+        if id in self._connections.keys(): self._connections[id].append( line )
+        else: self._connections[id] = [ line, ]
+        if line in self._connections.keys(): self._connections[line].append( id )
+        else: self._connections[line] = [ id, ]
+
+    def _bind( self, id:int ):
+        self.canvas.tag_bind( id, "<Enter>", partial( self.onMouseEnter, id ) )
+        self.canvas.tag_bind( id, "<Leave>", partial( self.onMouseLeave, id ) )
+        self.canvas.tag_bind( id, "<Motion>", partial( self.onMouseMove, id ) )
+        self.canvas.tag_bind( id, "<Button-1>", partial( self.onLeftMouse, id ) )
+        self.canvas.tag_bind( id, "<B1-Motion>", partial( self.onDrag, id ) )
 
 def test():
     root = Tk()
@@ -152,10 +237,14 @@ def test():
     cntrl = Controller( dp )
     # a square
     xy = [(20, 20), (70, 20), (70, 70), (20, 70)]
-    cntrl.createPolygon( xy )
+    poly1 = cntrl.createPolygon( xy )
 
     xy = [(100, 20), (80, 70), (120, 70)]
-    cntrl.createPolygon( xy )
+    poly2 = cntrl.createPolygon( xy )
+
+    cntrl.createOval( 100, 100, 300, 150, fill='yellow' )
+
+    cntrl.connect( poly1, poly2 )
 
     root.mainloop()
 
