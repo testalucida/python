@@ -5,6 +5,10 @@ from libs import *
 import utils
 import os
 
+print ('sys.version: ', sys.version)
+print ('sys.executable: ', sys.executable)
+print ('sys.path: ', sys.path)
+
 #from sign_in import SignInDialog
 from wvframe import WV
 from wvcontroller import WvController

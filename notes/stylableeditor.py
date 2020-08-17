@@ -147,6 +147,7 @@ class StylableEditor( scrolledtext.ScrolledText ):
         scrolledtext.ScrolledText.__init__(self, parent, **kw)
         self._myId = None
         self._cbfnc = None
+        self['wrap'] = tk.WORD
         self.bind('<<TextModified>>', self._onModify)
         #self.bind( '<Control-s>', testa )
         self.isModified:bool = False

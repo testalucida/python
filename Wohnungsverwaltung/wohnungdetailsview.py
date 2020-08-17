@@ -2,12 +2,14 @@ from tkinter import *
 from tkinter import ttk
 from interfaces import XWohnungDetails
 
+# print ('wohnungdetailsview.py: sys.path: ', sys.path)
+
 try:
     from mywidgets import TextEntry, IntEntry, FloatEntry, MyLabel, MyCombobox, MyText
     from mycalendar import DateEntry
     import datehelper
-except ImportError:
-    print("couldn't import my widgets.")
+except ImportError as err:
+    print("wohnungdetailsview.py: couldn't import my widgets: ", err )
 
 class WohnungDetailsView (ttk.Frame):
     def __init__(self, parent: ttk.Frame):

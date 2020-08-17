@@ -16,7 +16,7 @@ try:
     import datehelper
     from buttonfactory import ButtonFactory
 except ImportError:
-    print("couldn't import my widgets.")
+    print("stammdatenview.py: couldn't import my widgets.")
 
 StammdatenAction = \
     IntEnum('StammdatenAction',

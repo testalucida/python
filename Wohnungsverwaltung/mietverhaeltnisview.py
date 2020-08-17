@@ -8,7 +8,7 @@ try:
     from mycalendar import DateEntry
     import datehelper
 except ImportError:
-    print("couldn't import my widgets.")
+    print("mietverhaeltnisview.py: couldn't import my widgets.")
 
 class MietverhaeltnisView(ttk.Frame):
     def __init__(self, parent: ttk.Frame):

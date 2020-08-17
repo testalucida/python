@@ -11,7 +11,7 @@ try:
     from buttonfactory import ButtonFactory
     from stammdatenview import StammdatenAction
 except ImportError:
-    print("couldn't import my widgets.")
+    print("verwalterview: couldn't import my widgets.")
 
 class VerwalterView(ttk.Frame):
     def __init__(self, parent):

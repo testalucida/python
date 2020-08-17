@@ -9,7 +9,7 @@ try:
     from mywidgets import TextEntry, IntEntry, FloatEntry, MyLabel, \
         MyCombobox, MyText
 except ImportError:
-    print("couldn't import my widgets.")
+    print("jahresdatenbaseview.py: couldn't import my widgets.")
 
 ############ OutputLabel #################
 class OutputLabel(ttk.Label):
