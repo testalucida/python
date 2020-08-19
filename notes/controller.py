@@ -88,6 +88,8 @@ class Controller:
            self._moveAction( treeItems[0] )
         elif action == TreeAction.INSERT_FOLDER:
             self.newFolderAction( treeItems[0] )
+        elif action == TreeAction.RENAME:
+            self.renameAction( treeItems[0] )
 
     def _handleOneNoteSelection( self, treeItem:TreeItem ) -> None:
         #before changing the displayed note, check if there are unsaved changes:
@@ -194,6 +196,16 @@ class Controller:
         self._edi.setNote( Note() )
         #print( "Controller._tree.unsetSelection" )
         self._tree.unsetSelection()
+
+    def renameAction( self, treeItem:TreeItem ) -> None:
+        s = simpledialog.askstring( "Rename", "Enter new name:", initialvalue=treeItem.label )
+        if s:
+            try:
+                self._business.renameFolder( treeItem.id, s )
+                self._tree.item( treeItem.iid, text=s )
+                treeItem.label = s
+            except Exception as ex:
+                messagebox.showerror( "Error renaming Item", ex  )
 
     def saveNoteLocalAction( self ) -> SaveResult:
         """

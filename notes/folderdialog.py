@@ -31,6 +31,7 @@ class FolderDialog( DialogBase ):
 class FolderProvider:
     def __init__( self ):
         self._business = BusinessLogic()
+        self._business.initDatabase()
         self._folder_id_iid_ref: Dict = { 0: '' }  # key: id, value: iid
         self._folderImage = ImageFactory.getInstance().imgFolder
 

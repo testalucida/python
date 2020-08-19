@@ -32,8 +32,9 @@ class DbAccess:
         self._doWrite( sql, commit )
 
     def updateFolderLabel( self, folder_id: int, label: str, commit: bool = True ) -> None:
-        sql = "update folder set text= " + label + \
-              " where id = " + str( folder_id )
+        dblabel = label.replace( "'", "''" )
+        sql = "update folder set text= '" + dblabel + \
+              "' where id = " + str( folder_id )
         self._doWrite( sql, commit )
 
     def insertNote( self, parent_id:int, text:str, header:str, style="", commit:bool=True ) -> int:

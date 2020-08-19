@@ -974,7 +974,8 @@ class DataProvider(DataProviderBase):
 #
 if __name__ == '__main__':
     prov = DataProvider()
-    prov.connect('test')
+    prov.connect('martin', 'fuenf55')
+    #prov.connect( 'd02bacec', 'fuenf55' )
     data = prov.getRechnungsUebersicht(1)
 
     # data = prov.getMtlEinAusJahr(2019, 2)

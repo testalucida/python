@@ -140,6 +140,11 @@ class BusinessLogic:
         self._db.commit()
         self._db.close()
 
+    def renameFolder( self, id:int, newName:str ) -> None:
+        self._db.open()
+        self._db.updateFolderLabel( id, newName, True )
+        self._db.close()
+
     def uploadDatabase( self ):
         try:
             self._db.close()

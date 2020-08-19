@@ -5,6 +5,7 @@ from mainframe import MainFrame
 from controller import Controller
 import os
 
+
 print ('sys.version: ', sys.version)
 print ('sys.executable: ', sys.executable)
 print ('sys.path: ', sys.path)
