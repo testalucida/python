@@ -1,6 +1,6 @@
 import tkinter as tk
-from tkinter import ttk, FLAT, Text, CURRENT
-from tkinter import scrolledtext 
+from tkinter import ttk, FLAT, Text, CURRENT, TclError
+from tkinter import scrolledtext, font
 from tkinter.font import Font, ITALIC, BOLD, NORMAL
 from enum import Enum
 from typing import List, Tuple, Dict, Sequence, Any
@@ -148,10 +148,16 @@ class StylableEditor( scrolledtext.ScrolledText ):
         self._myId = None
         self._cbfnc = None
         self['wrap'] = tk.WORD
+        self['undo'] = True
         self.bind('<<TextModified>>', self._onModify)
-        #self.bind( '<Control-s>', testa )
+        self.bind( '<KeyPress>', self._onKeyPress )
+        self.bind( '<KeyPress-minus>', self._onHyphen )
+        self.bind( '<KeyPress-Return>', self._onReturn )
+        self._indent:bool = False # indentation mode on/off
+        self.bind( '<Control-v>', self._onPaste )
         self.isModified:bool = False
         # define some fonts
+        self._textfont = Font( self, self.cget( "font" ) )
         self._boldfont = Font( self, self.cget( "font" ) )
         self._boldfont.configure( weight="bold" )
         self._italicfont = Font( self, self.cget( "font" ) )
@@ -171,6 +177,11 @@ class StylableEditor( scrolledtext.ScrolledText ):
         self.tag_bind( "hyper", "<Button-1>", self._clickHyper )
         #self.tag_configure( BLACK, foreground='black' )
         self._styleRanges:StyleRanges = StyleRanges( self )
+
+        #text_font = font.nametofont( self.cget( "font" ) )
+        bullet_width = self._textfont.measure( "- " )
+        em = self._textfont.measure( "m" )
+        self.tag_configure( "indented", lmargin1=em, lmargin2=em + bullet_width )
 
         # https://stackoverflow.com/questions/40617515/python-tkinter-text-modified-callback
         # create a proxy for the underlying widget
@@ -196,10 +207,75 @@ class StylableEditor( scrolledtext.ScrolledText ):
         self._cbfnc = cbfnc
 
     def _onModify(self, event ):
-        #print("_onModify")
+        # triggered by <<TextModified>> virtual event.
+        # the event arg only contains x and y coordinates.
+        # so this method is only used for callback purposes and
+        # to set the isModified flag.
         self.isModified = True
         if self._cbfnc:
             self._cbfnc( event )
+
+    def _onKeyPress( self, event ):
+        """
+        If in indentation mode, check if a char is added to the end of text. If so, expand
+        "indented" range appropriate.
+        Chars inserted in the mid of text will be taken care of by the Text widget itself.
+        """
+        if not self._indent: return
+        # ignore Backspace and Delete
+        if event.keysym in ( "BackSpace", "Delete" ): return
+        # ignore insertions in the mid of text
+        if not self.index( "end - 1c" ) == self.index( "insert" ): return
+        self.insert( "insert", event.char, "indented" )
+        return "break"
+
+    def _onHyphen( self, event ) -> None:
+        """
+        check if the hyphen was entered in column 0.
+        If so, we switch to indentation mode,
+        where subsequent lines are indented.
+        """
+        l, c = self.getCaretPosition()
+        if c == 0:
+            self._indent = True
+            print( "indentation mode ON" )
+
+    def _onReturn( self, event ) -> None:
+        """Check if in indentation mode. If so, switch it off."""
+        print( "_onReturn", event )
+        if event.state == 16: # Return pressed without any other key
+            self._indent = False
+            print( "indentation mode OFF" )
+
+    def _onPaste( self, event ):
+        # get the clipboard data, and replace all newlines
+        # with the literal string "\n"
+        clipboard = self.clipboard_get()
+        clipboard = clipboard.replace( "\n", "\\n" )
+
+        # delete the selected text, if any
+        try:
+            start = self.index( "sel.first" )
+            end = self.index( "sel.last" )
+            self.delete( start, end )
+        except TclError as e:
+            # nothing was selected, so paste doesn't need
+            # to delete anything
+            pass
+
+        # insert the modified clipboard contents
+        if self._indent:
+            self.insert( "insert", clipboard, "indented" )
+        else:
+            self.insert( "insert", clipboard )
+        #return "break"  # prevents Text widget from inserting text from clipboard.
+
+    def getCaretPosition( self ) -> Tuple[int, int]:
+        """returns line and column index of caret"""
+        position = self.index( 'insert' )
+        l = int( position.split( '.' )[0] )
+        c = int( position.split( '.' )[1] )
+        return l, c
 
     def getValue(self) -> any:
         """
@@ -475,15 +551,23 @@ def test():
 
     text_area.grid(column = 0, pady = 10, padx = 10)
     ta = text_area
-    ta.insert( "1.0", "This is a bloody nonsense test text.\nDelete it or not,\n either one is fine.\n"
-                      "Look here: " )
+    text = (
+        "by entering this hyphen (I really mean hyphen, not that bullet "
+        "that is automatically generated) the section to be indented starts. "
+        "When reaching the right border, a soft wrap is performed (I'm using "
+        "wrap=tk.WORD) and the new line should look like it does here."
+    )
+    ta.insert( "end", "- " + text, "indented" )
+
+    # ta.insert( "1.0", "This is a bloody nonsense test text.\nDelete it or not,\n either one is fine.\n"
+    #                   "Look here: " )
     # hp = hyperlink.add( partial( click1, "www.kendelweb.de" ) )
     # ta.tag_add( hp[0], "1.0", "1.4" )
     # ta.tag_add( hp[1], "1.0", "1.4" )
     # ta.insert( "insert", "link", hyperlink.add( partial( click1, "www.kendelweb.de" ) ) )
     #ta.insert( "insert", "\n\n" )
 
-    ta.testIterate( "1.0", "end" )
+    #ta.testIterate( "1.0", "end" )
 
     # Placing cursor in the text area
     text_area.focus()
