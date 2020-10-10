@@ -181,7 +181,6 @@ class ModifyTracer:
 
     def _onModify(self, name, index, mode):
         if self._cbfnc:
-            #print('ModifyTracer._onModify: TextEntry modified - performing callback')
             self._cbfnc(self, name, index, mode)
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -478,7 +477,44 @@ class IntEntry(ttk.Entry, GetterSetter, ConvenianceMethods, ModifyTracer):
 
 #+++++++++++++++++++++++++++++++++++++++++++++++
 
+class MyCombobox2(ttk.Combobox, GetterSetter, ConvenianceMethods):
+    def __init__(self, parent):
+        ttk.Combobox.__init__(self, parent)
+        ConvenianceMethods.__init__(self)
+        self.bind("<<ComboboxSelected>>", self._onSelectionChanged )
+        self._callback = None
+
+    def getCurrentIndex(self) -> int:
+        return self.current()
+
+    def setIndex(self, idx: int) -> None:
+        self.current(idx)
+
+    def getValue(self) -> any:
+        return self.get()
+
+    def setValue(self, val: any) -> None:
+        self.set(val)
+
+    def clear(self) -> None:
+        self.set('')
+
+    def setItems(self, itemlist: list or tuple) -> None:
+        self['values'] = itemlist
+
+    def getItems(self) -> list or tuple:
+        return self['values']
+
+    def _onSelectionChanged(self, event ):
+        if self._callback:
+            self._callback( self.get() )
+
+    def setCallback(self, callbackFnc ):
+        self._callback = callbackFnc
+
+
 class MyCombobox(ttk.Combobox, GetterSetter, ConvenianceMethods, ModifyTracer):
+    # am besten nicht benutzen, es kommt zu Abstürzen des ganzen Rechners beim Debuggen
     def __init__(self, parent):
         ttk.Combobox.__init__(self, parent)
         ConvenianceMethods.__init__(self)
@@ -799,7 +835,7 @@ class Zoom(Toplevel):
 #++++++++++++++++++++++++++++++++++++++++++++++++
 
 class CheckableItem:
-    def __init__(self, text: str, id: Any, check: bool = True):
+    def __init__(self, text: str, id: Any, check: bool=True):
         self.text = text
         self.id = id
         self.check = check
@@ -814,6 +850,9 @@ class CheckableItemList:
         item = CheckableItem(text, id, check)
         self._list.append(item)
 
+    def clear(self):
+        self._list.clear()
+
     def getItems(self) -> List[CheckableItem]:
         return self._list
 
@@ -821,7 +860,6 @@ class CheckableItemList:
         for item in self._list:
             if item.id == id:
                 return item.check
-
         raise ValueError('CheckableItemList: id ' + str(id) + ' not found.')
 
 #++++++++++++++++++++++++++++++++++++++++++++++++
@@ -858,7 +896,7 @@ class CheckableItemView(ttk.Frame):
         checkbtn = ttk.Checkbutton(self, variable=self._val,
                                    text=self._item.text,
                                    style='my.TCheckbutton')
-        checkbtn.grid(column=0, row=0, sticky='nswe', padx=6, pady=5)
+        checkbtn.grid(column=0, row=0, sticky='nswe', padx=6, pady=3)
         #
         # lbl = ttk.Label(self, text=self._item.text, font = self._font)
         # lbl.grid(column=1, row=0, sticky='nswe', padx=6, pady=3)
@@ -869,6 +907,7 @@ class CheckableItemTableView(ttk.Frame):
     def __init__(self, parent, itemList: CheckableItemList = None):
         ttk.Frame.__init__(self, parent)
         self._itemViewList: List[CheckableItemView] = list()
+        self._itemList: CheckableItemList = CheckableItemList()
         self._checkAll = None
         self._val = IntVar()
         self._val.set(-1)
@@ -884,11 +923,17 @@ class CheckableItemTableView(ttk.Frame):
         self._checkAll.grid(column=0, row=0, sticky='nswe', padx=5, pady=10)
         self._checkAll['style'] = 'my.TCheckbutton'
 
+    def clear(self):
+        for itemView in self._itemViewList:
+            itemView.destroy()
+        self._itemViewList.clear()
+        self._itemList.clear()
+
     def setCheckableItemList(self, itemList: CheckableItemList):
         self._itemList = itemList
         for r, item in enumerate(self._itemList.getItems()):
             itemview = CheckableItemView(self, item)
-            itemview.grid(column=0, row=r+1, sticky='nswe', padx=15, pady=5)
+            itemview.grid(column=0, row=r+1, sticky='nswe', padx=15, pady=3)
             self._itemViewList.append(itemview)
 
     def getCheckableItemList(self) -> CheckableItemList:
@@ -1017,7 +1062,7 @@ class ScrollableView(Frame):
 
 ###########################################################
 
-def main():
+def testScrollableView():
     root = Tk()
     #tableTest(root)
     root.rowconfigure(0, weight=1)
@@ -1043,5 +1088,19 @@ def main():
     root.geometry('400x400+500+200')
     root.mainloop()
 
+def _callback( event ):
+    cbo = event.widget
+    print( "callback!", cbo.get() )
+
+def testCombo():
+    root = Tk()
+    cbo = ttk.Combobox(root)
+    cbo.bind( "<<ComboboxSelected>>", _callback )
+    cbo.grid( row=0, column=0, sticky="nswe", padx=2, pady=2)
+    items = ("Martin", "Paul", "Betty", "Kira")
+    cbo["values"] = items
+
+    root.mainloop()
+
 if __name__ == '__main__':
-    main()
+    testCombo()

@@ -102,12 +102,19 @@ class DialogBase(Toplevel):
 def test():
     def cb(ok_or_cancel:bool):
         print(ok_or_cancel)
+    def cubupress():
+        print("custom button pressed")
 
     root = Tk()
     root.option_add('*Dialog.msg.font', 'Helvetica 11')
 
     dlg = DialogBase(root)
     dlg.setOkCancelCallback(cb)
+
+    b:Button = Button(dlg.clientArea, text="ich bin der custom button")
+    b.configure(command=cubupress)
+    b.grid(row=0, column=0, sticky='nswe', padx=5, pady=5)
+
 
     root.mainloop()
 

@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 from libs import *
 #from utils import *
 import utils
 import os
+#sys.path.append('/usr/lib/python3.8/tkinter')
 
 print ('sys.version: ', sys.version)
 print ('sys.executable: ', sys.executable)
