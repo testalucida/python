@@ -4,7 +4,6 @@ from dbaccess import DbAccess
 from typing import List, Dict
 from mywidgets import CheckableItemList
 from fpdf import FPDF
-import json
 
 offset = {
     1: (18, 8),
@@ -82,10 +81,10 @@ class BusinessLogic:
 class AnlageVToPdf:
     def __init__(self):
         self._pdf = FPDF()
-        self._pdf.add_page()
-        self._pdf.set_font('helvetica', '', 12.0)
+        self._pdf.set_font('helvetica', '', 14.0)
 
     def write(self, zeilen:Dict ):
+        self._pdf.add_page()
         x = 0
         y = 1
         a = 'L'
