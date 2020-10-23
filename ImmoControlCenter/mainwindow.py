@@ -1,38 +1,122 @@
 
 from PySide2 import Qt
-
 from PySide2.QtCore import *
 #from PySide2.QtCore import QAbstractTableModel, SIGNAL
-from PySide2.QtGui import QFont, QStandardItemModel, QStandardItem, QBrush, QColor, QIcon
-from PySide2.QtWidgets import QWidget, QComboBox, QLabel, QTableView, QPushButton
+from PySide2.QtGui import QFont, QStandardItemModel, QStandardItem, QBrush, QColor, QIcon, QDoubleValidator
+from PySide2.QtWidgets import QWidget, QComboBox, QLabel, QTableView, QPushButton, QDialog
 from PySide2 import QtWidgets
 import datetime
-from typing import List, Dict
+from typing import List, Dict, Any
+from models import KontrollModel
 
 
 monthList = ("Januar", "Februar", "März", "April", "Mai", "Juni",
              "Juli", "August", "September", "Oktober", "November", "Dezember")
 
-def createTestModel():
-    tm = QStandardItemModel()
-    i1 = QStandardItem( "Abazid" )
-    i2 = QStandardItem( "550" )
-    i3 = QStandardItem( "ok" )
-    i4 = QStandardItem( "nok" )
-    i5 = QStandardItem( "510" )
-    itemlist = [i1, i2, i3, i4, i5]
-    tm.appendRow( itemlist )
-    i1 = QStandardItem("Zeiger")
-    i2 = QStandardItem("1050")
-    i3 = QStandardItem("ok")
-    i4 = QStandardItem("nok")
-    i5 = QStandardItem("1150")
-    itemlist = [i1, i2, i3, i4, i5]
-    tm.appendRow(itemlist)
-    return tm
+# def createTestModel():
+#     tm = QStandardItemModel()
+#     i1 = QStandardItem( "Abazid" )
+#     i2 = QStandardItem( "550" )
+#     i3 = QStandardItem( "ok" )
+#     i4 = QStandardItem( "nok" )
+#     i5 = QStandardItem( "510" )
+#     itemlist = [i1, i2, i3, i4, i5]
+#     tm.appendRow( itemlist )
+#     i1 = QStandardItem("Zeiger")
+#     i2 = QStandardItem("1050")
+#     i3 = QStandardItem("ok")
+#     i4 = QStandardItem("nok")
+#     i5 = QStandardItem("1150")
+#     itemlist = [i1, i2, i3, i4, i5]
+#     tm.appendRow(itemlist)
+#     return tm
+
+class ImageFactory:
+    __instance = None
+    _okIcon:QIcon = None
+    _nokIcon:QIcon = None
+
+    @staticmethod
+    def instance():
+        if ImageFactory.__instance == None:
+            ImageFactory()
+        return ImageFactory.__instance
+
+    def __init__(self):
+        if ImageFactory.__instance != None:
+            raise  Exception( "ImageFactory is a singleton!" )
+        ImageFactory.__instance = self
+
+    def getOkIcon(self) -> QIcon:
+        if self._okIcon == None:
+            self._okIcon = QIcon("./images/greensquare20x20.png")
+        return self._okIcon
+
+    def getNokIcon(self) -> QIcon:
+        if self._nokIcon == None:
+            self._nokIcon = QIcon("./images/redsquare20x20.png")
+        return self._nokIcon
+
+################# ValueDialog ########################
+class ValueDialog( QDialog ):
+    def __init__( self, parent=None ):
+        QDialog.__init__( self, parent )
+        self.setWindowTitle( "Abweichender Betrag" )
+        self.resize(245, 77)
+        self.buttonBox = QtWidgets.QDialogButtonBox(self)
+        self.buttonBox.setGeometry(QRect(150, 10, 81, 241))
+        self.buttonBox.setOrientation(Qt.Vertical)
+        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setObjectName("buttonBox")
+        self._numEntry = QtWidgets.QLineEdit(self)
+        self._numEntry.setGeometry(QRect(10, 40, 113, 23))
+        self._numEntry.setAlignment(Qt.AlignRight | Qt.AlignTrailing | Qt.AlignVCenter)
+        self._numEntry.setValidator( QDoubleValidator( 0, 9999, 2, self ) )
+        self.label = QtWidgets.QLabel(self)
+        self.label.setGeometry(QRect(10, 9, 171, 16))
+        self.setLabelText( "Betrag eingeben:" )
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+        self._callback = None
+
+    def setCallback( self, fnc ):
+        self._callback = fnc
+
+    def setLabelText( self, text:str ) -> None:
+        self.label.setText( text )
+
+    def accept(self):
+        print( "accept" )
+        if self._callback:
+            self._callback( True, self._numEntry.text() )
+        QDialog.accept(self)
+    #
+    # def reject(self):
+    #     print( "reject" )
+    #     if self._callback:
+    #         self._callback( False, -1 )
+    #     QDialog.reject( self )
 
 
+################# CheckButton ########################
+class ControlButton( QPushButton ):
+    def __init__(self, parent, isOkButton:bool=True):
+        QPushButton.__init__( self, parent )
+        self.setText( "" )
+        self._isOkButton:bool = isOkButton
+        self._userdata:Any
+        if isOkButton:
+            self.setIcon( ImageFactory.instance().getOkIcon() )
+        else:
+            self.setIcon( ImageFactory.instance().getNokIcon() )
 
+    def isOkButton(self) -> bool:
+        return self._isOkButton
+
+    def setUserData(self, userdata:Any ) -> None:
+        self._userdata = userdata
+
+################# MainWindow #########################
 class MainWindow( QWidget ):
     def __init__(self):
         QWidget.__init__( self )
@@ -48,9 +132,12 @@ class MainWindow( QWidget ):
         self._provideViewCombo()
         self._provideYearCombo()
         self._provideMonthCombo()
-        self._okIcon = QIcon( "./images/greensquare20x20.png" )
-        self._nokIcon = QIcon("./images/redsquare20x20.png")
+        # self._okIcon = QIcon( "./images/greensquare20x20.png" )
+        # self._nokIcon = QIcon("./images/redsquare20x20.png")
         self._tm:KontrollModel = None
+        # self._sollColumnIdx = 4
+        # self._okColumnIdx = 5
+        # self._nokColumnIdx = 6
 
     def _createUI(self):
         self._gridLayout.setContentsMargins(3, 3, 3, 3)
@@ -128,23 +215,47 @@ class MainWindow( QWidget ):
         self._mieteTableView.repaint()
         self.repaint()
 
-    def setMieteModel(self, tm:QAbstractTableModel ) -> None:
+    def setMieteModel(self, tm:KontrollModel ) -> None:
         self._mieteTableView.setModel( tm )
         c = tm.rowCount(self)
+        okColumnIdx = tm.getOkColumnIdx()
+        nokColumnIdx = tm.getNokColumnIdx()
         for r in range( tm.rowCount(self) ):
-            btnOk = QPushButton( "" )
-            btnOk.setIcon( self._okIcon )
-            btnOk.setCheckable( True )
-            btnNok = QPushButton( "" )
-            btnNok.setIcon( self._nokIcon )
-            btnOk.setCheckable( True )
-            self._mieteTableView.setIndexWidget( tm.index( r, 5 ), btnOk )
-            self._mieteTableView.setIndexWidget( tm.index( r, 6 ), btnNok )
-            #self._mieteTableView.setItemDelegateForColumn( 3, self._namecolumnddelegate )
-        self._mieteTableView.setSizeAdjustPolicy(
-            QtWidgets.QAbstractScrollArea.AdjustToContents )
+            btnOk = ControlButton( self )
+            btnOk.clicked.connect( self._okButtonClicked )
+            btnNok = ControlButton( self, False )
+            btnNok.clicked.connect(self._nokButtonClicked)
+            self._mieteTableView.setIndexWidget( tm.index( r, okColumnIdx ), btnOk )
+            self._mieteTableView.setIndexWidget( tm.index( r, nokColumnIdx ), btnNok )
+        self._mieteTableView.setSizeAdjustPolicy( QtWidgets.QAbstractScrollArea.AdjustToContents )
         self._mieteTableView.resizeColumnsToContents()
+        #tm.setOkStateCallback( self.okButtonStateCallback )
         self._tm = tm
+
+    def _okButtonClicked(self, checkstate:bool ):
+        app = QApplication.instance()
+        button:QPushButton = app.focusWidget()
+        # or button = self.sender()
+        index = self._mieteTableView.indexAt(button.pos())
+        if index.isValid():
+            #print(index.row(), index.column())
+            self._tm.setOkState( index, button.isChecked() )
+
+    def _nokButtonClicked(self, checkstate: bool):
+        def dlg_callback(ok: bool, value: float):
+            print("ok: ", ok, " value: ", value)
+            # or button = self.sender()
+            if index.isValid():
+                #print(index.row(), index.column())
+                self._tm.setCheckMonatValue( index, value )
+            return
+
+        app = QApplication.instance()
+        button: QPushButton = app.focusWidget()
+        index = self._mieteTableView.indexAt(button.pos())
+        dlg = ValueDialog( self )
+        dlg.setCallback( dlg_callback )
+        dlg.show()
 
     def getView(self) -> str:
         return self._cboView.currentText()
@@ -155,7 +266,7 @@ class MainWindow( QWidget ):
         d["monat"] = self._cboMonat.currentIndex() + 1
         return d
 
-########### TEST
+########### TEST #############################
 from PySide2.QtWidgets import QApplication
 from models import KontrollModel
 from business import BusinessLogic

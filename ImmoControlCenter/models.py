@@ -16,7 +16,16 @@ class KontrollModel( QAbstractTableModel ):
         self._boldFont = QFont( "Arial", 11, QFont.Bold )
         self._yellow = QColor( "yellow" )
         self._yellowBrush = QBrush( self._yellow )
-        self._checkMonat = checkmonat
+        self._leadingColumns = 6 # es gibt 6 leading columns, die nichts mit den Monatswerten zu tun haben
+        self._checkMonatColumnIdx = 0
+        self._checkMonat = 0
+        self._nameColumnIdx = 3
+        self._sollColumnIdx = 4 # die Spalte mit den Soll-Werten
+        self._okColumnIdx = 5 # Spalte des OK-Buttons
+        self._nokColumnIdx = 6 # Spalte des NOK-Buttons
+        self._summeColumnIdx = 19 #Summe aller Monatszahlungen - Spalte
+        self.setCheckmonat( checkmonat )
+        self.okstatecallback = None
 
     def rowCount( self, parent ):
         return len(self._rowlist)
@@ -24,10 +33,53 @@ class KontrollModel( QAbstractTableModel ):
     def columnCount(self, parent):
         return len(self._rowlist[0])
 
+    def getOkColumnIdx( self ):
+        return self._okColumnIdx
+
+    def getNokColumnIdx( self ):
+        return self._nokColumnIdx
+
     def setCheckmonat(self, monatIdx:int ):
         self._checkMonat = monatIdx
+        self._checkMonatColumnIdx = self._checkMonat + self._leadingColumns
+        self._setCheckButtonStates()
 
-    def data(self, index, role):
+    def setOkStateCallback(self, cbfnc ):
+        self.okstatecallback = cbfnc
+
+    def setOkState(self, index, isChecked ):
+        ist = self.getCheckMonatIst( index )
+        soll = self.getSoll( index )
+        if ist != soll:
+            self.setCheckMonatIst( index, soll )
+
+    def setCheckMonatIst(self, index, val ):
+        istidx = self.index(index.row(), self._checkMonatColumnIdx)
+        print( "going to set %d to cell %d/%d" % ( val, istidx.row(), istidx.column() ) )
+        self.setData( istidx, val )
+
+    def getCheckMonatIst(self, index ):
+        istidx = self.index(index.row(), self._checkMonatColumnIdx)
+        ist = self.data(istidx, Qt.DisplayRole)
+        return ist
+
+    def getSoll( self, index ):
+        sollidx = self.index(index.row(), self._sollColumnIdx)
+        soll = self.data(sollidx, Qt.DisplayRole)
+        return soll
+
+    def setCheckMonatValue(self, index, value ):
+        idx = self.createIndex( index.row(), self._checkMonatColumnIdx )
+        self.setData( idx, value )
+
+    def setData( self, index, value ):
+        rowdict = self._rowlist[index.row()]
+        key = self._headers[index.column()]
+        rowdict[key] = value
+        self.dataChanged.emit( index, index )
+        return True
+
+    def data( self, index:QModelIndex, role:int=None ):
         #print( "data: ", index, ", ", role)
         if not index.isValid():
             return None
@@ -37,19 +89,21 @@ class KontrollModel( QAbstractTableModel ):
             v = d[key]
             return v
         elif role == Qt.BackgroundRole:
-            if index.column() == 3:
+            if index.column() == self._nameColumnIdx:
                 #return QBrush( Qt.lightGray )
                 return QBrush(self._headerColor)
-            elif index.column() == self._checkMonat + 6:
+            elif index.column() == self._checkMonatColumnIdx:
                 return self._yellowBrush
+            elif index.column() == self._summeColumnIdx:
+                return QBrush( Qt.lightGray )
         elif role == Qt.ForegroundRole:
-            if index.column() < 3:
+            if index.column() < self._nameColumnIdx:
                 return self._greyBrush
         elif role == Qt.FontRole:
-            if index.column() == 3:
+            if index.column() in ( self._nameColumnIdx, self._summeColumnIdx):
                 return self._boldFont
 
-    def headerData(self, col, orientation, role):
+    def headerData(self, col, orientation, role=None):
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
                 return self._headers[col]
@@ -57,6 +111,8 @@ class KontrollModel( QAbstractTableModel ):
                 return self._headerBrush #QBrush(self._headerColor)
         return None
 
+    def _setCheckButtonStates(self):
+        pass
 
     def sort(self, col, order):
         """sort table by given column number col"""

@@ -33,7 +33,9 @@ class DbAccess:
         sql = "select mv.von, coalesce( mv.bis, '') as bis, mv.mietobjekt_id as objekt, mv.name || ', ' || mv.vorname as name, " \
                "soll.netto_miete + soll.nk_voraus as soll, " \
                "'ok' as ok, 'nok' as nok, " \
-	           "jan, feb, mrz, apr, mai, jun, jul, aug, sept, okt, nov, dez " \
+	           "jan, feb, mrz, apr, mai, jun, jul, aug, sept, okt, nov, dez, " \
+               " (coalesce(jan,0)+coalesce(feb,0)+coalesce(mrz,0)+coalesce(apr,0)+coalesce(mai,0)+coalesce(jun,0)" \
+               "+coalesce(jul,0)+coalesce(aug,0)+coalesce(sept,0)+coalesce(okt,0)+coalesce(nov, 0) + coalesce(dez, 0)) as summe " \
                "from mietverhaeltnis mv " \
                "inner join sollmiete soll on soll.mietobjekt_id = mv.mietobjekt_id " \
 	           "inner join mtleinaus ea on ea.mietobjekt_id = mv.mietobjekt_id " \
