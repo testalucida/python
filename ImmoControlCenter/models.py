@@ -3,12 +3,14 @@ from PySide2.QtCore import *
 from PySide2.QtGui import QFont, QStandardItemModel, QStandardItem, QBrush, QColor
 import operator
 
-
 class KontrollModel( QAbstractTableModel ):
     def __init__( self, parent, dictList:List[Dict], checkmonat:int ):
         QAbstractTableModel.__init__(self, parent)
         self._rowlist:List[Dict] = dictList
-        self._headers:List = list( self._rowlist[0].keys() )
+        if len( self._rowlist ) > 0:
+            self._headers:List = list( self._rowlist[0].keys() )
+        else:
+            self._headers:List = ["Keine Daten vorhanden"]
         self._headerColor = QColor("#FDBC6A")
         self._headerBrush = QBrush( self._headerColor )
         self._greyColor = QColor( "#A19696")
@@ -31,6 +33,7 @@ class KontrollModel( QAbstractTableModel ):
         return len(self._rowlist)
 
     def columnCount(self, parent):
+        if len( self._rowlist ) == 0: return 0
         return len(self._rowlist[0])
 
     def getOkColumnIdx( self ):
@@ -42,7 +45,6 @@ class KontrollModel( QAbstractTableModel ):
     def setCheckmonat(self, monatIdx:int ):
         self._checkMonat = monatIdx
         self._checkMonatColumnIdx = self._checkMonat + self._leadingColumns
-        self._setCheckButtonStates()
 
     def setOkStateCallback(self, cbfnc ):
         self.okstatecallback = cbfnc
@@ -110,9 +112,6 @@ class KontrollModel( QAbstractTableModel ):
             if role == Qt.BackgroundRole:
                 return self._headerBrush #QBrush(self._headerColor)
         return None
-
-    def _setCheckButtonStates(self):
-        pass
 
     def sort(self, col, order):
         """sort table by given column number col"""

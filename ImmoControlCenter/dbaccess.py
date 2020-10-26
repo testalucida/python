@@ -1,6 +1,6 @@
 import sqlite3
 from typing import List, Tuple, Dict
-
+mon_dbnames = ("jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dez" )
 
 # def dict_factory(cursor, row):
 #     d = {}
@@ -29,13 +29,18 @@ class DbAccess:
     def commit( self ):
         self._con.commit()
 
+    def getMietobjekte(self) -> List:
+        sql = "select id from mietobjekt where aktiv = 1"
+        listoftuples = self._doRead( sql )
+        return [x[0] for x in listoftuples]
+
     def getMietzahlungen( self, jahr:int ) -> List[Dict]:
         sql = "select mv.von, coalesce( mv.bis, '') as bis, mv.mietobjekt_id as objekt, mv.name || ', ' || mv.vorname as name, " \
                "soll.netto_miete + soll.nk_voraus as soll, " \
                "'ok' as ok, 'nok' as nok, " \
-	           "jan, feb, mrz, apr, mai, jun, jul, aug, sept, okt, nov, dez, " \
+	           "jan, feb, mrz, apr, mai, jun, jul, aug, sep, okt, nov, dez, " \
                " (coalesce(jan,0)+coalesce(feb,0)+coalesce(mrz,0)+coalesce(apr,0)+coalesce(mai,0)+coalesce(jun,0)" \
-               "+coalesce(jul,0)+coalesce(aug,0)+coalesce(sept,0)+coalesce(okt,0)+coalesce(nov, 0) + coalesce(dez, 0)) as summe " \
+               "+coalesce(jul,0)+coalesce(aug,0)+coalesce(sep,0)+coalesce(okt,0)+coalesce(nov, 0) + coalesce(dez, 0)) as summe " \
                "from mietverhaeltnis mv " \
                "inner join sollmiete soll on soll.mietobjekt_id = mv.mietobjekt_id " \
 	           "inner join mtleinaus ea on ea.mietobjekt_id = mv.mietobjekt_id " \
@@ -45,6 +50,63 @@ class DbAccess:
 	           "order by name" % ( jahr, jahr )
         diclist: List[Dict] = self._doReadAllGetDict(sql)
         return diclist
+
+    def insertMietverhaeltnis( self, d:Dict, commit:bool=True ) -> int:
+        sql = "insert into mietverhaeltnis " \
+              "(mietobjekt_id, von, bis, name, vorname, telefon, mobil, mailto, anzahl_pers, mietkonto, bemerkung1, bemerkung2) " \
+              "values " \
+              "('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s') " % \
+              (d["Objekt"].lower(), d["von"], d["bis"], d["Name"], d["Vorname"], "", d["mobil"], d["mailto"], d["anzpers"],
+               d["Mietkonto"], d["Bemerkung1"], d["Bemerkung2"])
+        return self._doWrite( sql, commit )
+
+    def insertSollmiete(self, d:Dict, commit:bool=True ) -> int:
+        sql = "insert into sollmiete " \
+              "(mietobjekt_id, von, bis, netto_miete, nk_voraus ) " \
+              "values( '%s', '%s', '%s', %f, %f ) " % ( d["mietobjekt_id"], d["von"], d["bis"], d["netto_miete"], d["nk_voraus"] )
+        return self._doWrite( sql, commit )
+
+    def existsEinAusArt(self, einausart:str, jahr:int ) -> bool:
+        sql = "select count(*) as anz from mtleinaus where einausart = '%s' and jahr = %d " % ( einausart, jahr )
+        d = self._doReadOneGetDict( sql )
+        return d["anz"] > 0
+
+    def insertMtlEinAus(self, mietobjekt_id:str, einausart:str, jahr:int, commit:bool=True ) -> int:
+        """
+        legt einen Satz in der Tabelle mtleinaus an, wobei alle Monatswerte auf 0 gesetzt werden
+        :param mietobjekt_id:
+        :param einausart:
+        :param jahr:
+        :param commit:
+        :return:
+        """
+        sql = "insert into mtleinaus (mietobjekt_id, einausart, jahr) values ('%s', '%s', %d) " \
+              % (mietobjekt_id, einausart, jahr)
+        return self._doWrite(sql, commit)
+
+    def insertMtlEinAus2(self, d:Dict ) -> int:
+        """
+        legt einen Satz in der Tabelle mtleinaus an.
+        :param d:
+        :return:
+        """
+        pass
+
+    def updateMtlEinAus( self, mietobjekt_id:str, einausart:str, jahr:int, monat:int or str, value:float, commit:bool=True ) -> int:
+        """
+        Ändert einen Monatswert in der Tabelle mtleinaus
+        :param mietobjekt_id: identifz. das Mietobjekt
+        :param einausart:  identifiziert die einausart
+        :param jahr:  identifiziert das Jahr
+        :param monat: identifiziert den Monat: 1 -> Januar, ..., 12 -> Dezember oder als string "jan",..."dez"
+        :param value: der Wert, der im betreffenden Monat eingetragen werden soll
+        :return:
+        """
+        sql = "update mtleinaus set "
+        sql += ( mon_dbnames[monat-1] if isinstance( monat, int ) else monat )
+        sql += " = %f where mietobjekt_id = '%s' and einausart = '%s' and jahr = %d " \
+               % ( value, mietobjekt_id, einausart, jahr )
+        return self._doWrite( sql, commit )
 
     def _doRead( self, sql:str ) -> List[Tuple]:
         self._cursor.execute( sql )
@@ -91,11 +153,17 @@ def test():
     db = DbAccess()
     db.open()
 
-    #diclist:List[Dict] = db.getObjekte( 1 )
-    diclist = db.getMietzahlungen( 2020 )
-    for dic in diclist:
-        for k, v in dic.items():
-            print( k, ": ", v)
+    l = db.getMietobjekte()
+
+    #db.insertMtlEinAus( "bueb", "miete", 2021 )
+
+    db.updateMtlEinAus( "bueb", "miete", 2020, "feb", 999 )
+    #
+    # #diclist:List[Dict] = db.getObjekte( 1 )
+    # diclist = db.getMietzahlungen( 2020 )
+    # for dic in diclist:
+    #     for k, v in dic.items():
+    #         print( k, ": ", v)
 
     # dic:Dict = db.getErhaltungsAufwand( 11, 2015 )
     # if dic is None: print( "Keinen Satz gefunden")

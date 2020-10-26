@@ -7,13 +7,7 @@ from controller import Controller
 def main():
     app = QApplication()
     win = MainWindow()
-
-    busi = BusinessLogic()
-    busi.prepare()
-
-    ctrl = Controller( win, busi )
-    ctrl.startWork()
-
+    Controller( win )
     win.show()
     app.exec_()
 

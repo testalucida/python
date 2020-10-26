@@ -3,15 +3,15 @@ from PySide2 import Qt
 from PySide2.QtCore import *
 #from PySide2.QtCore import QAbstractTableModel, SIGNAL
 from PySide2.QtGui import QFont, QStandardItemModel, QStandardItem, QBrush, QColor, QIcon, QDoubleValidator
-from PySide2.QtWidgets import QWidget, QComboBox, QLabel, QTableView, QPushButton, QDialog
+from PySide2.QtWidgets import QWidget, QComboBox, QLabel, QTableView, QPushButton, QDialog, QMessageBox
 from PySide2 import QtWidgets
 import datetime
 from typing import List, Dict, Any
 from models import KontrollModel
+from monthlist import monthList
 
-
-monthList = ("Januar", "Februar", "März", "April", "Mai", "Juni",
-             "Juli", "August", "September", "Oktober", "November", "Dezember")
+# monthList = ("Januar", "Februar", "März", "April", "Mai", "Juni",
+#              "Juli", "August", "September", "Oktober", "November", "Dezember")
 
 # def createTestModel():
 #     tm = QStandardItemModel()
@@ -61,6 +61,7 @@ class ImageFactory:
 class ValueDialog( QDialog ):
     def __init__( self, parent=None ):
         QDialog.__init__( self, parent )
+        self.setModal( True )
         self.setWindowTitle( "Abweichender Betrag" )
         self.resize(245, 77)
         self.buttonBox = QtWidgets.QDialogButtonBox(self)
@@ -72,6 +73,7 @@ class ValueDialog( QDialog ):
         self._numEntry.setGeometry(QRect(10, 40, 113, 23))
         self._numEntry.setAlignment(Qt.AlignRight | Qt.AlignTrailing | Qt.AlignVCenter)
         self._numEntry.setValidator( QDoubleValidator( 0, 9999, 2, self ) )
+        self._numEntry.setFocus()
         self.label = QtWidgets.QLabel(self)
         self.label.setGeometry(QRect(10, 9, 171, 16))
         self.setLabelText( "Betrag eingeben:" )
@@ -96,7 +98,6 @@ class ValueDialog( QDialog ):
     #     if self._callback:
     #         self._callback( False, -1 )
     #     QDialog.reject( self )
-
 
 ################# CheckButton ########################
 class ControlButton( QPushButton ):
@@ -138,6 +139,7 @@ class MainWindow( QWidget ):
         # self._sollColumnIdx = 4
         # self._okColumnIdx = 5
         # self._nokColumnIdx = 6
+        self._zeitraumChangedCallback = None
 
     def _createUI(self):
         self._gridLayout.setContentsMargins(3, 3, 3, 3)
@@ -205,6 +207,7 @@ class MainWindow( QWidget ):
 
     def _yearChanged(self, newindex):
         print( "year changed to ", self._cboJahr.itemText( newindex ) )
+        self.doZeitraumChangedCallback()
 
     def _monthChanged(self, newindex):
         print( "month changed to %s (index %d)" % (self._cboMonat.itemText( newindex ), newindex ))
@@ -214,6 +217,26 @@ class MainWindow( QWidget ):
         self._mieteTableView.dataChanged( top_cell, bottom_cell, [Qt.BackgroundRole,] )
         self._mieteTableView.repaint()
         self.repaint()
+        self.doZeitraumChangedCallback()
+
+    def setZeitraum(self, jahr:int, monat:int ):
+        """setzt Monat- und Jahr-Combo. Macht keinen Callback."""
+        self._cboMonat.setCurrentIndex( monat-1 )
+        self._cboJahr.setCurrentText( str( jahr ) )
+
+    def doZeitraumChangedCallback(self):
+        if self._zeitraumChangedCallback:
+            d = self.getKontrollzeitraum()
+            self._zeitraumChangedCallback( d["jahr"], d["monat"] )
+
+    def setZeitraumChangedCallback(self, cb_fnc):
+        """
+        function to be called on changes of month or year
+        function signature: fnc( year, month )
+        :param cb_fnc:
+        :return:
+        """
+        self._zeitraumChangedCallback = cb_fnc
 
     def setMieteModel(self, tm:KontrollModel ) -> None:
         self._mieteTableView.setModel( tm )
@@ -229,7 +252,6 @@ class MainWindow( QWidget ):
             self._mieteTableView.setIndexWidget( tm.index( r, nokColumnIdx ), btnNok )
         self._mieteTableView.setSizeAdjustPolicy( QtWidgets.QAbstractScrollArea.AdjustToContents )
         self._mieteTableView.resizeColumnsToContents()
-        #tm.setOkStateCallback( self.okButtonStateCallback )
         self._tm = tm
 
     def _okButtonClicked(self, checkstate:bool ):
@@ -257,8 +279,19 @@ class MainWindow( QWidget ):
         dlg.setCallback( dlg_callback )
         dlg.show()
 
-    def getView(self) -> str:
+    def getSicht(self) -> str:
         return self._cboView.currentText()
+
+    def showException( self, exception:str, moretext:str=None ):
+        #todo: show Qt-Errordialog
+        print( exception )
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QMessageBox.Critical)
+        msg.setText( exception )
+        if moretext:
+            msg.setInformativeText( moretext )
+        msg.setWindowTitle("Error")
+        msg.exec_()
 
     def getKontrollzeitraum(self) -> Dict:
         d = {}
