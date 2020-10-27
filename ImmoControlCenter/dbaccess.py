@@ -9,12 +9,13 @@ mon_dbnames = ("jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug", "sep", "o
 #     return d
 
 class DbAccess:
-    def __init__( self ):
+    def __init__( self, dbname:str ):
         self._con = None
         self._cursor = None
+        self._dbname = dbname
 
     def open( self ) -> None:
-        self._con = sqlite3.connect( 'immo.db' )
+        self._con = sqlite3.connect( self._dbname )
         self._cursor = self._con.cursor()
 
     def close( self ) -> None:
@@ -50,6 +51,34 @@ class DbAccess:
 	           "order by name" % ( jahr, jahr )
         diclist: List[Dict] = self._doReadAllGetDict(sql)
         return diclist
+
+    def getSollmieten( self, jahr:int ):
+        """liefert alle im jahr aktiven Mietobjekte mit den in diesem Jahr gültigen Sollmieten.
+            Je Objekt werden soviele Sollmieten geliefert, wie in diesem Jahr gültig waren.
+            Die Daten werden in Form eines Dictionary geliefert:
+            {
+                "charlotte": (
+                                {
+                                    "von": "2019-03-01"
+                                    "bis": "2019-12-31"
+                                    "netto_miete": 300
+                                    "nk_voraus": 150
+                                },
+                                {
+                                    "von": "2020-02-01"  ##beachte: Zeitenräume können Lücken enthalten (Leerstand)
+                                    "bis": ""
+                                    "netto_miete": 350
+                                    "nk_voraus": 150
+                                }
+                             )
+            }
+        """
+        sjahr = str( jahr )
+        sql = "select mietobjekt_id, von, bis, netto-miete, nk_voraus " \
+              "from sollmiete " \
+              "where substr(von, 0, 5)  <= %s " \
+              "and ( bis is null or bis = '' or substr(bis, 0, 5) >= %s "
+
 
     def insertMietverhaeltnis( self, d:Dict, commit:bool=True ) -> int:
         sql = "insert into mietverhaeltnis " \
@@ -151,7 +180,7 @@ class DbAccess:
 
 def test():
     db = DbAccess()
-    db.open()
+    db.open( "immo_TEST.db" )
 
     l = db.getMietobjekte()
 

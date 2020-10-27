@@ -89,7 +89,10 @@ class KontrollModel( QAbstractTableModel ):
             key = self._headers[index.column()]
             d:Dict = self._rowlist[index.row()]
             v = d[key]
+            if v == 0: v = ""
             return v
+        elif role == Qt.TextAlignmentRole:
+            if index.column() > self._nokColumnIdx: return Qt.AlignRight
         elif role == Qt.BackgroundRole:
             if index.column() == self._nameColumnIdx:
                 #return QBrush( Qt.lightGray )

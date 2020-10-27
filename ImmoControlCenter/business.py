@@ -6,7 +6,15 @@ class BusinessLogic:
         self._db: DbAccess
 
     def prepare(self):
-        self._db = DbAccess()
+        try:
+            f = open( "use_test_db" )
+            dbname = "immo_TEST.db"
+        except:
+            dbname = "immo.db"
+        finally:
+            f.close()
+
+        self._db = DbAccess( dbname )
         self._db.open()
 
     def terminate(self):

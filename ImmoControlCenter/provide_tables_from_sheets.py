@@ -7,7 +7,7 @@ stammdatenpath = "/home/martin/Projects/python/ImmoControlCenter/Stammdaten_TEST
 einaus20path = "/home/martin/Projects/python/ImmoControlCenter/Ein_Aus_2020_TEST.ods"
 
 db = DbAccess()
-db.open()
+db.open( "immo.db" )
 
 def provideSollmiete():
     sheetname = "sollmiete"

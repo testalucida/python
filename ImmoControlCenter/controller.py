@@ -37,4 +37,5 @@ class Controller:
                 r["nok"] = ""
             model = KontrollModel( self._mainwin, rowlist, monat )
             self._mainwin.setMieteModel( model )
+        self._currentYear = jahr
         return

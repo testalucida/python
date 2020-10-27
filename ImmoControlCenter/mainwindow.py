@@ -140,6 +140,7 @@ class MainWindow( QWidget ):
         # self._okColumnIdx = 5
         # self._nokColumnIdx = 6
         self._zeitraumChangedCallback = None
+        self.resize(1800, 1280)
 
     def _createUI(self):
         self._gridLayout.setContentsMargins(3, 3, 3, 3)
