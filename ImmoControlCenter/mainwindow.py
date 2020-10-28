@@ -172,6 +172,13 @@ class MainWindow( QWidget ):
         tv.setStyleSheet( "alternate-background-color: lightgrey;" )
         #tv.setStyleSheet( "QHeaderView::section {background-color: red}" )
         self._gridLayout_main.addWidget( tv, 1, 0, 1, 1)
+
+        # lbl = QLabel( "Summe Nettomieten")
+        # self._gridLayout_main.addWidget(lbl, 1, 1, 1, 1)
+        # lbl = QLabel( "9999" )
+        # self._gridLayout_main.addWidget(lbl, 1, 2, 1, 1)
+
+
         self._mieteTableView = tv
 
     def _provideViewCombo(self):

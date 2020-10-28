@@ -52,33 +52,15 @@ class DbAccess:
         diclist: List[Dict] = self._doReadAllGetDict(sql)
         return diclist
 
-    def getSollmieten( self, jahr:int ):
-        """liefert alle im jahr aktiven Mietobjekte mit den in diesem Jahr gültigen Sollmieten.
-            Je Objekt werden soviele Sollmieten geliefert, wie in diesem Jahr gültig waren.
-            Die Daten werden in Form eines Dictionary geliefert:
-            {
-                "charlotte": (
-                                {
-                                    "von": "2019-03-01"
-                                    "bis": "2019-12-31"
-                                    "netto_miete": 300
-                                    "nk_voraus": 150
-                                },
-                                {
-                                    "von": "2020-02-01"  ##beachte: Zeitenräume können Lücken enthalten (Leerstand)
-                                    "bis": ""
-                                    "netto_miete": 350
-                                    "nk_voraus": 150
-                                }
-                             )
-            }
-        """
+    def getSollmieten( self, jahr:int ) -> List[Dict]:
         sjahr = str( jahr )
-        sql = "select mietobjekt_id, von, bis, netto-miete, nk_voraus " \
+        sql = "select mietobjekt_id, von, bis, netto_miete, nk_voraus " \
               "from sollmiete " \
-              "where substr(von, 0, 5)  <= %s " \
-              "and ( bis is null or bis = '' or substr(bis, 0, 5) >= %s "
-
+              "where substr(von, 0, 5)  <= '%s' " \
+              "and ( bis is null or bis = '' or substr(bis, 0, 5) >= '%s' ) " \
+              "order by mietobjekt_id, von;" % ( sjahr, sjahr )
+        l = self._doReadAllGetDict( sql )
+        return l
 
     def insertMietverhaeltnis( self, d:Dict, commit:bool=True ) -> int:
         sql = "insert into mietverhaeltnis " \
@@ -179,14 +161,18 @@ class DbAccess:
 # =============================================================================
 
 def test():
-    db = DbAccess()
-    db.open( "immo_TEST.db" )
+    db = DbAccess( "immo_TEST.db" )
+    db.open()
 
-    l = db.getMietobjekte()
+    res = db.getSollmieten( 2019 )
+    print(db)
+
+
+    #l = db.getMietobjekte()
 
     #db.insertMtlEinAus( "bueb", "miete", 2021 )
 
-    db.updateMtlEinAus( "bueb", "miete", 2020, "feb", 999 )
+    #db.updateMtlEinAus( "bueb", "miete", 2020, "feb", 999 )
     #
     # #diclist:List[Dict] = db.getObjekte( 1 )
     # diclist = db.getMietzahlungen( 2020 )
