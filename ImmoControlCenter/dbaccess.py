@@ -52,6 +52,9 @@ class DbAccess:
         diclist: List[Dict] = self._doReadAllGetDict(sql)
         return diclist
 
+    def getHausgeldvorauszahlungen( self, jahr:int ) -> List[Dict]:
+        raise Exception( "getHausgeldvorauszahlungen() not yet implemented" )
+
     def getSollmieten( self, jahr:int ) -> List[Dict]:
         sjahr = str( jahr )
         sql = "select mietobjekt_id, von, bis, netto_miete, nk_voraus " \

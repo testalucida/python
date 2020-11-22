@@ -102,7 +102,7 @@ class DbAccess:
     def getObjekte( self, stpfl_id:int ) -> List[Dict]:
         sql = "select id, strasse_hnr, plz, ort, coalesce(einh_wert_az, ' ') as einh_wert_az, " \
               "coalesce(angeschafft_am, ' ') as angeschafft_am, coalesce(verkauft_am, ' ') as verkauft_am " \
-              "from objekt where stpfl_id = %d;" % stpfl_id
+              "from objekt where stpfl_id = %d order by ort, strasse_hnr;" % stpfl_id
         diclist:List[Dict] = self._doReadAllGetDict( sql )
         return diclist
 

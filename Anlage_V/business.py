@@ -109,9 +109,9 @@ class AnlageVToPdf:
                     else:
                         align = args[2]
 
-                    self.writeZeile( posX, posY, field['value'], align )
+                    self.writeZeile( posX, posY, " " if not field['value'] else field['value'], align )
             except:
-                print('unexpected error: ', sys.exc_info()[0])
+                print('field_name %s, field_value %s: unexpected error: ' % (field['name'], field['value']), sys.exc_info()[0])
 
     def writeZeile(self, x:int, y:int, text:str, align:str="L" ) -> None:
         self._pdf.set_xy(x, y)

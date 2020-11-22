@@ -2,10 +2,23 @@ from dbaccess import DbAccess
 from typing import List, Dict
 
 class BusinessLogic:
+    __instance = None
+
     def __init__(self):
+        if BusinessLogic.__instance != None:
+            raise Exception( "You can't instantiate BusinessLogic more than once." )
+        else:
+            BusinessLogic.__instance = self
         self._db: DbAccess
 
-    def prepare(self):
+    @staticmethod
+    def inst():
+        if BusinessLogic.__instance == None:
+            BusinessLogic()
+            BusinessLogic.inst()._prepare()
+        return BusinessLogic.__instance
+
+    def _prepare(self):
         try:
             f = open( "use_test_db" )
             dbname = "immo_TEST.db"
@@ -22,6 +35,9 @@ class BusinessLogic:
 
     def getMietzahlungen(self, jahr:int ) -> List[Dict]:
         return self._db.getMietzahlungen( jahr )
+
+    def getHausgeldVorauszahlungen( self, jahr:int ) -> List[Dict]:
+        return self._db.getHausgeldvorauszahlungen( jahr )
 
     def existsEinAusArt(self, einausart: str, jahr: int) -> bool:
         return self._db.existsEinAusArt( einausart, jahr )
@@ -68,9 +84,9 @@ class BusinessLogic:
 
 
 def test():
-    busi = BusinessLogic()
-    busi.prepare()
-    busi.createMtlEinAusJahresSet( "miete", 2020 )
+    busi = BusinessLogic.inst()
+    busi.getMietzahlungen( 2019 )
+    #busi.createMtlEinAusJahresSet( "miete", 2020 )
     busi.terminate()
 
 if __name__ == "__main__":

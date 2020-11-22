@@ -52,6 +52,7 @@ def provideMiete2020():
     db.commit()
 
 if __name__ == "__main__":
+    pass
     #provideMietverhaeltnis()
     #provideSollmiete()
-    provideMiete2020()
+    #provideMiete2020()

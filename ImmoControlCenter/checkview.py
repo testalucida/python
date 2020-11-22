@@ -1,35 +1,17 @@
-
 from PySide2 import Qt
 from PySide2.QtCore import *
 #from PySide2.QtCore import QAbstractTableModel, SIGNAL
-from PySide2.QtGui import QFont, QStandardItemModel, QStandardItem, QBrush, QColor, QIcon, QDoubleValidator
-from PySide2.QtWidgets import QWidget, QComboBox, QLabel, QTableView, QPushButton, QDialog, QMessageBox
+from PySide2.QtGui import QFont, QIcon, QDoubleValidator
+from PySide2.QtWidgets import QApplication, QWidget, QComboBox, QHBoxLayout, QPushButton, \
+    QDialog, QMessageBox
 from PySide2 import QtWidgets
 import datetime
 from typing import List, Dict, Any
-from models import KontrollModel
+
+#from models import KontrollModel
+from tableview import TableView
+from checktablemodel import CheckTableModel
 from monthlist import monthList
-
-# monthList = ("Januar", "Februar", "März", "April", "Mai", "Juni",
-#              "Juli", "August", "September", "Oktober", "November", "Dezember")
-
-# def createTestModel():
-#     tm = QStandardItemModel()
-#     i1 = QStandardItem( "Abazid" )
-#     i2 = QStandardItem( "550" )
-#     i3 = QStandardItem( "ok" )
-#     i4 = QStandardItem( "nok" )
-#     i5 = QStandardItem( "510" )
-#     itemlist = [i1, i2, i3, i4, i5]
-#     tm.appendRow( itemlist )
-#     i1 = QStandardItem("Zeiger")
-#     i2 = QStandardItem("1050")
-#     i3 = QStandardItem("ok")
-#     i4 = QStandardItem("nok")
-#     i5 = QStandardItem("1150")
-#     itemlist = [i1, i2, i3, i4, i5]
-#     tm.appendRow(itemlist)
-#     return tm
 
 class ImageFactory:
     __instance = None
@@ -57,7 +39,7 @@ class ImageFactory:
             self._nokIcon = QIcon("./images/redsquare20x20.png")
         return self._nokIcon
 
-################# ValueDialog ########################
+################ ValueDialog ########################
 class ValueDialog( QDialog ):
     def __init__( self, parent=None ):
         QDialog.__init__( self, parent )
@@ -92,12 +74,6 @@ class ValueDialog( QDialog ):
         if self._callback:
             self._callback( True, self._numEntry.text() )
         QDialog.accept(self)
-    #
-    # def reject(self):
-    #     print( "reject" )
-    #     if self._callback:
-    #         self._callback( False, -1 )
-    #     QDialog.reject( self )
 
 ################# CheckButton ########################
 class ControlButton( QPushButton ):
@@ -117,80 +93,43 @@ class ControlButton( QPushButton ):
     def setUserData(self, userdata:Any ) -> None:
         self._userdata = userdata
 
-################# MainWindow #########################
-class MainWindow( QWidget ):
+################# MonatswerteBaseView #########################
+class CheckView( QWidget ):
     def __init__(self):
         QWidget.__init__( self )
-        self.setWindowTitle( "Immo Kontrollzentrum" )
-        self._gridLayout_main:QtWidgets.QGridLayout = QtWidgets.QGridLayout( self )
-        self._gridLayout:QtWidgets.QGridLayout = QtWidgets.QGridLayout()
+        self.setWindowTitle( "Monatswerte" )
+        self._gridLayout:QtWidgets.QGridLayout = QtWidgets.QGridLayout( self )
         self._combofont = QFont( "Arial", 14, weight=QFont.Bold);
-        self._cboView:QComboBox #Mieter oder Wohnung
         self._cboJahr:QComboBox
         self._cboMonat:QComboBox
-        self._mieteTableView:QTableView
+        self._tableView:TableView
         self._createUI()
-        self._provideViewCombo()
         self._provideYearCombo()
         self._provideMonthCombo()
-        # self._okIcon = QIcon( "./images/greensquare20x20.png" )
-        # self._nokIcon = QIcon("./images/redsquare20x20.png")
-        self._tm:KontrollModel = None
-        # self._sollColumnIdx = 4
-        # self._okColumnIdx = 5
-        # self._nokColumnIdx = 6
+        self._tm:CheckTableModel = None
         self._zeitraumChangedCallback = None
         self.resize(1800, 1280)
 
     def _createUI(self):
         self._gridLayout.setContentsMargins(3, 3, 3, 3)
-        labelrow = 0
-        widgetrow = 1
-        lbl = QLabel( "Sicht" )
-        self._gridLayout.addWidget(lbl, labelrow, 0, 1, 1, Qt.AlignHCenter)
 
-        self._cboView = QComboBox(self)
-        self._gridLayout.addWidget(self._cboView, widgetrow, 0, 1, 1, Qt.AlignHCenter)
-
-        lbl = QLabel("Kontrollzeitraum")
-        #self.gridLayout.addWidget(lbl, 0, 1, rowSpan=1, columnSpan=2, alignment=Qt.AlignHCenter )
-        lbl.setAlignment( Qt.AlignCenter )
-        self._gridLayout.addWidget(lbl, labelrow, 1, 1, 2)
-
+        hbox = QHBoxLayout()
         self._cboJahr = QComboBox( self )
-        self._gridLayout.addWidget(self._cboJahr, widgetrow, 1, 1, 1)
+        hbox.addWidget( self._cboJahr )
+        #self._gridLayout.addWidget( self._cboJahr, 0, 0, alignment=Qt.AlignLeft )
 
         self._cboMonat = QComboBox(self)
-        self._gridLayout.addWidget(self._cboMonat, widgetrow, 2, 1, 1)
+        hbox.addWidget( self._cboMonat )
+        self._gridLayout.addLayout( hbox, 0, 0, alignment=Qt.AlignLeft )
 
-        # add layout with comboboxes to main layout:
-        self._gridLayout_main.addLayout( self._gridLayout, 0, 0, 1, 1 )
-
-        # add MieteTableView to main layout
-        tv = QTableView(self)
+        # add TableView to main layout
+        tv = TableView()
         tv.setAlternatingRowColors( True )
         tv.setStyleSheet( "alternate-background-color: lightgrey;" )
         #tv.setStyleSheet( "QHeaderView::section {background-color: red}" )
-        self._gridLayout_main.addWidget( tv, 1, 0, 1, 1)
+        self._gridLayout.addWidget( tv, 1, 0, 1, 2)
 
-        # lbl = QLabel( "Summe Nettomieten")
-        # self._gridLayout_main.addWidget(lbl, 1, 1, 1, 1)
-        # lbl = QLabel( "9999" )
-        # self._gridLayout_main.addWidget(lbl, 1, 2, 1, 1)
-
-
-        self._mieteTableView = tv
-
-    def _provideViewCombo(self):
-        cbo = self._cboView
-        cbo.setFont( self._combofont )
-        cbo.addItem( "Mieten" )
-        cbo.addItem( "Zahlungen mit/ohne Werterhaltung" )
-        cbo.addItem( "Nebenkosten" )
-        cbo.addItem( "Hausgeld" )
-        cbo.addItem( "Stammdaten" )
-        cbo.setCurrentIndex( 0 )
-        cbo.currentIndexChanged.connect( self._viewChanged )
+        self._tableView = tv
 
     def _provideYearCombo(self):
         y = datetime.datetime.now().year
@@ -210,9 +149,6 @@ class MainWindow( QWidget ):
         cbo.setCurrentIndex( m-1 )
         cbo.currentIndexChanged.connect(self._monthChanged)
 
-    def _viewChanged(self, newindex):
-        print( "view changed to ", self._cboView.itemText( newindex ) )
-
     def _yearChanged(self, newindex):
         print( "year changed to ", self._cboJahr.itemText( newindex ) )
         self.doZeitraumChangedCallback()
@@ -222,8 +158,8 @@ class MainWindow( QWidget ):
         self._tm.setCheckmonat( newindex + 1 )
         top_cell = self._tm.index( 0, 0 )
         bottom_cell = self._tm.index( 0, 2 )
-        self._mieteTableView.dataChanged( top_cell, bottom_cell, [Qt.BackgroundRole,] )
-        self._mieteTableView.repaint()
+        self._tableView.dataChanged( top_cell, bottom_cell, [Qt.BackgroundRole,] )
+        self._tableView.repaint()
         self.repaint()
         self.doZeitraumChangedCallback()
 
@@ -246,8 +182,8 @@ class MainWindow( QWidget ):
         """
         self._zeitraumChangedCallback = cb_fnc
 
-    def setMieteModel(self, tm:KontrollModel ) -> None:
-        self._mieteTableView.setModel( tm )
+    def setModel(self, tm:CheckTableModel ) -> None:
+        self._tableView.setModel( tm )
         c = tm.rowCount(self)
         okColumnIdx = tm.getOkColumnIdx()
         nokColumnIdx = tm.getNokColumnIdx()
@@ -256,10 +192,10 @@ class MainWindow( QWidget ):
             btnOk.clicked.connect( self._okButtonClicked )
             btnNok = ControlButton( self, False )
             btnNok.clicked.connect(self._nokButtonClicked)
-            self._mieteTableView.setIndexWidget( tm.index( r, okColumnIdx ), btnOk )
-            self._mieteTableView.setIndexWidget( tm.index( r, nokColumnIdx ), btnNok )
-        self._mieteTableView.setSizeAdjustPolicy( QtWidgets.QAbstractScrollArea.AdjustToContents )
-        self._mieteTableView.resizeColumnsToContents()
+            self._tableView.setIndexWidget( tm.index( r, okColumnIdx ), btnOk )
+            self._tableView.setIndexWidget( tm.index( r, nokColumnIdx ), btnNok )
+        self._tableView.setSizeAdjustPolicy( QtWidgets.QAbstractScrollArea.AdjustToContents )
+        self._tableView.resizeColumnsToContents()
         self._tm = tm
 
     def _okButtonClicked(self, checkstate:bool ):
@@ -287,9 +223,6 @@ class MainWindow( QWidget ):
         dlg.setCallback( dlg_callback )
         dlg.show()
 
-    def getSicht(self) -> str:
-        return self._cboView.currentText()
-
     def showException( self, exception:str, moretext:str=None ):
         #todo: show Qt-Errordialog
         print( exception )
@@ -307,28 +240,20 @@ class MainWindow( QWidget ):
         d["monat"] = self._cboMonat.currentIndex() + 1
         return d
 
-########### TEST #############################
-from PySide2.QtWidgets import QApplication
-from models import KontrollModel
-from business import BusinessLogic
-
-def main():
+def test():
     app = QApplication()
-    win = MainWindow()
-    # busi = BusinessLogic()
-    # busi.prepare()
-    #
-    # mietenDictList = [
-    #     { "Mieter": "Abazid", "Soll": 590, "OK": "ok", "NOK": "nok", "Jan": 580, "Feb": 590 },
-    #     { "Mieter": "Zeiger", "Soll": 590, "OK": "ok", "NOK": "nok", "Jan": 580, "Feb": 590}
-    # ]
-    #
-    # mm = KontrollModel( win, mietenDictList, 10 )
-    # rc = mm.rowCount( win )
-    # win.setTableViewModel( mm )
+    win = CheckView()
+
+    rows = ({"Col 1": "1/0", "Col 2": 345,    "Col 3": "Ave Maria"},
+            {"Col 1": "2/0", "Col 2": -123.45, "Col 3": "Summer in the City"},
+            {"Col 1": "3/0", "Col 2": 776.45, "Col 3": "Winter in the Park"}
+           )
+    tm = CheckTableModel( [], 11 )
+
+    win.setModel( tm )
 
     win.show()
     app.exec_()
 
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    test()

@@ -1,9 +1,10 @@
 from PySide2.QtWidgets import QApplication
 from PySide2 import QtCore
 from PySide2.QtWidgets import QWidget
-from mainwindow import MainWindow
+#from mainwindow import MainWindow
+from immocentermainwindow import ImmoCenterMainWindow, MainWindowAction
 from business import BusinessLogic
-from controller import Controller
+from maincontroller import MainController
 
 class ShutDownFilter( QtCore.QObject ):
     def __init__(self, win:QWidget, app:QApplication ):
@@ -11,7 +12,7 @@ class ShutDownFilter( QtCore.QObject ):
         self._win = win
         self._app = app
 
-    def eventFilter(self, obj, event):
+    def eventFilter(self, obj, event) -> bool:
         if obj is self._win and event.type() == QtCore.QEvent.Close:
             self.quit_app()
             event.ignore()
@@ -27,8 +28,11 @@ class ShutDownFilter( QtCore.QObject ):
 def main():
     app = QApplication()
     #app = MyApp()
-    win = MainWindow()
-    Controller( win )
+    win = ImmoCenterMainWindow()
+    ctrl = MainController( win )
+    ctrl.onMainWindowAction( MainWindowAction.OPEN_MIETE_VIEW )
+    ctrl.onMainWindowAction( MainWindowAction.OPEN_HGV_VIEW )
+
     # see: https://stackoverflow.com/questions/53097415/pyside2-connect-close-by-window-x-to-custom-exit-method
     shutDownFilter = ShutDownFilter(win, app)
     win.installEventFilter(shutDownFilter)

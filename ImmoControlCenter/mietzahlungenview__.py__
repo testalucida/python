@@ -1,4 +1,3 @@
-
 from PySide2 import Qt
 from PySide2.QtCore import *
 #from PySide2.QtCore import QAbstractTableModel, SIGNAL
@@ -9,27 +8,6 @@ import datetime
 from typing import List, Dict, Any
 from models import KontrollModel
 from monthlist import monthList
-
-# monthList = ("Januar", "Februar", "März", "April", "Mai", "Juni",
-#              "Juli", "August", "September", "Oktober", "November", "Dezember")
-
-# def createTestModel():
-#     tm = QStandardItemModel()
-#     i1 = QStandardItem( "Abazid" )
-#     i2 = QStandardItem( "550" )
-#     i3 = QStandardItem( "ok" )
-#     i4 = QStandardItem( "nok" )
-#     i5 = QStandardItem( "510" )
-#     itemlist = [i1, i2, i3, i4, i5]
-#     tm.appendRow( itemlist )
-#     i1 = QStandardItem("Zeiger")
-#     i2 = QStandardItem("1050")
-#     i3 = QStandardItem("ok")
-#     i4 = QStandardItem("nok")
-#     i5 = QStandardItem("1150")
-#     itemlist = [i1, i2, i3, i4, i5]
-#     tm.appendRow(itemlist)
-#     return tm
 
 class ImageFactory:
     __instance = None
@@ -92,12 +70,6 @@ class ValueDialog( QDialog ):
         if self._callback:
             self._callback( True, self._numEntry.text() )
         QDialog.accept(self)
-    #
-    # def reject(self):
-    #     print( "reject" )
-    #     if self._callback:
-    #         self._callback( False, -1 )
-    #     QDialog.reject( self )
 
 ################# CheckButton ########################
 class ControlButton( QPushButton ):
@@ -118,7 +90,7 @@ class ControlButton( QPushButton ):
         self._userdata = userdata
 
 ################# MainWindow #########################
-class MainWindow( QWidget ):
+class MietzahlungenView( QWidget ):
     def __init__(self):
         QWidget.__init__( self )
         self.setWindowTitle( "Immo Kontrollzentrum" )
@@ -306,29 +278,3 @@ class MainWindow( QWidget ):
         d["jahr"] = int( self._cboJahr.currentText() )
         d["monat"] = self._cboMonat.currentIndex() + 1
         return d
-
-########### TEST #############################
-from PySide2.QtWidgets import QApplication
-from models import KontrollModel
-from business import BusinessLogic
-
-def main():
-    app = QApplication()
-    win = MainWindow()
-    # busi = BusinessLogic()
-    # busi.prepare()
-    #
-    # mietenDictList = [
-    #     { "Mieter": "Abazid", "Soll": 590, "OK": "ok", "NOK": "nok", "Jan": 580, "Feb": 590 },
-    #     { "Mieter": "Zeiger", "Soll": 590, "OK": "ok", "NOK": "nok", "Jan": 580, "Feb": 590}
-    # ]
-    #
-    # mm = KontrollModel( win, mietenDictList, 10 )
-    # rc = mm.rowCount( win )
-    # win.setTableViewModel( mm )
-
-    win.show()
-    app.exec_()
-
-if __name__ == '__main__':
-    main()
