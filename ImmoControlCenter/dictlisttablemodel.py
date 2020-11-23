@@ -12,13 +12,13 @@ class DictListTableModel( QAbstractTableModel ):
             self._headers:List = list( self._rowlist[0].keys() )
         else:
             self._headers:List = ["Keine Daten vorhanden"]
-        self._headerBrush:QBrush = None
+        self.headerBrush:QBrush = None
         self._negNumberBrush = None
 
-    def rowCount( self, parent:QModelIndex ) -> int:
+    def rowCount( self, parent:QModelIndex=None ) -> int:
         return len(self._rowlist)
 
-    def columnCount(self, parent:QModelIndex) -> int:
+    def columnCount( self, parent:QModelIndex=None ) -> int:
         if len( self._rowlist ) == 0: return 0
         return len(self._rowlist[0])
 
@@ -35,7 +35,7 @@ class DictListTableModel( QAbstractTableModel ):
         return True
 
     def setHeaderColor(self, color:QColor ) -> None:
-        self._headerBrush = QBrush( color )
+        self.headerBrush = QBrush( color )
 
     def getValue(self, indexrow:int, indexcolumn:int ) -> Any:
         key = self._headers[indexcolumn]
@@ -81,8 +81,8 @@ class DictListTableModel( QAbstractTableModel ):
             if role == Qt.DisplayRole:
                 return self._headers[col]
             if role == Qt.BackgroundRole:
-                if self._headerBrush:
-                    return self._headerBrush
+                if self.headerBrush:
+                    return self.headerBrush
         return None
 
     def sort( self, col:int, order: Qt.SortOrder ) -> None:

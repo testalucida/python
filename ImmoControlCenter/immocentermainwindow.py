@@ -225,10 +225,9 @@ class ImmoCenterMainWindow( QMainWindow ):
         msg.setWindowTitle( "Error" )
         msg.exec_()
 
-    def addMdiChild( self, widget:QWidget, title:str ) -> None:
-        subwin = self._mdiArea.addSubWindow( widget )
-        subwin.setWindowTitle( title )
-        widget.setAttribute( Qt.WA_DeleteOnClose )
+    def addMdiChild( self, subwin:QMdiSubWindow ) -> None:
+        self._mdiArea.addSubWindow( subwin )
+        subwin.widget().setAttribute( Qt.WA_DeleteOnClose )
 
     def _addMdiChild( self ):
         te = QTextEdit( self )

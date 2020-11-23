@@ -58,6 +58,13 @@ class CheckTableModel( DictListTableModel ):
         print( "going to set %d to cell %d/%d" % ( val, istidx.row(), istidx.column() ) )
         self.setData( istidx, val )
 
+    def setData( self, index, value ):
+        rowdict = self._rowlist[index.row()]
+        key = self._headers[index.column()]
+        rowdict[key] = value
+        self.dataChanged.emit( index, index )
+        return True
+
     def getCheckMonatIst(self, index ):
         istidx = self.index(index.row(), self._checkMonatColumnIdx)
         ist = self.data(istidx, Qt.DisplayRole)
@@ -74,7 +81,7 @@ class CheckTableModel( DictListTableModel ):
 
     def getBackgroundBrush(self, indexrow:int, indexcolumn:int ) -> QBrush or None:
         if indexcolumn == self._nameColumnIdx:
-            return QBrush( self._headerColor )
+            return self.headerBrush
         elif indexcolumn == self._checkMonatColumnIdx:
             return self._yellowBrush
         elif indexcolumn == self._summeColumnIdx:

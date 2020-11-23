@@ -137,16 +137,16 @@ class CheckView( QWidget ):
         cbo.setFont(self._combofont)
         for i in range(-2, 2):
             cbo.addItem(str(y + i))
-        cbo.setCurrentIndex(2)
+        #cbo.setCurrentIndex(2)
         cbo.currentIndexChanged.connect(self._yearChanged)
 
     def _provideMonthCombo(self):
-        m = datetime.datetime.now().month
+        #m = datetime.datetime.now().month
         cbo = self._cboMonat
         cbo.setFont(self._combofont)
         for mon in monthList:
             cbo.addItem( mon )
-        cbo.setCurrentIndex( m-1 )
+        #cbo.setCurrentIndex( m-1 )
         cbo.currentIndexChanged.connect(self._monthChanged)
 
     def _yearChanged(self, newindex):
@@ -155,12 +155,13 @@ class CheckView( QWidget ):
 
     def _monthChanged(self, newindex):
         print( "month changed to %s (index %d)" % (self._cboMonat.itemText( newindex ), newindex ))
-        self._tm.setCheckmonat( newindex + 1 )
-        top_cell = self._tm.index( 0, 0 )
-        bottom_cell = self._tm.index( 0, 2 )
-        self._tableView.dataChanged( top_cell, bottom_cell, [Qt.BackgroundRole,] )
-        self._tableView.repaint()
-        self.repaint()
+        if( self._tm ):
+            self._tm.setCheckmonat( newindex + 1 )
+            top_cell = self._tm.index( 0, 0 )
+            bottom_cell = self._tm.index( 0, 2 )
+            self._tableView.dataChanged( top_cell, bottom_cell, [Qt.BackgroundRole,] )
+            self._tableView.repaint()
+            self.repaint()
         self.doZeitraumChangedCallback()
 
     def setZeitraum(self, jahr:int, monat:int ):
@@ -173,7 +174,7 @@ class CheckView( QWidget ):
             d = self.getKontrollzeitraum()
             self._zeitraumChangedCallback( d["jahr"], d["monat"] )
 
-    def setZeitraumChangedCallback(self, cb_fnc):
+    def setZeitraumChangedCallback( self, cb_fnc ):
         """
         function to be called on changes of month or year
         function signature: fnc( year, month )
@@ -202,10 +203,15 @@ class CheckView( QWidget ):
         app = QApplication.instance()
         button:QPushButton = app.focusWidget()
         # or button = self.sender()
-        index = self._mieteTableView.indexAt(button.pos())
+        index = self._tableView.indexAt(button.pos())
         if index.isValid():
             #print(index.row(), index.column())
             self._tm.setOkState( index, button.isChecked() )
+        # ## TEST ##
+        # idx = self._tm.index( 0, self._tm.columnCount()-1 )
+        # self._tableView.scrollTo( idx )
+        # idx = self._tm.index( 0, 3 )
+        # self._tableView.scrollTo( idx )
 
     def _nokButtonClicked(self, checkstate: bool):
         def dlg_callback(ok: bool, value: float):
@@ -218,7 +224,7 @@ class CheckView( QWidget ):
 
         app = QApplication.instance()
         button: QPushButton = app.focusWidget()
-        index = self._mieteTableView.indexAt(button.pos())
+        index = self._tableView.indexAt(button.pos())
         dlg = ValueDialog( self )
         dlg.setCallback( dlg_callback )
         dlg.show()

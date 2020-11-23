@@ -1,5 +1,6 @@
 from typing import List, Dict
 from immocentermainwindow import ImmoCenterMainWindow, MainWindowAction
+from checkcontroller import MietenController, HGVController
 from business import BusinessLogic
 from models import KontrollModel
 
@@ -7,6 +8,8 @@ class MainController:
     def __init__(self, win:ImmoCenterMainWindow ):
         self._mainwin:ImmoCenterMainWindow = win
         win.setActionCallback( self.onMainWindowAction )
+        self._mietenCtrl:MietenController = MietenController()
+        self._hgvCtrl:HGVController = HGVController()
 
     def onMainWindowAction( self, action:MainWindowAction ):
         switcher = {
@@ -33,7 +36,8 @@ class MainController:
         pass
 
     def _openMieteView( self ):
-        print( "openMieteView" )
+        subwin = self._mietenCtrl.createSubwindow()
+        self._mainwin.addMdiChild( subwin )
 
     def _openHGVView( self ):
         pass

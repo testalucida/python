@@ -37,6 +37,7 @@ def main():
     shutDownFilter = ShutDownFilter(win, app)
     win.installEventFilter(shutDownFilter)
     win.show()
+    win.resize( 1400, 800 )
 
     app.exec_()
 
