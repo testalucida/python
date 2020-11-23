@@ -61,9 +61,6 @@ class MyTableView( QTableView ):
     def __init__( self ):
         QTableView.__init__( self )
         self.frozen:QTableView = None
-        # hh = self.horizontalHeader()
-        # hh.setDefaultAlignment( Qt.AlignCenter )
-        # hh.setVisible( True )
 
     def _setupFrozenView( self ):
         self.frozen = QTableView( self )
@@ -73,12 +70,17 @@ class MyTableView( QTableView ):
         self.frozen.setHorizontalScrollBarPolicy( Qt.ScrollBarAlwaysOff )
         self.frozen.setVerticalScrollBarPolicy( Qt.ScrollBarAlwaysOff )
         self.frozen.verticalHeader().setDefaultSectionSize( self.verticalHeader().defaultSectionSize() )
+        #self.frozen.setStyleSheet( "border: none; background-color: #d1d8d8" )
         self.frozen.setColumnWidth( 0, self.columnWidth( 0 ) )
         for col in range( 1, self.model().columnCount() ):
-            print( "col: ", col )
             self.frozen.setColumnHidden( col, True )
         self.viewport().stackUnder( self.frozen )
         self._updateFrozenTableGeometry()
+        # connect the headers and scrollbars of both tableviews together
+        self.horizontalHeader().sectionResized.connect( self._updateSectionWidth )
+        self.verticalHeader().sectionResized.connect( self._updateSectionHeight )
+        self.frozen.verticalScrollBar().valueChanged.connect( self.verticalScrollBar().setValue )
+        self.verticalScrollBar().valueChanged.connect( self.frozen.verticalScrollBar().setValue )
         self.frozen.show()
 
     def freezeColumns( self, nLeftColumns:int ):
@@ -93,6 +95,19 @@ class MyTableView( QTableView ):
             self.frozen.setGeometry(self.frameWidth(),
                                     self.frameWidth(), self.columnWidth(0),
                                     self.viewport().height() + self.horizontalHeader().height())
+
+    def _updateSectionWidth( self, logicalIndex, oldSize, newSize ):
+        if logicalIndex == 0:
+            self.frozen.setColumnWidth(logicalIndex, newSize)
+            self._updateFrozenTableGeometry()
+
+    def _updateSectionHeight( self, logicalIndex, oldSize, newSize ):
+        self.frozen.setRowHeight(logicalIndex, newSize)
+
+    def resizeEvent(self, event):
+        QTableView.resizeEvent(self, event)
+        if self.frozen:
+            self._updateFrozenTableGeometry()
 
 
 if __name__ == "__main__":
