@@ -18,7 +18,7 @@ class TestWindow( QWidget ):
         self.resize( 500, 400 )
 
     def onClick( self ):
-        self.tableView.freezeColumns( 1 )
+        self.tableView.freezeColumns( 2 )
 
     def onClickReset( self ):
         self.tableView.resetFrozen()
@@ -27,18 +27,20 @@ class TestWindow( QWidget ):
 class TestModel( QAbstractTableModel ):
     def __init__(self):
         QAbstractTableModel.__init__( self )
+        self._rowlist = [['cell %d/%d' % (r,c) for c in range(5)] for r in range(8)]
 
     def rowCount( self, parent:QModelIndex=None ) -> int:
-        return 100
+        return len(self._rowlist)
 
     def columnCount( self, parent:QModelIndex=None ) -> int:
-        return 20
+        return len(self._rowlist[0])
 
     def data(self, index: QModelIndex, role: int = None):
         if not index.isValid():
             return None
         if role == Qt.DisplayRole:
-            val = str( index.row() ) + " / " + str( index.column() )
+            #val = str( index.row() ) + " / " + str( index.column() )
+            val = self._rowlist[index.row()][index.column()]
             return val
 
         return None
@@ -77,7 +79,7 @@ class TableViewExt( QTableView ):
         self._frozen = QTableView( self )
         self._frozen.setModel( self.model() )
         self._frozen.verticalHeader().hide()
-        self._frozen.horizontalHeader().setSectionResizeMode( QHeaderView.Fixed )
+        #self._frozen.horizontalHeader().setSectionResizeMode( QHeaderView.Stretch )
         self._frozen.setSelectionModel( self.selectionModel() )  ##QAbstractItemView.selectionModel( self ) )
         self._frozen.setHorizontalScrollBarPolicy( Qt.ScrollBarAlwaysOff )
         self._frozen.setVerticalScrollBarPolicy( Qt.ScrollBarAlwaysOff )
@@ -92,7 +94,7 @@ class TableViewExt( QTableView ):
         self.viewport().stackUnder( self._frozen )
         self._updateFrozenTableGeometry()
         # connect the headers and scrollbars of both tableviews together
-        #self._frozen.horizontalHeader().sectionResized.connect( self._updateSectionWidth )
+        self._frozen.horizontalHeader().sectionResized.connect( self._updateOrigSectionWidth )
         self.horizontalHeader().sectionResized.connect( self._updateFrozenSectionWidth )
         self.verticalHeader().sectionResized.connect( self._updateFrozenSectionHeight )
         #self._frozen.verticalScrollBar().valueChanged.connect( self.verticalScrollBar().setValue )
@@ -102,7 +104,7 @@ class TableViewExt( QTableView ):
     def resetFrozen( self ):
         if self._frozen:
             self._frozen.hide()
-            #self._frozen.verticalScrollBar().valueChanged.disconnect( self.verticalScrollBar().setValue )
+            self._frozen.horizontalHeader().sectionResized.disconnect( self._updateOrigSectionWidth )
             self.verticalScrollBar().valueChanged.disconnect( self._frozen.verticalScrollBar().setValue )
             self._frozen.destroy()
             self._frozen = None
@@ -124,6 +126,10 @@ class TableViewExt( QTableView ):
         if self.model():
             self._setupFrozenView()
 
+    def _updateOrigSectionWidth( self, logicalIndex, oldSize, newSize ):
+        if logicalIndex < self._nFrozen:
+            self.setColumnWidth( logicalIndex, newSize )
+
     def _updateFrozenTableGeometry(self):
         width = 0
         for n in range( self._nFrozen ):
@@ -140,8 +146,7 @@ class TableViewExt( QTableView ):
                                       self.viewport().height() + self.horizontalHeader().height() )
 
     def _updateFrozenSectionWidth( self, logicalIndex, oldSize, newSize ):
-        #print( "updateSectionWidth: logicalIndex=%d, oldsize=%d, newsize=%d" % (logicalIndex, oldSize, newSize) )
-        if logicalIndex == 0:
+        if logicalIndex < self._nFrozen:
             self._frozen.setColumnWidth( logicalIndex, newSize )
             self._updateFrozenTableGeometry()
 
