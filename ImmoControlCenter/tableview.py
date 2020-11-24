@@ -1,12 +1,12 @@
 from PySide2.QtCore import *
-from PySide2.QtWidgets import QTableView, QAbstractScrollArea
+from PySide2.QtWidgets import QTableView, QAbstractScrollArea, QWidget
 from dictlisttablemodel import DictListTableModel
 from tableviewext import TableViewExt
 
 class TableView( TableViewExt ):
     def __init__(self):
         TableViewExt.__init__(self)
-        self.freezeColumns( 7 )
+        self.setColumnsFrozen( 7 )
         self.setAlternatingRowColors( True )
         self.setStyleSheet( "alternate-background-color: lightgrey" )
         self.setContextMenuPolicy( Qt.CustomContextMenu )

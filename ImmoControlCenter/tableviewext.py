@@ -2,11 +2,18 @@ import sys
 from PySide2.QtCore import *
 from PySide2.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QTableView, QHeaderView
 
+class TestButton( QPushButton ):
+    def __init__(self, txt:str ):
+        QPushButton.__init__( self, txt )
+
+    def __del__( self ):
+        print( "TestButton %s deleted." % (self.text() ) )
+
 class TestWindow( QWidget ):
     def __init__( self ):
         QWidget.__init__( self )
         self.tableView = TableViewExt()
-        self.btn = QPushButton( "First Column fix" )
+        self.btn = TestButton( "First Column fix" )
         self.btn.clicked.connect( self.onClick )
         self.btnReset = QPushButton( "Unfix first Column" )
         self.btnReset.clicked.connect( self.onClickReset )
@@ -18,7 +25,7 @@ class TestWindow( QWidget ):
         self.resize( 500, 400 )
 
     def onClick( self ):
-        self.tableView.freezeColumns( 2 )
+        self.tableView.setColumnsFrozen( 2 )
 
     def onClickReset( self ):
         self.tableView.resetFrozen()
@@ -86,14 +93,16 @@ class TableViewExt( QTableView ):
             self._frozen.setAlternatingRowColors( on )
 
     def setIndexWidget( self, index:QModelIndex, widget:QWidget ):
+        super().setIndexWidget( index, widget )
         if index.column() < self._nFrozen:
-            self._frozen.setIndexWidget( index, widget )
-        else:
-            super().setIndexWidget( index, widget )
+            wcopy = self.getCopyOfIndexWidget( widget, index )
+            self._frozen.setIndexWidget( index, wcopy )
+
 
     def _setupFrozenView( self ):
         self._frozen = QTableView( self )
         self._frozen.setModel( self.model() )
+        self._copyIndexWidgets()
         self._frozen.verticalHeader().hide()
         self._frozen.setSortingEnabled( self.isSortingEnabled() )
         self._frozen.setAlternatingRowColors( self.alternatingRowColors() )
@@ -124,13 +133,36 @@ class TableViewExt( QTableView ):
             self._frozen.horizontalHeader().sectionResized.disconnect( self._updateOrigSectionWidth )
             self._frozen.verticalScrollBar().valueChanged.disconnect( self.verticalScrollBar().setValue )
             self.verticalScrollBar().valueChanged.disconnect( self._frozen.verticalScrollBar().setValue )
+            self._frozen.reset()
             self._frozen.destroy()
             self._frozen = None
             self._nFrozen = 0
             self.horizontalHeader().sectionResized.disconnect( self._updateFrozenSectionWidth )
             self.verticalHeader().sectionResized.disconnect( self._updateFrozenSectionHeight )
 
-    def freezeColumns( self, nLeftColumns:int ):
+    def _copyIndexWidgets( self ):
+        model = self.model()
+        rows = model.rowCount()
+        cols = model.columnCount()
+        for r in range( rows ):
+            for c in range( self._nFrozen ):
+                idx = model.index( r, c )
+                widget = self.indexWidget( idx )
+                if widget:
+                    w = self._frozen.indexWidget( idx )
+                    if not w:
+                        w = self.getCopyOfIndexWidget( widget, idx )
+                        self._frozen.setIndexWidget( idx, w )
+
+    def getCopyOfIndexWidget( self, oldwidget:QWidget, idx:QModelIndex ) -> None:
+        """
+        override this method to provide the appropriate widget at index idx.
+        Only needed when working with frozen columns where index widgets are placed
+        in the frozen area.
+        """
+        return None
+
+    def setColumnsFrozen( self, nLeftColumns:int ):
         if nLeftColumns == self._nFrozen and self._frozen:
             # nothing to do
             return
@@ -184,6 +216,9 @@ if __name__ == "__main__":
     w.tableView.setModel( model )
     w.tableView.setSortingEnabled( True )
     w.tableView.setAlternatingRowColors( True )
+    b = TestButton( "Click" )
+    idx = model.index( 2, 0 )
+    w.tableView.setIndexWidget( idx, b )
     #w.tableView.freezeColumns( 1 )
     w.show()
     sys.exit(app.exec_())

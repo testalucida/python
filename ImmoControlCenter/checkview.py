@@ -77,11 +77,13 @@ class ValueDialog( QDialog ):
 
 ################# CheckButton ########################
 class ControlButton( QPushButton ):
-    def __init__(self, parent, isOkButton:bool=True):
+    def __init__(self, parent, isOkButton:bool=True, callbackFnc=None ):
         QPushButton.__init__( self, parent )
         self.setText( "" )
         self._isOkButton:bool = isOkButton
-        self._userdata:Any
+        self.userdata:Any
+        self.clicked.connect( callbackFnc )
+        fnc = self.clicked
         if isOkButton:
             self.setIcon( ImageFactory.instance().getOkIcon() )
         else:
@@ -91,7 +93,19 @@ class ControlButton( QPushButton ):
         return self._isOkButton
 
     def setUserData(self, userdata:Any ) -> None:
-        self._userdata = userdata
+        self.userdata = userdata
+
+
+################ CheckTableView ################################
+class CheckTableView( TableView ):
+    def __init__( self ):
+        TableView.__init__( self )
+
+    def getCopyOfIndexWidget( self, oldwidget: QWidget, idx: QModelIndex ) -> None:
+        btn:ControlButton = oldwidget
+        b2 = ControlButton( btn.parent(), btn.isOkButton(), btn.clicked )
+        return b2
+
 
 ################# MonatswerteBaseView #########################
 class CheckView( QWidget ):
@@ -102,7 +116,7 @@ class CheckView( QWidget ):
         self._combofont = QFont( "Arial", 14, weight=QFont.Bold);
         self._cboJahr:QComboBox
         self._cboMonat:QComboBox
-        self._tableView:TableView
+        self._tableView:CheckTableView
         self._createUI()
         self._provideYearCombo()
         self._provideMonthCombo()
@@ -123,7 +137,7 @@ class CheckView( QWidget ):
         self._gridLayout.addLayout( hbox, 0, 0, alignment=Qt.AlignLeft )
 
         # add TableView to main layout
-        tv = TableView()
+        tv = CheckTableView()
         tv.setAlternatingRowColors( True )
         tv.setStyleSheet( "alternate-background-color: lightgrey;" )
         #tv.setStyleSheet( "QHeaderView::section {background-color: red}" )
@@ -189,10 +203,10 @@ class CheckView( QWidget ):
         okColumnIdx = tm.getOkColumnIdx()
         nokColumnIdx = tm.getNokColumnIdx()
         for r in range( tm.rowCount(self) ):
-            btnOk = ControlButton( self )
-            btnOk.clicked.connect( self._okButtonClicked )
-            btnNok = ControlButton( self, False )
-            btnNok.clicked.connect(self._nokButtonClicked)
+            btnOk = ControlButton( self, True, self._okButtonClicked )
+            # btnOk.clicked.connect( self._okButtonClicked )
+            btnNok = ControlButton( self, False, self._nokButtonClicked )
+            # btnNok.clicked.connect(self._nokButtonClicked)
             self._tableView.setIndexWidget( tm.index( r, okColumnIdx ), btnOk )
             self._tableView.setIndexWidget( tm.index( r, nokColumnIdx ), btnNok )
         self._tableView.setSizeAdjustPolicy( QtWidgets.QAbstractScrollArea.AdjustToContents )
