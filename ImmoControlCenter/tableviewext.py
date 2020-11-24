@@ -27,7 +27,7 @@ class TestWindow( QWidget ):
 class TestModel( QAbstractTableModel ):
     def __init__(self):
         QAbstractTableModel.__init__( self )
-        self._rowlist = [['cell %d/%d' % (r,c) for c in range(5)] for r in range(8)]
+        self._rowlist = [['cell %d/%d' % (r,c) for c in range(5)] for r in range(80)]
 
     def rowCount( self, parent:QModelIndex=None ) -> int:
         return len(self._rowlist)
@@ -58,10 +58,10 @@ class TestModel( QAbstractTableModel ):
 
     def sort( self, col:int, order: Qt.SortOrder ) -> None:
         """sort table by given column number col"""
-        self.emit(SIGNAL(b"layoutAboutToBeChanged()"))
+        self.emit(SIGNAL("layoutAboutToBeChanged()"))
         sort_reverse = True if order == Qt.SortOrder.AscendingOrder else False
-        self._rowlist = sorted(self._rowlist, key=lambda x: x[self._headers[col]], reverse=sort_reverse )
-        self.emit(SIGNAL(b"layoutChanged()"))
+        self._rowlist.sort( reverse=sort_reverse )
+        self.emit(SIGNAL("layoutChanged()"))
 
 #######################################################################
 class TableViewExt( QTableView ):
@@ -75,15 +75,32 @@ class TableViewExt( QTableView ):
         if self._nFrozen > 0:
             self._setupFrozenView()
 
+    def setSortingEnabled( self, on:bool ):
+        super().setSortingEnabled( on )
+        if self._frozen:
+            self._frozen.setSortingEnabled( on )
+
+    def setAlternatingRowColors( self, on:bool ):
+        super().setAlternatingRowColors( on )
+        if self._frozen:
+            self._frozen.setAlternatingRowColors( on )
+
+    def setIndexWidget( self, index:QModelIndex, widget:QWidget ):
+        if index.column() < self._nFrozen:
+            self._frozen.setIndexWidget( index, widget )
+        else:
+            super().setIndexWidget( index, widget )
+
     def _setupFrozenView( self ):
         self._frozen = QTableView( self )
         self._frozen.setModel( self.model() )
         self._frozen.verticalHeader().hide()
+        self._frozen.setSortingEnabled( self.isSortingEnabled() )
+        self._frozen.setAlternatingRowColors( self.alternatingRowColors() )
         #self._frozen.horizontalHeader().setSectionResizeMode( QHeaderView.Stretch )
         self._frozen.setSelectionModel( self.selectionModel() )  ##QAbstractItemView.selectionModel( self ) )
         self._frozen.setHorizontalScrollBarPolicy( Qt.ScrollBarAlwaysOff )
         self._frozen.setVerticalScrollBarPolicy( Qt.ScrollBarAlwaysOff )
-        #self._frozen.verticalHeader().setDefaultSectionSize( self.verticalHeader().defaultSectionSize() )
         #self._frozen.setStyleSheet( "border: none; background-color: #d1d8d8" )
         # make columns to freeze (i.e. columns to be seen in self.frozen)
         # of same width as in the original tableview
@@ -97,7 +114,7 @@ class TableViewExt( QTableView ):
         self._frozen.horizontalHeader().sectionResized.connect( self._updateOrigSectionWidth )
         self.horizontalHeader().sectionResized.connect( self._updateFrozenSectionWidth )
         self.verticalHeader().sectionResized.connect( self._updateFrozenSectionHeight )
-        #self._frozen.verticalScrollBar().valueChanged.connect( self.verticalScrollBar().setValue )
+        self._frozen.verticalScrollBar().valueChanged.connect( self.verticalScrollBar().setValue )
         self.verticalScrollBar().valueChanged.connect( self._frozen.verticalScrollBar().setValue )
         self._frozen.show()
 
@@ -105,6 +122,7 @@ class TableViewExt( QTableView ):
         if self._frozen:
             self._frozen.hide()
             self._frozen.horizontalHeader().sectionResized.disconnect( self._updateOrigSectionWidth )
+            self._frozen.verticalScrollBar().valueChanged.disconnect( self.verticalScrollBar().setValue )
             self.verticalScrollBar().valueChanged.disconnect( self._frozen.verticalScrollBar().setValue )
             self._frozen.destroy()
             self._frozen = None
@@ -164,6 +182,8 @@ if __name__ == "__main__":
     w = TestWindow()
     model = TestModel()
     w.tableView.setModel( model )
+    w.tableView.setSortingEnabled( True )
+    w.tableView.setAlternatingRowColors( True )
     #w.tableView.freezeColumns( 1 )
     w.show()
     sys.exit(app.exec_())
