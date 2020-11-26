@@ -1,5 +1,6 @@
 import sys
 from PySide2.QtCore import *
+from PySide2.QtGui import QBrush
 from PySide2.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QTableView, QHeaderView
 
 class TestButton( QPushButton ):
@@ -76,6 +77,8 @@ class TableViewExt( QTableView ):
         QTableView.__init__( self )
         self._frozen:QTableView = None  # tableview containing only frozen columns
         self._nFrozen = 0  # number of frozen left columns
+        self.clicked.connect( self.onLeftClick )
+        self.setMouseTracking( True )
 
     def setModel( self, model:QAbstractTableModel ) -> None:
         super().setModel( model )
@@ -86,6 +89,15 @@ class TableViewExt( QTableView ):
         super().setSortingEnabled( on )
         if self._frozen:
             self._frozen.setSortingEnabled( on )
+
+    def onLeftClick( self, index: QModelIndex ):
+        if index.column() == 2:
+            self.setStyleSheet( "QTableView::item:selected:active { background: #ff0000;}" )
+        else:
+            self.setStyleSheet( "" )
+        val = self.model().data( index, Qt.DisplayRole )
+        print( "index %d/%d clicked. Value=%s" % (index.row(), index.column(), str( val )) )
+        #self.setStyleSheet( "" )
 
     def setAlternatingRowColors( self, on:bool ):
         super().setAlternatingRowColors( on )
@@ -216,9 +228,12 @@ if __name__ == "__main__":
     w.tableView.setModel( model )
     w.tableView.setSortingEnabled( True )
     w.tableView.setAlternatingRowColors( True )
-    b = TestButton( "Click" )
-    idx = model.index( 2, 0 )
-    w.tableView.setIndexWidget( idx, b )
+    #w.tableView.setStyleSheet( "QTableView::item:hover{background-color:#FFFF00;}" )
+    # b = TestButton( "Click" )
+    # idx = model.index( 2, 0 )
+    # w.tableView.setIndexWidget( idx, b )
     #w.tableView.freezeColumns( 1 )
     w.show()
     sys.exit(app.exec_())
+
+#TODO check for QStyledItemDelegate

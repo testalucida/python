@@ -1,5 +1,6 @@
 import sqlite3
 from typing import List, Tuple, Dict
+from constants import einausart
 mon_dbnames = ("jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dez" )
 
 # def dict_factory(cursor, row):
@@ -30,25 +31,31 @@ class DbAccess:
     def commit( self ):
         self._con.commit()
 
-    def getMietobjekte(self) -> List:
-        sql = "select id from mietobjekt where aktiv = 1"
-        listoftuples = self._doRead( sql )
-        return [x[0] for x in listoftuples]
+    def getMietverhaeltnisseEssentials( self, jahr:int ) -> List[Dict]:
+        """
+        Liefert zu allen Mietverhältnissen, die in <jahr> aktiv sind, die Werte der Spalten mv_id, von, bis
+        :param jahr:
+        :return: List[Dict]
+        """
+        sql = "select mv_id, von, bis from mietverhaeltnis " \
+              "where substr(von, 0, 5) <= '%s' " \
+              "and (bis is NULL or bis = '' or substr(bis, 0, 5) >= '%s')" % (jahr, jahr)
+        return self._doReadAllGetDict( sql )
 
     def getMietzahlungen( self, jahr:int ) -> List[Dict]:
-        sql = "select mv.von, coalesce( mv.bis, '') as bis, mv.mietobjekt_id as objekt, mv.name || ', ' || mv.vorname as name, " \
-               "soll.netto_miete + soll.nk_voraus as soll, " \
-               "'ok' as ok, 'nok' as nok, " \
-	           "jan, feb, mrz, apr, mai, jun, jul, aug, sep, okt, nov, dez, " \
-               " (coalesce(jan,0)+coalesce(feb,0)+coalesce(mrz,0)+coalesce(apr,0)+coalesce(mai,0)+coalesce(jun,0)" \
-               "+coalesce(jul,0)+coalesce(aug,0)+coalesce(sep,0)+coalesce(okt,0)+coalesce(nov, 0) + coalesce(dez, 0)) as summe " \
-               "from mietverhaeltnis mv " \
-               "inner join sollmiete soll on soll.mietobjekt_id = mv.mietobjekt_id " \
-	           "inner join mtleinaus ea on ea.mietobjekt_id = mv.mietobjekt_id " \
-	           "where ea.jahr = %d " \
-	           "and ea.einausart = 'miete' " \
-	           "and (mv.bis = '' or mv.bis is NULL or substr(mv.bis, 0, 5) >= '%d') " \
-	           "order by name" % ( jahr, jahr )
+        sql = "select ea.meinaus_id, mv.mv_id, " \
+              "mv.von, coalesce( mv.bis, '') as bis, mv.mobj_id as objekt, mv.name || ', ' || mv.vorname as name, " \
+              "0 as soll, " \
+              "'ok' as ok, 'nok' as nok, " \
+              "jan, feb, mrz, apr, mai, jun, jul, aug, sep, okt, nov, dez, " \
+              "(coalesce(jan,0)+coalesce(feb,0)+coalesce(mrz,0)+coalesce(apr,0)+coalesce(mai,0)+coalesce(jun,0)+" \
+              "coalesce(jul,0)+coalesce(aug,0)+coalesce(sep,0)+coalesce(okt,0)+coalesce(nov, 0) + coalesce(dez, 0)) as summe " \
+              "from mietverhaeltnis mv " \
+              "inner join mtleinaus ea on ea.mv_id = mv.mv_id " \
+              "where ea.jahr = %s " \
+              "and ea.mv_id > 0 " \
+              "and (mv.bis = '' or mv.bis is NULL or substr(mv.bis, 0, 5) >= '%s') " \
+	          "order by name" % ( jahr, jahr )
         diclist: List[Dict] = self._doReadAllGetDict(sql)
         return diclist
 
@@ -57,13 +64,28 @@ class DbAccess:
 
     def getSollmieten( self, jahr:int ) -> List[Dict]:
         sjahr = str( jahr )
-        sql = "select mietobjekt_id, von, bis, netto_miete, nk_voraus " \
+        sql = "select mv_id, von, bis, netto, nkv " \
               "from sollmiete " \
               "where substr(von, 0, 5)  <= '%s' " \
               "and ( bis is null or bis = '' or substr(bis, 0, 5) >= '%s' ) " \
-              "order by mietobjekt_id, von;" % ( sjahr, sjahr )
+              "order by mv_id, von;" % ( sjahr, sjahr )
         l = self._doReadAllGetDict( sql )
         return l
+
+    def getSollmietenMonat( self, jahr:int, monat:int ) -> List[Dict]:
+        datum = str(jahr) + "-" + "%02d" % monat + "-01"
+        sql = "select mv_id, von, bis, netto, nkv " \
+              "from sollmiete " \
+              "where von <= '%s' " \
+              "and (bis is NULL or bis = '' or bis > '%s')" % (datum, datum)
+        return self._doReadAllGetDict( sql )
+
+    def getJahre( self, eaart:einausart ) -> List[int]:
+        id = "mv_id" if eaart == einausart.MIETE else "vwg_art"
+        sql = "select distinct jahr from mtleinaus where %s > 0 " % ( id )
+        rowlist = self._doRead( sql )
+        list = [x[0] for x in rowlist]
+        return list
 
     def insertMietverhaeltnis( self, d:Dict, commit:bool=True ) -> int:
         sql = "insert into mietverhaeltnis " \
@@ -76,35 +98,28 @@ class DbAccess:
 
     def insertSollmiete(self, d:Dict, commit:bool=True ) -> int:
         sql = "insert into sollmiete " \
-              "(mietobjekt_id, von, bis, netto_miete, nk_voraus ) " \
-              "values( '%s', '%s', '%s', %f, %f ) " % ( d["mietobjekt_id"], d["von"], d["bis"], d["netto_miete"], d["nk_voraus"] )
+              "(mv_id, von, bis, netto, nkv ) " \
+              "values( '%s', '%s', '%s', %f, %f ) " % ( d["mv_id"], d["von"], d["bis"], d["netto"], d["nkv"] )
         return self._doWrite( sql, commit )
 
-    def existsEinAusArt(self, einausart:str, jahr:int ) -> bool:
-        sql = "select count(*) as anz from mtleinaus where einausart = '%s' and jahr = %d " % ( einausart, jahr )
+    def existsEinAusArt(self, eaart:einausart, jahr:int ) -> bool:
+        id = "mv_id" if eaart == einausart.MIETE else "vwg_id"
+        sql = "select count(*) as anz from mtleinaus where jahr = %d and %s is not null" % ( jahr, id )
         d = self._doReadOneGetDict( sql )
         return d["anz"] > 0
 
-    def insertMtlEinAus(self, mietobjekt_id:str, einausart:str, jahr:int, commit:bool=True ) -> int:
+    def insertMtlEinAus(self, mv_or_vwg_id:str, eaart:einausart, jahr:int, commit:bool=True ) -> int:
         """
         legt einen Satz in der Tabelle mtleinaus an, wobei alle Monatswerte auf 0 gesetzt werden
-        :param mietobjekt_id:
-        :param einausart:
+        :param id: je nach einausart ist das die mv_id oder die vwg_id
+        :param einausart: "miete" oder "hgv"
         :param jahr:
         :param commit:
         :return:
         """
-        sql = "insert into mtleinaus (mietobjekt_id, einausart, jahr) values ('%s', '%s', %d) " \
-              % (mietobjekt_id, einausart, jahr)
+        id = "mv_id" if eaart == einausart.MIETE else "vwg_id"
+        sql = "insert into mtleinaus (%s, jahr) values ('%s', %d) " % (id, mv_or_vwg_id, jahr)
         return self._doWrite(sql, commit)
-
-    def insertMtlEinAus2(self, d:Dict ) -> int:
-        """
-        legt einen Satz in der Tabelle mtleinaus an.
-        :param d:
-        :return:
-        """
-        pass
 
     def updateMtlEinAus( self, mietobjekt_id:str, einausart:str, jahr:int, monat:int or str, value:float, commit:bool=True ) -> int:
         """
@@ -167,13 +182,27 @@ def test():
     db = DbAccess( "immo_TEST.db" )
     db.open()
 
-    res = db.getSollmieten( 2019 )
-    print(db)
+    jahre = db.getJahre( einausart.MIETE )
+    print( jahre )
+    #dictlist = db.getSollmietenMonat( 2020, 2 )
+    # dictlist = db.getMietzahlungen( 2020 )
+    # print( dictlist )
+    # d = {
+    #     "mv_id": "murasovolga",
+    #     "von": "2021-01-01",
+    #     "bis": "",
+    #     "netto": 490.0,
+    #     "nkv": 80.5
+    # }
+    #db.insertSollmiete( d )
+    #dictlist = db.getMietverhaeltnisseEssentials( 2020 )
+    #dictlist = db.getMietzahlungen( 2020 )
+    # print(db)
 
 
     #l = db.getMietobjekte()
 
-    #db.insertMtlEinAus( "bueb", "miete", 2021 )
+    #db.insertMtlEinAus( "engelhardtrene", "miete", 2020 )
 
     #db.updateMtlEinAus( "bueb", "miete", 2020, "feb", 999 )
     #

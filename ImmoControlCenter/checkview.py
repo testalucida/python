@@ -118,10 +118,11 @@ class CheckView( QWidget ):
         self._cboMonat:QComboBox
         self._tableView:CheckTableView
         self._createUI()
-        self._provideYearCombo()
+        #self._provideYearCombo()
         self._provideMonthCombo()
         self._tm:CheckTableModel = None
-        self._zeitraumChangedCallback = None
+        self._jahrChangedCallback = None
+        self._monatChangedCallback = None
         self.resize(1800, 1280)
 
     def _createUI(self):
@@ -129,8 +130,9 @@ class CheckView( QWidget ):
 
         hbox = QHBoxLayout()
         self._cboJahr = QComboBox( self )
+        self._cboJahr.setFont( self._combofont )
         hbox.addWidget( self._cboJahr )
-        #self._gridLayout.addWidget( self._cboJahr, 0, 0, alignment=Qt.AlignLeft )
+        self._cboJahr.currentIndexChanged.connect( self._yearChanged )
 
         self._cboMonat = QComboBox(self)
         hbox.addWidget( self._cboMonat )
@@ -145,14 +147,16 @@ class CheckView( QWidget ):
 
         self._tableView = tv
 
-    def _provideYearCombo(self):
-        y = datetime.datetime.now().year
-        cbo = self._cboJahr
-        cbo.setFont(self._combofont)
-        for i in range(-2, 2):
-            cbo.addItem(str(y + i))
-        #cbo.setCurrentIndex(2)
-        cbo.currentIndexChanged.connect(self._yearChanged)
+    def setJahre( self, jahre:List[int] ) -> None:
+        for  jahr in jahre:
+            print( jahr )
+            self._cboJahr.addItem( str( jahr ) )
+
+    def setJahr( self, jahr:int ):
+        self._cboJahr.setCurrentText( str( jahr ) )
+
+    def setCheckMonat( self, monat:int ) -> None:
+        self._cboMonat.setCurrentIndex( monat - 1 )
 
     def _provideMonthCombo(self):
         #m = datetime.datetime.now().month
@@ -160,15 +164,12 @@ class CheckView( QWidget ):
         cbo.setFont(self._combofont)
         for mon in monthList:
             cbo.addItem( mon )
-        #cbo.setCurrentIndex( m-1 )
         cbo.currentIndexChanged.connect(self._monthChanged)
 
     def _yearChanged(self, newindex):
-        print( "year changed to ", self._cboJahr.itemText( newindex ) )
-        self.doZeitraumChangedCallback()
+        self.doJahrChangedCallback()
 
     def _monthChanged(self, newindex):
-        print( "month changed to %s (index %d)" % (self._cboMonat.itemText( newindex ), newindex ))
         if( self._tm ):
             self._tm.setCheckmonat( newindex + 1 )
             top_cell = self._tm.index( 0, 0 )
@@ -176,26 +177,36 @@ class CheckView( QWidget ):
             self._tableView.dataChanged( top_cell, bottom_cell, [Qt.BackgroundRole,] )
             self._tableView.repaint()
             self.repaint()
-        self.doZeitraumChangedCallback()
+        self.doCheckMonatChangedCallback()
 
-    def setZeitraum(self, jahr:int, monat:int ):
-        """setzt Monat- und Jahr-Combo. Macht keinen Callback."""
-        self._cboMonat.setCurrentIndex( monat-1 )
-        self._cboJahr.setCurrentText( str( jahr ) )
+    def doJahrChangedCallback( self ):
+        if self._jahrChangedCallback:
+            self._jahrChangedCallback( self.getSelectedJahr() )
 
-    def doZeitraumChangedCallback(self):
-        if self._zeitraumChangedCallback:
-            d = self.getKontrollzeitraum()
-            self._zeitraumChangedCallback( d["jahr"], d["monat"] )
+    def doCheckMonatChangedCallback( self ):
+        if self._monatChangedCallback:
+            self._monatChangedCallback( self.getSelectedCheckMonat() )
 
-    def setZeitraumChangedCallback( self, cb_fnc ):
+    def setJahrChangedCallback( self, cb_fnc ):
         """
-        function to be called on changes of month or year
-        function signature: fnc( year, month )
+        function to be called on changes of year
+        function signature: fnc( year )
         :param cb_fnc:
         :return:
         """
-        self._zeitraumChangedCallback = cb_fnc
+        self._jahrChangedCallback = cb_fnc
+
+    def setCheckMonatChangedCallback( self, cb_fnc ):
+        """
+        function to be called on changes of check month
+        function signature: fnc( month )
+        :param cb_fnc:
+        :return:
+        """
+        self._monatChangedCallback = cb_fnc
+
+    def getModel( self ) -> CheckTableModel:
+        return self._tm
 
     def setModel(self, tm:CheckTableModel ) -> None:
         self._tableView.setModel( tm )
@@ -254,11 +265,11 @@ class CheckView( QWidget ):
         msg.setWindowTitle("Error")
         msg.exec_()
 
-    def getKontrollzeitraum(self) -> Dict:
-        d = {}
-        d["jahr"] = int( self._cboJahr.currentText() )
-        d["monat"] = self._cboMonat.currentIndex() + 1
-        return d
+    def getSelectedJahr(self) -> int:
+        return int( self._cboJahr.currentText() )
+
+    def getSelectedCheckMonat( self ) -> int:
+        self._cboMonat.currentIndex() + 1
 
 def test():
     app = QApplication()

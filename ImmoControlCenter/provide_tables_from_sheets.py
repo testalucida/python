@@ -7,7 +7,7 @@ stammdatenpath = "/home/martin/Projects/python/ImmoControlCenter/Stammdaten_TEST
 einaus20path = "/home/martin/Projects/python/ImmoControlCenter/Ein_Aus_2020_TEST.ods"
 
 db = DbAccess()
-db.open( "immo.db" )
+db.open( "immo_TEST.db" )
 
 def provideSollmiete():
     sheetname = "sollmiete"
@@ -17,6 +17,7 @@ def provideSollmiete():
         for k, v, in d.items():
             if v is None:
                 d[k] = ''
+        #TODO: re-implement insertSollmiete (data structure has changed)
         db.insertSollmiete( d, False )
     db.commit()
 
