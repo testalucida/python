@@ -86,6 +86,7 @@ class TableViewExt( QTableView ):
             self._setupFrozenView()
 
     def setSortingEnabled( self, on:bool ):
+        #self.horizontalHeader().setSortIndicator( -1, Qt.AscendingOrder ) # no effect
         super().setSortingEnabled( on )
         if self._frozen:
             self._frozen.setSortingEnabled( on )

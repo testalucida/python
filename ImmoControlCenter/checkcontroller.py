@@ -38,7 +38,9 @@ class CheckController( ABC ):
 
     def monatChangedCallback( self, monat:int ):
         self._currentCheckMonth = monat
-        self._subwin.widget().getModel().setCheckMonat( monat )
+        model:CheckTableModel = self._subwin.widget().getModel()
+        self.updateSollwerte( model.rowlist, self._currentYear, monat )
+        model.setCheckmonat( monat )
 
     def createModel( self, jahr:int, monat:int ) -> CheckTableModel:
         rowlist = self.getRowList( jahr, monat )
@@ -46,9 +48,9 @@ class CheckController( ABC ):
             raise Exception( "Zum gewählten Jahr sind keine Daten vorhanden.",
                              'Daten sind für das aktuelle Jahr und für max. zwei zurückliegende Jahre vorhanden.' )
 
-        for r in rowlist:
-            r["ok"] = ""
-            r["nok"] = ""
+        # for r in rowlist:
+        #     r["ok"] = ""
+        #     r["nok"] = ""
         model = CheckTableModel( rowlist, monat )
         return model
 
@@ -59,9 +61,15 @@ class CheckController( ABC ):
         curr = self.getCurrentYearAndMonth()
         checkView.setJahr( self._currentYear )
         checkView.setCheckMonat( self._currentCheckMonth )
-        checkView.setModel( self.createModel( self._currentYear, self._currentCheckMonth ) )
+        model:CheckTableModel = self.createModel( self._currentYear, self._currentCheckMonth )
+        checkView.setModel( model )
+        model.setSortable( True )
         checkView.setJahrChangedCallback( self.jahrChangedCallback )
         checkView.setCheckMonatChangedCallback( self.monatChangedCallback )
+        checkView.tableView.setColumnHidden( 0, True )
+        checkView.tableView.setColumnHidden( 1, True )
+        checkView.tableView.setColumnHidden( 2, True )
+        checkView.tableView.setColumnHidden( 3, True )
 
         self._subwin = QMdiSubWindow()
         self._subwin.setWidget( checkView )
@@ -81,6 +89,10 @@ class CheckController( ABC ):
     def getRowList( self, jahr:int, monat:int ) -> List[Dict]:
         pass
 
+    @abstractmethod
+    def updateSollwerte( self, model:CheckTableModel, jahr:int, monat:int ) -> None:
+        pass
+
 #################### MietenController ###################
 class MietenController( CheckController ):
     def __init__( self ):
@@ -93,7 +105,10 @@ class MietenController( CheckController ):
         return einausart.MIETE
 
     def getRowList( self, jahr:int, monat:int ) -> List[Dict]:
-        return BusinessLogic.inst().getMietzahlungen( jahr, monat )
+        return BusinessLogic.inst().getMietzahlungenMitSollUndSummen( jahr, monat )
+
+    def updateSollwerte( self, model:CheckTableModel, jahr:int, monat:int ) -> None:
+        return BusinessLogic.inst().provideSollmieten( model, jahr, monat )
 
 #################### HGVController ########################
 class HGVController( CheckController ):
@@ -108,3 +123,6 @@ class HGVController( CheckController ):
 
     def getRowList( self, jahr:int, monat:int ) -> List[Dict]:
         return BusinessLogic.inst().getHausgeldVorauszahlungen( jahr, monat )
+
+    def updateSollwerte( self, model:CheckTableModel, jahr:int, monat:int ) -> None:
+        pass

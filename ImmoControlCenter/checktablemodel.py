@@ -23,14 +23,14 @@ class CheckTableModel( DictListTableModel ):
         self._boldFont = QFont( "Arial", 11, QFont.Bold )
         self._yellow = QColor( "yellow" )
         self._yellowBrush = QBrush( self._yellow )
-        self._leadingColumns = 6  # es gibt 6 leading columns, die nichts mit den Monatswerten zu tun haben
+        self._leadingColumns = 9  # leading columns, die nichts mit den Monatswerten zu tun haben
         self._checkMonatColumnIdx = 0
         self._checkMonat = 0
-        self._nameColumnIdx = 3
-        self._sollColumnIdx = 4  # die Spalte mit den Soll-Werten
-        self._okColumnIdx = 5  # Spalte des OK-Buttons
-        self._nokColumnIdx = 6  # Spalte des NOK-Buttons
-        self._summeColumnIdx = 19  # Summe aller Monatszahlungen - Spalte
+        self._nameColumnIdx = 5
+        self._sollColumnIdx = 6  # die Spalte mit den Soll-Werten
+        self._okColumnIdx = 7  # Spalte des OK-Buttons
+        self._nokColumnIdx = 8  # Spalte des NOK-Buttons
+        self._summeColumnIdx = 21  # Summe aller Monatszahlungen - Spalte
         self.setCheckmonat( checkmonat )
         self.okstatecallback = None
 
@@ -42,7 +42,7 @@ class CheckTableModel( DictListTableModel ):
 
     def setCheckmonat(self, monatIdx:int ):
         self._checkMonat = monatIdx
-        self._checkMonatColumnIdx = self._checkMonat + self._leadingColumns
+        self._checkMonatColumnIdx = self._checkMonat + self._leadingColumns - 1
 
     def setOkStateCallback(self, cbfnc ):
         self.okstatecallback = cbfnc
@@ -58,8 +58,25 @@ class CheckTableModel( DictListTableModel ):
         print( "going to set %d to cell %d/%d" % ( val, istidx.row(), istidx.column() ) )
         self.setData( istidx, val )
 
+    def setSollwerte( self, sollwerte:List[Dict] ):
+        # neue Sollwerte in die rowlist eintragen.
+        # Das geht nicht mit zip, da die Anzahl der dictionaries in rowlist und sollwerte
+        # nicht notwendigerweise übereinstimmt.
+        # Annahme: beide Listen enthalten die dictionaries sortiert nach mv_id
+        # Gutes Beispiel für zip:
+        # https://stackoverflow.com/questions/9845369/comparing-2-lists-consisting-of-dictionaries-with-unique-keys-in-python
+        n = 0
+        for row in self.rowlist:
+            solldict = sollwerte[n]
+            if solldict["mv_id"] == row["mv_id"]:
+                if solldict["brutto"] != row["soll"]:
+                    row["brutto"] = solldict["brutto"]
+                n+=1
+            else:
+                row["brutto"] = 0
+
     def setData( self, index, value ):
-        rowdict = self._rowlist[index.row()]
+        rowdict = self.rowlist[index.row()]
         key = self._headers[index.column()]
         rowdict[key] = value
         self.dataChanged.emit( index, index )

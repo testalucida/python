@@ -7,27 +7,28 @@ from typing import List, Dict, Any
 class DictListTableModel( QAbstractTableModel ):
     def __init__(self, dictList:List[Dict]):
         QAbstractTableModel.__init__( self )
-        self._rowlist:List[Dict] = dictList
-        if len( self._rowlist ) > 0:
-            self._headers:List = list( self._rowlist[0].keys() )
+        self.rowlist:List[Dict] = dictList
+        if len( self.rowlist ) > 0:
+            self._headers:List = list( self.rowlist[0].keys() )
         else:
             self._headers:List = ["Keine Daten vorhanden"]
         self.headerBrush:QBrush = None
         self._negNumberBrush = None
+        self._sortable = False
 
     def rowCount( self, parent:QModelIndex=None ) -> int:
-        return len(self._rowlist)
+        return len( self.rowlist )
 
     def columnCount( self, parent:QModelIndex=None ) -> int:
-        if len( self._rowlist ) == 0: return 0
-        return len(self._rowlist[0])
+        if len( self.rowlist ) == 0: return 0
+        return len( self.rowlist[0] )
 
     def updateValue( self, index:QModelIndex, value:Any ):
         self.updateValue2( index.row(), index.column(), value )
         return True
 
     def updateValue2(self, row:int, col:int, value:Any ):
-        rowdict = self._rowlist[row]
+        rowdict = self.rowlist[row]
         key = self._headers[col]
         rowdict[key] = value
         index = self.createIndex( row, col )
@@ -39,7 +40,7 @@ class DictListTableModel( QAbstractTableModel ):
 
     def getValue(self, indexrow:int, indexcolumn:int ) -> Any:
         key = self._headers[indexcolumn]
-        d: Dict = self._rowlist[indexrow]
+        d: Dict = self.rowlist[indexrow]
         return d[key]
 
     def displayNegNumbersRed( self, on:bool=False ):
@@ -85,10 +86,15 @@ class DictListTableModel( QAbstractTableModel ):
                     return self.headerBrush
         return None
 
+    def setSortable( self, enable:bool ):
+        self._sortable = enable
+
     def sort( self, col:int, order: Qt.SortOrder ) -> None:
+        if not self._sortable: return
+
         """sort table by given column number col"""
         self.emit(SIGNAL("layoutAboutToBeChanged()"))
         sort_reverse = True if order == Qt.SortOrder.AscendingOrder else False
-        self._rowlist = sorted(self._rowlist, key=lambda x: x[self._headers[col]], reverse=sort_reverse )
+        self.rowlist = sorted( self.rowlist, key=lambda x: x[self._headers[col]], reverse=sort_reverse )
         self.emit(SIGNAL("layoutChanged()"))
 

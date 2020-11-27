@@ -1,6 +1,6 @@
 from PySide2.QtWidgets import QApplication
 from PySide2 import QtCore
-from PySide2.QtWidgets import QWidget
+from PySide2.QtWidgets import QWidget, QMdiSubWindow
 #from mainwindow import MainWindow
 from immocentermainwindow import ImmoCenterMainWindow, MainWindowAction
 from business import BusinessLogic
@@ -36,9 +36,12 @@ def main():
     # see: https://stackoverflow.com/questions/53097415/pyside2-connect-close-by-window-x-to-custom-exit-method
     shutDownFilter = ShutDownFilter(win, app)
     win.installEventFilter(shutDownFilter)
+    #win.showMaximized()
     win.show()
-    win.resize( 1400, 800 )
-
+    win.resize( 1800, 1000 )
+    geom = win.geometry()
+    subwin = win._mdiArea.subWindowList()[0]
+    subwin.setGeometry( 0, 0, 1200, geom.height()/5*4 )
     app.exec_()
 
 if __name__ == '__main__':

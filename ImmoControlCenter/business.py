@@ -34,18 +34,23 @@ class BusinessLogic:
     def terminate(self):
         self._db.close()
 
-    def getMietzahlungen(self, jahr:int, monat:int ) -> List[Dict]:
-        mieten:List[Dict] = self._db.getMietzahlungen( jahr )
+    def getMietzahlungenMitSollUndSummen( self, jahr:int, monat:int ):
+        mieten:List[Dict] = self._db.getMietzahlungenMitSummen( jahr )
         # sollwerte versorgen:
-        sollwerte:List[Dict] = self._db.getSollmietenMonat( jahr, monat )
-        # <sollwerte> enthält je Mietverhältnis genau 1 Satz mit den Werten netto und nkv.
-        # Diese müssen je MV summiert und in <mieten> in die Spalte <soll> eingearbeitet werden.
-        for m in mieten:
-            for s in sollwerte:
-                if s["mv_id"] == m["mv_id"]:
-                    m["soll"] = s["netto"] + s["nkv"]
-                    break
+        return self.provideSollmieten( mieten, jahr, monat )
 
+    def provideSollmieten( self, mieten:List[Dict], jahr:int, monat:int ) -> List[Dict]:
+        sollwerte: List[Dict] = self.getSollmietenMonat( jahr, monat )
+        # <sollwerte> enthält je Mietverhältnis genau 1 Satz mit den Werten netto, nkv und brutto.
+        # Diese müssen je MV in <mieten> in die Spalte <soll> eingearbeitet werden.
+        n = 0
+        for m in mieten:
+            solldict = sollwerte[n]
+            if solldict["mv_id"] == m["mv_id"]:
+                if solldict["mv_id"] == m["mv_id"]:
+                    if solldict["brutto"] != m["soll"]:
+                        m["soll"] = solldict["brutto"]
+                    n += 1
         return mieten
 
     def getHausgeldVorauszahlungen( self, jahr:int, monat:int ) -> List[Dict]:
@@ -68,6 +73,9 @@ class BusinessLogic:
             self._db.insertMtlEinAus( obj, einausart.MIETE, jahr, commit=False )
             self._db.insertMtlEinAus( obj, einausart.HGV, jahr, commit=False )
         self._db.commit()
+
+    def getSollmietenMonat( self, jahr:int, monat:int ) -> List[Dict]:
+        return self._db.getSollmietenMonat( jahr, monat )
 
     def getSollmieten(self, jahr:int ) -> Dict:
         """liefert alle im jahr aktiven Mietverhältnisse mit den in diesem Jahr gültigen Sollmieten.
@@ -106,7 +114,7 @@ class BusinessLogic:
 
 def test():
     busi = BusinessLogic.inst()
-    mz = busi.getMietzahlungen( 2020, 7 )
+    mz = busi.getMietzahlungenMitSummen( 2020, 7 )
     #busi.createMtlEinAusJahresSet( "miete", 2020 )
     busi.terminate()
 

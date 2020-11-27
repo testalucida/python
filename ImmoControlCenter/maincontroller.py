@@ -37,33 +37,16 @@ class MainController:
 
     def _openMieteView( self ):
         subwin = self._mietenCtrl.createSubwindow()
+        mainsize = self._mainwin.size()
+        subsize = subwin.size()
+
         self._mainwin.addMdiChild( subwin )
+        #subwin.resize( 900, subsize.height() )
+        #geom = subwin.geometry()
+        #subwin.setGeometry( geom.x(), geom.y(), 900, 500 )
 
     def _openHGVView( self ):
         pass
 
     def _exit( self ):
         pass
-
-    # def zeitraumChangedCallback( self, jahr:int, monat: int ):
-    #     if self._currentYear == 0: self._currentYear = jahr
-    #     else:
-    #         if jahr == self._currentYear: return
-    #
-    #     sicht = self._mainwin.getSicht()
-    #     if sicht == "Mieten":
-    #         if not self._busilogic.existsEinAusArt( "miete", jahr ):
-    #             self._busilogic.createMtlEinAusJahresSet( "miete", jahr )
-    #         rowlist = self._busilogic.getMietzahlungen( jahr )
-    #         if len(rowlist) == 0:
-    #             self._mainwin.showException( "Zum gewählten Jahr sind keine Daten vorhanden.",
-    #                                          'Daten sind für das aktuelle Jahr und für max. zwei zurückliegende Jahre vorhanden.' )
-    #             return
-    #
-    #         for r in rowlist:
-    #             r["ok"] = ""
-    #             r["nok"] = ""
-    #         model = KontrollModel( self._mainwin, rowlist, monat )
-    #         self._mainwin.setMieteModel( model )
-    #     self._currentYear = jahr
-    #     return

@@ -42,7 +42,7 @@ class DbAccess:
               "and (bis is NULL or bis = '' or substr(bis, 0, 5) >= '%s')" % (jahr, jahr)
         return self._doReadAllGetDict( sql )
 
-    def getMietzahlungen( self, jahr:int ) -> List[Dict]:
+    def getMietzahlungenMitSummen( self, jahr:int ) -> List[Dict]:
         sql = "select ea.meinaus_id, mv.mv_id, " \
               "mv.von, coalesce( mv.bis, '') as bis, mv.mobj_id as objekt, mv.name || ', ' || mv.vorname as name, " \
               "0 as soll, " \
@@ -55,7 +55,7 @@ class DbAccess:
               "where ea.jahr = %s " \
               "and ea.mv_id > 0 " \
               "and (mv.bis = '' or mv.bis is NULL or substr(mv.bis, 0, 5) >= '%s') " \
-	          "order by name" % ( jahr, jahr )
+	          "order by mv.mv_id" % ( jahr, jahr )
         diclist: List[Dict] = self._doReadAllGetDict(sql)
         return diclist
 
@@ -64,7 +64,7 @@ class DbAccess:
 
     def getSollmieten( self, jahr:int ) -> List[Dict]:
         sjahr = str( jahr )
-        sql = "select mv_id, von, bis, netto, nkv " \
+        sql = "select mv_id, von, bis, netto, nkv, netto+nkv as brutto " \
               "from sollmiete " \
               "where substr(von, 0, 5)  <= '%s' " \
               "and ( bis is null or bis = '' or substr(bis, 0, 5) >= '%s' ) " \
@@ -74,10 +74,11 @@ class DbAccess:
 
     def getSollmietenMonat( self, jahr:int, monat:int ) -> List[Dict]:
         datum = str(jahr) + "-" + "%02d" % monat + "-01"
-        sql = "select mv_id, von, bis, netto, nkv " \
+        sql = "select mv_id, von, bis, netto, nkv, netto+nkv as brutto " \
               "from sollmiete " \
               "where von <= '%s' " \
-              "and (bis is NULL or bis = '' or bis > '%s')" % (datum, datum)
+              "and (bis is NULL or bis = '' or bis > '%s')" \
+              "order by mv_id" % (datum, datum)
         return self._doReadAllGetDict( sql )
 
     def getJahre( self, eaart:einausart ) -> List[int]:

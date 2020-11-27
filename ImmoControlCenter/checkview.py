@@ -2,7 +2,7 @@ from PySide2 import Qt
 from PySide2.QtCore import *
 #from PySide2.QtCore import QAbstractTableModel, SIGNAL
 from PySide2.QtGui import QFont, QIcon, QDoubleValidator
-from PySide2.QtWidgets import QApplication, QWidget, QComboBox, QHBoxLayout, QPushButton, \
+from PySide2.QtWidgets import QApplication, QWidget, QComboBox, QHBoxLayout, QGridLayout, QPushButton, \
     QDialog, QMessageBox
 from PySide2 import QtWidgets
 import datetime
@@ -41,27 +41,62 @@ class ImageFactory:
 
 ################ ValueDialog ########################
 class ValueDialog( QDialog ):
+    # def __init__( self, parent=None ):
+    #     QDialog.__init__( self, parent )
+    #     self.setModal( True )
+    #     self.setWindowTitle( "Abweichender Betrag" )
+    #     self.resize(245, 77)
+    #     # self.buttonBox = QtWidgets.QDialogButtonBox(self)
+    #     # self.buttonBox.setGeometry(QRect(150, 10, 81, 241))
+    #     # self.buttonBox.setOrientation(Qt.Vertical)
+    #     #self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
+    #     #self.buttonBox.setObjectName("buttonBox")
+    #     btnAdd = QPushButton( "Add" )
+    #     # self.buttonBox.addButton( btnAdd )
+    #     self._numEntry = QtWidgets.QLineEdit(self)
+    #     self._numEntry.setGeometry(QRect(10, 40, 113, 23))
+    #     self._numEntry.setAlignment(Qt.AlignRight | Qt.AlignTrailing | Qt.AlignVCenter)
+    #     self._numEntry.setValidator( QDoubleValidator( 0, 9999, 2, self ) )
+    #     self._numEntry.setFocus()
+    #     self.label = QtWidgets.QLabel(self)
+    #     self.label.setGeometry(QRect(10, 9, 171, 16))
+    #     self.setLabelText( "Betrag eingeben:" )
+    #     self.buttonBox.accepted.connect(self.accept)
+    #     self.buttonBox.rejected.connect(self.reject)
+    #     self._callback = None
+
     def __init__( self, parent=None ):
         QDialog.__init__( self, parent )
         self.setModal( True )
         self.setWindowTitle( "Abweichender Betrag" )
-        self.resize(245, 77)
-        self.buttonBox = QtWidgets.QDialogButtonBox(self)
-        self.buttonBox.setGeometry(QRect(150, 10, 81, 241))
-        self.buttonBox.setOrientation(Qt.Vertical)
-        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
-        self.buttonBox.setObjectName("buttonBox")
-        self._numEntry = QtWidgets.QLineEdit(self)
-        self._numEntry.setGeometry(QRect(10, 40, 113, 23))
-        self._numEntry.setAlignment(Qt.AlignRight | Qt.AlignTrailing | Qt.AlignVCenter)
+        layout = QGridLayout( self )
+        self.label = QtWidgets.QLabel( self )
+        self.setLabelText( "Betrag eingeben:" )
+        layout.addWidget( self.label, 0, 0 )
+
+        self._numEntry = QtWidgets.QLineEdit( self )
+        layout.addWidget( self._numEntry, 1, 0 )
+        self._numEntry.setAlignment( Qt.AlignRight | Qt.AlignTrailing | Qt.AlignVCenter )
         self._numEntry.setValidator( QDoubleValidator( 0, 9999, 2, self ) )
         self._numEntry.setFocus()
-        self.label = QtWidgets.QLabel(self)
-        self.label.setGeometry(QRect(10, 9, 171, 16))
-        self.setLabelText( "Betrag eingeben:" )
-        self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.reject)
-        self._callback = None
+
+        self.btnAdd = QPushButton( self, text="+" )
+        layout.addWidget( self.btnAdd, 0, 1 )
+        self.btnAdd.clicked.connect( self._add )
+
+        self.btnSub = QPushButton( self, text="-" )
+        layout.addWidget( self.btnSub, 1, 1 )
+        self.btnSub.clicked.connect( self._sub )
+
+        self.btnRepl = QPushButton( self, text="=" )
+        layout.addWidget( self.btnRepl, 2, 1 )
+        self.btnRepl.clicked.connect( self._replace )
+
+        self.btnCancel = QPushButton( self, text="Cancel" )
+        layout.addWidget( self.btnCancel, 2, 0 )
+        self.btnCancel.clicked.connect( self._cancel )
+
+        self.setLayout( layout )
 
     def setCallback( self, fnc ):
         self._callback = fnc
@@ -69,11 +104,24 @@ class ValueDialog( QDialog ):
     def setLabelText( self, text:str ) -> None:
         self.label.setText( text )
 
-    def accept(self):
-        print( "accept" )
+    def _doCallback( self, command:str ):
         if self._callback:
-            self._callback( True, self._numEntry.text() )
-        QDialog.accept(self)
+            num = self._numEntry.text()
+            num = num.replace( ",", "." )
+            self._callback( True, float( num ), command )
+        self.close()
+
+    def _add(self):
+        self._doCallback( "add" )
+
+    def _sub(self):
+        self._doCallback( "sub" )
+
+    def _replace(self):
+        self._doCallback( "replace" )
+
+    def _cancel( self ):
+        self.close()
 
 ################# CheckButton ########################
 class ControlButton( QPushButton ):
@@ -116,7 +164,7 @@ class CheckView( QWidget ):
         self._combofont = QFont( "Arial", 14, weight=QFont.Bold);
         self._cboJahr:QComboBox
         self._cboMonat:QComboBox
-        self._tableView:CheckTableView
+        self.tableView:CheckTableView
         self._createUI()
         #self._provideYearCombo()
         self._provideMonthCombo()
@@ -145,7 +193,7 @@ class CheckView( QWidget ):
         #tv.setStyleSheet( "QHeaderView::section {background-color: red}" )
         self._gridLayout.addWidget( tv, 1, 0, 1, 2)
 
-        self._tableView = tv
+        self.tableView = tv
 
     def setJahre( self, jahre:List[int] ) -> None:
         for  jahr in jahre:
@@ -174,8 +222,8 @@ class CheckView( QWidget ):
             self._tm.setCheckmonat( newindex + 1 )
             top_cell = self._tm.index( 0, 0 )
             bottom_cell = self._tm.index( 0, 2 )
-            self._tableView.dataChanged( top_cell, bottom_cell, [Qt.BackgroundRole,] )
-            self._tableView.repaint()
+            self.tableView.dataChanged( top_cell, bottom_cell, [Qt.BackgroundRole, ] )
+            self.tableView.repaint()
             self.repaint()
         self.doCheckMonatChangedCallback()
 
@@ -209,7 +257,7 @@ class CheckView( QWidget ):
         return self._tm
 
     def setModel(self, tm:CheckTableModel ) -> None:
-        self._tableView.setModel( tm )
+        self.tableView.setModel( tm )
         c = tm.rowCount(self)
         okColumnIdx = tm.getOkColumnIdx()
         nokColumnIdx = tm.getNokColumnIdx()
@@ -218,17 +266,17 @@ class CheckView( QWidget ):
             # btnOk.clicked.connect( self._okButtonClicked )
             btnNok = ControlButton( self, False, self._nokButtonClicked )
             # btnNok.clicked.connect(self._nokButtonClicked)
-            self._tableView.setIndexWidget( tm.index( r, okColumnIdx ), btnOk )
-            self._tableView.setIndexWidget( tm.index( r, nokColumnIdx ), btnNok )
-        self._tableView.setSizeAdjustPolicy( QtWidgets.QAbstractScrollArea.AdjustToContents )
-        self._tableView.resizeColumnsToContents()
+            self.tableView.setIndexWidget( tm.index( r, okColumnIdx ), btnOk )
+            self.tableView.setIndexWidget( tm.index( r, nokColumnIdx ), btnNok )
+        self.tableView.setSizeAdjustPolicy( QtWidgets.QAbstractScrollArea.AdjustToContents )
+        self.tableView.resizeColumnsToContents()
         self._tm = tm
 
     def _okButtonClicked(self, checkstate:bool ):
         app = QApplication.instance()
         button:QPushButton = app.focusWidget()
         # or button = self.sender()
-        index = self._tableView.indexAt(button.pos())
+        index = self.tableView.indexAt( button.pos() )
         if index.isValid():
             #print(index.row(), index.column())
             self._tm.setOkState( index, button.isChecked() )
@@ -239,17 +287,24 @@ class CheckView( QWidget ):
         # self._tableView.scrollTo( idx )
 
     def _nokButtonClicked(self, checkstate: bool):
-        def dlg_callback(ok: bool, value: float):
-            print("ok: ", ok, " value: ", value)
-            # or button = self.sender()
+        # Soll-Vorgabe nicht erfüllt; manuelle Eingabe über ValueDialog
+        def dlg_callback(ok: bool, value: float, command:str ):
             if index.isValid():
                 #print(index.row(), index.column())
-                self._tm.setCheckMonatValue( index, value )
+                oldval = self._tm.getCheckMonatIst( index )
+                newval = oldval
+                if command == "add":
+                    newval += value
+                elif command == "sub":
+                    newval -= value
+                else:
+                    newval = value
+                self._tm.setCheckMonatValue( index, newval )
             return
 
         app = QApplication.instance()
         button: QPushButton = app.focusWidget()
-        index = self._tableView.indexAt(button.pos())
+        index = self.tableView.indexAt( button.pos() )
         dlg = ValueDialog( self )
         dlg.setCallback( dlg_callback )
         dlg.show()
@@ -269,7 +324,7 @@ class CheckView( QWidget ):
         return int( self._cboJahr.currentText() )
 
     def getSelectedCheckMonat( self ) -> int:
-        self._cboMonat.currentIndex() + 1
+        return self._cboMonat.currentIndex() + 1
 
 def test():
     app = QApplication()
