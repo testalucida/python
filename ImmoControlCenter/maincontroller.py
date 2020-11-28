@@ -1,6 +1,7 @@
 from typing import List, Dict
+from PySide2.QtWidgets import QMdiSubWindow
 from immocentermainwindow import ImmoCenterMainWindow, MainWindowAction
-from checkcontroller import MietenController, HGVController
+from checkcontroller import MdiChildController, MietenController, HGVController
 from business import BusinessLogic
 from models import KontrollModel
 
@@ -10,6 +11,7 @@ class MainController:
         win.setActionCallback( self.onMainWindowAction )
         self._mietenCtrl:MietenController = MietenController()
         self._hgvCtrl:HGVController = HGVController()
+        self._viewsandcontroller:[Dict[QMdiSubWindow, MdiChildController]] = {}
 
     def onMainWindowAction( self, action:MainWindowAction ):
         switcher = {
@@ -27,7 +29,9 @@ class MainController:
         pass
 
     def _saveActiveView( self ):
-        pass
+        child = self._mainwin.mdiArea.activeSubWindow()
+        ctrl:MdiChildController = self._viewsandcontroller[child]
+        ctrl.save()
 
     def _saveAll( self ):
         pass
@@ -37,13 +41,8 @@ class MainController:
 
     def _openMieteView( self ):
         subwin = self._mietenCtrl.createSubwindow()
-        mainsize = self._mainwin.size()
-        subsize = subwin.size()
-
+        self._viewsandcontroller[subwin] = self._mietenCtrl
         self._mainwin.addMdiChild( subwin )
-        #subwin.resize( 900, subsize.height() )
-        #geom = subwin.geometry()
-        #subwin.setGeometry( geom.x(), geom.y(), 900, 500 )
 
     def _openHGVView( self ):
         pass

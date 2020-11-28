@@ -40,7 +40,7 @@ def main():
     win.show()
     win.resize( 1800, 1000 )
     geom = win.geometry()
-    subwin = win._mdiArea.subWindowList()[0]
+    subwin = win.mdiArea.subWindowList()[0]
     subwin.setGeometry( 0, 0, 1200, geom.height()/5*4 )
     app.exec_()
 

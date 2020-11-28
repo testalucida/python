@@ -51,6 +51,8 @@ class BusinessLogic:
                     if solldict["brutto"] != m["soll"]:
                         m["soll"] = solldict["brutto"]
                     n += 1
+            else: # Mietverh. besteht in diesem Monat noch nicht oder nicht mehr
+                m["soll"] = 0
         return mieten
 
     def getHausgeldVorauszahlungen( self, jahr:int, monat:int ) -> List[Dict]:

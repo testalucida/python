@@ -21,7 +21,7 @@ class ImmoCenterMainWindow( QMainWindow ):
         self.setWindowTitle( "Test QMdiArea" )
         self.resize( 940, 800 )
         self._menubar:QMenuBar
-        self._mdiArea:QMdiArea
+        self.mdiArea:QMdiArea
         self._toolbar: QToolBar
         self._actionCallbackFnc = None #callback function for all action callbacks
 
@@ -33,7 +33,7 @@ class ImmoCenterMainWindow( QMainWindow ):
     def _createUI( self ):
         mdiArea = QMdiArea( self )
         self.setCentralWidget( mdiArea )
-        self._mdiArea = mdiArea
+        self.mdiArea = mdiArea
 
         self._menubar = QMenuBar( self )
         #self._menubar.setGeometry( QtCore.QRect( 0, 0, 94, 20 ) )
@@ -59,7 +59,7 @@ class ImmoCenterMainWindow( QMainWindow ):
 
         menu.addSeparator()
 
-        # Menüpunkt "Änderungen an der aktiven Sicht speichern
+        # Menüpunkt "Änderungen an der aktiven Sicht speichern"
         action = QAction( self, text="Änderungen an der aktiven Sicht speichern" )
         action.setShortcut( QKeySequence( "Ctrl+s" ) )
         icon = QtGui.QIcon( "./images/save_30.png" )
@@ -226,12 +226,12 @@ class ImmoCenterMainWindow( QMainWindow ):
         msg.exec_()
 
     def addMdiChild( self, subwin:QMdiSubWindow ) -> None:
-        self._mdiArea.addSubWindow( subwin )
+        self.mdiArea.addSubWindow( subwin )
         subwin.widget().setAttribute( Qt.WA_DeleteOnClose )
 
     def _addMdiChild( self ):
         te = QTextEdit( self )
-        subwin = self._mdiArea.addSubWindow( te )
+        subwin = self.mdiArea.addSubWindow( te )
         subwin.setWindowTitle( "Mein Subwin" )
         te.setAttribute( Qt.WA_DeleteOnClose )
 

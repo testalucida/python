@@ -7,12 +7,17 @@ from checktablemodel import CheckTableModel
 from business import BusinessLogic
 from constants import einausart
 
-# TODO wo werden die CheckViews instanziert?
-# TODO hat jeder CheckView seinen eigenen Controller oder gibt es einen MietenController/HGV-Controller für
-#      ALLE MietenViews/HGVViews?
+class MdiChildController( ABC ):
+    def __init__( self ):
+        pass
 
-class CheckController( ABC ):
+    @abstractmethod
+    def save( self ):
+        pass
+
+class CheckController( MdiChildController, ABC ):
     def __init__(self ):
+        MdiChildController.__init__( self )
         curr = self.getCurrentYearAndMonth()
         self._currentYear:int = curr["year"]
         self._currentCheckMonth:int = curr["month"]
@@ -41,6 +46,7 @@ class CheckController( ABC ):
         model:CheckTableModel = self._subwin.widget().getModel()
         self.updateSollwerte( model.rowlist, self._currentYear, monat )
         model.setCheckmonat( monat )
+        model.emitSollValuesChanged()
 
     def createModel( self, jahr:int, monat:int ) -> CheckTableModel:
         rowlist = self.getRowList( jahr, monat )
@@ -78,6 +84,10 @@ class CheckController( ABC ):
         return self._subwin
 
     @abstractmethod
+    def save( self ):
+        pass
+
+    @abstractmethod
     def getViewTitle( self ) -> str:
         pass
 
@@ -110,6 +120,12 @@ class MietenController( CheckController ):
     def updateSollwerte( self, model:CheckTableModel, jahr:int, monat:int ) -> None:
         return BusinessLogic.inst().provideSollmieten( model, jahr, monat )
 
+    def save( self ):
+        model:CheckTableModel = self._subwin.widget().getModel()
+        if model.isChanged():
+            pass
+        
+
 #################### HGVController ########################
 class HGVController( CheckController ):
     def __init__( self ):
@@ -126,3 +142,6 @@ class HGVController( CheckController ):
 
     def updateSollwerte( self, model:CheckTableModel, jahr:int, monat:int ) -> None:
         pass
+
+    def save( self ):
+        print( "HGVController.save()")

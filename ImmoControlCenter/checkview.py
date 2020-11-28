@@ -107,6 +107,7 @@ class ValueDialog( QDialog ):
     def _doCallback( self, command:str ):
         if self._callback:
             num = self._numEntry.text()
+            if num is None or num == '': return
             num = num.replace( ",", "." )
             self._callback( True, float( num ), command )
         self.close()
@@ -292,7 +293,7 @@ class CheckView( QWidget ):
             if index.isValid():
                 #print(index.row(), index.column())
                 oldval = self._tm.getCheckMonatIst( index )
-                newval = oldval
+                newval = 0 if oldval is None else oldval
                 if command == "add":
                     newval += value
                 elif command == "sub":

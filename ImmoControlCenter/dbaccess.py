@@ -43,6 +43,8 @@ class DbAccess:
         return self._doReadAllGetDict( sql )
 
     def getMietzahlungenMitSummen( self, jahr:int ) -> List[Dict]:
+        # Achtung: das TableModel verlässt sich auf die Reihenfolge der Spalten.
+        # Wenn sie geändert wird, muss man das im CheckTableModel.__init()__ anpassen.
         sql = "select ea.meinaus_id, mv.mv_id, " \
               "mv.von, coalesce( mv.bis, '') as bis, mv.mobj_id as objekt, mv.name || ', ' || mv.vorname as name, " \
               "0 as soll, " \
