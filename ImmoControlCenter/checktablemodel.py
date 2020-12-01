@@ -36,7 +36,21 @@ class CheckTableModel( DictListTableModel ):
         self._summeColumnIdx = 21  # Summe aller Monatszahlungen - Spalte
         self.setCheckmonat( checkmonat )
         self.okstatecallback = None
+        self._changedCallback = None
         self._changes:Dict[int, Dict] = {}
+        """
+        Aufbau von _changes:
+        {
+            12345 <meinaus_id>: {
+                                    'mai': 445,90,
+                                    'jun': 444,00
+                                },
+            3456 <meinaus_id>: {
+                                    'jan': 440,00,
+                                    'mrz': 445,20
+                                }
+        }
+        """
 
     def resetChanges( self ):
         self._changes.clear()
@@ -103,9 +117,20 @@ class CheckTableModel( DictListTableModel ):
         sumindex = self.index( index.row(), self._summeColumnIdx )
         self.dataChanged.emit( sumindex, sumindex )
         self._writeChangeLog( index, value )
+        if self._changedCallback:
+            self._changedCallback()
         return True
 
-    def _writeChangeLog( self, index, value:float ):
+    def setChangedCallback( self, callbackFnc ):
+        self._changedCallback = callbackFnc
+
+    def _writeChangeLog( self, index, value:float ) -> None:
+        """
+        Schreibt ein Änderungslog für den durch <index> spezifizierten Monat
+        :param index: spezifiert Zeile (meinaus_id) und Spalte (Monat)
+        :param value: neuer Monatswert
+        :return: None
+        """
         # get meinaus_id
         ididx = self.index( index.row(), self._meinausidIdx )
         meinaus_id = self.data( ididx, Qt.DisplayRole )

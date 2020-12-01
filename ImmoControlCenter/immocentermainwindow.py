@@ -18,7 +18,7 @@ class MainWindowAction( Enum ):
 class ImmoCenterMainWindow( QMainWindow ):
     def __init__( self ):
         QMainWindow.__init__( self )
-        self.setWindowTitle( "Test QMdiArea" )
+        self.setWindowTitle( "ImmoControlCenter" )
         self.resize( 940, 800 )
         self._menubar:QMenuBar
         self.mdiArea:QMdiArea
@@ -46,7 +46,6 @@ class ImmoCenterMainWindow( QMainWindow ):
         self.setMenuBar( self._menubar )
         self.addToolBar( QtCore.Qt.TopToolBarArea, self._toolBar )
 
-
     def _createImmoCenterMenu( self ):
         # Menü "ImmoCenter"
         menu = QtWidgets.QMenu( self._menubar, title="ImmoCenter" )
@@ -60,11 +59,11 @@ class ImmoCenterMainWindow( QMainWindow ):
         menu.addSeparator()
 
         # Menüpunkt "Änderungen an der aktiven Sicht speichern"
-        action = QAction( self, text="Änderungen an der aktiven Sicht speichern" )
-        action.setShortcut( QKeySequence( "Ctrl+s" ) )
+        action = QAction( self, text="Alle Änderungen speichern" )
+        action.setShortcut( QKeySequence( "Ctrl+Shift+s" ) )
         icon = QtGui.QIcon( "./images/save_30.png" )
         action.setIcon( icon )
-        action.triggered.connect( self.onSaveActiveView )
+        action.triggered.connect( self.onSaveAll )
         menu.addAction( action )
         self._toolBar.addAction( action )
 

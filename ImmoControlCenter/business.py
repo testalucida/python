@@ -13,7 +13,7 @@ class BusinessLogic:
         self._db: DbAccess
 
     @staticmethod
-    def inst():
+    def inst() -> __instance:
         if BusinessLogic.__instance == None:
             BusinessLogic()
             BusinessLogic.inst()._prepare()
@@ -74,6 +74,34 @@ class BusinessLogic:
         for obj in objlist:
             self._db.insertMtlEinAus( obj, einausart.MIETE, jahr, commit=False )
             self._db.insertMtlEinAus( obj, einausart.HGV, jahr, commit=False )
+        self._db.commit()
+
+    def updateMietzahlungen( self, changes: Dict[int, Dict] ) -> None:
+        self._updateMtlEinAus( changes )
+
+    def updateHausgeldvorauszahlungen( self, changes: Dict[int, Dict] ) -> None:
+        self._updateMtlEinAus( changes )
+
+    def _updateMtlEinAus( self, changes:Dict[int, Dict] ) -> None:
+        """
+        Ändert Monatszahlungen, wie von <changes> vorgegeben.
+        Der Key in changes ist die meinaus_id, value ist ein anderes dictionary, dessen Key der Monat und dessen
+        Value die Mietzahlung (float) dieses Monats ist.
+         Aufbau von changes:
+        {
+            12345 <meinaus_id>: {
+                                    'mai': 445,90,
+                                    'jun': 444,00
+                                },
+            3456 <meinaus_id>: {
+                                    'jan': 440,00,
+                                    'mrz': 445,20
+                                }
+        }
+        """
+        for meinaus_id, change in changes.items():
+            for monat, betrag in change.items():
+                self._db.updateMtlEinAus( meinaus_id, monat, betrag, False )
         self._db.commit()
 
     def getSollmietenMonat( self, jahr:int, monat:int ) -> List[Dict]:

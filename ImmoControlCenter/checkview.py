@@ -2,7 +2,8 @@ from PySide2 import Qt
 from PySide2.QtCore import *
 #from PySide2.QtCore import QAbstractTableModel, SIGNAL
 from PySide2.QtGui import QFont, QIcon, QDoubleValidator
-from PySide2.QtWidgets import QApplication, QWidget, QComboBox, QHBoxLayout, QGridLayout, QPushButton, \
+from PySide2.QtWidgets import QApplication, QWidget, QComboBox, QAction, \
+    QHBoxLayout, QGridLayout, QPushButton, \
     QDialog, QMessageBox
 from PySide2 import QtWidgets
 import datetime
@@ -41,30 +42,6 @@ class ImageFactory:
 
 ################ ValueDialog ########################
 class ValueDialog( QDialog ):
-    # def __init__( self, parent=None ):
-    #     QDialog.__init__( self, parent )
-    #     self.setModal( True )
-    #     self.setWindowTitle( "Abweichender Betrag" )
-    #     self.resize(245, 77)
-    #     # self.buttonBox = QtWidgets.QDialogButtonBox(self)
-    #     # self.buttonBox.setGeometry(QRect(150, 10, 81, 241))
-    #     # self.buttonBox.setOrientation(Qt.Vertical)
-    #     #self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
-    #     #self.buttonBox.setObjectName("buttonBox")
-    #     btnAdd = QPushButton( "Add" )
-    #     # self.buttonBox.addButton( btnAdd )
-    #     self._numEntry = QtWidgets.QLineEdit(self)
-    #     self._numEntry.setGeometry(QRect(10, 40, 113, 23))
-    #     self._numEntry.setAlignment(Qt.AlignRight | Qt.AlignTrailing | Qt.AlignVCenter)
-    #     self._numEntry.setValidator( QDoubleValidator( 0, 9999, 2, self ) )
-    #     self._numEntry.setFocus()
-    #     self.label = QtWidgets.QLabel(self)
-    #     self.label.setGeometry(QRect(10, 9, 171, 16))
-    #     self.setLabelText( "Betrag eingeben:" )
-    #     self.buttonBox.accepted.connect(self.accept)
-    #     self.buttonBox.rejected.connect(self.reject)
-    #     self._callback = None
-
     def __init__( self, parent=None ):
         QDialog.__init__( self, parent )
         self.setModal( True )
@@ -107,7 +84,7 @@ class ValueDialog( QDialog ):
     def _doCallback( self, command:str ):
         if self._callback:
             num = self._numEntry.text()
-            if num is None or num == '': return
+            if num is None or num == '': num = "0"
             num = num.replace( ",", "." )
             self._callback( True, float( num ), command )
         self.close()
@@ -172,6 +149,7 @@ class CheckView( QWidget ):
         self._tm:CheckTableModel = None
         self._jahrChangedCallback = None
         self._monatChangedCallback = None
+        self.saveCallback = None
         self.resize(1800, 1280)
 
     def _createUI(self):
@@ -185,6 +163,22 @@ class CheckView( QWidget ):
 
         self._cboMonat = QComboBox(self)
         hbox.addWidget( self._cboMonat )
+
+        #### save button
+        btn = QPushButton()
+        btn.clicked.connect( self.onSave )
+        btn.setFlat( True )
+        btn.setEnabled( False )
+        btn.setToolTip( "Änderungen dieser View speichern" )
+        icon = QIcon( "./images/save_30.png" )
+        btn.setIcon( icon )
+        size = QSize( self._cboMonat.size().height(), self._cboMonat.size().height() )
+        btn.setFixedSize( size )
+        iconsize = QSize( 30, 30 )
+        btn.setIconSize( iconsize )
+        hbox.addWidget( btn )
+        self._btnSave = btn
+
         self._gridLayout.addLayout( hbox, 0, 0, alignment=Qt.AlignLeft )
 
         # add TableView to main layout
@@ -195,6 +189,13 @@ class CheckView( QWidget ):
         self._gridLayout.addWidget( tv, 1, 0, 1, 2)
 
         self.tableView = tv
+
+    def onSave( self ):
+        if self.saveCallback:
+            self.saveCallback()
+
+    def setSaveButtonEnabled( self, enabled:bool=True ):
+        self._btnSave.setEnabled( enabled )
 
     def setJahre( self, jahre:List[int] ) -> None:
         for  jahr in jahre:

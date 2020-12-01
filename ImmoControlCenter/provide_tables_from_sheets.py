@@ -49,7 +49,7 @@ def provideMiete2020():
             monat = mon_dbnames[m-1]
             value = d[monat.title()]
             value = 0 if math.isnan( value ) else value
-            db.updateMtlEinAus( d["mietobjekt_id"], "miete", 2020, m, value )
+            ### obsolete db.updateMtlEinAus( d["mietobjekt_id"], "miete", 2020, m, value )
     db.commit()
 
 if __name__ == "__main__":

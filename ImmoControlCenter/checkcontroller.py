@@ -22,6 +22,8 @@ class CheckController( MdiChildController, ABC ):
         self._currentYear:int = curr["year"]
         self._currentCheckMonth:int = curr["month"]
         self._subwin: QMdiSubWindow = None
+        self.changedCallback = None
+        self.savedCallback = None
 
     def getCurrentYearAndMonth( self ) -> Dict:
         d = {}
@@ -53,15 +55,13 @@ class CheckController( MdiChildController, ABC ):
         if len( rowlist ) == 0:
             raise Exception( "Zum gewählten Jahr sind keine Daten vorhanden.",
                              'Daten sind für das aktuelle Jahr und für max. zwei zurückliegende Jahre vorhanden.' )
-
-        # for r in rowlist:
-        #     r["ok"] = ""
-        #     r["nok"] = ""
         model = CheckTableModel( rowlist, monat )
+        model.setChangedCallback( self.onDataChanged )
         return model
 
     def createSubwindow( self ) -> QMdiSubWindow:
         checkView = CheckView()
+        checkView.saveCallback = self.onSaveData
         checkView.setJahre( BusinessLogic.inst().getExistingJahre( einausart.MIETE ) )
         # neue CheckViews immer mit aktuellem Jahr/Monat
         curr = self.getCurrentYearAndMonth()
@@ -83,8 +83,36 @@ class CheckController( MdiChildController, ABC ):
         self._subwin.setWindowTitle( title )
         return self._subwin
 
-    @abstractmethod
+    def onDataChanged( self ):
+        if self.changedCallback:
+            view:CheckView = self._subwin.widget()
+            view.setSaveButtonEnabled()
+            self.changedCallback()
+            title = self._subwin.windowTitle()
+            title += " *"
+            self._subwin.setWindowTitle( title )
+
+    def onSaveData( self ): # called by save button of this view
+        self.save()
+        title = self._subwin.windowTitle()
+        title = title.rstrip( " *" )
+        self._subwin.setWindowTitle( title )
+
+    def _doDataSavedCallback( self ):
+        if self.savedCallback:
+            view: CheckView = self._subwin.widget()
+            view.setSaveButtonEnabled( False )
+            self.savedCallback()
+
     def save( self ):
+        model: CheckTableModel = self._subwin.widget().getModel()
+        if model.isChanged():
+            self.writeChanges( model.getChanges() )
+            model.resetChanges()
+            self._doDataSavedCallback()
+
+    @abstractmethod
+    def writeChanges( self ):
         pass
 
     @abstractmethod
@@ -120,11 +148,9 @@ class MietenController( CheckController ):
     def updateSollwerte( self, model:CheckTableModel, jahr:int, monat:int ) -> None:
         return BusinessLogic.inst().provideSollmieten( model, jahr, monat )
 
-    def save( self ):
-        model:CheckTableModel = self._subwin.widget().getModel()
-        if model.isChanged():
-            pass
-        
+    def writeChanges( self, changes:Dict[int, Dict] ):
+        BusinessLogic.inst().updateMietzahlungen( changes )
+
 
 #################### HGVController ########################
 class HGVController( CheckController ):
@@ -143,5 +169,5 @@ class HGVController( CheckController ):
     def updateSollwerte( self, model:CheckTableModel, jahr:int, monat:int ) -> None:
         pass
 
-    def save( self ):
+    def writeChanges( self, changes:Dict[int, Dict] ):
         print( "HGVController.save()")

@@ -124,20 +124,17 @@ class DbAccess:
         sql = "insert into mtleinaus (%s, jahr) values ('%s', %d) " % (id, mv_or_vwg_id, jahr)
         return self._doWrite(sql, commit)
 
-    def updateMtlEinAus( self, mietobjekt_id:str, einausart:str, jahr:int, monat:int or str, value:float, commit:bool=True ) -> int:
+    def updateMtlEinAus( self, meinaus_id:str, monat:int or str, value:float, commit:bool=True ) -> int:
         """
         Ändert einen Monatswert in der Tabelle mtleinaus
-        :param mietobjekt_id: identifz. das Mietobjekt
-        :param einausart:  identifiziert die einausart
-        :param jahr:  identifiziert das Jahr
+        :param meinaus_id: identifz. den mtleinaus-Satz, damit auch das Jahr, egal ob Miete oder HGV
         :param monat: identifiziert den Monat: 1 -> Januar, ..., 12 -> Dezember oder als string "jan",..."dez"
         :param value: der Wert, der im betreffenden Monat eingetragen werden soll
         :return:
         """
-        sql = "update mtleinaus set "
-        sql += ( mon_dbnames[monat-1] if isinstance( monat, int ) else monat )
-        sql += " = %f where mietobjekt_id = '%s' and einausart = '%s' and jahr = %d " \
-               % ( value, mietobjekt_id, einausart, jahr )
+        dbval = "%.2f" % (value) if value > 0 else "NULL"
+        sMonat =  mon_dbnames[monat-1] if isinstance( monat, int ) else monat
+        sql = "update mtleinaus set '%s' = %s where meinaus_id = %d  " % ( sMonat, dbval, meinaus_id )
         return self._doWrite( sql, commit )
 
     def _doRead( self, sql:str ) -> List[Tuple]:
