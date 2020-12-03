@@ -124,6 +124,15 @@ class DbAccess:
         sql = "insert into mtleinaus (%s, jahr) values ('%s', %d) " % (id, mv_or_vwg_id, jahr)
         return self._doWrite(sql, commit)
 
+
+    def insertVerwalter( self, d:Dict, commit:bool=True ) -> int:
+        sql = "insert into verwalter " \
+              "(vw_id, name, strasse, plz_ort, telefon_1, telefon_2, mailto, ansprechpartner_1, ansprechpartner_2, bemerkung)" \
+              "values('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )" \
+              % (d["vw_id"], d["name"], d["strasse"], d["plz_ort"], d["telefon_1"], d["telefon_2"], d["mailto"],
+                 d["ansprechpartner_1"], d["ansprechpartner_2"], d["bemerkung"] )
+        return self._doWrite( sql, commit )
+
     def updateMtlEinAus( self, meinaus_id:str, monat:int or str, value:float, commit:bool=True ) -> int:
         """
         Ändert einen Monatswert in der Tabelle mtleinaus

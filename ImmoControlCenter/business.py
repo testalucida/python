@@ -23,10 +23,9 @@ class BusinessLogic:
         try:
             f = open( "use_test_db" )
             dbname = "immo_TEST.db"
+            f.close()
         except:
             dbname = "immo.db"
-        finally:
-            f.close()
 
         self._db = DbAccess( dbname )
         self._db.open()
