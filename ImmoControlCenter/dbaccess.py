@@ -35,7 +35,15 @@ class DbAccess:
         """
         Liefert zu allen Mietverhältnissen, die in <jahr> aktiv sind, die Werte der Spalten mv_id, von, bis
         :param jahr:
-        :return: List[Dict]
+        :return: List[Dict]:
+                [
+                    {
+                        "mv_id":  "landeranke",
+                        "von":    "2019-01-01"
+                        "bis":    ""
+                    },
+                    ...
+                ]
         """
         sql = "select mv_id, von, bis from mietverhaeltnis " \
               "where substr(von, 0, 5) <= '%s' " \
@@ -55,14 +63,38 @@ class DbAccess:
               "from mietverhaeltnis mv " \
               "inner join mtleinaus ea on ea.mv_id = mv.mv_id " \
               "where ea.jahr = %s " \
-              "and ea.mv_id > 0 " \
+              "and ea.mv_id > '' " \
               "and (mv.bis = '' or mv.bis is NULL or substr(mv.bis, 0, 5) >= '%s') " \
 	          "order by mv.mv_id" % ( jahr, jahr )
         diclist: List[Dict] = self._doReadAllGetDict(sql)
         return diclist
 
-    def getHausgeldvorauszahlungen( self, jahr:int ) -> List[Dict]:
-        raise Exception( "getHausgeldvorauszahlungen() not yet implemented" )
+    def getVerwaltungen( self, jahr:int ) -> List[Dict]:
+        vgldat = str(jahr) + "-01-01"
+        sql = "select vwg_id, mobj_id, vw_id, weg_name, von, coalesce( bis, '' ) as bis " \
+              "from verwaltung " \
+              "where von <= '%s' and (bis is NULL or bis = '' or bis > '%s')" % (vgldat, vgldat)
+        diclist: List[Dict] = self._doReadAllGetDict( sql )
+        return diclist
+
+    def getHausgeldvorauszahlungenMitSummen( self, jahr:int ) -> List[Dict]:
+        # Achtung: das TableModel verlässt sich auf die Reihenfolge der Spalten.
+        # Wenn sie geändert wird, muss man das im CheckTableModel.__init()__ anpassen.
+        sql = "select ea.meinaus_id, vwg.vwg_id, " \
+              "vwg.von, coalesce( vwg.bis, '') as bis, vwg.mobj_id as objekt, vwg.weg_name || ' / ' || vwg.vw_id as name, " \
+              "0 as soll, " \
+              "'ok' as ok, 'nok' as nok, " \
+              "jan, feb, mrz, apr, mai, jun, jul, aug, sep, okt, nov, dez, " \
+              "(coalesce(jan,0)+coalesce(feb,0)+coalesce(mrz,0)+coalesce(apr,0)+coalesce(mai,0)+coalesce(jun,0)+" \
+              "coalesce(jul,0)+coalesce(aug,0)+coalesce(sep,0)+coalesce(okt,0)+coalesce(nov, 0) + coalesce(dez, 0)) as summe " \
+              "from verwaltung vwg " \
+              "inner join mtleinaus ea on ea.vwg_id = vwg.vwg_id " \
+              "where ea.jahr = %s " \
+              "and ea.vwg_id > 0 " \
+              "and (vwg.bis = '' or vwg.bis is NULL or substr(vwg.bis, 0, 5) >= '%s') " \
+              "order by vwg.weg_name" % (jahr, jahr)
+        diclist: List[Dict] = self._doReadAllGetDict( sql )
+        return diclist
 
     def getSollmieten( self, jahr:int ) -> List[Dict]:
         sjahr = str( jahr )
@@ -79,8 +111,17 @@ class DbAccess:
         sql = "select mv_id, von, bis, netto, nkv, netto+nkv as brutto " \
               "from sollmiete " \
               "where von <= '%s' " \
-              "and (bis is NULL or bis = '' or bis > '%s')" \
+              "and (bis is NULL or bis = '' or bis > '%s') " \
               "order by mv_id" % (datum, datum)
+        return self._doReadAllGetDict( sql )
+
+    def getSollHausgelderMonat( self, jahr:int, monat:int ) -> List[Dict]:
+        datum = str( jahr ) + "-" + "%02d" % monat + "-01"
+        sql = "select mobj_id, von, coalesce(bis, '') as bis, netto, ruezufue " \
+              "from sollhausgeld " \
+              "where von <= '%s' " \
+              "and (bis is NULL or bis = '' or bis > '%s') " \
+              "order by mobj_id" % (datum, datum)
         return self._doReadAllGetDict( sql )
 
     def getJahre( self, eaart:einausart ) -> List[int]:
@@ -123,7 +164,6 @@ class DbAccess:
         id = "mv_id" if eaart == einausart.MIETE else "vwg_id"
         sql = "insert into mtleinaus (%s, jahr) values ('%s', %d) " % (id, mv_or_vwg_id, jahr)
         return self._doWrite(sql, commit)
-
 
     def insertVerwalter( self, d:Dict, commit:bool=True ) -> int:
         sql = "insert into verwalter " \
@@ -191,8 +231,12 @@ def test():
     db = DbAccess( "immo_TEST.db" )
     db.open()
 
-    jahre = db.getJahre( einausart.MIETE )
-    print( jahre )
+    #dictlist = db.getHausgeldvorauszahlungenMitSummen( 2020 )
+    dictlist = db.getSollHausgelderMonat( 2020, 10 )
+    print( dictlist)
+
+    #jahre = db.getJahre( einausart.MIETE )
+    #print( jahre )
     #dictlist = db.getSollmietenMonat( 2020, 2 )
     # dictlist = db.getMietzahlungen( 2020 )
     # print( dictlist )

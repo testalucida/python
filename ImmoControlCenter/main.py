@@ -27,6 +27,9 @@ class ShutDownFilter( QtCore.QObject ):
 
 def main():
     app = QApplication()
+    rec = QApplication.desktop().screenGeometry();
+    height = rec.height();
+    width = rec.width();
 
     win = ImmoCenterMainWindow()
     # see: https://stackoverflow.com/questions/53097415/pyside2-connect-close-by-window-x-to-custom-exit-method
@@ -34,8 +37,9 @@ def main():
     win.installEventFilter(shutDownFilter)
     #win.showMaximized()
     win.show()
-    win.resize( 1800, 1000 )
 
+    # win.resize( 1800, 1000 )
+    win.resize( width, height )
     ctrl = MainController( win )
     ctrl.onMainWindowAction( MainWindowAction.OPEN_MIETE_VIEW )
     ctrl.onMainWindowAction( MainWindowAction.OPEN_HGV_VIEW )

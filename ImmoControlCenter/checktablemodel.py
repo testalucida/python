@@ -6,13 +6,15 @@ from dictlisttablemodel import DictListTableModel
 
 class CheckTableModel( DictListTableModel ):
     """ CheckTableModel hat einen genau definierten Aufbau bzgl. der ersten 7 Spalten
-        Spalte 0: von
-        Spalte 1: bis
-        Spalte 2: objekt
-        Spalte 3: name  (kann Mieter oder Hausverwalter sein)
-        Spalte 4: soll  (soll-miete oder soll-hausgeld)
-        Spalte 5: ok  (Spalte für den OK-Button in jeder Zeile)
-        Spalte 6: nok (Spalte für den NOK-Button in jeder Zeile)
+        Spalte 0: meinaus_id
+        Spalte 1: mv_id oder vwg_id
+        Spalte 2: von
+        Spalte 3: bis
+        Spalte 4: objekt
+        Spalte 5: name  (kann Mieter oder Hausverwalter sein)
+        Spalte 6: soll  (soll-miete oder soll-hausgeld)
+        Spalte 7: ok  (Spalte für den OK-Button in jeder Zeile)
+        Spalte 8: nok (Spalte für den NOK-Button in jeder Zeile)
         Die nachfolgenden Spalten sind beliebig. Derzeit: Je Monat eine Spalte, dann eine Zeilen-Summen-Spalte,
         dann eine Kommentarspalte.
     """
@@ -67,9 +69,25 @@ class CheckTableModel( DictListTableModel ):
     def getNokColumnIdx( self ):
         return self._nokColumnIdx
 
-    def setCheckmonat(self, monatIdx:int ):
+    def setCheckmonat(self, monatIdx:int ) -> None:
+        """
+        Setzt den Checkmonat, das ist der, in den die Sollwerte per Knopfdruck übernommen werden
+        :param monatIdx: 1: Januar, ..., 12: Dezember
+        :return: None
+        """
         self._checkMonat = monatIdx
         self._checkMonatColumnIdx = self._checkMonat + self._leadingColumns - 1
+
+    def getCheckmonat( self ) -> int:
+        """
+        Liefert den eingestellten Checkmonat.
+        :return: den Monatsindex. 1: Januar, ..., 12: Dezember
+        """
+        return self._checkMonat
+
+    def getCheckmonatColumnIndex( self ) -> QModelIndex:
+        idx = self.index( 0, self._checkMonatColumnIdx )
+        return idx
 
     def setOkStateCallback(self, cbfnc ):
         self.okstatecallback = cbfnc

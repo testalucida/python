@@ -272,6 +272,8 @@ class CheckView( QWidget ):
             self.tableView.setIndexWidget( tm.index( r, nokColumnIdx ), btnNok )
         self.tableView.setSizeAdjustPolicy( QtWidgets.QAbstractScrollArea.AdjustToContents )
         self.tableView.resizeColumnsToContents()
+        checkmonatColumnIdx = tm.getCheckmonatColumnIndex()
+        self.tableView.scrollTo( checkmonatColumnIdx )
         self._tm = tm
 
     def _okButtonClicked(self, checkstate:bool ):

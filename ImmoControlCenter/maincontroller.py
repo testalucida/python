@@ -1,9 +1,7 @@
 from typing import List, Dict
-from PySide2.QtWidgets import QMdiSubWindow
+from mdisubwindow import MdiSubWindow
 from immocentermainwindow import ImmoCenterMainWindow, MainWindowAction
 from checkcontroller import MdiChildController, MietenController, HGVController
-from business import BusinessLogic
-from models import KontrollModel
 
 class MainController:
     def __init__(self, win:ImmoCenterMainWindow ):
@@ -13,7 +11,10 @@ class MainController:
         self._mietenCtrl.changedCallback = self.onViewChanged
         self._mietenCtrl.savedCallback = self.onViewSaved
         self._hgvCtrl:HGVController = HGVController()
-        self._viewsandcontroller:[Dict[QMdiSubWindow, MdiChildController]] = {}
+        self._hgvCtrl.changedCallback = self.onViewChanged
+        self._hgvCtrl.savedCallback = self.onViewSaved
+        #TODO: _viewsandcontroller bereinigen, wenn ein View geschlossen wird
+        self._viewsandcontroller:[Dict[MdiSubWindow, MdiChildController]] = {}
         self._someViewChanged:bool = False
         self._x, self._y = 0, 0
 
@@ -44,7 +45,8 @@ class MainController:
         pass
 
     def _saveActiveView( self ):
-        child = self._mainwin.mdiArea.activeSubWindow()
+        child:MdiSubWindow = self._mainwin.mdiArea.activeSubWindow()
+        #child.installEventFilter( self )
         ctrl:MdiChildController = self._viewsandcontroller[child]
         ctrl.save()
         self._mainwin.setWindowTitle( "ImmoControlCenter" )
@@ -57,14 +59,19 @@ class MainController:
         pass
 
     def _openMieteView( self ):
+        #TODO prüfen, ob schon ein MieteView vorhanden ist. Wenn ja, diesen in den Vordergrund bringen.
+        #     Nur wenn nein, einen anlegen.
         subwin = self._mietenCtrl.createSubwindow()
         self._installView( subwin )
 
     def _openHGVView( self ):
+        # TODO prüfen, ob schon ein HGV-View vorhanden ist. Wenn ja, diesen in den Vordergrund bringen.
+        #     Nur wenn nein, einen anlegen.
         subwin = self._hgvCtrl.createSubwindow()
         self._installView( subwin )
 
-    def _installView( self, subwin:QMdiSubWindow ):
+    def _installView( self, subwin:MdiSubWindow ):
+        subwin.addQuitCallback( self.onCloseSubWindow )
         self._viewsandcontroller[subwin] = self._mietenCtrl
         self._mainwin.addMdiChild( subwin )
         geom = self._mainwin.geometry()
@@ -72,6 +79,10 @@ class MainController:
         self._x += 20
         self._y += 20
         subwin.show()
+
+    def onCloseSubWindow( self, window:MdiSubWindow ) -> bool:
+        self._viewsandcontroller.pop( window )
+        return True
 
     def _exit( self ):
         pass

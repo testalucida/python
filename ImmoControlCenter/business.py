@@ -36,9 +36,9 @@ class BusinessLogic:
     def getMietzahlungenMitSollUndSummen( self, jahr:int, monat:int ):
         mieten:List[Dict] = self._db.getMietzahlungenMitSummen( jahr )
         # sollwerte versorgen:
-        return self.provideSollmieten( mieten, jahr, monat )
+        return self._provideSollmieten( mieten, jahr, monat )
 
-    def provideSollmieten( self, mieten:List[Dict], jahr:int, monat:int ) -> List[Dict]:
+    def _provideSollmieten( self, mieten:List[Dict], jahr:int, monat:int ) -> List[Dict]:
         sollwerte: List[Dict] = self.getSollmietenMonat( jahr, monat )
         # <sollwerte> enthält je Mietverhältnis genau 1 Satz mit den Werten netto, nkv und brutto.
         # Diese müssen je MV in <mieten> in die Spalte <soll> eingearbeitet werden.
@@ -54,8 +54,14 @@ class BusinessLogic:
                 m["soll"] = 0
         return mieten
 
-    def getHausgeldVorauszahlungen( self, jahr:int, monat:int ) -> List[Dict]:
-        return self._db.getHausgeldvorauszahlungen( jahr )
+    def getHausgeldVorauszahlungenMitSollUndSummen( self, jahr:int, monat:int ) -> List[Dict]:
+        hgv:List[Dict] = self._db.getHausgeldvorauszahlungenMitSummen( jahr )
+        #sollwerte versorgen:
+        return hgv #self._provideSollHGV( jahr, monat )
+
+    def _provideSollHGV( self, hgv: List[Dict], jahr: int, monat: int ) -> List[Dict]:
+        #TODO
+        pass
 
     def getExistingJahre( self, eaart:einausart ) -> List[int]:
         return self._db.getJahre( eaart )
@@ -65,14 +71,20 @@ class BusinessLogic:
 
     def createMtlEinAusJahresSet( self, jahr:int ) -> None:
         """
-        legt für jedes Mietverhältnis, das in <jahr> wenigstens teilweise aktiv ist,
-        einen Miete- und einen HGV-Satz in Tabelle mtleinaus an.
-        Achtung: Macht KEINEN commit
+        legt
+        1.) für jedes Mietverhältnis, das in <jahr> wenigstens teilweise aktiv ist,
+        einen Mietesatz in Tabelle mtleinaus an.
+        2.) für jede Verwaltung, die in <jahr> wenigstens teilweise aktiv ist, einen
+        HGV-Satz in Tabelle mtleinaus an.
+        Macht abschließend einen Commit.
         """
-        objlist:List = self._db.getMietverhaeltnisseEssentials( jahr )
-        for obj in objlist:
-            self._db.insertMtlEinAus( obj, einausart.MIETE, jahr, commit=False )
-            self._db.insertMtlEinAus( obj, einausart.HGV, jahr, commit=False )
+        mvlist:List[Dict] = self._db.getMietverhaeltnisseEssentials( jahr )
+        for mv in mvlist:
+            self._db.insertMtlEinAus( mv["mv_id"], einausart.MIETE, jahr, commit=False )
+
+        vwglist: List[Dict] = self._db.getVerwaltungen( jahr )
+        for vwg in vwglist:
+            self._db.insertMtlEinAus( vwg["vwg_id"], einausart.HGV, jahr, commit=False )
         self._db.commit()
 
     def updateMietzahlungen( self, changes: Dict[int, Dict] ) -> None:
@@ -143,8 +155,8 @@ class BusinessLogic:
 
 def test():
     busi = BusinessLogic.inst()
-    mz = busi.getMietzahlungenMitSummen( 2020, 7 )
-    #busi.createMtlEinAusJahresSet( "miete", 2020 )
+    #mz = busi.getMietzahlungenMitSummen( 2020, 7 )
+    busi.createMtlEinAusJahresSet( 2021 )
     busi.terminate()
 
 if __name__ == "__main__":
