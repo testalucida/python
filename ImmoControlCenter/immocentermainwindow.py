@@ -40,6 +40,7 @@ class ImmoCenterMainWindow( QMainWindow ):
         self._toolBar = QToolBar( self )
 
         self._createImmoCenterMenu()
+        self._createMietobjektMenu()
         self._createViewMenu()
         self._createSqlMenu()
 
@@ -86,6 +87,28 @@ class ImmoCenterMainWindow( QMainWindow ):
         action = QAction( self, text="Ende" )
         action.triggered.connect( self.onExit )
         action.setShortcut( "Alt+F4")
+        menu.addAction( action )
+
+    def _createMietobjektMenu( self ):
+        menu = QtWidgets.QMenu( self._menubar, title="Mietobjekt" )
+        self._menubar.addMenu( menu )
+
+        action = QAction( self, text="Mieterwechsel..." )
+        action.triggered.connect( self.onMieterwechsel )
+        menu.addAction( action )
+
+        action = QAction( self, text="Verwalterwechsel..." )
+        action.triggered.connect( self.onVerwalterwechsel )
+        menu.addAction( action )
+
+        menu.addSeparator()
+
+        action = QAction( self, text="Änderung Miete..." )
+        action.triggered.connect( self.onChangeSollmiete() )
+        menu.addAction( action )
+
+        action = QAction( self, text="Änderung Hausgeld..." )
+        action.triggered.connect( self.onChangeSollhausgeld() )
         menu.addAction( action )
 
     def _createViewMenu( self ):
@@ -176,6 +199,18 @@ class ImmoCenterMainWindow( QMainWindow ):
 
     def onNewWindow( self ):
         self.doCallback( MainWindowAction.NEW_WINDOW )
+
+    def onMieterwechsel( self ):
+        pass
+
+    def onVerwalterwechsel( self ):
+        pass
+
+    def onChangeSollmiete( self ):
+        pass
+
+    def onChangeSollhausgeld( self ):
+        pass
 
     def onSaveActiveView( self ):
         self.doCallback( MainWindowAction.SAVE_ACTIVE_VIEW )

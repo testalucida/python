@@ -36,12 +36,13 @@ class BusinessLogic:
     def getMietzahlungenMitSollUndSummen( self, jahr:int, monat:int ):
         mieten:List[Dict] = self._db.getMietzahlungenMitSummen( jahr )
         # sollwerte versorgen:
-        return self._provideSollmieten( mieten, jahr, monat )
+        return self.provideSollmieten( mieten, jahr, monat )
 
-    def _provideSollmieten( self, mieten:List[Dict], jahr:int, monat:int ) -> List[Dict]:
+    def provideSollmieten( self, mieten:List[Dict], jahr:int, monat:int ) -> List[Dict]:
         sollwerte: List[Dict] = self.getSollmietenMonat( jahr, monat )
         # <sollwerte> enthält je Mietverhältnis genau 1 Satz mit den Werten netto, nkv und brutto.
         # Diese müssen je MV in <mieten> in die Spalte <soll> eingearbeitet werden.
+        # Beide Listen müssen nach mv_id sortiert sein.
         n = 0
         for m in mieten:
             solldict = sollwerte[n]
@@ -55,13 +56,21 @@ class BusinessLogic:
         return mieten
 
     def getHausgeldVorauszahlungenMitSollUndSummen( self, jahr:int, monat:int ) -> List[Dict]:
-        hgv:List[Dict] = self._db.getHausgeldvorauszahlungenMitSummen( jahr )
+        hgvlist:List[Dict] = self._db.getHausgeldvorauszahlungenMitSummen( jahr )
         #sollwerte versorgen:
-        return hgv #self._provideSollHGV( jahr, monat )
+        return self.provideSollHGV( hgvlist, jahr, monat )
 
-    def _provideSollHGV( self, hgv: List[Dict], jahr: int, monat: int ) -> List[Dict]:
-        #TODO
-        pass
+    def provideSollHGV( self, hgvlist: List[Dict], jahr: int, monat: int ) -> List[Dict]:
+        sollwerte = self._db.getSollHausgelderMonat( jahr, monat )
+        # Achtung: hgv (nach weg_name) und sollwerte (nach vwg_id)
+        # sind unterschiedlich sortiert
+        for hgv in hgvlist:
+            for soll in sollwerte:
+                hgv["soll"] = 0
+                if soll["vwg_id"] == hgv["vwg_id"]:
+                    hgv["soll"] = soll["netto"] + soll["ruezufue"]
+                    break
+        return hgvlist
 
     def getExistingJahre( self, eaart:einausart ) -> List[int]:
         return self._db.getJahre( eaart )
@@ -152,11 +161,33 @@ class BusinessLogic:
             soll_list.append(solldict)
         return dod
 
+    def initSollhausgeld( self, von:str, bis:str=None ):
+        """
+        Legt einen Satz je Mietobjekt in der Tabelle sollhausgeld an.
+        Die Spalten netto und ruezufue werden auf 0 gestellt.
+        Alle Sätze werden mit den übergebenen <von> und <bis> - Werten initialisiert
+        :param von:
+        :param bis:
+        :return:
+        """
+        objekte = self._db.getMietobjekteKurz()
+        for obj in objekte:
+            d = {
+                "mobj_id": obj["mobj_id"],
+                "von": von ,
+                "bis": bis,
+                "netto": 0,
+                "ruezufue": 0
+            }
+            self._db.insertSollhausgeld( d, False )
+        self._db.commit()
+
 
 def test():
     busi = BusinessLogic.inst()
+    busi.initSollhausgeld( "2019-01-01" )
     #mz = busi.getMietzahlungenMitSummen( 2020, 7 )
-    busi.createMtlEinAusJahresSet( 2021 )
+    #busi.createMtlEinAusJahresSet( 2021 )
     busi.terminate()
 
 if __name__ == "__main__":

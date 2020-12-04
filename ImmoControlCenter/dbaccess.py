@@ -31,6 +31,19 @@ class DbAccess:
     def commit( self ):
         self._con.commit()
 
+    def getMietobjekteKurz( self ) -> List[Dict]:
+        """
+        Liefert folgende Informationen für alle aktiven Mietobjekte:
+        - mobj_id
+        - master_id
+        :return:
+        """
+        sql = "select mobj_id, master_id " \
+              "from mietobjekt " \
+              "where aktiv = 1 " \
+              "order by mobj_id "
+        return self._doReadAllGetDict( sql )
+
     def getMietverhaeltnisseEssentials( self, jahr:int ) -> List[Dict]:
         """
         Liefert zu allen Mietverhältnissen, die in <jahr> aktiv sind, die Werte der Spalten mv_id, von, bis
@@ -117,11 +130,11 @@ class DbAccess:
 
     def getSollHausgelderMonat( self, jahr:int, monat:int ) -> List[Dict]:
         datum = str( jahr ) + "-" + "%02d" % monat + "-01"
-        sql = "select mobj_id, von, coalesce(bis, '') as bis, netto, ruezufue " \
+        sql = "select vwg_id, von, coalesce(bis, '') as bis, netto, ruezufue " \
               "from sollhausgeld " \
               "where von <= '%s' " \
               "and (bis is NULL or bis = '' or bis > '%s') " \
-              "order by mobj_id" % (datum, datum)
+              "order by vwg_id" % (datum, datum)
         return self._doReadAllGetDict( sql )
 
     def getJahre( self, eaart:einausart ) -> List[int]:
@@ -144,6 +157,13 @@ class DbAccess:
         sql = "insert into sollmiete " \
               "(mv_id, von, bis, netto, nkv ) " \
               "values( '%s', '%s', '%s', %f, %f ) " % ( d["mv_id"], d["von"], d["bis"], d["netto"], d["nkv"] )
+        return self._doWrite( sql, commit )
+
+    def insertSollhausgeld( self, d:Dict, commit:bool=True ) -> int:
+        bis = "NULL" if not d["bis"] else "'" + d["bis"] + "'"
+        sql = "insert into sollhausgeld " \
+              "(vwg_id, von, bis, netto, ruezufue) " \
+              "values( '%s', '%s', %s, %f, %f ) " % ( d["vwg_id"], d["von"], bis, d["netto"], d["ruezufue"] )
         return self._doWrite( sql, commit )
 
     def existsEinAusArt(self, eaart:einausart, jahr:int ) -> bool:

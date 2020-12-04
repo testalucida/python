@@ -27,7 +27,7 @@ class ShutDownFilter( QtCore.QObject ):
 
 def main():
     app = QApplication()
-    rec = QApplication.desktop().screenGeometry();
+    rec = QApplication.desktop().screenGeometry()
     height = rec.height();
     width = rec.width();
 

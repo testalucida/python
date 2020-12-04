@@ -166,7 +166,7 @@ class CheckController( MdiChildController, ABC ):
         pass
 
     @abstractmethod
-    def updateSollwerte( self, model:CheckTableModel, jahr:int, monat:int ) -> None:
+    def updateSollwerte( self, rowlist:List[Dict], jahr:int, monat:int ) -> None:
         pass
 
 #################### MietenController ###################
@@ -183,8 +183,8 @@ class MietenController( CheckController ):
     def getRowList( self, jahr:int, monat:int ) -> List[Dict]:
         return BusinessLogic.inst().getMietzahlungenMitSollUndSummen( jahr, monat )
 
-    def updateSollwerte( self, model:CheckTableModel, jahr:int, monat:int ) -> None:
-        return BusinessLogic.inst().provideSollmieten( model, jahr, monat )
+    def updateSollwerte( self,  rowlist:List[Dict], jahr:int, monat:int ) -> None:
+        return BusinessLogic.inst().provideSollmieten( rowlist, jahr, monat )
 
     def writeChanges( self, changes:Dict[int, Dict] ):
         BusinessLogic.inst().updateMietzahlungen( changes )
@@ -204,8 +204,8 @@ class HGVController( CheckController ):
     def getRowList( self, jahr:int, monat:int ) -> List[Dict]:
         return BusinessLogic.inst().getHausgeldVorauszahlungenMitSollUndSummen( jahr, monat )
 
-    def updateSollwerte( self, model:CheckTableModel, jahr:int, monat:int ) -> None:
-        pass
+    def updateSollwerte( self,  rowlist:List[Dict], jahr:int, monat:int ) -> None:
+        return BusinessLogic.inst().provideSollHGV( rowlist, jahr, monat )
 
     def writeChanges( self, changes:Dict[int, Dict] ):
-        print( "HGVController.save()")
+        BusinessLogic.inst().updateHausgeldvorauszahlungen( changes )
