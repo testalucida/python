@@ -1,0 +1,488 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="13.3">
+  <zoom_level>9</zoom_level>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>45</x>
+      <y>18</y>
+      <w>144</w>
+      <h>135</h>
+    </coordinates>
+    <panel_attributes>mietverhaeltnis
+--
+- mv_id:text
+- mobj_id:text
+- von
+- bis
+- name
+- vorname
+- anzahl_personen
+- ...
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>342</x>
+      <y>414</y>
+      <w>135</w>
+      <h>117</h>
+    </coordinates>
+    <panel_attributes>verwaltung
+--
+- vwg_id:int
+- mobj_id:text
+- vw_id:text
+- weg_name
+- von
+- bis</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>351</x>
+      <y>603</y>
+      <w>117</w>
+      <h>108</h>
+    </coordinates>
+    <panel_attributes>sollhausgeld
+--
+- vwg_id
+- von
+- bis
+- netto
+- ruezufue</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>27</x>
+      <y>387</y>
+      <w>234</w>
+      <h>162</h>
+    </coordinates>
+    <panel_attributes>mtleinaus
+--
+- meinaus_id:int
+- mv_id:text 
+- vwg_id
+- jahr
+- jan
+- feb
+- ...
+- dez
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>288</x>
+      <y>27</y>
+      <w>108</w>
+      <h>108</h>
+    </coordinates>
+    <panel_attributes>sollmiete
+--
+- mv_id:text
+- von
+- bis
+- netto
+- nkv</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>621</x>
+      <y>486</y>
+      <w>162</w>
+      <h>162</h>
+    </coordinates>
+    <panel_attributes>verwalter
+--
+- vw_id:text
+- name
+- strasse
+- plz_ort
+- telefon1
+- telefon2
+- mailto
+- ansprechpartner1
+- ansprechpartner2
+- bemerkung</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>180</x>
+      <y>72</y>
+      <w>126</w>
+      <h>36</h>
+    </coordinates>
+    <panel_attributes>lt=-
+m1=1..n
+m2=1</panel_attributes>
+    <additional_attributes>120.0;10.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>108</x>
+      <y>144</y>
+      <w>45</w>
+      <h>261</h>
+    </coordinates>
+    <panel_attributes>lt=-
+m1=1..n
+m2=0..1</panel_attributes>
+    <additional_attributes>10.0;270.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>324</x>
+      <y>162</y>
+      <w>162</w>
+      <h>135</h>
+    </coordinates>
+    <panel_attributes>mietobjekt
+--
+- mobj_id:text
+- master_id:text
+- whg_bez
+- qm
+- container_nr
+- bemerkung</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>468</x>
+      <y>495</y>
+      <w>171</w>
+      <h>36</h>
+    </coordinates>
+    <panel_attributes>lt=-
+m1=1..n
+m2=1</panel_attributes>
+    <additional_attributes>10.0;10.0;170.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>738</x>
+      <y>9</y>
+      <w>162</w>
+      <h>243</h>
+    </coordinates>
+    <panel_attributes>masterobjekt
+--
+- master_id:int
+- name
+- stpfl_id
+- strasse_hnr
+- plz
+- ort
+- einh_wert_az
+- angeschafft_am
+- qm_gesamt
+- anz_whg
+- afa_lin_deg
+- afa_wie_vorjahr
+- afa
+- afa_proz
+- verkauft_am</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>477</x>
+      <y>117</y>
+      <w>279</w>
+      <h>117</h>
+    </coordinates>
+    <panel_attributes>lt=-
+m1=1
+m2=1..n</panel_attributes>
+    <additional_attributes>290.0;10.0;10.0;110.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>180</x>
+      <y>108</y>
+      <w>162</w>
+      <h>126</h>
+    </coordinates>
+    <panel_attributes>lt=-
+m1=0..n
+m2=1</panel_attributes>
+    <additional_attributes>10.0;10.0;160.0;120.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>405</x>
+      <y>522</y>
+      <w>45</w>
+      <h>99</h>
+    </coordinates>
+    <panel_attributes>lt=-
+m1=1..n
+m2=1</panel_attributes>
+    <additional_attributes>10.0;90.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>396</x>
+      <y>288</y>
+      <w>27</w>
+      <h>144</h>
+    </coordinates>
+    <panel_attributes>lt=-
+m1=1
+m2=1</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;140.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>252</x>
+      <y>459</y>
+      <w>108</w>
+      <h>36</h>
+    </coordinates>
+    <panel_attributes>lt=-
+m1=1..n
+m2=0..1</panel_attributes>
+    <additional_attributes>10.0;10.0;100.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLNote</id>
+    <coordinates>
+      <x>45</x>
+      <y>576</y>
+      <w>216</w>
+      <h>153</h>
+    </coordinates>
+    <panel_attributes>Enthält Mieten und HG-Vorauszahlungen.
+Je Art (Miete, HGV), Jahr, Objekt und Mieter gibt es genau 1 Satz.
+Handelt es sich um den Jahres-Mietensatz, 
+referenziert die mv_id das betreffende Mietverhältnis und
+die vwg_id ist null.
+Handelt es sich um den Jahres-HGV-Satz,
+referenziert die vwg_id die betreffende Verwaltung und
+die mv_id ist null.
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>117</x>
+      <y>540</y>
+      <w>27</w>
+      <h>54</h>
+    </coordinates>
+    <panel_attributes>lt=-</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;40.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>675</x>
+      <y>288</y>
+      <w>252</w>
+      <h>171</h>
+    </coordinates>
+    <panel_attributes>sonsteinaus
+--
+- seinaus_id:int
+- mobj_id:text
+- kreditor
+- betrag
+- rgdatum
+- buchdatum
+- flag:text {Kombination aus 'u'mlegbar, 
+                             'w'erterhaltend,
+                             's' sonstiges}</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>477</x>
+      <y>216</y>
+      <w>216</w>
+      <h>99</h>
+    </coordinates>
+    <panel_attributes>lt=-
+m1=0..n
+m2=1</panel_attributes>
+    <additional_attributes>220.0;90.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1008</x>
+      <y>9</y>
+      <w>135</w>
+      <h>126</h>
+    </coordinates>
+    <panel_attributes>gebuehr
+--
+- jahr:int
+- master_id
+- grundsteuer
+- abwasser
+- strassenreinigung
+- abfall</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>891</x>
+      <y>63</y>
+      <w>135</w>
+      <h>36</h>
+    </coordinates>
+    <panel_attributes>lt=-
+m1=0..n
+m2=1</panel_attributes>
+    <additional_attributes>130.0;10.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLNote</id>
+    <coordinates>
+      <x>1017</x>
+      <y>198</y>
+      <w>216</w>
+      <h>171</h>
+    </coordinates>
+    <panel_attributes>Es handelt sich hier nur um Informationen, nicht um Ausgaben.
+Diese werden, wenn sie anfallen, in der Tabelle sonsteinaus 
+verbucht.
+Manche Kommunen erlassen solche Gebührenbescheide für alle der 
+enthaltenen Kostenarten (Neunkirchen), andere nur die 
+Grundsteuer (Illingen)</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1062</x>
+      <y>126</y>
+      <w>27</w>
+      <h>90</h>
+    </coordinates>
+    <panel_attributes>lt=-</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;80.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLNote</id>
+    <coordinates>
+      <x>963</x>
+      <y>396</y>
+      <w>207</w>
+      <h>81</h>
+    </coordinates>
+    <panel_attributes>Rechnungen, Zahlungen an 
+Kommunen, Energielieferanten 
+etc.</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>918</x>
+      <y>414</y>
+      <w>63</w>
+      <h>27</h>
+    </coordinates>
+    <panel_attributes>lt=-</panel_attributes>
+    <additional_attributes>10.0;10.0;50.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>126</x>
+      <y>207</y>
+      <w>108</w>
+      <h>99</h>
+    </coordinates>
+    <panel_attributes>nkabrechng
+--
+- jahr:int
+- mv_id:text
+- betrag:float
+- bemerkung</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>153</x>
+      <y>144</y>
+      <w>54</w>
+      <h>81</h>
+    </coordinates>
+    <panel_attributes>lt=-
+m1=0..n
+m2=1</panel_attributes>
+    <additional_attributes>20.0;70.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>468</x>
+      <y>405</y>
+      <w>117</w>
+      <h>72</h>
+    </coordinates>
+    <panel_attributes>lt=-
+m1=1
+m2=0..n</panel_attributes>
+    <additional_attributes>10.0;60.0;110.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>522</x>
+      <y>315</y>
+      <w>108</w>
+      <h>99</h>
+    </coordinates>
+    <panel_attributes>hgabrechng
+--
+- jahr:int
+- vwg_id:int
+- betrag:float
+- bemerkung</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>495</x>
+      <y>54</y>
+      <w>108</w>
+      <h>99</h>
+    </coordinates>
+    <panel_attributes>serviceleistung
+--
+- name:text
+- mobj_id:text
+- buchungstext</panel_attributes>
+    <additional_attributes/>
+  </element>
+</diagram>
