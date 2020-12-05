@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from mdisubwindow import MdiSubWindow
 from immocentermainwindow import ImmoCenterMainWindow, MainWindowAction
 from checkcontroller import MdiChildController, MietenController, HGVController
@@ -18,14 +18,18 @@ class MainController:
         self._someViewChanged:bool = False
         self._x, self._y = 0, 0
 
+    def showStartViews( self ):
+        self.showMieteView()
+        self.showHGVView()
+
     def onMainWindowAction( self, action:MainWindowAction ):
         switcher = {
             MainWindowAction.NEW_WINDOW: self._newWindow,
             MainWindowAction.SAVE_ACTIVE_VIEW: self._saveActiveView,
             MainWindowAction.SAVE_ALL: self._saveAll,
             MainWindowAction.PRINT_ACTIVE_VIEW: self._printActiveView,
-            MainWindowAction.OPEN_MIETE_VIEW: self._openMieteView,
-            MainWindowAction.OPEN_HGV_VIEW: self._openHGVView
+            MainWindowAction.OPEN_MIETE_VIEW: self.showMieteView,
+            MainWindowAction.OPEN_HGV_VIEW: self.showHGVView
         }
         m = switcher.get( action, lambda: "Nicht unterstützte Action: " + str( action ) )
         m()
@@ -40,6 +44,9 @@ class MainController:
     def onViewSaved( self ):
         self._mainwin.setWindowTitle( "ImmoControlCenter" )
         self._someViewChanged = False
+
+    def arrange( self, *views ):
+        print( views )
 
     def _newWindow( self ):
         pass
@@ -58,27 +65,57 @@ class MainController:
     def _printActiveView( self ):
         pass
 
-    def _openMieteView( self ):
+    def showMieteView( self ):
         #TODO prüfen, ob schon ein MieteView vorhanden ist. Wenn ja, diesen in den Vordergrund bringen.
         #     Nur wenn nein, einen anlegen.
+        # if <exists miete view:
+        #     bring to front
+        # else:
+        self.createMieteViewAndShow()
+
+    def createMieteViewAndShow( self ):
         subwin = self._mietenCtrl.createSubwindow()
         self._installView( subwin )
+        w, h = self.getMainWindowSize()
+        w2 = w/2
+        subwin.setGeometry( 0, 0, w2, h-22 )
+        # self._x += 20
+        # self._y += 20
+        subwin.show()
 
-    def _openHGVView( self ):
+    def showHGVView( self ):
         # TODO prüfen, ob schon ein HGV-View vorhanden ist. Wenn ja, diesen in den Vordergrund bringen.
         #     Nur wenn nein, einen anlegen.
+        # if <exists hgv view:
+        #     bring to front
+        # else:
+        self.createHgvViewAndShow()
+
+    def createHgvViewAndShow( self ):
         subwin = self._hgvCtrl.createSubwindow()
         self._installView( subwin )
+        w, h = self.getMainWindowSize()
+        w2 = w/2
+        x = w2
+        subwin.setGeometry( x, 0, w2, h/2 )
+        self._x += 20
+        self._y += 20
+        subwin.show()
 
     def _installView( self, subwin:MdiSubWindow ):
         subwin.addQuitCallback( self.onCloseSubWindow )
         self._viewsandcontroller[subwin] = self._mietenCtrl
         self._mainwin.addMdiChild( subwin )
-        geom = self._mainwin.geometry()
-        subwin.setGeometry( self._x, self._y, 1200, geom.height() / 5 * 4 )
-        self._x += 20
-        self._y += 20
-        subwin.show()
+
+    def getMainWindowSize( self ) -> Tuple:
+        geom = self._mainwin.mdiArea.geometry()
+        return geom.width(), geom.height()
+
+    # def showSubWindow( self, subwin:MdiSubWindow, x:int, y:int, w:int, h:int ):
+    #     subwin.setGeometry( self._x, self._y, 1200, geom.height() / 5 * 4 )
+    #     self._x += 20
+    #     self._y += 20
+    #     subwin.show()
 
     def onCloseSubWindow( self, window:MdiSubWindow ) -> bool:
         self._viewsandcontroller.pop( window )
@@ -86,3 +123,4 @@ class MainController:
 
     def _exit( self ):
         pass
+

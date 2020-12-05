@@ -144,6 +144,13 @@ class DbAccess:
         list = [x[0] for x in rowlist]
         return list
 
+    def getServiceleister( self ) -> List:
+        sql = "select name from serviceleistung order by name"
+        rowlist = self._doRead( sql )
+        list = [x[0] for x in rowlist]
+        list = sorted( list, key=str.casefold )
+        return list
+
     def insertMietverhaeltnis( self, d:Dict, commit:bool=True ) -> int:
         sql = "insert into mietverhaeltnis " \
               "(mietobjekt_id, von, bis, name, vorname, telefon, mobil, mailto, anzahl_pers, mietkonto, bemerkung1, bemerkung2) " \
@@ -251,9 +258,12 @@ def test():
     db = DbAccess( "immo_TEST.db" )
     db.open()
 
+    list = db.getServiceleister()
+    print( list )
+
     #dictlist = db.getHausgeldvorauszahlungenMitSummen( 2020 )
-    dictlist = db.getSollHausgelderMonat( 2020, 10 )
-    print( dictlist)
+    #dictlist = db.getSollHausgelderMonat( 2020, 10 )
+    #print( dictlist)
 
     #jahre = db.getJahre( einausart.MIETE )
     #print( jahre )
