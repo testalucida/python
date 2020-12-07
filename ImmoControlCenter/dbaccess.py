@@ -145,7 +145,7 @@ class DbAccess:
         return list
 
     def getServiceleister( self ) -> List:
-        sql = "select name from serviceleistung order by name"
+        sql = "select distinct name from serviceleistung order by name"
         rowlist = self._doRead( sql )
         list = [x[0] for x in rowlist]
         list = sorted( list, key=str.casefold )
@@ -171,6 +171,14 @@ class DbAccess:
         sql = "insert into sollhausgeld " \
               "(vwg_id, von, bis, netto, ruezufue) " \
               "values( '%s', '%s', %s, %f, %f ) " % ( d["vwg_id"], d["von"], bis, d["netto"], d["ruezufue"] )
+        return self._doWrite( sql, commit )
+
+    def insertServiceleistung( self, name:str, mobj_id:str, buchungstext:str, umlegbar:int=0, commit:bool=True ):
+        if buchungstext is None: buchungstext = ""
+        sql = "insert into serviceleistung " \
+              "(name, mobj_id, buchungstext, umlegbar) " \
+              "values" \
+              "('%s', '%s', '%s', %d) " % ( name, mobj_id, buchungstext, umlegbar )
         return self._doWrite( sql, commit )
 
     def existsEinAusArt(self, eaart:einausart, jahr:int ) -> bool:

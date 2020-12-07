@@ -2,19 +2,20 @@ from PySide2.QtWidgets import QMessageBox
 from abc import ABC, abstractmethod
 from typing import List, Dict
 import datetime
+from mdichildctrl import MdiChildController
 from checkview import CheckView
 from checktablemodel import CheckTableModel
 from business import BusinessLogic
 from constants import einausart
 from mdisubwindow import MdiSubWindow
 
-class MdiChildController( ABC ):
-    def __init__( self ):
-        pass
-
-    @abstractmethod
-    def save( self ):
-        pass
+# class MdiChildController( ABC ):
+#     def __init__( self ):
+#         pass
+#
+#     @abstractmethod
+#     def save( self ):
+#         pass
 
 class CheckController( MdiChildController, ABC ):
     def __init__(self ):
@@ -127,8 +128,9 @@ class CheckController( MdiChildController, ABC ):
             view.setSaveButtonEnabled()
             self.changedCallback()
             title = self._subwin.windowTitle()
-            title += " *"
-            self._subwin.setWindowTitle( title )
+            if title[-1] != "*":
+                title += " *"
+                self._subwin.setWindowTitle( title )
 
     def onSaveData( self ): # called by save button of this view
         self.save()

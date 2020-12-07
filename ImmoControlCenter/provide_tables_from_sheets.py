@@ -53,6 +53,8 @@ def provideMiete2020():
             ### obsolete db.updateMtlEinAus( d["mietobjekt_id"], "miete", 2020, m, value )
     db.commit()
 
+
+############################## provideServiceleistungen2020  A N F A N G #############################
 def provideServiceleistungen2020():
     sheet_name = "Zahlungen_2020"
     df = read_ods( einaus20path, sheet_name )
@@ -60,15 +62,15 @@ def provideServiceleistungen2020():
     for index, row in df.iterrows():
         d = row.to_dict()
         if d["name"] is None: continue
-        #print( d )
+        d["name"] = d["name"].strip()
+        if d["objekt"] is None:
+            d["objekt"] = ""
+        else:
+            d["objekt"] = d["objekt"].strip()
         servicelist.append( d )
     servicelist.sort( key=functools.cmp_to_key( compareDics ) )
-    for di in servicelist:
-        print( di )
-    print( "#######################################################################")
     servicelist = removeDuplicates( servicelist )
-    for di in servicelist:
-        print( di )
+    insertIntoServiceleistung( servicelist )
 
 def compareDics( d1:Dict, d2:Dict ) -> int:
     cmp1 = compareString( d1["name"], d2["name"] )
@@ -105,6 +107,14 @@ def removeDuplicates( l:List[Dict] ) -> List[Dict]:
         objekt = d["objekt"]
         buchungstext = d["buchungstext"]
     return newlist
+
+def insertIntoServiceleistung( servicelist:List[Dict] ) -> None:
+    for s in servicelist:
+        print( s )
+        db.insertServiceleistung( s["name"], s["objekt"], s["buchungstext"], 0, False )
+    db.commit()
+
+############################## provideServiceleistungen2020 E N D E #############################
 
 if __name__ == "__main__":
     provideServiceleistungen2020()

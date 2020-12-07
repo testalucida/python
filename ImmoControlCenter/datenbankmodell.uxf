@@ -304,13 +304,14 @@ die mv_id ist null.
       <w>252</w>
       <h>171</h>
     </coordinates>
-    <panel_attributes>sonsteinaus
+    <panel_attributes>sonstaus
 --
-- seinaus_id:int
+- saus_id:int
 - mobj_id:text
 - kreditor
 - betrag
 - rgdatum
+- text:text
 - buchdatum
 - flag:text {Kombination aus 'u'mlegbar, 
                              'w'erterhaltend,
@@ -481,6 +482,7 @@ m2=0..n</panel_attributes>
     <panel_attributes>serviceleistung
 --
 - name:text
+- master_id:int
 - mobj_id:text
 - buchungstext:text
 - umlegbar:int {0:nein, 1:ja}</panel_attributes>
@@ -496,7 +498,20 @@ m2=0..n</panel_attributes>
     </coordinates>
     <panel_attributes>lt=-
 m1=0..n
-m2=1</panel_attributes>
+m2=0..1</panel_attributes>
     <additional_attributes>110.0;10.0;10.0;90.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>630</x>
+      <y>81</y>
+      <w>126</w>
+      <h>36</h>
+    </coordinates>
+    <panel_attributes>lt=-
+m1=0..n
+m2=0..1</panel_attributes>
+    <additional_attributes>10.0;10.0;120.0;10.0</additional_attributes>
   </element>
 </diagram>

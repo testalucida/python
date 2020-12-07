@@ -57,7 +57,7 @@ class KontrollModel( QAbstractTableModel ):
 
     def setCheckMonatIst(self, index, val ):
         istidx = self.index(index.row(), self._checkMonatColumnIdx)
-        print( "going to set %d to cell %d/%d" % ( val, istidx.row(), istidx.column() ) )
+        #print( "going to set %d to cell %d/%d" % ( val, istidx.row(), istidx.column() ) )
         self.setData( istidx, val )
 
     def getCheckMonatIst(self, index ):

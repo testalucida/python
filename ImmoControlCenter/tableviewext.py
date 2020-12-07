@@ -73,8 +73,8 @@ class TestModel( QAbstractTableModel ):
 
 #######################################################################
 class TableViewExt( QTableView ):
-    def __init__( self ):
-        QTableView.__init__( self )
+    def __init__( self, parent=None ):
+        QTableView.__init__( self, parent )
         self._frozen:QTableView = None  # tableview containing only frozen columns
         self._nFrozen = 0  # number of frozen left columns
         self.clicked.connect( self.onLeftClick )
