@@ -1,21 +1,13 @@
-from PySide2.QtWidgets import QMessageBox
+from PySide2.QtWidgets import QMessageBox, QWidget
 from abc import ABC, abstractmethod
 from typing import List, Dict
 import datetime
-from mdichildctrl import MdiChildController
+from mdichildcontroller import MdiChildController
 from checkview import CheckView
 from checktablemodel import CheckTableModel
 from business import BusinessLogic
 from constants import einausart
 from mdisubwindow import MdiSubWindow
-
-# class MdiChildController( ABC ):
-#     def __init__( self ):
-#         pass
-#
-#     @abstractmethod
-#     def save( self ):
-#         pass
 
 class CheckController( MdiChildController, ABC ):
     def __init__(self ):
@@ -23,7 +15,6 @@ class CheckController( MdiChildController, ABC ):
         curr = self.getCurrentYearAndMonth()
         self._currentYear:int = curr["year"]
         self._currentCheckMonth:int = curr["month"]
-        self._subwin: MdiSubWindow = None
         self.changedCallback = None
         self.savedCallback = None
 
@@ -61,7 +52,7 @@ class CheckController( MdiChildController, ABC ):
         model.setChangedCallback( self.onDataChanged )
         return model
 
-    def createSubwindow( self ) -> MdiSubWindow:
+    def createView( self ) -> QWidget:
         checkView = CheckView()
         checkView.saveCallback = self.onSaveData
         checkView.setJahre( BusinessLogic.inst().getExistingJahre( einausart.MIETE ) )
@@ -78,13 +69,7 @@ class CheckController( MdiChildController, ABC ):
         checkView.tableView.setColumnHidden( 1, True )
         checkView.tableView.setColumnHidden( 2, True )
         checkView.tableView.setColumnHidden( 3, True )
-
-        self._subwin = MdiSubWindow()
-        self._subwin.addQuitCallback( self.onCloseSubWindow )
-        self._subwin.setWidget( checkView )
-        title = self.getViewTitle()
-        self._subwin.setWindowTitle( title )
-        return self._subwin
+        return checkView
 
     def onCloseSubWindow( self,  window:MdiSubWindow ) -> bool:
         """
@@ -123,10 +108,11 @@ class CheckController( MdiChildController, ABC ):
             return False
 
     def onDataChanged( self ):
+        # wird vom DictListTableModel gerufen
         if self.changedCallback:
             view:CheckView = self._subwin.widget()
             view.setSaveButtonEnabled()
-            self.changedCallback()
+            self.changedCallback()  #MainContrller informieren:
             title = self._subwin.windowTitle()
             if title[-1] != "*":
                 title += " *"
@@ -153,10 +139,6 @@ class CheckController( MdiChildController, ABC ):
 
     @abstractmethod
     def writeChanges( self, changes:Dict[int, Dict] ):
-        pass
-
-    @abstractmethod
-    def getViewTitle( self ) -> str:
         pass
 
     @abstractmethod

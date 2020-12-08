@@ -2,17 +2,23 @@ from typing import List, Dict, Tuple
 from mdisubwindow import MdiSubWindow
 from immocentermainwindow import ImmoCenterMainWindow, MainWindowAction
 from checkcontroller import MdiChildController, MietenController, HGVController
+from sonstauscontroller import ServiceController
 
 class MainController:
     def __init__(self, win:ImmoCenterMainWindow ):
         self._mainwin:ImmoCenterMainWindow = win
         win.setActionCallback( self.onMainWindowAction )
+
         self._mietenCtrl:MietenController = MietenController()
         self._mietenCtrl.changedCallback = self.onViewChanged
         self._mietenCtrl.savedCallback = self.onViewSaved
+
         self._hgvCtrl:HGVController = HGVController()
         self._hgvCtrl.changedCallback = self.onViewChanged
         self._hgvCtrl.savedCallback = self.onViewSaved
+
+        self._serviceCtrl:ServiceController = ServiceController()
+
         #TODO: _viewsandcontroller bereinigen, wenn ein View geschlossen wird
         self._viewsandcontroller:[Dict[MdiSubWindow, MdiChildController]] = {}
         self._someViewChanged:bool = False
@@ -21,6 +27,7 @@ class MainController:
     def showStartViews( self ):
         self.showMieteView()
         self.showHGVView()
+        self.showServiceView()
 
     def onMainWindowAction( self, action:MainWindowAction ):
         switcher = {
@@ -75,7 +82,7 @@ class MainController:
 
     def createMieteViewAndShow( self ):
         subwin = self._mietenCtrl.createSubwindow()
-        self._installView( subwin )
+        self._installView( subwin, self._mietenCtrl )
         w, h = self.getMainWindowSize()
         w2 = w/2
         subwin.setGeometry( 0, 0, w2, h-22 )
@@ -93,7 +100,7 @@ class MainController:
 
     def createHgvViewAndShow( self ):
         subwin = self._hgvCtrl.createSubwindow()
-        self._installView( subwin )
+        self._installView( subwin, self._hgvCtrl )
         w, h = self.getMainWindowSize()
         w2 = w/2
         x = w2
@@ -102,14 +109,46 @@ class MainController:
         self._y += 20
         subwin.show()
 
-    def _installView( self, subwin:MdiSubWindow ):
+    # def createHgvViewAndShow( self ):
+    #     subwin = self._hgvCtrl.createSubwindow()
+    #     self._installView( subwin, self._hgvCtrl )
+    #     w, h = self.getMainWindowSize()
+    #     w2 = w / 2
+    #     x = w2
+    #     subwin.setGeometry( x, 0, w2, h / 2 )
+    #     self._x += 20
+    #     self._y += 20
+    #     subwin.show()
+
+    def showServiceView( self ):
+        self.createServiceViewAndShow()
+
+    def createServiceViewAndShow( self ):
+        subwin = self._serviceCtrl.createSubwindow()
+        self._installView( subwin, self._serviceCtrl )
+        w, h = self.getMainWindowSize()
+        w2 = w / 2
+        x = w2
+        hgvsubwin = self.getView( self._hgvCtrl )
+        y = h - hgvsubwin.height()
+        h2 = h - y - 25
+        subwin.setGeometry( x, y, w2, h2 )
+        subwin.show()
+
+    def _installView( self, subwin:MdiSubWindow, ctrl:MdiChildController ):
         subwin.addQuitCallback( self.onCloseSubWindow )
-        self._viewsandcontroller[subwin] = self._mietenCtrl
+        self._viewsandcontroller[subwin] = ctrl
         self._mainwin.addMdiChild( subwin )
 
     def getMainWindowSize( self ) -> Tuple:
         geom = self._mainwin.mdiArea.geometry()
         return geom.width(), geom.height()
+
+    def getView( self, ctrl:MdiChildController ) -> MdiSubWindow:
+        for w, c in self._viewsandcontroller.items():
+            if c == ctrl:
+                return w
+        raise Exception( "internal error: can't find MdiSubWindow for Controller " + ctrl.getViewTitle() )
 
     # def showSubWindow( self, subwin:MdiSubWindow, x:int, y:int, w:int, h:int ):
     #     subwin.setGeometry( self._x, self._y, 1200, geom.height() / 5 * 4 )

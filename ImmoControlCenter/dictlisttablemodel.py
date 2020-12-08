@@ -15,6 +15,14 @@ class DictListTableModel( QAbstractTableModel ):
         self.headerBrush:QBrush = None
         self._negNumberBrush = None
         self._sortable = False
+        self._changedCallback = None
+
+    def setChangedCallback( self, callbackFnc ):
+        self._changedCallback = callbackFnc
+
+    def doChangedCallback( self ):
+        if self._changedCallback:
+            self._changedCallback()
 
     def rowCount( self, parent:QModelIndex=None ) -> int:
         return len( self.rowlist )

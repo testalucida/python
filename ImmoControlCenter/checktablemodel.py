@@ -38,7 +38,7 @@ class CheckTableModel( DictListTableModel ):
         self._summeColumnIdx = 21  # Summe aller Monatszahlungen - Spalte
         self.setCheckmonat( checkmonat )
         self.okstatecallback = None
-        self._changedCallback = None
+        # self._changedCallback = None
         self._changes:Dict[int, Dict] = {}
         """
         Aufbau von _changes:
@@ -135,12 +135,13 @@ class CheckTableModel( DictListTableModel ):
         sumindex = self.index( index.row(), self._summeColumnIdx )
         self.dataChanged.emit( sumindex, sumindex )
         self._writeChangeLog( index, value )
-        if self._changedCallback:
-            self._changedCallback()
+        # if self._changedCallback:
+        #     self._changedCallback()
+        self.doChangedCallback()  #implementiert im DictListTableModel
         return True
 
-    def setChangedCallback( self, callbackFnc ):
-        self._changedCallback = callbackFnc
+    # def setChangedCallback( self, callbackFnc ):
+    #     self._changedCallback = callbackFnc
 
     def _writeChangeLog( self, index, value:float ) -> None:
         """

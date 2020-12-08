@@ -301,7 +301,7 @@ die mv_id ist null.
     <coordinates>
       <x>675</x>
       <y>288</y>
-      <w>252</w>
+      <w>144</w>
       <h>171</h>
     </coordinates>
     <panel_attributes>sonstaus
@@ -313,9 +313,8 @@ die mv_id ist null.
 - rgdatum
 - text:text
 - buchdatum
-- flag:text {Kombination aus 'u'mlegbar, 
-                             'w'erterhaltend,
-                             's' sonstiges}</panel_attributes>
+- umlegbar:int
+- werterhaltend:int</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
@@ -392,26 +391,25 @@ Grundsteuer (Illingen)</panel_attributes>
   <element>
     <id>UMLNote</id>
     <coordinates>
-      <x>963</x>
+      <x>891</x>
       <y>396</y>
       <w>207</w>
       <h>81</h>
     </coordinates>
     <panel_attributes>Rechnungen, Zahlungen an 
-Kommunen, Energielieferanten 
-etc.</panel_attributes>
+Kommunen, Energielieferanten, Versicherungen, Haus und Grund etc.</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>918</x>
+      <x>810</x>
       <y>414</y>
-      <w>63</w>
+      <w>99</w>
       <h>27</h>
     </coordinates>
     <panel_attributes>lt=-</panel_attributes>
-    <additional_attributes>10.0;10.0;50.0;10.0</additional_attributes>
+    <additional_attributes>10.0;10.0;90.0;10.0</additional_attributes>
   </element>
   <element>
     <id>UMLClass</id>
