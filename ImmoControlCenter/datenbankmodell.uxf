@@ -300,19 +300,22 @@ die mv_id ist null.
     <id>UMLClass</id>
     <coordinates>
       <x>675</x>
-      <y>288</y>
+      <y>279</y>
       <w>144</w>
-      <h>171</h>
+      <h>189</h>
     </coordinates>
     <panel_attributes>sonstaus
 --
 - saus_id:int
+- master_id:int
 - mobj_id:text
-- kreditor
-- betrag
-- rgdatum
+- kreditor:text
+- rgnr:text
+- betrag:float
+- rgdatum:text
 - text:text
-- buchdatum
+- buchungsdatum:text
+- buchungsjahr:int
 - umlegbar:int
 - werterhaltend:int</panel_attributes>
     <additional_attributes/>
@@ -323,12 +326,12 @@ die mv_id ist null.
       <x>477</x>
       <y>216</y>
       <w>216</w>
-      <h>99</h>
+      <h>90</h>
     </coordinates>
     <panel_attributes>lt=-
 m1=0..n
 m2=1</panel_attributes>
-    <additional_attributes>220.0;90.0;10.0;10.0</additional_attributes>
+    <additional_attributes>220.0;80.0;10.0;10.0</additional_attributes>
   </element>
   <element>
     <id>UMLClass</id>
@@ -404,12 +407,12 @@ Kommunen, Energielieferanten, Versicherungen, Haus und Grund etc.</panel_attribu
     <id>Relation</id>
     <coordinates>
       <x>810</x>
-      <y>414</y>
+      <y>405</y>
       <w>99</w>
-      <h>27</h>
+      <h>36</h>
     </coordinates>
     <panel_attributes>lt=-</panel_attributes>
-    <additional_attributes>10.0;10.0;90.0;10.0</additional_attributes>
+    <additional_attributes>10.0;10.0;90.0;20.0</additional_attributes>
   </element>
   <element>
     <id>UMLClass</id>

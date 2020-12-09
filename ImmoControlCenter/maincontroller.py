@@ -2,7 +2,7 @@ from typing import List, Dict, Tuple
 from mdisubwindow import MdiSubWindow
 from immocentermainwindow import ImmoCenterMainWindow, MainWindowAction
 from checkcontroller import MdiChildController, MietenController, HGVController
-from sonstauscontroller import ServiceController
+from sonstauscontroller import SonstAusController
 
 class MainController:
     def __init__(self, win:ImmoCenterMainWindow ):
@@ -17,7 +17,7 @@ class MainController:
         self._hgvCtrl.changedCallback = self.onViewChanged
         self._hgvCtrl.savedCallback = self.onViewSaved
 
-        self._serviceCtrl:ServiceController = ServiceController()
+        self._serviceCtrl:SonstAusController = SonstAusController()
 
         #TODO: _viewsandcontroller bereinigen, wenn ein View geschlossen wird
         self._viewsandcontroller:[Dict[MdiSubWindow, MdiChildController]] = {}

@@ -1,6 +1,7 @@
 from dbaccess import DbAccess
 from typing import List, Dict
 from constants import einausart
+from interfaces import XSonstAus, XServiceLeistung
 
 class BusinessLogic:
     __instance = None
@@ -182,10 +183,23 @@ class BusinessLogic:
             self._db.insertSollhausgeld( d, False )
         self._db.commit()
 
+    def getServiceLeistungen( self ) -> List[XServiceLeistung]:
+        dictlist:List[Dict] = self._db.getServiceleistungen()
+        li = list()
+        for d in dictlist:
+            x:XServiceLeistung = XServiceLeistung( d )
+            li.append( x )
+        li = sorted( li, key=lambda service: service.kreditor.casefold() )
+        return li
+
+    #def compareDics( self, d1:Dict, d2:Dict ) -> int:
 
 def test():
     busi = BusinessLogic.inst()
-    busi.initSollhausgeld( "2019-01-01" )
+    li = busi.getServiceLeistungen()
+    for x in li:
+        print( x.kreditor )
+    #busi.initSollhausgeld( "2019-01-01" )
     #mz = busi.getMietzahlungenMitSummen( 2020, 7 )
     #busi.createMtlEinAusJahresSet( 2021 )
     busi.terminate()

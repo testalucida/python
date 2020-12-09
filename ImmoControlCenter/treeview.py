@@ -8,9 +8,9 @@
 # Note: this requires > python-3.2
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 import sys, os, pprint, time
-from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
+from PySide2.QtCore import QModelIndex, Qt, QSize
 
 class TreeTableModel( QStandardItemModel ):
     def __init__( self ):
@@ -27,8 +27,10 @@ class TreeTableModel( QStandardItemModel ):
             else:
                 return super().data( index, role )
 
+
+################  TreeView  ##########################
 class TreeView( QTreeView ):
-    def __init__( self, parent ):
+    def __init__( self, parent=None ):
         QTreeView.__init__( self, parent )
         self.setUniformRowHeights( True )
         self.setAlternatingRowColors( True )
