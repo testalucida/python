@@ -1,7 +1,9 @@
 from dbaccess import DbAccess
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from constants import einausart
 from interfaces import XSonstAus, XServiceLeistung
+from monthlist import monthList, monatsletzter
+import datetime, dateutil
 
 class BusinessLogic:
     __instance = None
@@ -12,6 +14,7 @@ class BusinessLogic:
         else:
             BusinessLogic.__instance = self
         self._db: DbAccess
+        self._masterundmietobjekte:List[Dict] = None
 
     @staticmethod
     def inst() -> __instance:
@@ -183,22 +186,76 @@ class BusinessLogic:
             self._db.insertSollhausgeld( d, False )
         self._db.commit()
 
-    def getServiceLeistungen( self ) -> List[XServiceLeistung]:
-        dictlist:List[Dict] = self._db.getServiceleistungen()
-        li = list()
-        for d in dictlist:
-            x:XServiceLeistung = XServiceLeistung( d )
-            li.append( x )
-        li = sorted( li, key=lambda service: service.kreditor.casefold() )
-        return li
+    def getLetztenMonat( self ) -> Tuple[int, str]:
+        monat = datetime.datetime.now().month
+        monat = 12 if monat == 1 else monat-1
+        smonat = monthList[monat-1]
+        return monat, smonat
 
-    #def compareDics( self, d1:Dict, d2:Dict ) -> int:
+    def getMonatsletzter( self, monatidx:int ) -> int:
+        smonat = monthList[monatidx-1]
+        return monatsletzter[smonat]
+
+    # def getServiceLeistungen( self ) -> List[XServiceLeistung]:
+    #     dictlist:List[Dict] = self._db.getServiceleistungen()
+    #     li = list()
+    #     for d in dictlist:
+    #         x:XServiceLeistung = XServiceLeistung( d )
+    #         li.append( x )
+    #     li = sorted( li, key=lambda service: service.kreditor.casefold() )
+    #     return li
+
+    def getMasterobjekte( self ) -> List[str]:
+        """
+        Liefert eine Liste aller masterobjekt-Einträge
+        :return:
+        """
+        if self._masterundmietobjekte is None:
+            self._masterundmietobjekte = self._db.getMasterUndMietobjekte()
+        masterobjekte:List[str] = []
+        name = ""
+        for d in self._masterundmietobjekte:
+            if name != d["name"]:
+                name = d["name"]
+                masterobjekte.append( name )
+
+        return masterobjekte
+
+    def getMietobjekte( self, master_name:str ) -> List[str]:
+        """
+        Ermittelt zu einem masterobjekt alle mietobjekte mobj_id
+        :param master_id:
+        :return:
+        """
+        if self._masterundmietobjekte is None:
+            self._masterundmietobjekte = self._db.getMasterUndMietobjekte()
+        master_id = self.getMasteridFromMastername( master_name )
+        mietobjekte:List[str] = []
+        for d in self._masterundmietobjekte:
+            if d["master_id"] == master_id:
+                mietobjekte.append( d["mobj_id"] )
+        return mietobjekte
+
+    def getMasteridFromMastername( self, master_name:str ) -> int:
+        if self._masterundmietobjekte:
+            for d in self._masterundmietobjekte:
+                if d["name"] == master_name:
+                    return d["master_id"]
+
+    def getKreditoren( self, master_name:str ) -> List[str]:
+        return self._db.getKreditoren( master_name )
 
 def test():
     busi = BusinessLogic.inst()
-    li = busi.getServiceLeistungen()
-    for x in li:
-        print( x.kreditor )
+
+    li = busi.getMasterobjekte()
+    print( li )
+    idx, monat = busi.getLetztenMonat()
+    letzter = busi.getMonatsletzter( 2 )
+
+    # li = busi.getServiceLeistungen()
+    # for x in li:
+    #     print( x.kreditor )
     #busi.initSollhausgeld( "2019-01-01" )
     #mz = busi.getMietzahlungenMitSummen( 2020, 7 )
     #busi.createMtlEinAusJahresSet( 2021 )

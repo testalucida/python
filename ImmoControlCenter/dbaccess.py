@@ -44,6 +44,18 @@ class DbAccess:
               "order by mobj_id "
         return self._doReadAllGetDict( sql )
 
+    def getMasterUndMietobjekte( self ) -> List[Dict]:
+        """
+        Liefert Informationen aus einem Join von masterobjekt und mietobjekt
+        :return:
+        """
+        sql = "select ma.master_id, ma.name, mi.mobj_id, mi.whg_bez " \
+              "from masterobjekt ma " \
+              "inner join mietobjekt mi on mi.master_id = ma.master_id " \
+              "where mi.aktiv = 1 " \
+              "order by ma.master_id, mi.mobj_id "
+        return self._doReadAllGetDict( sql )
+
     def getMietverhaeltnisseEssentials( self, jahr:int ) -> List[Dict]:
         """
         Liefert zu allen Mietverhältnissen, die in <jahr> aktiv sind, die Werte der Spalten mv_id, von, bis
@@ -144,20 +156,33 @@ class DbAccess:
         list = [x[0] for x in rowlist]
         return list
 
-    def getServiceleister( self ) -> List:
-        sql = "select distinct name from serviceleistung order by name"
+    def getKreditoren( self, master_name:str ) -> List[str]:
+        sql = "select distinct kreditor " \
+              "from kreditorleistung k " \
+              "inner join masterobjekt m on m.master_id = k.master_id " \
+              "where m.name = '%s' " \
+              "order by kreditor " % ( master_name )
         rowlist = self._doRead( sql )
         list = [x[0] for x in rowlist]
         list = sorted( list, key=str.casefold )
         return list
 
-    def getServiceleistungen( self ) -> List[Dict]:
-        sql = "select service.kreditor, service.master_id, master.name, service.mobj_id, service.buchungstext, service.umlegbar " \
-              "from serviceleistung service " \
-              "inner join masterobjekt master on master.master_id = service.master_id " \
-              "order by kreditor, buchungstext "
+    # def getServiceleistungen( self ) -> List[Dict]:
+    #     sql = "select service.kreditor, service.master_id, master.name, service.mobj_id, service.buchungstext, service.umlegbar " \
+    #           "from serviceleistung service " \
+    #           "inner join masterobjekt master on master.master_id = service.master_id " \
+    #           "order by kreditor, buchungstext "
+    #     dictlist = self._doReadAllGetDict( sql )
+    #     return dictlist
+
+    def getMasterobjekte( self ) -> List[Dict]:
+        sql = "select master_id, name " \
+              "from masterobjekt " \
+              "order by name "
         dictlist = self._doReadAllGetDict( sql )
         return dictlist
+
+
 
     def insertMietverhaeltnis( self, d:Dict, commit:bool=True ) -> int:
         sql = "insert into mietverhaeltnis " \
@@ -274,8 +299,10 @@ def test():
     db = DbAccess( "immo_TEST.db" )
     db.open()
 
-    dictlist = db.getServiceleistungen()
+    dictlist = db.getMasterUndMietobjekte()
     print( dictlist )
+    # dictlist = db.getServiceleistungen()
+    # print( dictlist )
     # list = db.getServiceleister()
     # print( list )
 

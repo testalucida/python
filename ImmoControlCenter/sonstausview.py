@@ -1,14 +1,15 @@
 from PySide2 import QtWidgets, QtCore, QtGui
 from PySide2.QtCore import QSize, Qt, QDate
-from PySide2.QtGui import QIcon, QDoubleValidator
+from PySide2.QtGui import QIcon, QDoubleValidator, QFont
 from PySide2.QtWidgets import QWidget, QComboBox, QLineEdit, QCheckBox, QPushButton, QCalendarWidget, \
-    QVBoxLayout, QDialog, QBoxLayout
+    QVBoxLayout, QDialog, QBoxLayout, QHBoxLayout, QTextEdit, QSpinBox, QLabel
 from typing import List, Dict
 
 from treeview import TreeTableModel, TreeView
 from tableviewext import TableViewExt
 from interfaces import XSonstAus
 from servicetreemodel import ServiceTreeModel
+from monthlist import monthList
 
 ##################  CalendarWindow  ###########################
 class CalendarDialog( QDialog ):
@@ -17,6 +18,8 @@ class CalendarDialog( QDialog ):
         self.setModal( True )
         self.setWindowTitle( "Datum auswählen" )
         self._calendar:QCalendarWidget = None
+        self._buchungsjahrChangedCallback = None
+
         self._buttonBox:QtWidgets.QDialogButtonBox = None
         self._callback = None
         self.createCalendar()
@@ -58,18 +61,75 @@ class CalendarDialog( QDialog ):
     def _onCancel( self ):
         self.hide()
 
+#########################  SmartDateEdit  #####################################
+class SmartDateEdit( QLineEdit ):
+    def __init__( self, parent=None ):
+        QLineEdit.__init__( self, parent )
+
+#########################  FloatEdit  ################################
+class FloatEdit( QLineEdit ):
+    def __init__( self, parent=None ):
+        QLineEdit.__init__( self, parent )
+
+#######################  EditableCombo ###########################
+class EditableCombo( QComboBox ):
+    def __init__( self, parent=None ):
+        QComboBox.__init__( self, parent )
+        self.setEditable( True )
 
 #########################  SonstigeAusgabenView  ##############################
 class SonstigeAusgabenView( QWidget ):
-    def __init__( self ):
-        QWidget.__init__( self )
-        self._calendarIcon = QIcon( "./images/calendar25x25.png" )
+    def __init__( self, parent=None ):
+        QWidget.__init__( self, parent )
         self.setWindowTitle( "Sonstige Ausgaben: Rechnungen, Abgaben, Gebühren etc." )
-        self._gridLayout = QtWidgets.QGridLayout( self )
-        self._gridLayout.setObjectName( "gridLayout" )
+        self._mainLayout = QtWidgets.QGridLayout( self )
+        self._toolbarLayout = QHBoxLayout()
+        self._btnSave = QPushButton( self )
+        self._cboBuchungsjahr = QtWidgets.QComboBox( self )
+        self._tvAuszahlungen = TableViewExt( self )
+        self._buchungsdatumLayout = QHBoxLayout()
+        self._sbTag = QSpinBox( self )
+        self._cboMonat = QComboBox( self )
+        self._editLineLayout = QHBoxLayout()
+        self._cboKreditor = EditableCombo( self )
+        self._cboMasterobjekt = QComboBox( self )
+        self._cboMietobjekt = QComboBox( self )
+        self._cboRechnungsIdent = EditableCombo( self )
+        self._sdRechnungsdatum = SmartDateEdit( self )
+        self._feBetrag = FloatEdit( self )
+        self._cbUmlegbar = QCheckBox( self )
+        self._cbWerterhaltend = QCheckBox( self )
+        self._teBemerkung = QTextEdit( self )
+        self._btnOk = QPushButton( self )
+        self._btnClear = QPushButton( self )
+        # Callbacks
+        self._buchungsjahrChangedCallback = None
+        self._masterobjektChangedCallback = None
+        self._mietobjektChangedCallback = None
+        self._kreditorChangedCallback = None
+
+        self._createGui()
+
+    def _createGui( self ):
+        self._assembleToolbar()
+        self._mainLayout.addLayout( self._toolbarLayout, 0, 0, alignment=Qt.AlignLeft )
+        self._mainLayout.addWidget( self._tvAuszahlungen, 1, 0, 1, 1 )
+        self._assembleBuchungsdatum()
+        self._mainLayout.addLayout( self._buchungsdatumLayout, 2, 0, alignment=Qt.AlignLeft )
+        self._assembleEditLine()
+        self._mainLayout.addLayout( self._editLineLayout, 3, 0, alignment=Qt.AlignLeft )
+
+    def _assembleToolbar( self ):
+        #### Combobox Buchungsjahr
+        font = QFont( "Arial", 14, weight=QFont.Bold )
+        self._cboBuchungsjahr.setFont( font )
+        self._cboBuchungsjahr.setToolTip(
+            "Das hier eingestellte Jahr bestimmt die Rechnungen, die in der Tabelle angezeigt werden." )
+        self._cboBuchungsjahr.currentIndexChanged.connect( self.onBuchungsjahrChanged )
+        self._toolbarLayout.addWidget( self._cboBuchungsjahr, stretch=0, alignment=Qt.AlignLeft )
 
         #### save button
-        btn = QPushButton()
+        btn = self._btnSave
         btn.clicked.connect( self.onSave )
         btn.setFlat( True )
         btn.setEnabled( False )
@@ -80,162 +140,99 @@ class SonstigeAusgabenView( QWidget ):
         btn.setFixedSize( size )
         iconsize = QSize( 30, 30 )
         btn.setIconSize( iconsize )
-        self._gridLayout.addWidget( btn, 0, 0, 1, 1 )
-        self._btnSave = btn
+        self._toolbarLayout.addWidget( btn, stretch=0, alignment=Qt.AlignLeft )
 
-        self._cboBuchungsjahr = QtWidgets.QComboBox( self )
-        font = QtGui.QFont()
-        font.setPointSize( 12 )
-        font.setBold( True )
-        font.setWeight( 75 )
-        self._cboBuchungsjahr.setFont( font )
-        self._cboBuchungsjahr.setToolTip(
-            "Das hier eingestellte Jahr bestimmt die Rechnungen, die in der Tabelle angezeigt werden." )
-        self._cboBuchungsjahr.currentIndexChanged.connect( self._buchungsjahrChanged )
-        self._gridLayout.addWidget( self._cboBuchungsjahr, 1, 0, 1, 1 )
+    def _assembleBuchungsdatum( self ):
+        lbl = QLabel( self, text="Buchungstag und -monat einstellen: " )
+        self._buchungsdatumLayout.addWidget( lbl )
+        self._sbTag.setToolTip( "Buchungstag einstellen" )
+        self._sbTag.setValue( 1 )
+        self._buchungsdatumLayout.addWidget( self._sbTag )
+        self._cboMonat.setToolTip( "Buchungsmonat einstellen" )
+        for m in monthList:
+            self._cboMonat.addItem( m )
+        self._buchungsdatumLayout.addWidget( self._cboMonat )
 
-        self._ddmmBuchung = QtWidgets.QLineEdit( self )
-        self._ddmmBuchung.setToolTip( "Buchungstag und -monat. Tag und Monat mit \',\' oder \'.\' trennen." )
-        self._ddmmBuchung.setPlaceholderText( "Buchungstag u. -monat" )
-        self._gridLayout.addWidget( self._ddmmBuchung, 1, 1, 1, 1 )
-
-        btn = QPushButton( self )
-        btn.setMaximumSize( QSize(25,25) )
-        btn.setIcon( self._calendarIcon )
-        btn.clicked.connect( self._onShowBuchungCalendar )
-        self._gridLayout.addWidget( btn, 1, 2, 1, 1 )
-        self._btnCalendarBuchung = btn
-
-        self._tableView = TableViewExt( self )
-        sizePolicy = QtWidgets.QSizePolicy( QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding )
-        sizePolicy.setHorizontalStretch( 1 )
-        sizePolicy.setVerticalStretch( 0 )
-        self._tableView.setSizePolicy( sizePolicy )
-        self._gridLayout.addWidget( self._tableView, 1, 4, 9, 1 )
-
-        self._treeView = TreeView( self )
-        self._treeView.setStyleSheet( "gridline-color: rgb(94, 94, 94);" )
-        self._treeView.setObjectName( "treeView" )
-        self._gridLayout.addWidget( self._treeView, 2, 0, 1, 4 )
-
-        self._kreditor = QtWidgets.QLineEdit( self )
-        self._kreditor.setToolTip( "Kreditor: wie im Baum ausgewählt oder freie Eingabe" )
-        self._kreditor.setPlaceholderText( "Kreditor" )
-        self._gridLayout.addWidget( self._kreditor, 3, 0, 1, 1 )
-
-        self._cboMasterobjekt = QtWidgets.QComboBox( self )
-        self._cboMasterobjekt.setEditable( True )
-        self._cboMasterobjekt.setToolTip( "Haus: wie im Baum ausgewählt oder freie Eingabe" )
+    def _assembleEditLine( self ):
         self._cboMasterobjekt.setPlaceholderText( "Haus" )
-        self._gridLayout.addWidget( self._cboMasterobjekt, 3, 1, 1, 1 )
-
-        self._cboMietobjekt = QtWidgets.QComboBox( self )
-        self._cboMietobjekt.setEditable( True )
-        self._cboMietobjekt.setToolTip( "Wohnung: wie im Baum ausgewählt oder freie Eingabe" )
+        self._cboMasterobjekt.setToolTip( "Haus, auf das sich die Zahlung bezieht")
+        self._cboMasterobjekt.currentIndexChanged.connect( self.onMasterobjektChanged )
+        self._editLineLayout.addWidget( self._cboMasterobjekt )
         self._cboMietobjekt.setPlaceholderText( "Wohnung" )
-        self._gridLayout.addWidget( self._cboMietobjekt, 3, 2, 1, 1 )
+        self._cboMietobjekt.setToolTip( "optional: Wohnung, auf die sich die Zahlung bezieht")
+        self._cboMietobjekt.currentIndexChanged.connect( self.onMietobjektChanged )
+        self._editLineLayout.addWidget( self._cboMietobjekt )
+        self._cboKreditor.setToolTip( "Kreditor" )
+        self._cboKreditor.currentIndexChanged.connect( self.onKreditorChanged )
+        self._editLineLayout.addWidget( self._cboKreditor )
+        self._cboRechnungsIdent.setToolTip( "Identifikation der Zahlung durch Rechnungsnummer oder Buchungstext" )
+        self._cboRechnungsIdent.setMinimumWidth( 100 )
+        self._editLineLayout.addWidget( self._cboRechnungsIdent, stretch=1 )
+        self._sdRechnungsdatum.setPlaceholderText( "Datum Rg." )
+        self._sdRechnungsdatum.setMaximumWidth( 85 )
+        self._sdRechnungsdatum.setToolTip( "optional: Datum der Rechnung" )
+        self._editLineLayout.addWidget( self._sdRechnungsdatum, stretch=0, alignment=Qt.AlignLeft )
+        self._feBetrag.setPlaceholderText( "Betrag" )
+        self._feBetrag.setMaximumWidth( 70 )
+        self._editLineLayout.addWidget( self._feBetrag, stretch=0, alignment=Qt.AlignLeft  )
 
-        self._rgnr = QtWidgets.QLineEdit( self )
-        self._rgnr.setPlaceholderText( "Rechnungsnummer" )
-        self._gridLayout.addWidget( self._rgnr, 4, 0, 1, 1 )
+        vbox = QVBoxLayout()
+        self._cbUmlegbar.setText( "umlegbar" )
+        self._cbUmlegbar.setToolTip( "Ob die Auszahlung auf den/die Mieter umlegbar sind" )
+        vbox.addWidget( self._cbUmlegbar )
+        self._cbWerterhaltend.setText( "werterhaltend" )
+        self._cbWerterhaltend.setToolTip( "Ob die Auszahlung der Werterhaltung der Wohnung dient" )
+        vbox.addWidget( self._cbWerterhaltend )
+        self._editLineLayout.addLayout( vbox )
 
-        self._ddmmRechnung = QtWidgets.QLineEdit( self )
-        self._ddmmRechnung.setToolTip( "Rechnungstag und -monat. Tag und Monat mit \',\' oder \'.\' trennen." )
-        self._ddmmRechnung.setPlaceholderText( "Rechnungstag u. -monat" )
-        self._gridLayout.addWidget( self._ddmmRechnung, 4, 1, 1, 1 )
+        self._teBemerkung.setPlaceholderText( "Bemerkung zur Auszahlung" )
+        self._teBemerkung.setMaximumSize( QtCore.QSize( 16777215, 54 ) )
+        self._editLineLayout.addWidget( self._teBemerkung, stretch=1 )
+        self._btnOk.setIcon( QIcon( "./images/checked.png" ) )
+        self._btnOk.setDefault( True )
 
-        #self._cboRechnungsjahr = QtWidgets.QComboBox( self )
-        #self._gridLayout.addWidget( self._cboRechnungsjahr, 4, 2, 1, 1 )
-
-        btn = QPushButton( self )
-        btn.setMaximumSize( QSize( 25, 25 ) )
-        btn.setIcon( self._calendarIcon )
-        btn.clicked.connect( self._onShowRechnungCalendar )
-        self._gridLayout.addWidget( btn, 4, 2, 1, 1 )
-        self._btnCalendarRechnung = btn
-
-        cb = QCheckBox( self )
-        cb.setText( "umlegbar" )
-        self._gridLayout.addWidget( cb, 5, 0, 1, 1 )
-        self._cbUmlegbar = cb
-
-        cb = QCheckBox( self )
-        cb.setText( "werterhaltend" )
-        self._gridLayout.addWidget( cb, 5, 1, 1, 1 )
-        self._cbWerterhaltend = cb
-
-        self._betrag = QtWidgets.QLineEdit( self )
-        font = QtGui.QFont()
-        font.setPointSize( 11 )
-        font.setBold( True )
-        font.setWeight( 75 )
-        self._betrag.setFont( font )
-        self._betrag.setPlaceholderText( "Betrag")
-        self._betrag.setAlignment( Qt.AlignRight | Qt.AlignTrailing | Qt.AlignVCenter )
-        self._betrag.setValidator( QDoubleValidator( 0, 9999, 2, self ) )
-        self._gridLayout.addWidget( self._betrag, 7, 0, 1, 1 )
-
-        self._bemerkung = QtWidgets.QTextEdit( self )
-        self._bemerkung.setMaximumSize( QtCore.QSize( 16777215, 50 ) )
-        self._bemerkung.setPlaceholderText( "Erläuterungen zur Rechnung oder Abgabe")
-        self._gridLayout.addWidget( self._bemerkung, 8, 0, 1, 4 )
-
-        self._btnUebernehmen = QtWidgets.QPushButton( self )
-        self._btnUebernehmen.setDefault( True )
-        self._btnUebernehmen.setText( "Übernehmen" )
-        self._gridLayout.addWidget( self._btnUebernehmen, 9, 0, 1, 1 )
-
-        self._btnReset = QtWidgets.QPushButton( self )
-        self._btnReset.setText( "Felder leeren" )
-        self._gridLayout.addWidget( self._btnReset, 9, 1, 1, 1 )
-
-        self._buchungsjahrChangedCallback = None
-        #self._rechnungsjahrChangedCallback = None
-
-        self._ddmmBuchung.setFocus()
+        vbox = QVBoxLayout()
+        self._btnOk.setToolTip( "Neue oder geänderte Daten in Tabelle übernehmen (kein Speichern)" )
+        vbox.addWidget( self._btnOk )
+        self._btnClear.setIcon( QIcon( "./images/cancel.png" ) )
+        self._btnClear.setToolTip( "Änderungen verwerfen und Felder leeren" )
+        vbox.addWidget( self._btnClear )
+        self._editLineLayout.addLayout( vbox )
 
     def onSave( self ):
         pass
 
-    def setBuchungsjahrChangedCallback( self, cbfnc ):
+    def onBuchungsjahrChanged( self, newindex ):
         """
-        Die callback-Funktion muss als Argument das neu eingestellte Jahr als integer akzeptieren
-        :param cbfnc:
+        Slot für die Änderung des Buchungsjahrs.
+        :param newindex:
         :return:
         """
-        self._buchungsjahrChangedCallback = cbfnc
-
-    def _buchungsjahrChanged( self, newindex ):
         if self._buchungsjahrChangedCallback:
             jahr = int( self._cboBuchungsjahr.currentText() )
             self._buchungsjahrChangedCallback( jahr )
 
-    def _onShowBuchungCalendar( self, event ):
-        cal = CalendarDialog( self )
-        cal.setCallback( self.onBuchungsdatumSelected )
-        cal.show()
+    def onMasterobjektChanged( self, newindex:int ):
+        if self._masterobjektChangedCallback:
+            self._masterobjektChangedCallback( self._cboMasterobjekt.currentText() )
 
-    def onBuchungsdatumSelected( self, date:QDate ):
-        self._ddmmBuchung.setText( date.toString( "yyyy-MM-dd" ) )
+    def onMietobjektChanged( self, newindex:int ):
+        pass
 
+    def onKreditorChanged( self, newindex:int ):
+        if self._kreditorChangedCallback:
+            self._kreditorChangedCallback( self._cboMasterobjekt.currentText(),
+                                           self._cboMietobjekt.currentText(),
+                                           self._cboKreditor.currentText() )
 
-    def _onShowRechnungCalendar( self ):
-        cal = CalendarDialog( self )
-        cal.setCallback( self.onRechnungsdatumSelected )
-        cal.show()
-
-    def onRechnungsdatumSelected( self, date:QDate ):
-        self._ddmmRechnung.setText( date.toString( "yyyy-MM-dd" ) )
-
-    def setJahre( self, jahre:List[int] ):
+    def setBuchungsjahre( self, jahre:List[int] ):
         """
-        setzt die Liste der auswählbaren Jahre für die Buchungsjahr- und die Rechnungsjahr-Combobox
+        setzt die Liste der auswählbaren Jahre für die Buchungsjahr-Combobox
         :param jahre:
         :return:
         """
         for jahr in jahre:
             self._cboBuchungsjahr.addItem( str( jahr ) )
-            # self._cboRechnungsjahr.addItem( str( jahr ) )
 
     def setBuchungsjahr( self, jahr:int ) -> None:
         """
@@ -245,28 +242,98 @@ class SonstigeAusgabenView( QWidget ):
         """
         self._cboBuchungsjahr.setCurrentText( str( jahr ) )
 
-    # def setRechnungsjahr( self, jahr:int ) -> None:
-    #     """
-    #     setzt das Jahr, das in der Rechnungsjahr-Combobox anzuzeigen ist
-    #     :param jahr:
-    #     :return:
-    #     """
-    #     self._cboRechnungsjahr.setCurrentText( str( jahr ) )
+    def setBuchungsdatum( self, tag:int, monat:str ):
+        """
+        setzt Buchungstag und -monat.
+        :param tag:
+        :param monat:
+        :return:
+        """
+        self._sbTag.setValue( tag )
+        self._cboMonat.setCurrentText( monat )
 
-    def setServiceTreeModel( self, treemodel:ServiceTreeModel ):
-        self._treeView.setModel( treemodel )
+    def setMasterobjekte( self, masterobjekte:List[str] ):
+        for obj in masterobjekte:
+            self._cboMasterobjekt.addItem( obj )
 
+    def setMietobjekte( self, mietobjekte:List[str] ):
+        self._cboMietobjekt.clear()
+        for obj in mietobjekte:
+            self._cboMietobjekt.addItem( obj )
+
+    def selectMietobjekt( self, mobj_id:str ):
+        self._cboMietobjekt.setCurrentText( mobj_id )
+
+    def setKreditoren( self, kreditoren:List[str] ):
+        self._cboKreditor.clear()
+        for k in kreditoren:
+            self._cboKreditor.addItem( k )
+
+    def selectKreditor( self, kreditor:str ):
+        self._cboKreditor.setCurrentText( kreditor )
+
+    def setLeistungsidentifikationen( self, idents:List[str] ):
+        self._cboRechnungsIdent.clear()
+        for i in idents:
+            self._cboRechnungsIdent.addItem( i )
+        self._cboRechnungsIdent.showPopup()
+
+    def getCurrentMasterobjekt( self ) -> str:
+        return self._cboMasterobjekt.currentText()
+
+    def getCurrentMietobjekt( self ) -> str:
+        return self._cboMietobjekt.currentText()
+
+    ################# SET CALLBACKS  ############################
+
+    def setBuchungsjahrChangedCallback( self, cbfnc ):
+        """
+        Die callback-Funktion muss als Argument das neu eingestellte Jahr als integer akzeptieren
+        :param cbfnc:
+        :return:
+        """
+        self._buchungsjahrChangedCallback = cbfnc
+
+    def setMasterobjektChangedCallback( self, cbfnc ):
+        """
+        Die callback-Funktion muss einen String als Argument akzeptieren (Name des MAsterobjekts)
+        :param cbfnc:
+        :return:
+        """
+        self._masterobjektChangedCallback = cbfnc
+
+    def setMietobjektChangedCallback( self, cbfnc ):
+        """
+        Die callback-Funktion muss einen String als Argument akzeptieren (mobj_id)
+        :param cbfnc:
+        :return:
+        """
+        self._mietobjektChangedCallback = cbfnc
+
+    def setKreditorChangedCallback( self, cbfnc):
+        """
+        Die callback Funktion muss 3 Argumente entgegennehmen können:
+        master_name, mobj_id, neuer kreditor
+        :param cbfnc:
+        :return:
+        """
+        self._kreditorChangedCallback = cbfnc
+
+
+
+###################################################################
 def onChangeBuchungsjahr( jahr:int ):
     print( "neues Buchungsjahr: ", str( jahr ) )
+
 
 def test():
     import sys
     app = QtWidgets.QApplication( sys.argv )
     sav = SonstigeAusgabenView()
-    sav.setJahre( (2020,))
+    sav.setBuchungsjahre( (2020,))
     sav.setBuchungsjahr( 2020 )
     # sav.setRechnungsjahr( 2020 )
-    sav.setBuchungsjahrChangedCallback( onChangeBuchungsjahr )
+    #sav.setBuchungsjahrChangedCallback( onChangeBuchungsjahr )
     sav.show()
     sys.exit( app.exec_() )
 

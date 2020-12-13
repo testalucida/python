@@ -23,29 +23,41 @@ class SonstAusController( MdiChildController ):
     def createView( self ) -> QWidget:
         sausview = SonstigeAusgabenView()
         jahre = BusinessLogic.inst().getExistingJahre( constants.einausart.MIETE )
-        sausview.setJahre( jahre )
+        sausview.setBuchungsjahre( jahre )
         jahr = datetime.datetime.now().year
         sausview.setBuchungsjahr( jahr )
-        #sausview.setRechnungsjahr( jahr )
         self._jahr = jahr
+        monidx, monat = BusinessLogic.inst().getLetztenMonat()
+        sausview.setBuchungsdatum( 20, monat )
+        masterobjekte = BusinessLogic.inst().getMasterobjekte()
+        sausview.setMasterobjekte( masterobjekte )
+        sausview.setBuchungsjahrChangedCallback( self.onBuchungsjahrChanged )
+        sausview.setMasterobjektChangedCallback( self.onMasterobjektChanged )
+        sausview.setMietobjektChangedCallback( self.onMietobjektChanged )
+        sausview.setKreditorChangedCallback( self.onKreditorChanged )
 
-        servicelList:List[XServiceLeistung] = BusinessLogic.inst().getServiceLeistungen()
-        treemodel = ServiceTreeModel()
-        kreditor = ""
-        for x in servicelList:
-            if x.kreditor != kreditor:
-                kreditoritem = QStandardItem( x.kreditor )
-                treemodel.appendRow( kreditoritem )
-                kreditor = x.kreditor
-            objekt = x.name  # masterobjekt.name
-            if len( objekt ) > 0 and len( x.mobj_id ) > 0: objekt += "/"
-            objekt += x.mobj_id
-            buchungstextitem = QStandardItem( x.buchungstext + " (" + objekt + ")" )
-            kreditoritem.appendRow( [buchungstextitem,] )
-
-        sausview.setServiceTreeModel( treemodel )
         self._view = sausview
         return sausview
+
+    def onBuchungsjahrChanged( self, newjahr:int ):
+        print( "SonstausController: onBuchungsjahrChanged" )
+
+    def onMasterobjektChanged( self, newname:str ):
+        mietobjekte = BusinessLogic.inst().getMietobjekte( newname )
+        if len( mietobjekte ) > 0:
+            self._view.setMietobjekte( mietobjekte )
+            self._view.selectMietobjekt( mietobjekte[0] )
+        kreditoren = BusinessLogic.inst().getKreditoren( newname )
+        if len( kreditoren ) > 0:
+            self._view.setKreditoren( kreditoren )
+            self._view.selectKreditor( kreditoren[0] )
+
+    def onMietobjektChanged( self, mobj_id:str ):
+        pass
+
+    def onKreditorChanged( self, master_name:str, mobj_id:str, kreditor:str ):
+        leistungsidents = ("test", "testtest", "testtesttest" )
+        self._view.setLeistungsidentifikationen( leistungsidents )
 
     def onCloseSubWindow( self, window: MdiSubWindow ) -> bool:
         """
