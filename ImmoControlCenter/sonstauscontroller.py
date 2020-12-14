@@ -31,6 +31,8 @@ class SonstAusController( MdiChildController ):
         sausview.setBuchungsdatum( 20, monat )
         masterobjekte = BusinessLogic.inst().getMasterobjekte()
         sausview.setMasterobjekte( masterobjekte )
+        kreditoren = BusinessLogic.inst().getAlleKreditoren()
+        sausview.setKreditoren( kreditoren )
         sausview.setBuchungsjahrChangedCallback( self.onBuchungsjahrChanged )
         sausview.setMasterobjektChangedCallback( self.onMasterobjektChanged )
         sausview.setMietobjektChangedCallback( self.onMietobjektChanged )
@@ -56,8 +58,12 @@ class SonstAusController( MdiChildController ):
         pass
 
     def onKreditorChanged( self, master_name:str, mobj_id:str, kreditor:str ):
-        leistungsidents = ("test", "testtest", "testtesttest" )
-        self._view.setLeistungsidentifikationen( leistungsidents )
+        buchungstexte = ""
+        if master_name == "Haus":  #kein Masterobjekt eingestellt
+            buchungstexte = BusinessLogic.inst().getBuchungstexte( kreditor )
+        else:
+            buchungstexte = BusinessLogic.inst().getBuchungstexteFuerMasterobjekt( master_name, kreditor )
+        self._view.setLeistungsidentifikationen( buchungstexte )
 
     def onCloseSubWindow( self, window: MdiSubWindow ) -> bool:
         """

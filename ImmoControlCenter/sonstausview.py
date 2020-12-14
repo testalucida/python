@@ -87,13 +87,17 @@ class SonstigeAusgabenView( QWidget ):
         self._btnSave = QPushButton( self )
         self._cboBuchungsjahr = QtWidgets.QComboBox( self )
         self._tvAuszahlungen = TableViewExt( self )
+
         self._buchungsdatumLayout = QHBoxLayout()
         self._sbTag = QSpinBox( self )
         self._cboMonat = QComboBox( self )
-        self._editLineLayout = QHBoxLayout()
-        self._cboKreditor = EditableCombo( self )
+
+        self._objektRefLayout = QHBoxLayout()
         self._cboMasterobjekt = QComboBox( self )
         self._cboMietobjekt = QComboBox( self )
+
+        self._editRechnungLineLayout = QHBoxLayout()
+        self._cboKreditor = EditableCombo( self )
         self._cboRechnungsIdent = EditableCombo( self )
         self._sdRechnungsdatum = SmartDateEdit( self )
         self._feBetrag = FloatEdit( self )
@@ -116,8 +120,10 @@ class SonstigeAusgabenView( QWidget ):
         self._mainLayout.addWidget( self._tvAuszahlungen, 1, 0, 1, 1 )
         self._assembleBuchungsdatum()
         self._mainLayout.addLayout( self._buchungsdatumLayout, 2, 0, alignment=Qt.AlignLeft )
-        self._assembleEditLine()
-        self._mainLayout.addLayout( self._editLineLayout, 3, 0, alignment=Qt.AlignLeft )
+        self._assembleObjektReference()
+        self._mainLayout.addLayout( self._objektRefLayout, 3, 0, alignment=Qt.AlignLeft )
+        self._assembleRechnungsdaten()
+        self._mainLayout.addLayout( self._editRechnungLineLayout, 4, 0, alignment=Qt.AlignLeft )
 
     def _assembleToolbar( self ):
         #### Combobox Buchungsjahr
@@ -143,7 +149,9 @@ class SonstigeAusgabenView( QWidget ):
         self._toolbarLayout.addWidget( btn, stretch=0, alignment=Qt.AlignLeft )
 
     def _assembleBuchungsdatum( self ):
-        lbl = QLabel( self, text="Buchungstag und -monat einstellen: " )
+        lbl = QLabel( self, text="Buchungstag und -monat: " )
+        h = lbl.size().height()
+        lbl.setFixedSize( QSize( 200, h ) )
         self._buchungsdatumLayout.addWidget( lbl )
         self._sbTag.setToolTip( "Buchungstag einstellen" )
         self._sbTag.setValue( 1 )
@@ -153,28 +161,43 @@ class SonstigeAusgabenView( QWidget ):
             self._cboMonat.addItem( m )
         self._buchungsdatumLayout.addWidget( self._cboMonat )
 
-    def _assembleEditLine( self ):
+        # objektLayout = QHBoxLayout()
+        # lbl = QLabel( self, text="Betroffenes Objekt: " )
+        # objektLayout.addWidget( lbl )
+        # self._cboMasterobjekt.setPlaceholderText( "Haus" )
+        # self._cboMasterobjekt.setToolTip( "Haus, auf das sich die Zahlung bezieht" )
+        # self._cboMasterobjekt.currentIndexChanged.connect( self.onMasterobjektChanged )
+        # objektLayout.addWidget( self._cboMasterobjekt )
+        # self._buchungsdatumLayout.addLayout( objektLayout, alignment=Qt.AlignRight )
+
+    def _assembleObjektReference( self ):
+        lbl = QLabel( self, text="Betroffenes Objekt: " )
+        lbl.setFixedWidth( 200 )
+        self._objektRefLayout.addWidget( lbl )
+        self._cboMasterobjekt.setFixedWidth( 155 )
         self._cboMasterobjekt.setPlaceholderText( "Haus" )
-        self._cboMasterobjekt.setToolTip( "Haus, auf das sich die Zahlung bezieht")
+        self._cboMasterobjekt.setToolTip( "Haus, auf das sich die Zahlung bezieht" )
         self._cboMasterobjekt.currentIndexChanged.connect( self.onMasterobjektChanged )
-        self._editLineLayout.addWidget( self._cboMasterobjekt )
+        self._objektRefLayout.addWidget( self._cboMasterobjekt )
         self._cboMietobjekt.setPlaceholderText( "Wohnung" )
-        self._cboMietobjekt.setToolTip( "optional: Wohnung, auf die sich die Zahlung bezieht")
+        self._cboMietobjekt.setToolTip( "optional: Wohnung, auf die sich die Zahlung bezieht" )
         self._cboMietobjekt.currentIndexChanged.connect( self.onMietobjektChanged )
-        self._editLineLayout.addWidget( self._cboMietobjekt )
+        self._objektRefLayout.addWidget( self._cboMietobjekt )
+
+    def _assembleRechnungsdaten( self ):
         self._cboKreditor.setToolTip( "Kreditor" )
         self._cboKreditor.currentIndexChanged.connect( self.onKreditorChanged )
-        self._editLineLayout.addWidget( self._cboKreditor )
+        self._editRechnungLineLayout.addWidget( self._cboKreditor )
         self._cboRechnungsIdent.setToolTip( "Identifikation der Zahlung durch Rechnungsnummer oder Buchungstext" )
         self._cboRechnungsIdent.setMinimumWidth( 100 )
-        self._editLineLayout.addWidget( self._cboRechnungsIdent, stretch=1 )
+        self._editRechnungLineLayout.addWidget( self._cboRechnungsIdent, stretch=1 )
         self._sdRechnungsdatum.setPlaceholderText( "Datum Rg." )
         self._sdRechnungsdatum.setMaximumWidth( 85 )
         self._sdRechnungsdatum.setToolTip( "optional: Datum der Rechnung" )
-        self._editLineLayout.addWidget( self._sdRechnungsdatum, stretch=0, alignment=Qt.AlignLeft )
+        self._editRechnungLineLayout.addWidget( self._sdRechnungsdatum, stretch=0, alignment=Qt.AlignLeft )
         self._feBetrag.setPlaceholderText( "Betrag" )
         self._feBetrag.setMaximumWidth( 70 )
-        self._editLineLayout.addWidget( self._feBetrag, stretch=0, alignment=Qt.AlignLeft  )
+        self._editRechnungLineLayout.addWidget( self._feBetrag, stretch=0, alignment=Qt.AlignLeft )
 
         vbox = QVBoxLayout()
         self._cbUmlegbar.setText( "umlegbar" )
@@ -183,11 +206,11 @@ class SonstigeAusgabenView( QWidget ):
         self._cbWerterhaltend.setText( "werterhaltend" )
         self._cbWerterhaltend.setToolTip( "Ob die Auszahlung der Werterhaltung der Wohnung dient" )
         vbox.addWidget( self._cbWerterhaltend )
-        self._editLineLayout.addLayout( vbox )
+        self._editRechnungLineLayout.addLayout( vbox )
 
         self._teBemerkung.setPlaceholderText( "Bemerkung zur Auszahlung" )
         self._teBemerkung.setMaximumSize( QtCore.QSize( 16777215, 54 ) )
-        self._editLineLayout.addWidget( self._teBemerkung, stretch=1 )
+        self._editRechnungLineLayout.addWidget( self._teBemerkung, stretch=1 )
         self._btnOk.setIcon( QIcon( "./images/checked.png" ) )
         self._btnOk.setDefault( True )
 
@@ -197,7 +220,7 @@ class SonstigeAusgabenView( QWidget ):
         self._btnClear.setIcon( QIcon( "./images/cancel.png" ) )
         self._btnClear.setToolTip( "Änderungen verwerfen und Felder leeren" )
         vbox.addWidget( self._btnClear )
-        self._editLineLayout.addLayout( vbox )
+        self._editRechnungLineLayout.addLayout( vbox )
 
     def onSave( self ):
         pass
@@ -329,12 +352,14 @@ def onChangeBuchungsjahr( jahr:int ):
 def test():
     import sys
     app = QtWidgets.QApplication( sys.argv )
-    sav = SonstigeAusgabenView()
-    sav.setBuchungsjahre( (2020,))
-    sav.setBuchungsjahr( 2020 )
-    # sav.setRechnungsjahr( 2020 )
+    v = SonstigeAusgabenView()
+    v.setBuchungsjahre( (2020,))
+    v.setBuchungsjahr( 2020 )
+    v.setMasterobjekte( ("HOM_Remigius", "ILL_Eich", "NK_Ww56"))
+    v.setKreditoren( ("Energie SarLorLux", "energis", "KEW", "Kreisstadt Neunkirchen", "Landeshauptstadt Saarbrücken") )
+
     #sav.setBuchungsjahrChangedCallback( onChangeBuchungsjahr )
-    sav.show()
+    v.show()
     sys.exit( app.exec_() )
 
 if __name__ == "__main__":

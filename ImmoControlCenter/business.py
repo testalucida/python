@@ -245,6 +245,15 @@ class BusinessLogic:
     def getKreditoren( self, master_name:str ) -> List[str]:
         return self._db.getKreditoren( master_name )
 
+    def getAlleKreditoren( self ) -> List[str]:
+        return self._db.getAlleKreditoren()
+
+    def getBuchungstexte( self, kreditor:str ) -> List[str]:
+        return self._db.getBuchungstexte( kreditor )
+
+    def getBuchungstexteFuerMasterobjekt( self, master_name:str, kreditor:str ) -> List[str]:
+        return self._db.getBuchungstexteFuerMasterobjekt( master_name, kreditor )
+
 def test():
     busi = BusinessLogic.inst()
 

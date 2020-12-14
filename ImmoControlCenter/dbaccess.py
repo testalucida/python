@@ -167,6 +167,31 @@ class DbAccess:
         list = sorted( list, key=str.casefold )
         return list
 
+    def getAlleKreditoren( self ) -> List[str]:
+        sql = "select distinct kreditor from kreditorleistung "
+        rowlist = self._doRead( sql )
+        list = [x[0] for x in rowlist]
+        list = sorted( list, key=str.casefold )
+        return list
+
+    def getBuchungstexte( self, kreditor:str ) -> List[str]:
+        sql = "select buchungstext from kreditorleistung where kreditor = '%s' " % ( kreditor )
+        rowlist = self._doRead( sql )
+        list = [x[0] for x in rowlist]
+        list = sorted( list, key=str.casefold )
+        return list
+
+    def getBuchungstexteFuerMasterobjekt( self, master_name:str, kreditor:str ) -> List[str]:
+        sql = "select buchungstext " \
+              "from kreditorleistung k " \
+              "inner join masterobjekt m on m.master_id = k.master_id " \
+              "where k.kreditor = '%s' " \
+              "and m.name = '%s' " % ( kreditor, master_name )
+        rowlist = self._doRead( sql )
+        list = [x[0] for x in rowlist]
+        list = sorted( list, key=str.casefold )
+        return list
+
     # def getServiceleistungen( self ) -> List[Dict]:
     #     sql = "select service.kreditor, service.master_id, master.name, service.mobj_id, service.buchungstext, service.umlegbar " \
     #           "from serviceleistung service " \
@@ -181,8 +206,6 @@ class DbAccess:
               "order by name "
         dictlist = self._doReadAllGetDict( sql )
         return dictlist
-
-
 
     def insertMietverhaeltnis( self, d:Dict, commit:bool=True ) -> int:
         sql = "insert into mietverhaeltnis " \
