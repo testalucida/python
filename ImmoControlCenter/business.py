@@ -2,8 +2,9 @@ from dbaccess import DbAccess
 from typing import List, Dict, Tuple
 from constants import einausart
 from interfaces import XSonstAus, XServiceLeistung
-from monthlist import monthList, monatsletzter
-import datetime, dateutil
+#from monthlist import monthList, monatsletzter
+from datehelper import monthList, monatsletzter, getLastMonth
+#import datetime, dateutil
 
 class BusinessLogic:
     __instance = None
@@ -187,10 +188,11 @@ class BusinessLogic:
         self._db.commit()
 
     def getLetztenMonat( self ) -> Tuple[int, str]:
-        monat = datetime.datetime.now().month
-        monat = 12 if monat == 1 else monat-1
-        smonat = monthList[monat-1]
-        return monat, smonat
+        # monat = datetime.datetime.now().month
+        # monat = 12 if monat == 1 else monat-1
+        # smonat = monthList[monat-1]
+        # return monat, smonat
+        return getLastMonth()
 
     def getMonatsletzter( self, monatidx:int ) -> int:
         smonat = monthList[monatidx-1]
@@ -253,6 +255,9 @@ class BusinessLogic:
 
     def getBuchungstexteFuerMasterobjekt( self, master_name:str, kreditor:str ) -> List[str]:
         return self._db.getBuchungstexteFuerMasterobjekt( master_name, kreditor )
+
+    def getBuchungstexteFuerMietobjekt( self, mobj_id:str, kreditor:str ) -> List[str]:
+        return self._db.getBuchungstexteFuerMasterobjekt( mobj_id, kreditor )
 
 def test():
     busi = BusinessLogic.inst()

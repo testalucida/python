@@ -22,47 +22,56 @@ class SonstAusController( MdiChildController ):
 
     def createView( self ) -> QWidget:
         sausview = SonstigeAusgabenView()
+        self._view = sausview
         jahre = BusinessLogic.inst().getExistingJahre( constants.einausart.MIETE )
         sausview.setBuchungsjahre( jahre )
         jahr = datetime.datetime.now().year
         sausview.setBuchungsjahr( jahr )
         self._jahr = jahr
         monidx, monat = BusinessLogic.inst().getLetztenMonat()
-        sausview.setBuchungsdatum( 20, monat )
+        sausview.setBuchungsdatum( 1, monat )
         masterobjekte = BusinessLogic.inst().getMasterobjekte()
         sausview.setMasterobjekte( masterobjekte )
         kreditoren = BusinessLogic.inst().getAlleKreditoren()
         sausview.setKreditoren( kreditoren )
+        self._provideBuchungstexte( masterobjekte[0], None, kreditoren[0] )
         sausview.setBuchungsjahrChangedCallback( self.onBuchungsjahrChanged )
         sausview.setMasterobjektChangedCallback( self.onMasterobjektChanged )
         sausview.setMietobjektChangedCallback( self.onMietobjektChanged )
         sausview.setKreditorChangedCallback( self.onKreditorChanged )
 
-        self._view = sausview
         return sausview
 
     def onBuchungsjahrChanged( self, newjahr:int ):
-        print( "SonstausController: onBuchungsjahrChanged" )
+        print( "SonstausController.onBuchungsjahrChanged" )
 
     def onMasterobjektChanged( self, newname:str ):
+        print( "SonstausController.onMasterobjektChanged: %s" % (newname,) )
         mietobjekte = BusinessLogic.inst().getMietobjekte( newname )
         if len( mietobjekte ) > 0:
             self._view.setMietobjekte( mietobjekte )
-            self._view.selectMietobjekt( mietobjekte[0] )
+            #self._view.selectMietobjekt( mietobjekte[0] ) --> nein! Wir müssen die Möglichkeit haben, eine Rechnung fürs ganze Objekte zu erfassen
         kreditoren = BusinessLogic.inst().getKreditoren( newname )
         if len( kreditoren ) > 0:
             self._view.setKreditoren( kreditoren )
             self._view.selectKreditor( kreditoren[0] )
 
     def onMietobjektChanged( self, mobj_id:str ):
-        pass
+        print( "SonstausController.onMietobjektChanged: %s" % (mobj_id,) )
 
     def onKreditorChanged( self, master_name:str, mobj_id:str, kreditor:str ):
+        print( "SonstausController.onKreditorChanged: %s, %s, %s" % (master_name, mobj_id, kreditor) )
+        self._provideBuchungstexte( master_name, mobj_id, kreditor )
+
+    def _provideBuchungstexte( self, master_name:str, mobj_id:str, kreditor:str  ):
         buchungstexte = ""
-        if master_name == "Haus":  #kein Masterobjekt eingestellt
+        if master_name is None or master_name == "Haus":  # kein Masterobjekt eingestellt
             buchungstexte = BusinessLogic.inst().getBuchungstexte( kreditor )
         else:
-            buchungstexte = BusinessLogic.inst().getBuchungstexteFuerMasterobjekt( master_name, kreditor )
+            if mobj_id:
+                buchungstexte = BusinessLogic.inst().getBuchungstexteFuerMietobjekt( master_name, kreditor )
+            if not buchungstexte:
+                buchungstexte = BusinessLogic.inst().getBuchungstexteFuerMasterobjekt( master_name, kreditor )
         self._view.setLeistungsidentifikationen( buchungstexte )
 
     def onCloseSubWindow( self, window: MdiSubWindow ) -> bool:
@@ -93,21 +102,14 @@ class SonstAusController( MdiChildController ):
         """
         print( "ServiceController.save()" )
 
-#################  ServiceController  ###########################
-# class ServiceController( SonstAusController ):
-#     """
-#     Controller für Kosten, die von öffentlichen Serviceprovidern wie KEW, EVS und von den Gemeinden (Grundsteuer,...)
-#     erhoben werden.
-#     """
-#     def __init__( self ):
-#         SonstAusController.__init__( self )
-#
-#     def getViewTitle( self ) -> str:
-#         return "Rechnungen, Abgaben, Gebühren,... " + str( self._jahr )
-#
-#     def save( self ):
-#         """
-#         Implementation der abstrakten Methode aus MdiChildController
-#         :return:
-#         """
-#         print( "ServiceController.save()" )
+def test():
+    import sys
+    from PySide2 import QtWidgets
+    app = QtWidgets.QApplication( sys.argv )
+    c = SonstAusController()
+    v = c.createView()
+    v.show()
+    sys.exit( app.exec_() )
+
+if __name__ == "__main__":
+    test()

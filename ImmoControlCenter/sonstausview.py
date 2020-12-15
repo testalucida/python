@@ -4,12 +4,15 @@ from PySide2.QtGui import QIcon, QDoubleValidator, QFont
 from PySide2.QtWidgets import QWidget, QComboBox, QLineEdit, QCheckBox, QPushButton, QCalendarWidget, \
     QVBoxLayout, QDialog, QBoxLayout, QHBoxLayout, QTextEdit, QSpinBox, QLabel
 from typing import List, Dict
-
+from datetime import datetime
+from dateutil import relativedelta
 from treeview import TreeTableModel, TreeView
 from tableviewext import TableViewExt
 from interfaces import XSonstAus
 from servicetreemodel import ServiceTreeModel
-from monthlist import monthList
+#from monthlist import monthList
+#from datehelper import monthList, getRelativeDate, getDateFromIsoString
+import datehelper
 
 ##################  CalendarWindow  ###########################
 class CalendarDialog( QDialog ):
@@ -52,6 +55,26 @@ class CalendarDialog( QDialog ):
     def setSelectedDate( self, date:QDate ):
         self._calendar.setSelectedDate( date )
 
+    def setSelectedDateFromString( self, datestring:str ):
+        """
+        datestring needs to be given as "yyyy-mm-dd" or "dd.mm.yyyy"
+        day and month may be given one-digit.
+        :param datestring:
+        :return:
+        """
+        parts = datestring.split( "-" )
+        if len( parts ) == 0:
+            parts = datestring.split( "." )
+        else: # yyyy-mm-dd
+            dt = QDate( int(parts[0]), int(parts[1]), int(parts[2]) )
+            self.setSelectedDate( dt )
+        if len( parts ) == 0:
+            raise Exception( "CalendarDialog.setSelectedDateFromString: wrong date format '%s'"
+                             % (datestring) )
+        else: # dd.mm.yyyy
+            dt = QDate( int( parts[2] ), int( parts[1] ), int( parts[0] ) )
+            self.setSelectedDate( dt )
+
     def _onOk( self ):
         date:QDate =  self._calendar.selectedDate()
         self.hide()
@@ -66,10 +89,35 @@ class SmartDateEdit( QLineEdit ):
     def __init__( self, parent=None ):
         QLineEdit.__init__( self, parent )
 
+    def mouseDoubleClickEvent( self, event ):
+        #print( "Double Click SmartDateEdit at pos: ", event.pos() )
+        self.showCalendar()
+
+    def showCalendar( self ):
+        cal = CalendarDialog( self )
+        text = self.text()
+        d:QDate = None
+        if text == "":
+            d = datehelper.getRelativeDate( -1, 1 )
+        else:
+            if datehelper.isValidIsoDatestring( text ):
+                d = datehelper.getDateFromIsoString( text )
+
+            else:
+                d =datehelper.getRelativeDate( -1, 1 )
+        cal.setSelectedDate( d )
+        cal.setCallback( self.onDatumSelected )
+        cal.show()
+
+    def onDatumSelected( self, date:QDate ):
+        self.setText( date.toString( "yyyy-MM-dd" ) )
+
 #########################  FloatEdit  ################################
 class FloatEdit( QLineEdit ):
     def __init__( self, parent=None ):
         QLineEdit.__init__( self, parent )
+        floatval = QDoubleValidator()
+        self.setValidator( floatval )
 
 #######################  EditableCombo ###########################
 class EditableCombo( QComboBox ):
@@ -157,7 +205,7 @@ class SonstigeAusgabenView( QWidget ):
         self._sbTag.setValue( 1 )
         self._buchungsdatumLayout.addWidget( self._sbTag )
         self._cboMonat.setToolTip( "Buchungsmonat einstellen" )
-        for m in monthList:
+        for m in datehelper.monthList:
             self._cboMonat.addItem( m )
         self._buchungsdatumLayout.addWidget( self._cboMonat )
 
@@ -190,7 +238,7 @@ class SonstigeAusgabenView( QWidget ):
         self._editRechnungLineLayout.addWidget( self._cboKreditor )
         self._cboRechnungsIdent.setToolTip( "Identifikation der Zahlung durch Rechnungsnummer oder Buchungstext" )
         self._cboRechnungsIdent.setMinimumWidth( 100 )
-        self._editRechnungLineLayout.addWidget( self._cboRechnungsIdent, stretch=1 )
+        self._editRechnungLineLayout.addWidget( self._cboRechnungsIdent, stretch=2 )
         self._sdRechnungsdatum.setPlaceholderText( "Datum Rg." )
         self._sdRechnungsdatum.setMaximumWidth( 85 )
         self._sdRechnungsdatum.setToolTip( "optional: Datum der Rechnung" )
@@ -200,16 +248,17 @@ class SonstigeAusgabenView( QWidget ):
         self._editRechnungLineLayout.addWidget( self._feBetrag, stretch=0, alignment=Qt.AlignLeft )
 
         vbox = QVBoxLayout()
-        self._cbUmlegbar.setText( "umlegbar" )
+        vbox.setSpacing( 0 )
+        self._cbUmlegbar.setText( "uml" )
         self._cbUmlegbar.setToolTip( "Ob die Auszahlung auf den/die Mieter umlegbar sind" )
         vbox.addWidget( self._cbUmlegbar )
-        self._cbWerterhaltend.setText( "werterhaltend" )
+        self._cbWerterhaltend.setText( "wert" )
         self._cbWerterhaltend.setToolTip( "Ob die Auszahlung der Werterhaltung der Wohnung dient" )
         vbox.addWidget( self._cbWerterhaltend )
         self._editRechnungLineLayout.addLayout( vbox )
 
         self._teBemerkung.setPlaceholderText( "Bemerkung zur Auszahlung" )
-        self._teBemerkung.setMaximumSize( QtCore.QSize( 16777215, 54 ) )
+        self._teBemerkung.setMaximumSize( QtCore.QSize( 16777215, 50 ) )
         self._editRechnungLineLayout.addWidget( self._teBemerkung, stretch=1 )
         self._btnOk.setIcon( QIcon( "./images/checked.png" ) )
         self._btnOk.setDefault( True )
@@ -299,7 +348,7 @@ class SonstigeAusgabenView( QWidget ):
         self._cboRechnungsIdent.clear()
         for i in idents:
             self._cboRechnungsIdent.addItem( i )
-        self._cboRechnungsIdent.showPopup()
+        #self._cboRechnungsIdent.showPopup()
 
     def getCurrentMasterobjekt( self ) -> str:
         return self._cboMasterobjekt.currentText()
