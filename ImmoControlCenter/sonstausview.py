@@ -2,16 +2,12 @@ from PySide2 import QtWidgets, QtCore, QtGui
 from PySide2.QtCore import QSize, Qt, QDate
 from PySide2.QtGui import QIcon, QDoubleValidator, QFont
 from PySide2.QtWidgets import QWidget, QComboBox, QLineEdit, QCheckBox, QPushButton, QCalendarWidget, \
-    QVBoxLayout, QDialog, QBoxLayout, QHBoxLayout, QTextEdit, QSpinBox, QLabel
-from typing import List, Dict
-from datetime import datetime
-from dateutil import relativedelta
-from treeview import TreeTableModel, TreeView
-from tableviewext import TableViewExt
+    QVBoxLayout, QDialog, QBoxLayout, QHBoxLayout, QTextEdit, QSpinBox, QLabel, QTableView
+from typing import List
+
 from interfaces import XSonstAus
-from servicetreemodel import ServiceTreeModel
-#from monthlist import monthList
-#from datehelper import monthList, getRelativeDate, getDateFromIsoString
+from sonstaustablemodel import SonstAusTableModel
+from tableviewext import TableViewExt
 import datehelper
 
 ##################  CalendarWindow  ###########################
@@ -93,18 +89,36 @@ class SmartDateEdit( QLineEdit ):
         #print( "Double Click SmartDateEdit at pos: ", event.pos() )
         self.showCalendar()
 
+    def setDate( self, year:int, month:int, day:int, format:str="yyyy-MM-dd" ):
+        dt = QDate( year, month, day )
+        ds = dt.toString( format )
+        self.setText( ds )
+
+    def getDate( self ) -> str:
+        """
+        liefert das eingestellte Datum in dem Format, wie es im Feld zu sehen ist.
+        Ist der Wert im Feld ungültig, wird ein Leerstring ("") zurückgegeben.
+        :param format:
+        :return:
+        """
+        ds = self.text()
+        if datehelper.isValidIsoDatestring( ds ) or datehelper.isValidEurDatestring( ds ):
+            return ds
+        else:
+            return ""
+
     def showCalendar( self ):
         cal = CalendarDialog( self )
         text = self.text()
         d:QDate = None
         if text == "":
-            d = datehelper.getRelativeDate( -1, 1 )
+            d = datehelper.getRelativeQDate( -1, 1 )
         else:
             if datehelper.isValidIsoDatestring( text ):
-                d = datehelper.getDateFromIsoString( text )
+                d = datehelper.getQDateFromIsoString( text )
 
             else:
-                d =datehelper.getRelativeDate( -1, 1 )
+                d =datehelper.getRelativeQDate( -1, 1 )
         cal.setSelectedDate( d )
         cal.setCallback( self.onDatumSelected )
         cal.show()
@@ -137,8 +151,9 @@ class SonstigeAusgabenView( QWidget ):
         self._tvAuszahlungen = TableViewExt( self )
 
         self._buchungsdatumLayout = QHBoxLayout()
-        self._sbTag = QSpinBox( self )
-        self._cboMonat = QComboBox( self )
+        self._sdBuchungsdatum = SmartDateEdit( self )
+        self._btnAddDay = QPushButton( self )
+        self._btnClearBuchungsdatum = QPushButton( self )
 
         self._objektRefLayout = QHBoxLayout()
         self._cboMasterobjekt = QComboBox( self )
@@ -146,7 +161,7 @@ class SonstigeAusgabenView( QWidget ):
 
         self._editRechnungLineLayout = QHBoxLayout()
         self._cboKreditor = EditableCombo( self )
-        self._cboRechnungsIdent = EditableCombo( self )
+        self._cboBuchungstext = EditableCombo( self )
         self._sdRechnungsdatum = SmartDateEdit( self )
         self._feBetrag = FloatEdit( self )
         self._cbUmlegbar = QCheckBox( self )
@@ -159,6 +174,8 @@ class SonstigeAusgabenView( QWidget ):
         self._masterobjektChangedCallback = None
         self._mietobjektChangedCallback = None
         self._kreditorChangedCallback = None
+        self._justEditing:XSonstAus = None
+        self._suspendCallbacks = False
 
         self._createGui()
 
@@ -197,30 +214,39 @@ class SonstigeAusgabenView( QWidget ):
         self._toolbarLayout.addWidget( btn, stretch=0, alignment=Qt.AlignLeft )
 
     def _assembleBuchungsdatum( self ):
-        lbl = QLabel( self, text="Buchungstag und -monat: " )
-        h = lbl.size().height()
-        lbl.setFixedSize( QSize( 200, h ) )
+        lbl = QLabel( self, text="Buchungsdatum: " )
+        lbl.setFixedWidth( 150 )
         self._buchungsdatumLayout.addWidget( lbl )
-        self._sbTag.setToolTip( "Buchungstag einstellen" )
-        self._sbTag.setValue( 1 )
-        self._buchungsdatumLayout.addWidget( self._sbTag )
-        self._cboMonat.setToolTip( "Buchungsmonat einstellen" )
-        for m in datehelper.monthList:
-            self._cboMonat.addItem( m )
-        self._buchungsdatumLayout.addWidget( self._cboMonat )
+        self._sdBuchungsdatum.setFixedWidth( 85 )
+        self._sdBuchungsdatum.setToolTip( "Buchungsdatum. Kann leer bleiben, wenn Buchung noch nicht erfolgt ist" )
+        self._buchungsdatumLayout.addWidget( self._sdBuchungsdatum )
+        size = QSize( 25, 25 )
+        self._btnAddDay.setIcon( QIcon( "./images/plus.png" ) )
+        self._btnAddDay.setFixedSize( size )
+        self._btnAddDay.setToolTip( "Buchungsdatum um 1 Tag erhöhen" )
+        self._btnAddDay.clicked.connect( self.onAddDayToBuchungsdatum )
+        self._buchungsdatumLayout.addWidget( self._btnAddDay )
+        self._btnClearBuchungsdatum.setIcon( QIcon( "./images/cancel.png" ) )
+        self._btnClearBuchungsdatum.setFixedSize( size )
+        self._btnClearBuchungsdatum.setToolTip( "Buchungsdatum löschen" )
+        self._btnClearBuchungsdatum.clicked.connect( self.onClearBuchungsdatum )
+        self._buchungsdatumLayout.addWidget( self._btnClearBuchungsdatum )
 
-        # objektLayout = QHBoxLayout()
-        # lbl = QLabel( self, text="Betroffenes Objekt: " )
-        # objektLayout.addWidget( lbl )
-        # self._cboMasterobjekt.setPlaceholderText( "Haus" )
-        # self._cboMasterobjekt.setToolTip( "Haus, auf das sich die Zahlung bezieht" )
-        # self._cboMasterobjekt.currentIndexChanged.connect( self.onMasterobjektChanged )
-        # objektLayout.addWidget( self._cboMasterobjekt )
-        # self._buchungsdatumLayout.addLayout( objektLayout, alignment=Qt.AlignRight )
+        # lbl = QLabel( self, text="Buchungstag und -monat: " )
+        # h = lbl.size().height()
+        # lbl.setFixedSize( QSize( 200, h ) )
+        # self._buchungsdatumLayout.addWidget( lbl )
+        # self._sbTag.setToolTip( "Buchungstag einstellen" )
+        # self._sbTag.setValue( 1 )
+        # self._buchungsdatumLayout.addWidget( self._sbTag )
+        # self._cboMonat.setToolTip( "Buchungsmonat einstellen" )
+        # for m in datehelper.monthList:
+        #     self._cboMonat.addItem( m )
+        # self._buchungsdatumLayout.addWidget( self._cboMonat )
 
     def _assembleObjektReference( self ):
         lbl = QLabel( self, text="Betroffenes Objekt: " )
-        lbl.setFixedWidth( 200 )
+        lbl.setFixedWidth( 150 )
         self._objektRefLayout.addWidget( lbl )
         self._cboMasterobjekt.setFixedWidth( 155 )
         self._cboMasterobjekt.setPlaceholderText( "Haus" )
@@ -236,9 +262,9 @@ class SonstigeAusgabenView( QWidget ):
         self._cboKreditor.setToolTip( "Kreditor" )
         self._cboKreditor.currentIndexChanged.connect( self.onKreditorChanged )
         self._editRechnungLineLayout.addWidget( self._cboKreditor )
-        self._cboRechnungsIdent.setToolTip( "Identifikation der Zahlung durch Rechnungsnummer oder Buchungstext" )
-        self._cboRechnungsIdent.setMinimumWidth( 100 )
-        self._editRechnungLineLayout.addWidget( self._cboRechnungsIdent, stretch=2 )
+        self._cboBuchungstext.setToolTip( "Identifikation der Zahlung durch Rechnungsnummer oder Buchungstext" )
+        self._cboBuchungstext.setMinimumWidth( 100 )
+        self._editRechnungLineLayout.addWidget( self._cboBuchungstext, stretch=2 )
         self._sdRechnungsdatum.setPlaceholderText( "Datum Rg." )
         self._sdRechnungsdatum.setMaximumWidth( 85 )
         self._sdRechnungsdatum.setToolTip( "optional: Datum der Rechnung" )
@@ -268,8 +294,19 @@ class SonstigeAusgabenView( QWidget ):
         vbox.addWidget( self._btnOk )
         self._btnClear.setIcon( QIcon( "./images/cancel.png" ) )
         self._btnClear.setToolTip( "Änderungen verwerfen und Felder leeren" )
+        self._btnClear.clicked.connect( self.onClearEditFields )
         vbox.addWidget( self._btnClear )
         self._editRechnungLineLayout.addLayout( vbox )
+
+    def onAddDayToBuchungsdatum( self ):
+        val = self._sdBuchungsdatum.getDate()
+        if val:
+            dt = datehelper.getQDateFromIsoString( val )
+            dt = dt.addDays( 1 )
+            self._sdBuchungsdatum.setDate( dt.year(), dt.month(), dt.day() )
+
+    def onClearBuchungsdatum( self ):
+        self._sdBuchungsdatum.clear()
 
     def onSave( self ):
         pass
@@ -285,17 +322,29 @@ class SonstigeAusgabenView( QWidget ):
             self._buchungsjahrChangedCallback( jahr )
 
     def onMasterobjektChanged( self, newindex:int ):
-        if self._masterobjektChangedCallback:
+        if self._masterobjektChangedCallback and not self._suspendCallbacks:
             self._masterobjektChangedCallback( self._cboMasterobjekt.currentText() )
 
     def onMietobjektChanged( self, newindex:int ):
         pass
 
     def onKreditorChanged( self, newindex:int ):
-        if self._kreditorChangedCallback:
+        if self._kreditorChangedCallback and not self._suspendCallbacks:
             self._kreditorChangedCallback( self._cboMasterobjekt.currentText(),
                                            self._cboMietobjekt.currentText(),
                                            self._cboKreditor.currentText() )
+
+    def onClearEditFields( self, arg ):
+        self.clearEditFields()
+
+    def getAuszahlungenTableView( self ) -> QTableView:
+        return self._tvAuszahlungen
+
+    def setAuszahlungenTableModel( self, tm:SonstAusTableModel ):
+        self._tvAuszahlungen.setModel( tm )
+        self._tvAuszahlungen.resizeColumnsToContents()
+        #self._tvAuszahlungen.setColumnWidth( 0, 10 )
+        #self._tvAuszahlungen.setColumnWidth( 1, 10 )
 
     def setBuchungsjahre( self, jahre:List[int] ):
         """
@@ -317,12 +366,15 @@ class SonstigeAusgabenView( QWidget ):
     def setBuchungsdatum( self, tag:int, monat:str ):
         """
         setzt Buchungstag und -monat.
+        Das Jahr ergibt sich aus dem eingestellten Buchungsjahr
         :param tag:
         :param monat:
         :return:
         """
-        self._sbTag.setValue( tag )
-        self._cboMonat.setCurrentText( monat )
+        # self._sbTag.setValue( tag )
+        # self._cboMonat.setCurrentText( monat )
+        self._sdBuchungsdatum.\
+            setDate( int(self._cboBuchungsjahr.currentText()), datehelper.getMonthIndex( monat ), tag )
 
     def setMasterobjekte( self, masterobjekte:List[str] ):
         for obj in masterobjekte:
@@ -345,9 +397,9 @@ class SonstigeAusgabenView( QWidget ):
         self._cboKreditor.setCurrentText( kreditor )
 
     def setLeistungsidentifikationen( self, idents:List[str] ):
-        self._cboRechnungsIdent.clear()
+        self._cboBuchungstext.clear()
         for i in idents:
-            self._cboRechnungsIdent.addItem( i )
+            self._cboBuchungstext.addItem( i )
         #self._cboRechnungsIdent.showPopup()
 
     def getCurrentMasterobjekt( self ) -> str:
@@ -355,6 +407,44 @@ class SonstigeAusgabenView( QWidget ):
 
     def getCurrentMietobjekt( self ) -> str:
         return self._cboMietobjekt.currentText()
+
+    def clearEditFields( self ):
+        self._suspendCallbacks = True
+        self._sdBuchungsdatum.clear()
+        self._cboMasterobjekt.setCurrentIndex( -1 )
+        self._cboMietobjekt.setCurrentIndex( 0 )
+        self._cboKreditor.setCurrentIndex( 0 )
+        self._cboBuchungstext.setCurrentIndex( 0 )
+        self._sdRechnungsdatum.clear()
+        self._feBetrag.clear()
+        self._cbUmlegbar.setChecked( False )
+        self._cbWerterhaltend.setChecked( False )
+        self._teBemerkung.clear()
+        self._suspendCallbacks = False
+
+    def provideEditFields( self, x:XSonstAus ):
+        self.clearEditFields()
+        self._suspendCallbacks = True
+        self._justEditing = x
+        if x.buchungsdatum:
+            y, m, d = datehelper.getDateParts( x.buchungsdatum )
+            self._sdBuchungsdatum.setDate( y, m, d )
+        if x.master_id:
+            self._cboMasterobjekt.setCurrentText( x.master_name )
+        if x.mobj_id:
+            self._cboMietobjekt.setCurrentText( x.mobj_id )
+        if x.kreditor:
+            self._cboKreditor.setCurrentText( x.kreditor )
+        if x.buchungstext:
+            self._cboBuchungstext.setCurrentText( x.buchungstext )
+        if x.rgdatum:
+            y, m, d = datehelper.getDateParts( x.rgdatum )
+            self._sdRechnungsdatum.setDate( y, m, d )
+        self._feBetrag.setText( str( x.betrag ) )
+        self._cbUmlegbar.setChecked( x.umlegbar )
+        self._cbWerterhaltend.setChecked( x.werterhaltend )
+        self._teBemerkung.setText( x.rgtext )
+        self._suspendCallbacks = False
 
     ################# SET CALLBACKS  ############################
 

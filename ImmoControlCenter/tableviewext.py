@@ -79,6 +79,8 @@ class TableViewExt( QTableView ):
         self._nFrozen = 0  # number of frozen left columns
         self.clicked.connect( self.onLeftClick )
         self.setMouseTracking( True )
+        self.setContextMenuPolicy( Qt.CustomContextMenu )
+        self.customContextMenuRequested.connect( self.onRightClick )
 
     def setModel( self, model:QAbstractTableModel ) -> None:
         super().setModel( model )
@@ -92,13 +94,16 @@ class TableViewExt( QTableView ):
             self._frozen.setSortingEnabled( on )
 
     def onLeftClick( self, index: QModelIndex ):
-        if index.column() == 2:
-            self.setStyleSheet( "QTableView::item:selected:active { background: #ff0000;}" )
-        else:
-            self.setStyleSheet( "" )
+        # if index.column() == 2:
+        #     self.setStyleSheet( "QTableView::item:selected:active { background: #ff0000;}" )
+        # else:
+        #     self.setStyleSheet( "" )
         val = self.model().data( index, Qt.DisplayRole )
         print( "index %d/%d clicked. Value=%s" % (index.row(), index.column(), str( val )) )
-        #self.setStyleSheet( "" )
+
+    def onRightClick( self, index: QModelIndex ):
+        for index in self.selectedIndexes():
+            print( "cell %d/%d RIGHT clicked." % (index.row(), index.column()) )
 
     def setAlternatingRowColors( self, on:bool ):
         super().setAlternatingRowColors( on )

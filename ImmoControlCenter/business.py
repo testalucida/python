@@ -3,7 +3,8 @@ from typing import List, Dict, Tuple
 from constants import einausart
 from interfaces import XSonstAus, XServiceLeistung
 #from monthlist import monthList, monatsletzter
-from datehelper import monthList, monatsletzter, getLastMonth
+#from datehelper import monthList, monatsletzter, getLastMonth
+import datehelper
 #import datetime, dateutil
 
 class BusinessLogic:
@@ -192,11 +193,11 @@ class BusinessLogic:
         # monat = 12 if monat == 1 else monat-1
         # smonat = monthList[monat-1]
         # return monat, smonat
-        return getLastMonth()
+        return datehelper.getLastMonth()
 
     def getMonatsletzter( self, monatidx:int ) -> int:
-        smonat = monthList[monatidx-1]
-        return monatsletzter[smonat]
+        smonat = datehelper.monthList[monatidx-1]
+        return datehelper.monatsletzter[smonat]
 
     # def getServiceLeistungen( self ) -> List[XServiceLeistung]:
     #     dictlist:List[Dict] = self._db.getServiceleistungen()
@@ -217,8 +218,8 @@ class BusinessLogic:
         masterobjekte:List[str] = []
         name = ""
         for d in self._masterundmietobjekte:
-            if name != d["name"]:
-                name = d["name"]
+            if name != d["master_name"]:
+                name = d["master_name"]
                 masterobjekte.append( name )
 
         return masterobjekte
@@ -241,7 +242,7 @@ class BusinessLogic:
     def getMasteridFromMastername( self, master_name:str ) -> int:
         if self._masterundmietobjekte:
             for d in self._masterundmietobjekte:
-                if d["name"] == master_name:
+                if d["master_name"] == master_name:
                     return d["master_id"]
 
     def getKreditoren( self, master_name:str ) -> List[str]:
@@ -258,6 +259,9 @@ class BusinessLogic:
 
     def getBuchungstexteFuerMietobjekt( self, mobj_id:str, kreditor:str ) -> List[str]:
         return self._db.getBuchungstexteFuerMasterobjekt( mobj_id, kreditor )
+
+    def getSonstigeAusgaben( self, jahr:int ) -> List[XSonstAus]:
+        return self._db.getSonstigeAusgaben( jahr )
 
 def test():
     busi = BusinessLogic.inst()

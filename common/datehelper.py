@@ -2,7 +2,7 @@ from datetime import datetime, date
 import dateutil.parser
 from PySide2.QtCore import QDate
 from dateutil.relativedelta import relativedelta
-from typing import Tuple
+from typing import Tuple, Dict
 
 
 monthList = ("Januar", "Februar", "März", "April", "Mai", "Juni",
@@ -22,6 +22,36 @@ monatsletzter = {
     "November": 30,
     "Dezember": 31
 }
+
+def getCurrentYearAndMonth() -> Dict:
+    d = { }
+    d["month"] = datetime.now().month
+    d["year"] = datetime.now().year
+    return d
+
+def getMonthIndex( month:str ) -> int:
+    """
+    returns index of month given as (german) string, e.g.: return 1 if month == "Januar"
+    :param month: "Januar", "Februar",... according to monthlist
+    :return: index of given month
+    """
+    for i in range( len( monthList ) ):
+        if monthList[i] == month:
+            return i+1
+    raise Exception( "Wrong month name: '%s'" % (month) )
+
+def getDateParts( datestring:str ) -> Tuple[int, int, int]:
+    if isValidIsoDatestring( datestring ):
+        y = int( datestring[0:4] )
+        m = int( datestring[5:7] )
+        d = int( datestring[-2:] )
+        return y, m, d
+    if isValidEurDatestring( datestring ):
+        d = int( datestring[0:2] )
+        m = int( datestring[3:5] )
+        y = int( datestring[-4:] )
+        return y, m, d
+    raise Exception( "datehelper.getDateParts(): '%s' is not a valid date string" % (datestring) )
 
 def convertIsoToEur(isostring: str) -> str:
     """
@@ -81,7 +111,7 @@ def compareEurDates(eurstring1: str, eurstring2: str) -> int:
     if date1 == date2: return 0
     return -1
 
-def getDateFromIsoString( isostr:str ) -> QDate:
+def getQDateFromIsoString( isostr:str ) -> QDate:
     parts = isostr.split( "-" )
     return QDate( int(parts[0]), int(parts[1]), int(parts[2]) )
 
@@ -154,13 +184,13 @@ def getNumberOfMonths(d1: str, d2: str, year: int) -> int:
 
     return cnt
 
-def getLastMonth( self ) -> Tuple[int, str]:
-    monat = datetime.datetime.now().month
+def getLastMonth() -> Tuple[int, str]:
+    monat = datetime.now().month
     monat = 12 if monat == 1 else monat-1
     smonat = monthList[monat-1]
     return monat, smonat
 
-def getRelativeDate( monthdelta:int, day:int ) -> QDate:
+def getRelativeQDate( monthdelta:int, day:int ) -> QDate:
     """
     Returns a date relative to current date.
     :param monthdelta: number of months to add or subtract from current month
@@ -186,9 +216,12 @@ def addMonths(mydate: date, cntMonths: int) -> date:
 def addDays(mydate: date, cntDays: int) -> date:
     return mydate + relativedelta(days = cntDays)
 
-
-
 def test():
+    y, m, d = getDateParts( "2020-05-25" )
+    y, m, d = getDateParts( "13.11.2019" )
+    i = getMonthIndex( "Dezember" )
+    print( i )
+
     s = getTodayAsIsoString()
     d1 = '2019-12-01'
     d2 = '2020-03-10'

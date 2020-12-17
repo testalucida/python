@@ -1,6 +1,7 @@
 import sqlite3
 from typing import List, Tuple, Dict
 from constants import einausart
+from interfaces import XSonstAus
 mon_dbnames = ("jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dez" )
 
 # def dict_factory(cursor, row):
@@ -49,7 +50,7 @@ class DbAccess:
         Liefert Informationen aus einem Join von masterobjekt und mietobjekt
         :return:
         """
-        sql = "select ma.master_id, ma.name, mi.mobj_id, mi.whg_bez " \
+        sql = "select ma.master_id, ma.master_name, mi.mobj_id, mi.whg_bez " \
               "from masterobjekt ma " \
               "inner join mietobjekt mi on mi.master_id = ma.master_id " \
               "where mi.aktiv = 1 " \
@@ -149,6 +150,20 @@ class DbAccess:
               "order by vwg_id" % (datum, datum)
         return self._doReadAllGetDict( sql )
 
+    def getSonstigeAusgaben( self, jahr:int ):
+        sql = "select saus_id, m.master_id, m.master_name, mobj_id, " \
+              "kreditor, rgnr, betrag, rgdatum, rgtext, buchungsdatum, buchungsjahr, umlegbar, werterhaltend, buchungstext " \
+              "from sonstaus s " \
+              "inner join masterobjekt m on m.master_id = s.master_id " \
+              "where buchungsjahr = %d " % (jahr)
+        dictlist = self._doReadAllGetDict( sql )
+        sonstalist = []
+        for d in dictlist:
+            x = XSonstAus( d )
+            sonstalist.append( x )
+
+        return sonstalist
+
     def getJahre( self, eaart:einausart ) -> List[int]:
         id = "mv_id" if eaart == einausart.MIETE else "vwg_art"
         sql = "select distinct jahr from mtleinaus where %s > 0 " % ( id )
@@ -160,7 +175,7 @@ class DbAccess:
         sql = "select distinct kreditor " \
               "from kreditorleistung k " \
               "inner join masterobjekt m on m.master_id = k.master_id " \
-              "where m.name = '%s' " \
+              "where m.master_name = '%s' " \
               "order by kreditor " % ( master_name )
         rowlist = self._doRead( sql )
         list = [x[0] for x in rowlist]
@@ -186,7 +201,7 @@ class DbAccess:
               "from kreditorleistung k " \
               "inner join masterobjekt m on m.master_id = k.master_id " \
               "where k.kreditor = '%s' " \
-              "and m.name = '%s' " % ( kreditor, master_name )
+              "and m.master_name = '%s' " % ( kreditor, master_name )
         rowlist = self._doRead( sql )
         list = [x[0] for x in rowlist]
         list = sorted( list, key=str.casefold )
@@ -203,9 +218,9 @@ class DbAccess:
         return list
 
     def getMasterobjekte( self ) -> List[Dict]:
-        sql = "select master_id, name " \
+        sql = "select master_id, master_name " \
               "from masterobjekt " \
-              "order by name "
+              "order by master_name "
         dictlist = self._doReadAllGetDict( sql )
         return dictlist
 
@@ -231,12 +246,13 @@ class DbAccess:
               "values( '%s', '%s', %s, %f, %f ) " % ( d["vwg_id"], d["von"], bis, d["netto"], d["ruezufue"] )
         return self._doWrite( sql, commit )
 
-    def insertServiceleistung( self, name:str, mobj_id:str, buchungstext:str, umlegbar:int=0, commit:bool=True ):
+    def insertKreditorleistung( self, kreditor:str, master_id:int, mobj_id:str, buchungstext:str, umlegbar:int=0, commit:bool=True ):
         if buchungstext is None: buchungstext = ""
-        sql = "insert into serviceleistung " \
-              "(name, mobj_id, buchungstext, umlegbar) " \
+        if mobj_id is None: mobj_id = ""
+        sql = "insert into kreditorleistung " \
+              "(kreditor, master_id, mobj_id, buchungstext, umlegbar) " \
               "values" \
-              "('%s', '%s', '%s', %d) " % ( name, mobj_id, buchungstext, umlegbar )
+              "('%s', %d, '%s', '%s', %d) " % ( kreditor, master_id, mobj_id, buchungstext, umlegbar )
         return self._doWrite( sql, commit )
 
     def existsEinAusArt(self, eaart:einausart, jahr:int ) -> bool:
@@ -257,6 +273,43 @@ class DbAccess:
         id = "mv_id" if eaart == einausart.MIETE else "vwg_id"
         sql = "insert into mtleinaus (%s, jahr) values ('%s', %d) " % (id, mv_or_vwg_id, jahr)
         return self._doWrite(sql, commit)
+
+    def insertSonstAus( self, x:XSonstAus, commit:bool=True ):
+        sql = "insert into sonstaus " \
+              "(master_id, mobj_id, buchungsjahr, buchungsdatum, kreditor, rgnr, betrag, rgdatum, rgtext, umlegbar, werterhaltend, buchungstext) " \
+              "values " \
+              "(%d, '%s', %d, '%s', '%s', '%s', %.2f, '%s', '%s', %d, %d, '%s') " \
+              % (x.master_id, x.mobj_id, x.buchungsjahr, x.buchungsdatum, x.kreditor, x.rgnr, x.betrag, x.rgdatum, x.rgtext, x.umlegbar, x.werterhaltend, x.buchungstext)
+        return self._doWrite( sql, commit )
+
+    def updateSonstAus( self, x:XSonstAus, commit:bool=True ):
+        sql = "update sonstaus set " \
+              "master_id = %d, " \
+              "mobj_id = '%s', " \
+              "kreditor = '%s', " \
+              "rgnr = '%s', " \
+              "rgdatum = '%s', " \
+              "rgtext = '%s', " \
+              "betrag = %.2f, " \
+              "umlegbar = %d, " \
+              "werterhaltend = %d, " \
+              "buchungsdatum = '%s', " \
+              "buchungsjahr = %d, " \
+              "buchungstext = '%s' " \
+              "where saus_id = %d " % ( x.master_id,
+                                        x.mobj_id,
+                                        x.kreditor,
+                                        x.rgnr,
+                                        x.rgdatum,
+                                        x.rgtext,
+                                        x.betrag,
+                                        x.umlegbar,
+                                        x.werterhaltend,
+                                        x.buchungsdatum,
+                                        x.buchungsjahr,
+                                        x.buchungstext,
+                                        x.saus_id )
+        return self._doWrite( sql, commit )
 
     def insertVerwalter( self, d:Dict, commit:bool=True ) -> int:
         sql = "insert into verwalter " \
@@ -323,6 +376,25 @@ class DbAccess:
 def test():
     db = DbAccess( "immo_TEST.db" )
     db.open()
+
+    x = XSonstAus()
+    x.saus_id = 1
+    x.master_id = 18
+    x.mobj_id = "ww56_21"
+    x.kreditor = "K.Frantz"
+    x.rgnr = "ABC 123 / 2020"
+    x.betrag = 290.98
+    x.rgdatum = "2020-12-28"
+    x.rgtext = "Zu Weihnachten noch eine schöne Reparatur"
+    x.buchungsdatum = "2020-12-30"
+    x.buchungsjahr = 2020
+    x.umlegbar = 0
+    x.werterhaltend = 1
+    x.buchungstext = "Kd.nr 223344, Objekt Wellesweiler Str. 56"
+    #rc = db.insertSonstAus( x )
+    # rc = db.updateSonstAus( x )
+    # print( rc )
+    xlist = db.getSonstigeAusgaben( 2020 )
 
     dictlist = db.getMasterUndMietobjekte()
     print( dictlist )

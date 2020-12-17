@@ -1,15 +1,17 @@
-from PySide2.QtGui import QStandardItem
-from PySide2.QtWidgets import QWidget
+from PySide2.QtCore import QModelIndex
+from PySide2.QtGui import QStandardItem, Qt
+from PySide2.QtWidgets import QWidget, QAbstractItemView
 from abc import ABC, abstractmethod
 from typing import List
 import datetime
 from business import BusinessLogic
 from mdichildcontroller import MdiChildController
+from sonstaustablemodel import SonstAusTableModel
 from sonstausview import SonstigeAusgabenView
 from mdisubwindow import MdiSubWindow
-from interfaces import XSonstAus, XServiceLeistung
-from servicetreemodel import ServiceTreeModel
+from interfaces import XSonstAus
 import constants
+import datehelper
 
 class SonstAusController( MdiChildController ):
     """
@@ -17,7 +19,8 @@ class SonstAusController( MdiChildController ):
     """
     def __init__( self ):
         MdiChildController.__init__( self )
-        self._jahr:int = 0
+        curr = datehelper.getCurrentYearAndMonth()
+        self._jahr:int = curr["year"]
         self._view:SonstigeAusgabenView = None
 
     def createView( self ) -> QWidget:
@@ -35,12 +38,43 @@ class SonstAusController( MdiChildController ):
         kreditoren = BusinessLogic.inst().getAlleKreditoren()
         sausview.setKreditoren( kreditoren )
         self._provideBuchungstexte( masterobjekte[0], None, kreditoren[0] )
+        sonstauslist = BusinessLogic.inst().getSonstigeAusgaben( self._jahr )
+        tm = SonstAusTableModel( sonstauslist )
+        sausview.setAuszahlungenTableModel( tm )
+        tv = sausview.getAuszahlungenTableView()
+        tv.setSelectionBehavior( QAbstractItemView.SelectRows )
+        tv.setAlternatingRowColors( True )
+        tv.verticalHeader().setVisible( False )
+        tv.horizontalHeader().setMinimumSectionSize( 0 )
+        tv.resizeColumnsToContents()
+        tv.setSortingEnabled( True )  # Achtung: damit wirklich sortiert werden kann, muss die Sortierbarkeit im Model eingeschaltet werden
+        tv.clicked.connect( self.onAuszahlungenLeftClick )
+        tv.customContextMenuRequested.connect( self.onAuszahlungenRightClick )
         sausview.setBuchungsjahrChangedCallback( self.onBuchungsjahrChanged )
         sausview.setMasterobjektChangedCallback( self.onMasterobjektChanged )
         sausview.setMietobjektChangedCallback( self.onMietobjektChanged )
         sausview.setKreditorChangedCallback( self.onKreditorChanged )
 
         return sausview
+
+    def onAuszahlungenLeftClick( self, index: QModelIndex ):
+        """
+        Prüft, ob nur genau eine Zeile markiert ist. Wenn ja, werden deren Daten zur Bearbeitung in die
+        Edit-Felder übernommen.
+        :param index:
+        :return:
+        """
+        tv = self._view.getAuszahlungenTableView()
+        model = tv.model()
+        val = model.data( index, Qt.DisplayRole )
+        x:XSonstAus = model.getXSonstAus( index.row() )
+        self._view.provideEditFields( x )
+        #print( "SONSTAUSCONTROLLER: index %d/%d clicked. Value=%s" % (index.row(), index.column(), str( val )) )
+
+    def onAuszahlungenRightClick( self, index: QModelIndex ):
+        tv = self._view.getAuszahlungenTableView()
+        for index in tv.selectedIndexes():
+            print( "SONSTAUSCONTROLLER: cell %d/%d RIGHT clicked." % (index.row(), index.column()) )
 
     def onBuchungsjahrChanged( self, newjahr:int ):
         print( "SonstausController.onBuchungsjahrChanged" )

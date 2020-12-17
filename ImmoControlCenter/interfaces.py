@@ -27,17 +27,18 @@ class XSonstAus( XBase ):
 
     saus_id:int = 0
     master_id:int = 0
+    master_name:str = ""
     mobj_id:str = ""
     kreditor:str = ""
     rgnr:str = ""
     rgdatum:str = ""
-    rgtext:str = ""
+    rgtext:str = ""  # der Text auf der Rechnung
     betrag:float = 0.0
     umlegbar:bool = False
     werterhaltend:bool = False
     buchungsdatum:str = ""
     buchungsjahr:int = 0
-
+    buchungstext:str = "" # der Text auf dem Buchungsbeleg, der bei öfftl. Providern identifizierend ist. (Kundennummer, Vertragsnummer etc.)
 
 
 

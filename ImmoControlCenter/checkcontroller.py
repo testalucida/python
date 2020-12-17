@@ -1,7 +1,7 @@
 from PySide2.QtWidgets import QMessageBox, QWidget
 from abc import ABC, abstractmethod
 from typing import List, Dict
-import datetime
+import datehelper
 from mdichildcontroller import MdiChildController
 from checkview import CheckView
 from checktablemodel import CheckTableModel
@@ -12,17 +12,11 @@ from mdisubwindow import MdiSubWindow
 class CheckController( MdiChildController, ABC ):
     def __init__(self ):
         MdiChildController.__init__( self )
-        curr = self.getCurrentYearAndMonth()
+        curr = datehelper.getCurrentYearAndMonth()
         self._currentYear:int = curr["year"]
         self._currentCheckMonth:int = curr["month"]
         self.changedCallback = None
         self.savedCallback = None
-
-    def getCurrentYearAndMonth( self ) -> Dict:
-        d = {}
-        d["month"] = datetime.datetime.now().month
-        d["year"] = datetime.datetime.now().year
-        return d
 
     def getSelectedJahr( self ) -> int:
         return self._currentYear
@@ -57,7 +51,7 @@ class CheckController( MdiChildController, ABC ):
         checkView.saveCallback = self.onSaveData
         checkView.setJahre( BusinessLogic.inst().getExistingJahre( einausart.MIETE ) )
         # neue CheckViews immer mit aktuellem Jahr/Monat
-        curr = self.getCurrentYearAndMonth()
+        curr = datehelper.getCurrentYearAndMonth()
         checkView.setJahr( self._currentYear )
         checkView.setCheckMonat( self._currentCheckMonth )
         model:CheckTableModel = self.createModel( self._currentYear, self._currentCheckMonth )
