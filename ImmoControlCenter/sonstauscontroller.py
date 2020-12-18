@@ -54,19 +54,20 @@ class SonstAusController( MdiChildController ):
         sausview.setMasterobjektChangedCallback( self.onMasterobjektChanged )
         sausview.setMietobjektChangedCallback( self.onMietobjektChanged )
         sausview.setKreditorChangedCallback( self.onKreditorChanged )
+        sausview.setSubmitChangesCallback( self.onSubmitChanges )
 
         return sausview
 
     def onAuszahlungenLeftClick( self, index: QModelIndex ):
         """
-        Prüft, ob nur genau eine Zeile markiert ist. Wenn ja, werden deren Daten zur Bearbeitung in die
+        Die Daten der ersten markierten Zeile werden zur Bearbeitung in die
         Edit-Felder übernommen.
         :param index:
         :return:
         """
         tv = self._view.getAuszahlungenTableView()
         model = tv.model()
-        val = model.data( index, Qt.DisplayRole )
+        #val = model.data( index, Qt.DisplayRole )
         x:XSonstAus = model.getXSonstAus( index.row() )
         self._view.provideEditFields( x )
         #print( "SONSTAUSCONTROLLER: index %d/%d clicked. Value=%s" % (index.row(), index.column(), str( val )) )
@@ -81,14 +82,16 @@ class SonstAusController( MdiChildController ):
 
     def onMasterobjektChanged( self, newname:str ):
         print( "SonstausController.onMasterobjektChanged: %s" % (newname,) )
+        self._view.clearMietobjekte()
         mietobjekte = BusinessLogic.inst().getMietobjekte( newname )
         if len( mietobjekte ) > 0:
             self._view.setMietobjekte( mietobjekte )
-            #self._view.selectMietobjekt( mietobjekte[0] ) --> nein! Wir müssen die Möglichkeit haben, eine Rechnung fürs ganze Objekte zu erfassen
-        kreditoren = BusinessLogic.inst().getKreditoren( newname )
-        if len( kreditoren ) > 0:
-            self._view.setKreditoren( kreditoren )
-            self._view.selectKreditor( kreditoren[0] )
+
+        #kreditoren = BusinessLogic.inst().getKreditoren( newname )
+        # if len( kreditoren ) > 0:
+        #     self._view.setKreditoren( kreditoren )
+        #     self._view.selectKreditor( kreditoren[0] )
+        self._view.resetKreditoren()
 
     def onMietobjektChanged( self, mobj_id:str ):
         print( "SonstausController.onMietobjektChanged: %s" % (mobj_id,) )
@@ -125,6 +128,17 @@ class SonstAusController( MdiChildController ):
         #i model.isChanged():
         #    return self._askWhatToDo( model )
         return True
+
+    def onSubmitChanges( self, x:XSonstAus ):
+        """
+        wird gerufen, wenn der Anwender OK im Edit-Feld-Bereich drückt.
+        Die Änderungen werden dann geprüft und in die Auszahlungentabelle übernommen.
+        :param x:
+        :return:
+        """
+        self._view.getAuszahlungenTableView().model().updateOrInsert( x )
+        self._view.clearEditFields()
+        self._view.setSaveButtonEnabled( True )
 
     def getViewTitle( self ) -> str:
         return "Rechnungen, Abgaben, Gebühren,... " + str( self._jahr )

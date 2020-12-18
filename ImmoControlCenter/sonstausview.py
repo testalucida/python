@@ -174,6 +174,7 @@ class SonstigeAusgabenView( QWidget ):
         self._masterobjektChangedCallback = None
         self._mietobjektChangedCallback = None
         self._kreditorChangedCallback = None
+        self._submitChangesCallback = None
         self._justEditing:XSonstAus = None
         self._suspendCallbacks = False
 
@@ -232,18 +233,6 @@ class SonstigeAusgabenView( QWidget ):
         self._btnClearBuchungsdatum.clicked.connect( self.onClearBuchungsdatum )
         self._buchungsdatumLayout.addWidget( self._btnClearBuchungsdatum )
 
-        # lbl = QLabel( self, text="Buchungstag und -monat: " )
-        # h = lbl.size().height()
-        # lbl.setFixedSize( QSize( 200, h ) )
-        # self._buchungsdatumLayout.addWidget( lbl )
-        # self._sbTag.setToolTip( "Buchungstag einstellen" )
-        # self._sbTag.setValue( 1 )
-        # self._buchungsdatumLayout.addWidget( self._sbTag )
-        # self._cboMonat.setToolTip( "Buchungsmonat einstellen" )
-        # for m in datehelper.monthList:
-        #     self._cboMonat.addItem( m )
-        # self._buchungsdatumLayout.addWidget( self._cboMonat )
-
     def _assembleObjektReference( self ):
         lbl = QLabel( self, text="Betroffenes Objekt: " )
         lbl.setFixedWidth( 150 )
@@ -286,11 +275,12 @@ class SonstigeAusgabenView( QWidget ):
         self._teBemerkung.setPlaceholderText( "Bemerkung zur Auszahlung" )
         self._teBemerkung.setMaximumSize( QtCore.QSize( 16777215, 50 ) )
         self._editRechnungLineLayout.addWidget( self._teBemerkung, stretch=1 )
-        self._btnOk.setIcon( QIcon( "./images/checked.png" ) )
-        self._btnOk.setDefault( True )
 
         vbox = QVBoxLayout()
+        self._btnOk.setIcon( QIcon( "./images/checked.png" ) )
+        self._btnOk.setDefault( True )
         self._btnOk.setToolTip( "Neue oder geänderte Daten in Tabelle übernehmen (kein Speichern)" )
+        self._btnOk.clicked.connect( self.onOkEditFields )
         vbox.addWidget( self._btnOk )
         self._btnClear.setIcon( QIcon( "./images/cancel.png" ) )
         self._btnClear.setToolTip( "Änderungen verwerfen und Felder leeren" )
@@ -307,6 +297,9 @@ class SonstigeAusgabenView( QWidget ):
 
     def onClearBuchungsdatum( self ):
         self._sdBuchungsdatum.clear()
+
+    def setSaveButtonEnabled( self, enable:bool=True ):
+        self._btnSave.setEnabled( enable )
 
     def onSave( self ):
         pass
@@ -333,6 +326,29 @@ class SonstigeAusgabenView( QWidget ):
             self._kreditorChangedCallback( self._cboMasterobjekt.currentText(),
                                            self._cboMietobjekt.currentText(),
                                            self._cboKreditor.currentText() )
+
+    def onOkEditFields( self, arg ):
+        """
+        OK gedrückt. Änderungen von den EditFields in die Tabelle übernehmen.
+        Changelog schreiben
+        :param arg:
+        :return:
+        """
+        if self._submitChangesCallback:
+            self._submitChangesCallback( self._getEditedXSonstAus() )
+
+    def _getEditedXSonstAus( self ) -> XSonstAus:
+        x:XSonstAus = self._justEditing if self._justEditing else XSonstAus()
+        x.buchungsdatum = self._sdBuchungsdatum.getDate()
+        x.master_name = self._cboMasterobjekt.currentText()
+        x.mobj_id = self._cboMietobjekt.currentText()
+        x.kreditor = self._cboKreditor.currentText()
+        x.buchungstext = self._cboBuchungstext.currentText()
+        x.rgdatum = self._sdRechnungsdatum.getDate()
+        x.umlegbar = self._cbUmlegbar.isChecked()
+        x.werterhaltend = self._cbWerterhaltend.isChecked()
+        x.rgtext = self._teBemerkung.toPlainText()
+        return x
 
     def onClearEditFields( self, arg ):
         self.clearEditFields()
@@ -384,14 +400,19 @@ class SonstigeAusgabenView( QWidget ):
         self._cboMietobjekt.clear()
         for obj in mietobjekte:
             self._cboMietobjekt.addItem( obj )
+        self._cboMietobjekt.setCurrentIndex( -1 )
 
     def selectMietobjekt( self, mobj_id:str ):
         self._cboMietobjekt.setCurrentText( mobj_id )
+
+    def clearMietobjekte( self ):
+        self._cboMietobjekt.clear()
 
     def setKreditoren( self, kreditoren:List[str] ):
         self._cboKreditor.clear()
         for k in kreditoren:
             self._cboKreditor.addItem( k )
+        self._cboKreditor.setCurrentIndex( -1 )
 
     def selectKreditor( self, kreditor:str ):
         self._cboKreditor.setCurrentText( kreditor )
@@ -408,23 +429,27 @@ class SonstigeAusgabenView( QWidget ):
     def getCurrentMietobjekt( self ) -> str:
         return self._cboMietobjekt.currentText()
 
+    def resetKreditoren( self ):
+        self._cboKreditor.setCurrentIndex( -1 )
+
     def clearEditFields( self ):
         self._suspendCallbacks = True
-        self._sdBuchungsdatum.clear()
+        #self._sdBuchungsdatum.clear()
         self._cboMasterobjekt.setCurrentIndex( -1 )
-        self._cboMietobjekt.setCurrentIndex( 0 )
-        self._cboKreditor.setCurrentIndex( 0 )
-        self._cboBuchungstext.setCurrentIndex( 0 )
+        self._cboMietobjekt.setCurrentIndex( -1 )
+        self._cboKreditor.setCurrentIndex( -1 )
+        self._cboBuchungstext.setCurrentIndex( -1 )
         self._sdRechnungsdatum.clear()
         self._feBetrag.clear()
         self._cbUmlegbar.setChecked( False )
         self._cbWerterhaltend.setChecked( False )
         self._teBemerkung.clear()
+        self._justEditing = None
         self._suspendCallbacks = False
 
     def provideEditFields( self, x:XSonstAus ):
         self.clearEditFields()
-        self._suspendCallbacks = True
+        #self._suspendCallbacks = True
         self._justEditing = x
         if x.buchungsdatum:
             y, m, d = datehelper.getDateParts( x.buchungsdatum )
@@ -480,6 +505,16 @@ class SonstigeAusgabenView( QWidget ):
         :return:
         """
         self._kreditorChangedCallback = cbfnc
+
+    def setSubmitChangesCallback( self, cbfnc ):
+        """
+        sets the one and only callback when the user hits the OK button in the
+        edit fields area.
+        The given callback function has to accept the edited XSonstAus object,
+        :param cbfnc:
+        :return:
+        """
+        self._submitChangesCallback = cbfnc
 
 
 

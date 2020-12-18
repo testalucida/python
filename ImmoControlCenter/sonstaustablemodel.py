@@ -105,6 +105,23 @@ class SonstAusTableModel( QAbstractTableModel ):
         self.doChangedCallback()  #implementiert im DictListTableModel
         return True
 
+    def updateOrInsert( self, x:XSonstAus ):
+        l = self._sonstauslist
+        if x.saus_id: # update of existing auszahlung
+            row = self.getRow( x )
+            idxfrom = self.index( row, 0 )
+            idxbis = self.index( row, len( self._headers ) )
+            self.dataChanged.emit( idxfrom, idxbis )
+        else:   # insert new auszahlung
+            print( "insert neue Auszahlung" )
+
+    def getRow( self, x:XSonstAus ) -> int:
+        for r in range( len( self._sonstauslist ) ):
+            e:XSonstAus = self._sonstauslist[r]
+            if e.saus_id == x.saus_id:
+                return r
+        raise Exception( "SonstAusTableModel.getRow(): can't find saus_id %d" % (x.saus_id) )
+
     def _writeChangeLog( self, index, value:float ) -> None:
         """
         Schreibt ein Änderungslog für den durch <index> spezifizierten Monat
