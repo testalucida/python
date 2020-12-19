@@ -1,8 +1,8 @@
 from PySide2 import QtWidgets, QtCore, QtGui
 from PySide2.QtCore import QSize, Qt, QDate
-from PySide2.QtGui import QIcon, QDoubleValidator, QFont
+from PySide2.QtGui import QIcon, QDoubleValidator, QFont, QIntValidator
 from PySide2.QtWidgets import QWidget, QComboBox, QLineEdit, QCheckBox, QPushButton, QCalendarWidget, \
-    QVBoxLayout, QDialog, QBoxLayout, QHBoxLayout, QTextEdit, QSpinBox, QLabel, QTableView
+    QVBoxLayout, QDialog, QBoxLayout, QHBoxLayout, QTextEdit, QSpinBox, QLabel, QTableView, QMessageBox, QSpacerItem
 from typing import List
 
 from interfaces import XSonstAus
@@ -133,6 +133,26 @@ class FloatEdit( QLineEdit ):
         floatval = QDoubleValidator()
         self.setValidator( floatval )
 
+    def getFloatValue( self ) -> float:
+        val = self.text()
+        if not val: val = "0.0"
+        return float( val )
+
+######################## Int Display  #############################
+class IntDisplay( QLineEdit ):
+    def __init__( self, parent=None ):
+        QLineEdit.__init__( self, parent )
+        intval = QIntValidator()
+        self.setValidator( intval )
+
+    def setIntValue( self, val:int ):
+        self.setText( str( val ) )
+
+    def getIntValue( self ) -> float:
+        val = self.text()
+        if not val: val = "0"
+        return int( val )
+
 #######################  EditableCombo ###########################
 class EditableCombo( QComboBox ):
     def __init__( self, parent=None ):
@@ -146,7 +166,18 @@ class SonstigeAusgabenView( QWidget ):
         self.setWindowTitle( "Sonstige Ausgaben: Rechnungen, Abgaben, Gebühren etc." )
         self._mainLayout = QtWidgets.QGridLayout( self )
         self._toolbarLayout = QHBoxLayout()
+        self._summenLayout = QHBoxLayout()
         self._btnSave = QPushButton( self )
+
+        self._idSummeAus = IntDisplay( self )
+        self._idSummeEin = IntDisplay( self )
+        self._idSummeW = IntDisplay( self )
+        self._idSummeNichtW = IntDisplay( self )
+        self._idSummeU = IntDisplay( self )
+        self._idSummeNichtU = IntDisplay( self )
+        self._summenfont = QFont( "Times New Roman", 16, weight=QFont.Bold )
+        self._summenartfont = QFont( "Times New Roman", 9 )
+
         self._cboBuchungsjahr = QtWidgets.QComboBox( self )
         self._tvAuszahlungen = TableViewExt( self )
 
@@ -183,6 +214,9 @@ class SonstigeAusgabenView( QWidget ):
     def _createGui( self ):
         self._assembleToolbar()
         self._mainLayout.addLayout( self._toolbarLayout, 0, 0, alignment=Qt.AlignLeft )
+        self._assembleSummen()
+        self._toolbarLayout.addStretch( 50 )
+        self._toolbarLayout.addLayout( self._summenLayout )
         self._mainLayout.addWidget( self._tvAuszahlungen, 1, 0, 1, 1 )
         self._assembleBuchungsdatum()
         self._mainLayout.addLayout( self._buchungsdatumLayout, 2, 0, alignment=Qt.AlignLeft )
@@ -212,7 +246,52 @@ class SonstigeAusgabenView( QWidget ):
         btn.setFixedSize( size )
         iconsize = QSize( 30, 30 )
         btn.setIconSize( iconsize )
-        self._toolbarLayout.addWidget( btn, stretch=0, alignment=Qt.AlignLeft )
+        self._toolbarLayout.addWidget( btn, stretch=0 )
+
+    def _assembleSummen( self ):
+        parent = None
+        #### Summe Auszahlungen
+        lay = self._createSummenLabel( parent, "Aus", self._idSummeAus )
+        self._summenLayout.addLayout( lay, stretch=0 )
+
+        #### Summe Einzahlungen
+        lay = self._createSummenLabel( parent, "Ein", self._idSummeEin )
+        self._summenLayout.addLayout( lay, stretch=0 )
+
+        #### Summe werterhaltend
+        lay = self._createSummenLabel( parent, "w", self._idSummeW )
+        self._summenLayout.addLayout( lay, stretch=0 )
+
+        #### Summe NICHT werterhaltend
+        lay = self._createSummenLabel( parent, "!w", self._idSummeNichtW )
+        self._summenLayout.addLayout( lay, stretch=0 )
+
+        #### Summe umlegbar
+        lay = self._createSummenLabel( parent, "u", self._idSummeU )
+        self._summenLayout.addLayout( lay, stretch=0 )
+
+        #### Summe NICHT umlegbar
+        lay = self._createSummenLabel( parent, "!u", self._idSummeNichtU )
+        self._summenLayout.addLayout( lay, stretch=0 )
+
+    def _createSummenLabel( self, parent, sumart:str, sumfield:IntDisplay ) -> QHBoxLayout:
+        lay = QHBoxLayout( parent )
+
+        lbl = QLabel( parent, text = "∑" )
+        lbl.setFont( self._summenfont )
+        lbl.setMaximumWidth( 15 )
+        lay.addWidget( lbl, stretch=0, alignment=Qt.AlignLeft | Qt.AlignVCenter )
+
+        lbl = QLabel( self, text=sumart )
+        lbl.setFont( self._summenartfont )
+        lbl.setMaximumWidth( 20 )
+        lay.addWidget( lbl, stretch=0, alignment=Qt.AlignLeft | Qt.AlignBottom )
+
+        sumfield.setMaximumWidth( 70 )
+        sumfield.setEnabled( False )
+        lay.addWidget( sumfield, stretch=0, alignment=Qt.AlignLeft | Qt.AlignVCenter )
+
+        return lay
 
     def _assembleBuchungsdatum( self ):
         lbl = QLabel( self, text="Buchungsdatum: " )
@@ -288,6 +367,24 @@ class SonstigeAusgabenView( QWidget ):
         vbox.addWidget( self._btnClear )
         self._editRechnungLineLayout.addLayout( vbox )
 
+    def setSummeAus( self, val:int ):
+        self._idSummeAus.setV
+
+    def setSummeEin( self, val:int ):
+        self._idSummeEin = val
+
+    def setSummeW( self, val:int ):
+        self._idSummeW = val
+
+    def setSummeNichtW( self, val:int ):
+        self._idSummeNichtW = val
+
+    def setSummeU( self, val: int ):
+        self._idSummeU = val
+
+    def setSummeNichtU( self, val:int ):
+        self._idSummeNichtU = val
+
     def onAddDayToBuchungsdatum( self ):
         val = self._sdBuchungsdatum.getDate()
         if val:
@@ -345,6 +442,7 @@ class SonstigeAusgabenView( QWidget ):
         x.kreditor = self._cboKreditor.currentText()
         x.buchungstext = self._cboBuchungstext.currentText()
         x.rgdatum = self._sdRechnungsdatum.getDate()
+        x.betrag = self._feBetrag.getFloatValue()
         x.umlegbar = self._cbUmlegbar.isChecked()
         x.werterhaltend = self._cbWerterhaltend.isChecked()
         x.rgtext = self._teBemerkung.toPlainText()
@@ -471,6 +569,16 @@ class SonstigeAusgabenView( QWidget ):
         self._teBemerkung.setText( x.rgtext )
         self._suspendCallbacks = False
 
+    def showException( self, title: str, exception: str, moretext: str = None ):
+        # todo: show Qt-Errordialog
+        msgbox = QtWidgets.QMessageBox()
+        msgbox.setWindowTitle( title )
+        msgbox.setIcon( QMessageBox.Critical )
+        msgbox.setText( exception )
+        if moretext:
+            msgbox.setInformativeText( moretext )
+        msgbox.exec_()
+
     ################# SET CALLBACKS  ############################
 
     def setBuchungsjahrChangedCallback( self, cbfnc ):
@@ -515,6 +623,7 @@ class SonstigeAusgabenView( QWidget ):
         :return:
         """
         self._submitChangesCallback = cbfnc
+
 
 
 

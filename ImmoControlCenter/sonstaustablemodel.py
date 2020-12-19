@@ -44,6 +44,8 @@ class SonstAusTableModel( QAbstractTableModel ):
         x = self._sonstauslist[indexrow]
         key = self._keylist[indexcolumn]
         val = x.__dict__[key]
+        if indexcolumn == self._columnBetrag:
+            val = "%.2f" % (val)
         if indexcolumn == self._columnWerterhaltend:
             val = 'w' if val else ''
         if indexcolumn == self._columnUmlegbar:
@@ -98,22 +100,20 @@ class SonstAusTableModel( QAbstractTableModel ):
     def isChanged( self ) -> bool:
         return any( self._changes )
 
-    def setData( self, index, value ):
-        #todo
-        #self.dataChanged.emit( sumindex, sumindex )
-        self._writeChangeLog( index, value )
-        self.doChangedCallback()  #implementiert im DictListTableModel
-        return True
-
     def updateOrInsert( self, x:XSonstAus ):
         l = self._sonstauslist
+        cols = len( self._headers )
         if x.saus_id: # update of existing auszahlung
             row = self.getRow( x )
             idxfrom = self.index( row, 0 )
-            idxbis = self.index( row, len( self._headers ) )
+            idxbis = self.index( row, cols-1 )
             self.dataChanged.emit( idxfrom, idxbis )
         else:   # insert new auszahlung
-            print( "insert neue Auszahlung" )
+            l.append( x )
+            rows = self.rowCount()
+            idxfrom = self.index( rows-1, 0 )
+            idxbis = self.index( rows-1, cols-1 )
+            self.layoutChanged.emit()
 
     def getRow( self, x:XSonstAus ) -> int:
         for r in range( len( self._sonstauslist ) ):

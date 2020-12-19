@@ -136,9 +136,13 @@ class SonstAusController( MdiChildController ):
         :param x:
         :return:
         """
-        self._view.getAuszahlungenTableView().model().updateOrInsert( x )
-        self._view.clearEditFields()
-        self._view.setSaveButtonEnabled( True )
+        msg = self._validateEditFields( x )
+        if len( msg ) == 0:
+            self._view.getAuszahlungenTableView().model().updateOrInsert( x )
+            self._view.clearEditFields()
+            self._view.setSaveButtonEnabled( True )
+        else:
+            self._view.showException( "Validation Fehler", "Falsche oder fehlende Daten bei der Erfassung der Auszahlung", msg )
 
     def getViewTitle( self ) -> str:
         return "Rechnungen, Abgaben, Gebühren,... " + str( self._jahr )
@@ -149,6 +153,23 @@ class SonstAusController( MdiChildController ):
         :return:
         """
         print( "ServiceController.save()" )
+
+    def _validateEditFields( self, x:XSonstAus ) -> str:
+        """
+        Prüft die Edit-Felder.
+        :param x: zu prüfendes XSonstAus-OBjekt
+        :return: FEhlermeldung, wenn die Validierung nicht i.O. ist, sonst ""
+        """
+        if x.master_name == "Haus":
+            return "Kein Objektbezug angegeben."
+        if x.kreditor == "":
+            return "Kein Kreditor angegeben."
+        if not x.buchungsdatum and not x.rgdatum:
+            return "Entweder Buchungs- oder Rechnungsdatum muss angegeben werden."
+        print( "betrag: ", x.betrag )
+        if x.betrag == 0:
+            return "Kein Betrag angegeben."
+        return ""
 
 def test():
     import sys
