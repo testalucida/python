@@ -17,6 +17,7 @@ class BusinessLogic:
             BusinessLogic.__instance = self
         self._db: DbAccess
         self._masterundmietobjekte:List[Dict] = None
+        #self._kreditorleistungen:List[Dict] = None
 
     @staticmethod
     def inst() -> __instance:
@@ -35,6 +36,7 @@ class BusinessLogic:
 
         self._db = DbAccess( dbname )
         self._db.open()
+        #self._kreditorleistungen = self._db.getKreditorleistungen()
 
     def terminate(self):
         self._db.close()
@@ -102,6 +104,30 @@ class BusinessLogic:
             self._db.insertMtlEinAus( vwg["vwg_id"], einausart.HGV, jahr, commit=False )
         self._db.commit()
 
+    def insertSonstigeAuszahlung( self, x:XSonstAus ) -> None:
+        # typischerweise ist hier zwar master_name, aber nicht master_id besetzt.
+        # Also erst die master_id ermitteln
+        if x.master_id == 0:
+            x.master_id = self._db.getMasterId( x.master_name )
+        if x.master_id <= 0:
+            raise Exception( "couldn't get master_id for master_name '%s' " % (x.master_name))
+        self._db.insertSonstAus( x, True )
+        x.saus_id = self._db.getMaxId( "sonstaus", "saus_id" )
+        self._checkKreditorleistung( x.master_id, x.mobj_id, x.kreditor, x.buchungstext )
+
+    def _checkKreditorleistung( self, master_id:int, mobj_id:str, kreditor:str, buchungstext:str ) -> None:
+        """
+        Prüft, ob eine gegebene Kreditorleistung schon in der Datenbank existiert.
+        Wenn nicht, wird sie angelegt.
+        :param master_id:
+        :param mobj_id:
+        :param kreditor:
+        :param buchungstext:
+        :return:
+        """
+        if self._db.existsKreditorleistung( master_id, mobj_id, kreditor, buchungstext ) < 1:
+            self._db.insertKreditorleistung( master_id, mobj_id, kreditor, buchungstext )
+
     def updateMietzahlungen( self, changes: Dict[int, Dict] ) -> None:
         self._updateMtlEinAus( changes )
 
@@ -129,6 +155,13 @@ class BusinessLogic:
             for monat, betrag in change.items():
                 self._db.updateMtlEinAus( meinaus_id, monat, betrag, False )
         self._db.commit()
+
+    def updateSonstigeAuszahlung( self, x:XSonstAus ) -> None:
+        self._db.updateSonstAus( x, True )
+        self._checkKreditorleistung( x.master_id, x.mobj_id, x.kreditor, x.buchungstext )
+
+    def deleteSonstigeAuszahlung( self, x:XSonstAus ) -> None:
+        self._db.deleteSonstAus( x.saus_id )
 
     def getSollmietenMonat( self, jahr:int, monat:int ) -> List[Dict]:
         return self._db.getSollmietenMonat( jahr, monat )
@@ -233,7 +266,7 @@ class BusinessLogic:
         if self._masterundmietobjekte is None:
             self._masterundmietobjekte = self._db.getMasterUndMietobjekte()
         master_id = self.getMasteridFromMastername( master_name )
-        mietobjekte:List[str] = []
+        mietobjekte:List[str] = ["",]
         for d in self._masterundmietobjekte:
             if d["master_id"] == master_id:
                 mietobjekte.append( d["mobj_id"] )

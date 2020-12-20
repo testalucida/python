@@ -175,8 +175,7 @@ class DbAccess:
         sql = "select distinct kreditor " \
               "from kreditorleistung k " \
               "inner join masterobjekt m on m.master_id = k.master_id " \
-              "where m.master_name = '%s' " \
-              "order by kreditor " % ( master_name )
+              "where m.master_name = '%s' " % ( master_name )
         rowlist = self._doRead( sql )
         list = [x[0] for x in rowlist]
         list = sorted( list, key=str.casefold )
@@ -188,6 +187,25 @@ class DbAccess:
         list = [x[0] for x in rowlist]
         list = sorted( list, key=str.casefold )
         return list
+
+    def getKreditorleistungen( self ) -> List[Dict]:
+        sql = "select distinct k.kreditor, k.master_id, m.master_name, k.mobj_id, buchungstext " \
+              "from kreditorleistung k " \
+              "inner join masterobjekt m on m.master_id = k.master_id "
+        dictlist = self._doReadAllGetDict( sql )
+        dictlist = sorted( dictlist, key=lambda x: ( x["master_name"].lower(), x["kreditor"].lower(), x["mobj_id"].lower(), x["buchungstext"] ) )
+        return dictlist
+
+    def existsKreditorleistung( self, master_id:int, mobj_id:str, kreditor:str, buchungstext:str ) -> bool:
+        sql = "select count(*) from kreditorleistung " \
+              "where master_id = %d " % (master_id)
+        if mobj_id:
+            sql += " and mobj_id = '" + mobj_id + "' "
+        sql += " and kreditor = '%s' " \
+               "and buchungstext = '%s' " % (kreditor, buchungstext)
+        tuplelist = self._doRead( sql )
+        n = tuplelist[0][0]
+        return n
 
     def getBuchungstexte( self, kreditor:str ) -> List[str]:
         sql = "select buchungstext from kreditorleistung where kreditor = '%s' " % ( kreditor )
@@ -224,6 +242,14 @@ class DbAccess:
         dictlist = self._doReadAllGetDict( sql )
         return dictlist
 
+    def getMasterId( self, master_name:str ) -> int:
+        sql = "select master_id from masterobjekt where master_name = '%s' " % (master_name)
+        r:List[Tuple] = self._doRead( sql )
+        try:
+            return r[0][0]
+        except:
+            return -1
+
     def insertMietverhaeltnis( self, d:Dict, commit:bool=True ) -> int:
         sql = "insert into mietverhaeltnis " \
               "(mietobjekt_id, von, bis, name, vorname, telefon, mobil, mailto, anzahl_pers, mietkonto, bemerkung1, bemerkung2) " \
@@ -246,7 +272,7 @@ class DbAccess:
               "values( '%s', '%s', %s, %f, %f ) " % ( d["vwg_id"], d["von"], bis, d["netto"], d["ruezufue"] )
         return self._doWrite( sql, commit )
 
-    def insertKreditorleistung( self, kreditor:str, master_id:int, mobj_id:str, buchungstext:str, umlegbar:int=0, commit:bool=True ):
+    def insertKreditorleistung( self, master_id:int, mobj_id:str, kreditor:str, buchungstext:str, umlegbar:int=0, commit:bool=True ):
         if buchungstext is None: buchungstext = ""
         if mobj_id is None: mobj_id = ""
         sql = "insert into kreditorleistung " \
@@ -309,6 +335,10 @@ class DbAccess:
                                         x.buchungsjahr,
                                         x.buchungstext,
                                         x.saus_id )
+        return self._doWrite( sql, commit )
+
+    def deleteSonstAus( self, saus_id:int, commit:bool=True ) -> int:
+        sql = "delete from sonstaus where saus_id = %d; " % (saus_id)
         return self._doWrite( sql, commit )
 
     def insertVerwalter( self, d:Dict, commit:bool=True ) -> int:
@@ -376,6 +406,9 @@ class DbAccess:
 def test():
     db = DbAccess( "immo_TEST.db" )
     db.open()
+
+    #dictlist = db.getKreditorleistungen()
+    n = db.existsKreditorleistung( 4, "zweibrueck", "EVS Abfall", "BNR 6611020394" )
 
     x = XSonstAus()
     x.saus_id = 1

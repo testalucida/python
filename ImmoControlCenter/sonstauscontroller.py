@@ -1,8 +1,6 @@
-from PySide2.QtCore import QModelIndex
-from PySide2.QtGui import QStandardItem, Qt
-from PySide2.QtWidgets import QWidget, QAbstractItemView
-from abc import ABC, abstractmethod
-from typing import List
+from PySide2.QtCore import QModelIndex, QPoint
+from PySide2.QtWidgets import QWidget, QAbstractItemView, QAction, QMenu
+from typing import List, Dict
 import datetime
 from business import BusinessLogic
 from mdichildcontroller import MdiChildController
@@ -22,6 +20,8 @@ class SonstAusController( MdiChildController ):
         curr = datehelper.getCurrentYearAndMonth()
         self._jahr:int = curr["year"]
         self._view:SonstigeAusgabenView = None
+        self._duplicateAction:QAction = QAction( "Auszahlung duplizieren" )
+        self._deleteAction:QAction = QAction( "Auszahlung löschen" )
 
     def createView( self ) -> QWidget:
         sausview = SonstigeAusgabenView()
@@ -35,9 +35,9 @@ class SonstAusController( MdiChildController ):
         sausview.setBuchungsdatum( 1, monat )
         masterobjekte = BusinessLogic.inst().getMasterobjekte()
         sausview.setMasterobjekte( masterobjekte )
-        kreditoren = BusinessLogic.inst().getAlleKreditoren()
-        sausview.setKreditoren( kreditoren )
-        self._provideBuchungstexte( masterobjekte[0], None, kreditoren[0] )
+        #kreditoren = BusinessLogic.inst().getAlleKreditoren()
+        #sausview.setKreditoren( kreditoren )
+        #self._provideBuchungstexte( masterobjekte[0], None, kreditoren[0] )
         sonstauslist = BusinessLogic.inst().getSonstigeAusgaben( self._jahr )
         tm = SonstAusTableModel( sonstauslist )
         sausview.setAuszahlungenTableModel( tm )
@@ -48,15 +48,41 @@ class SonstAusController( MdiChildController ):
         tv.horizontalHeader().setMinimumSectionSize( 0 )
         tv.resizeColumnsToContents()
         tv.setSortingEnabled( True )  # Achtung: damit wirklich sortiert werden kann, muss die Sortierbarkeit im Model eingeschaltet werden
+        tm.setSortable( True )
         tv.clicked.connect( self.onAuszahlungenLeftClick )
         tv.customContextMenuRequested.connect( self.onAuszahlungenRightClick )
+        ## set callbacks:
         sausview.setBuchungsjahrChangedCallback( self.onBuchungsjahrChanged )
+        sausview.setSaveActionCallback( self.onSave )
         sausview.setMasterobjektChangedCallback( self.onMasterobjektChanged )
         sausview.setMietobjektChangedCallback( self.onMietobjektChanged )
         sausview.setKreditorChangedCallback( self.onKreditorChanged )
         sausview.setSubmitChangesCallback( self.onSubmitChanges )
 
         return sausview
+
+    def onSave( self ):
+        model:SonstAusTableModel = self._view.getAuszahlungenTableView().model()
+        changes:Dict[str, List[XSonstAus]] = model.getChanges()
+        for actionstring, xlist in changes.items():
+            for x in xlist:
+                self._dispatchSaveAction( actionstring, x )
+        model.resetChanges()
+        self._view.setSaveButtonEnabled( False )
+
+    def _dispatchSaveAction( self, actionstring:str, x:XSonstAus ):
+        try:
+            idx = constants.actionList.index( actionstring )
+        except:
+            raise Exception( "SonstAusController._dispatchSaveAction(): unknown action '%s'" % (actionstring) )
+        if idx == constants.tableAction.INSERT:
+            BusinessLogic.inst().insertSonstigeAuszahlung( x )
+        elif idx == constants.tableAction.UPDATE:
+            BusinessLogic.inst().updateSonstigeAuszahlung( x )
+        elif idx == constants.tableAction.DELETE:
+            BusinessLogic.inst().deleteSonstigeAuszahlung( x )
+        else:
+            raise Exception( "SonstAusController._dispatchSaveAction(): known but unhandled action '%s'" % (actionstring) )
 
     def onAuszahlungenLeftClick( self, index: QModelIndex ):
         """
@@ -72,32 +98,47 @@ class SonstAusController( MdiChildController ):
         self._view.provideEditFields( x )
         #print( "SONSTAUSCONTROLLER: index %d/%d clicked. Value=%s" % (index.row(), index.column(), str( val )) )
 
-    def onAuszahlungenRightClick( self, index: QModelIndex ):
+    def onAuszahlungenRightClick( self, point: QPoint ):
+        """
+        Kontextmenü öffnen, wenn auf eine Zeile geklickt wurde.
+        :param index:
+        :return:
+        """
         tv = self._view.getAuszahlungenTableView()
-        for index in tv.selectedIndexes():
-            print( "SONSTAUSCONTROLLER: cell %d/%d RIGHT clicked." % (index.row(), index.column()) )
+        index = tv.indexAt( point )
+        row = index.row()
+        if row < 0 or index.column() < 0: return  # nicht auf eine  Zeile geklickt
+        menu = QMenu()
+        menu.addAction( self._duplicateAction )
+        menu.addAction( self._deleteAction )
+        action = menu.exec_( tv.viewport().mapToGlobal( point ) )
+        if action:
+            model:SonstAusTableModel = tv.model()
+            x:XSonstAus = model.getXSonstAus( row )
+            if action == self._deleteAction:
+                model.delete( x )
+            elif action == self._duplicateAction:
+                model.duplicate( x )
+            self._view.setSaveButtonEnabled( True )
 
     def onBuchungsjahrChanged( self, newjahr:int ):
         print( "SonstausController.onBuchungsjahrChanged" )
 
     def onMasterobjektChanged( self, newname:str ):
-        print( "SonstausController.onMasterobjektChanged: %s" % (newname,) )
+        #print( "SonstausController.onMasterobjektChanged: %s" % (newname,) )
         self._view.clearMietobjekte()
         mietobjekte = BusinessLogic.inst().getMietobjekte( newname )
         if len( mietobjekte ) > 0:
             self._view.setMietobjekte( mietobjekte )
-
-        #kreditoren = BusinessLogic.inst().getKreditoren( newname )
-        # if len( kreditoren ) > 0:
-        #     self._view.setKreditoren( kreditoren )
-        #     self._view.selectKreditor( kreditoren[0] )
-        self._view.resetKreditoren()
+        self._view.clearKreditoren()
+        kreditoren = BusinessLogic.inst().getKreditoren( newname )
+        if len( kreditoren ) > 0:
+            self._view.setKreditoren( kreditoren )
 
     def onMietobjektChanged( self, mobj_id:str ):
         print( "SonstausController.onMietobjektChanged: %s" % (mobj_id,) )
 
     def onKreditorChanged( self, master_name:str, mobj_id:str, kreditor:str ):
-        print( "SonstausController.onKreditorChanged: %s, %s, %s" % (master_name, mobj_id, kreditor) )
         self._provideBuchungstexte( master_name, mobj_id, kreditor )
 
     def _provideBuchungstexte( self, master_name:str, mobj_id:str, kreditor:str  ):

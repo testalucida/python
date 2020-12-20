@@ -1,8 +1,8 @@
 from PySide2 import QtWidgets, QtCore, QtGui
-from PySide2.QtCore import QSize, Qt, QDate
+from PySide2.QtCore import QSize, Qt, QDate, QPoint
 from PySide2.QtGui import QIcon, QDoubleValidator, QFont, QIntValidator
 from PySide2.QtWidgets import QWidget, QComboBox, QLineEdit, QCheckBox, QPushButton, QCalendarWidget, \
-    QVBoxLayout, QDialog, QBoxLayout, QHBoxLayout, QTextEdit, QSpinBox, QLabel, QTableView, QMessageBox, QSpacerItem
+    QVBoxLayout, QDialog, QBoxLayout, QHBoxLayout, QTextEdit, QSpinBox, QLabel, QTableView, QMessageBox
 from typing import List
 
 from interfaces import XSonstAus
@@ -200,8 +200,11 @@ class SonstigeAusgabenView( QWidget ):
         self._teBemerkung = QTextEdit( self )
         self._btnOk = QPushButton( self )
         self._btnClear = QPushButton( self )
+        # actions für ContextMenu
+        #self._contextMenuActions:List[QAction] = None
         # Callbacks
         self._buchungsjahrChangedCallback = None
+        self._saveActionCallback = None
         self._masterobjektChangedCallback = None
         self._mietobjektChangedCallback = None
         self._kreditorChangedCallback = None
@@ -217,6 +220,8 @@ class SonstigeAusgabenView( QWidget ):
         self._assembleSummen()
         self._toolbarLayout.addStretch( 50 )
         self._toolbarLayout.addLayout( self._summenLayout )
+
+        #self._tvAuszahlungen.customContextMenuRequested.connect( self.onTableViewRightClicked )
         self._mainLayout.addWidget( self._tvAuszahlungen, 1, 0, 1, 1 )
         self._assembleBuchungsdatum()
         self._mainLayout.addLayout( self._buchungsdatumLayout, 2, 0, alignment=Qt.AlignLeft )
@@ -328,6 +333,7 @@ class SonstigeAusgabenView( QWidget ):
 
     def _assembleRechnungsdaten( self ):
         self._cboKreditor.setToolTip( "Kreditor" )
+        self._cboKreditor.setFixedWidth( 200 )
         self._cboKreditor.currentIndexChanged.connect( self.onKreditorChanged )
         self._editRechnungLineLayout.addWidget( self._cboKreditor )
         self._cboBuchungstext.setToolTip( "Identifikation der Zahlung durch Rechnungsnummer oder Buchungstext" )
@@ -367,6 +373,9 @@ class SonstigeAusgabenView( QWidget ):
         vbox.addWidget( self._btnClear )
         self._editRechnungLineLayout.addLayout( vbox )
 
+    # def setContextMenuActions( self, actions:List[QAction] ) -> None:
+    #     self._contextMenuActions = actions
+
     def setSummeAus( self, val:int ):
         self._idSummeAus.setV
 
@@ -399,7 +408,8 @@ class SonstigeAusgabenView( QWidget ):
         self._btnSave.setEnabled( enable )
 
     def onSave( self ):
-        pass
+        if self._saveActionCallback:
+            self._saveActionCallback()
 
     def onBuchungsjahrChanged( self, newindex ):
         """
@@ -426,8 +436,7 @@ class SonstigeAusgabenView( QWidget ):
 
     def onOkEditFields( self, arg ):
         """
-        OK gedrückt. Änderungen von den EditFields in die Tabelle übernehmen.
-        Changelog schreiben
+        OK gedrückt. Änderungen an Callback-Funktion melden.
         :param arg:
         :return:
         """
@@ -436,9 +445,12 @@ class SonstigeAusgabenView( QWidget ):
 
     def _getEditedXSonstAus( self ) -> XSonstAus:
         x:XSonstAus = self._justEditing if self._justEditing else XSonstAus()
+        x.buchungsjahr = int( self._cboBuchungsjahr.currentText() )
         x.buchungsdatum = self._sdBuchungsdatum.getDate()
-        x.master_name = self._cboMasterobjekt.currentText()
-        x.mobj_id = self._cboMietobjekt.currentText()
+        idx = self._cboMasterobjekt.currentIndex()
+        x.master_name = "" if idx < 0 else self._cboMasterobjekt.currentText()
+        idx = self._cboMietobjekt.currentIndex()
+        x.mobj_id = "" if idx < 0 else self._cboMietobjekt.currentText()
         x.kreditor = self._cboKreditor.currentText()
         x.buchungstext = self._cboBuchungstext.currentText()
         x.rgdatum = self._sdRechnungsdatum.getDate()
@@ -530,6 +542,9 @@ class SonstigeAusgabenView( QWidget ):
     def resetKreditoren( self ):
         self._cboKreditor.setCurrentIndex( -1 )
 
+    def clearKreditoren( self ):
+        self._cboKreditor.clear()
+
     def clearEditFields( self ):
         self._suspendCallbacks = True
         #self._sdBuchungsdatum.clear()
@@ -581,13 +596,21 @@ class SonstigeAusgabenView( QWidget ):
 
     ################# SET CALLBACKS  ############################
 
-    def setBuchungsjahrChangedCallback( self, cbfnc ):
+    def setBuchungsjahrChangedCallback( self, cbfnc ) -> None:
         """
         Die callback-Funktion muss als Argument das neu eingestellte Jahr als integer akzeptieren
         :param cbfnc:
         :return:
         """
         self._buchungsjahrChangedCallback = cbfnc
+
+    def setSaveActionCallback( self, cbfnc ) -> None:
+        """
+        Die callback-FUnktion braucht keine Parameter empfangen.
+        :param cbfnc:
+        :return:
+        """
+        self._saveActionCallback = cbfnc
 
     def setMasterobjektChangedCallback( self, cbfnc ):
         """

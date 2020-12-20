@@ -102,8 +102,7 @@ class TableViewExt( QTableView ):
         print( "index %d/%d clicked. Value=%s" % (index.row(), index.column(), str( val )) )
 
     def onRightClick( self, index: QModelIndex ):
-        for index in self.selectedIndexes():
-            print( "cell %d/%d RIGHT clicked." % (index.row(), index.column()) )
+        pass
 
     def setAlternatingRowColors( self, on:bool ):
         super().setAlternatingRowColors( on )

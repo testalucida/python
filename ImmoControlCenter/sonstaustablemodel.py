@@ -1,10 +1,13 @@
+import copy
 import numbers
+from functools import cmp_to_key
 
 from PySide2.QtGui import QFont, QBrush, QColor
 from PySide2.QtCore import *
 from typing import List, Dict, Any
 from interfaces import XSonstAus
 from enum import Enum
+import constants
 
 class SonstAusTableModel( QAbstractTableModel ):
     def __init__( self, sonstausList:List[XSonstAus] ):
@@ -16,10 +19,17 @@ class SonstAusTableModel( QAbstractTableModel ):
         """
         self._keylist = ("werterhaltend", "umlegbar", "master_name", "mobj_id", "kreditor", "buchungstext", "rgdatum", "buchungsdatum", "betrag", "rgtext")
         self._headers = ("w", "u", "Haus", "Whg", "Kreditor", "Buchungstext", "Rg.datum", "Buch.datum", "Betrag", "Rg.text")
-        self._changes:Dict[int, Dict] = {}
+        # Änderungslog vorbereiten:
+        self._changes:Dict[str, List[XSonstAus]] = {}
+        for s in constants.actionList:
+            self._changes[s] = list()
         """
         Aufbau von _changes:
-        #todo
+        {
+            "INSERT": List[XSonstAus],
+            "UPDATE": List[XSonstAus],
+            "DELETE": List[XSonstAus]
+        }
         """
         self._greyBrush = QBrush( Qt.gray )
         self._redBrush = QBrush( Qt.red )
@@ -30,6 +40,9 @@ class SonstAusTableModel( QAbstractTableModel ):
         self._columnBuchungsdatum = 7
         self._columnBetrag = 8
         self._sortable = False
+
+    def setSortable( self, sortable:bool=True ):
+        self._sortable = sortable
 
     def rowCount( self, parent:QModelIndex=None ) -> int:
         return len( self._sonstauslist )
@@ -92,9 +105,10 @@ class SonstAusTableModel( QAbstractTableModel ):
         return None
 
     def resetChanges( self ):
-        self._changes.clear()
+        for k in self._changes.keys():
+            self._changes[k] = list()
 
-    def getChanges( self ) -> Dict[int, Dict]:
+    def getChanges( self ) -> Dict[str, List[XSonstAus]]:
         return self._changes
 
     def isChanged( self ) -> bool:
@@ -107,13 +121,30 @@ class SonstAusTableModel( QAbstractTableModel ):
             row = self.getRow( x )
             idxfrom = self.index( row, 0 )
             idxbis = self.index( row, cols-1 )
+            self._writeChangeLog( constants.tableAction.UPDATE, x )
             self.dataChanged.emit( idxfrom, idxbis )
         else:   # insert new auszahlung
             l.append( x )
-            rows = self.rowCount()
-            idxfrom = self.index( rows-1, 0 )
-            idxbis = self.index( rows-1, cols-1 )
+            self._writeChangeLog( constants.tableAction.INSERT, x )
             self.layoutChanged.emit()
+
+    def delete( self, x:XSonstAus ) -> None:
+        self._sonstauslist.remove( x )
+        self._writeChangeLog( constants.tableAction.DELETE, x )
+        self.layoutChanged.emit()
+
+    def duplicate( self, x:XSonstAus ):
+        x2:XSonstAus = copy.copy( x )
+        x2.saus_id = 0
+        l = self._sonstauslist
+        for i in range( len( l ) ):
+            tmp:XSonstAus = l[i]
+            if tmp.saus_id == x.saus_id:
+                l.insert( i, x2 )
+                self._writeChangeLog( constants.tableAction.INSERT, x2 )
+                self.layoutChanged.emit()
+                return
+        raise Exception( "Auszahlung mit ID = %d nicht in der Auszahlungsliste gefunden." % (x.saus_id) )
 
     def getRow( self, x:XSonstAus ) -> int:
         for r in range( len( self._sonstauslist ) ):
@@ -122,26 +153,37 @@ class SonstAusTableModel( QAbstractTableModel ):
                 return r
         raise Exception( "SonstAusTableModel.getRow(): can't find saus_id %d" % (x.saus_id) )
 
-    def _writeChangeLog( self, index, value:float ) -> None:
+    def _writeChangeLog( self, actionId:constants.tableAction, x:XSonstAus ) -> None:
         """
-        Schreibt ein Änderungslog für den durch <index> spezifizierten Monat
-        :param index: spezifiert Zeile (meinaus_id) und Spalte (Monat)
-        :param value: neuer Monatswert
-        :return: None
+        Schreibt ein in-memory-Log der eingefügten, geänderten, gelöschten Zahlungen.
+        Dieses kann über getChanges() abgerufen werden.
         """
-        # get meinaus_id
-        ididx = self.index( index.row(), self._meinausidIdx )
-        meinaus_id = self.data( ididx, Qt.DisplayRole )
-        # get column name
-        header = self.headerData( index.column(), Qt.Horizontal, Qt.DisplayRole )
-        if not meinaus_id in self._changes:
-            self._changes[meinaus_id] = {}
-        self._changes[meinaus_id][header] = value
+        actionstring = constants.actionList[actionId]
+        xlist:List[XSonstAus] = self._changes[actionstring]
+        if not x in xlist:
+            xlist.append( x )
 
+    sort_col = -1
+    sort_reverse = False
     def sort( self, col:int, order: Qt.SortOrder ) -> None:
         if not self._sortable: return
         """sort table by given column number col"""
         self.emit(SIGNAL("layoutAboutToBeChanged()"))
+        global sort_col
+        sort_col = col
+        global sort_reverse
         sort_reverse = True if order == Qt.SortOrder.AscendingOrder else False
-        self.rowlist = sorted( self.rowlist, key=lambda x: x[self._headers[col]], reverse=sort_reverse )
+        self._sonstauslist = sorted( self._sonstauslist, key=cmp_to_key( self.cmpXSonstAus ) )
         self.emit(SIGNAL("layoutChanged()"))
+
+    def cmpXSonstAus( self, x1:XSonstAus, x2:XSonstAus ) -> int:
+        global sort_col, sort_reverse
+        key = self._keylist[sort_col]
+        v1 = x1.__dict__[key]
+        v2 = x2.__dict__[key]
+        if isinstance( v1, str ):
+            v1 = v1.lower()
+            v2 = v2.lower()
+        if v1 < v2: return -1 if sort_reverse else 1
+        if v1 > v2: return 1 if sort_reverse else -1
+        if v1 == v2: return 0

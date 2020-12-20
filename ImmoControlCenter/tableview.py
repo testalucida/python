@@ -20,8 +20,7 @@ class TableView( TableViewExt ):
         print( "cell %d/%d clicked." % ( index.row(), index.column() ) )
 
     def onRightClick(self, qPoint:QPoint):
-        for index in self.selectedIndexes():
-            print( "cell %d/%d RIGHT clicked." % ( index.row(), index.column() ) )
+        pass
 
     def setModel(self, model: DictListTableModel) -> None:
         super().setModel( model )
