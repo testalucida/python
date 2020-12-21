@@ -15,8 +15,6 @@ class CheckController( MdiChildController, ABC ):
         curr = datehelper.getCurrentYearAndMonth()
         self._currentYear:int = curr["year"]
         self._currentCheckMonth:int = curr["month"]
-        self.changedCallback = None
-        self.savedCallback = None
 
     def getSelectedJahr( self ) -> int:
         return self._currentYear
@@ -64,42 +62,6 @@ class CheckController( MdiChildController, ABC ):
         checkView.tableView.setColumnHidden( 2, True )
         checkView.tableView.setColumnHidden( 3, True )
         return checkView
-
-    def onCloseSubWindow( self,  window:MdiSubWindow ) -> bool:
-        """
-        wird als Callback-Funktion vom zu schließenden MdiSubWindow aufgerufen.
-        Prüft, ob es am Model der View, die zu diesem Controller gehört, nicht gespeicherte
-        Änderungen gibt. Wenn ja, wird der Anwender gefragt, ob er speichern möchte.
-        :param window:
-        :return: True, wenn keine Änderungen offen sind.
-                 True, wenn zwar Änderungen offen sind, der Anwender sich aber für Speichern entschlossen hat und
-                 erfolgreicht gespeichert wurde.
-                 True, wenn der Anwender offene Änderungen verwirft
-                 False, wenn der Anwender offene Änderungen nicht verwerfen aber auch nicht speichern will.
-
-        """
-        model: CheckTableModel = self._subwin.widget().getModel()
-        if model.isChanged():
-            return self._askWhatToDo( model )
-        return True
-
-    def _askWhatToDo( self, model:CheckTableModel ) -> bool:
-        # create a modal message box that offers some choices (Yes|No|Cancel)
-        box = QMessageBox()
-        box.setWindowTitle( 'Nicht gespeicherte Änderung(en)' )
-        box.setText( "Daten dieser Tabelle wurden geändert." )
-        box.setInformativeText( "Sollen die Änderungen gespeichert werden?" )
-        box.setStandardButtons( QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel )
-        box.setDefaultButton( QMessageBox.Save )
-        result = box.exec_()
-
-        if result == QMessageBox.Save:
-            self.writeChanges( model.getChanges() )
-            return True
-        elif result == QMessageBox.Discard:
-            return True
-        elif result == QMessageBox.Cancel:
-            return False
 
     def onDataChanged( self ):
         # wird vom DictListTableModel gerufen

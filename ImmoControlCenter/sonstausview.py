@@ -5,6 +5,7 @@ from PySide2.QtWidgets import QWidget, QComboBox, QLineEdit, QCheckBox, QPushBut
     QVBoxLayout, QDialog, QBoxLayout, QHBoxLayout, QTextEdit, QSpinBox, QLabel, QTableView, QMessageBox
 from typing import List
 
+from icctablemodel import IccTableModel
 from interfaces import XSonstAus
 from sonstaustablemodel import SonstAusTableModel
 from tableviewext import TableViewExt
@@ -163,7 +164,7 @@ class EditableCombo( QComboBox ):
 class SonstigeAusgabenView( QWidget ):
     def __init__( self, parent=None ):
         QWidget.__init__( self, parent )
-        self.setWindowTitle( "Sonstige Ausgaben: Rechnungen, Abgaben, Gebühren etc." )
+        #self.setWindowTitle( "Sonstige Ausgaben: Rechnungen, Abgaben, Gebühren etc." )
         self._mainLayout = QtWidgets.QGridLayout( self )
         self._toolbarLayout = QHBoxLayout()
         self._summenLayout = QHBoxLayout()
@@ -583,6 +584,9 @@ class SonstigeAusgabenView( QWidget ):
         self._cbWerterhaltend.setChecked( x.werterhaltend )
         self._teBemerkung.setText( x.rgtext )
         self._suspendCallbacks = False
+
+    def getModel( self ) -> IccTableModel:
+        return self._tvAuszahlungen.model()
 
     def showException( self, title: str, exception: str, moretext: str = None ):
         # todo: show Qt-Errordialog

@@ -19,6 +19,7 @@ class SonstAusController( MdiChildController ):
         MdiChildController.__init__( self )
         curr = datehelper.getCurrentYearAndMonth()
         self._jahr:int = curr["year"]
+        self._title = "Rechnungen, Abgaben, Gebühren,... " + str( self._jahr )
         self._view:SonstigeAusgabenView = None
         self._duplicateAction:QAction = QAction( "Auszahlung duplizieren" )
         self._deleteAction:QAction = QAction( "Auszahlung löschen" )
@@ -26,6 +27,7 @@ class SonstAusController( MdiChildController ):
     def createView( self ) -> QWidget:
         sausview = SonstigeAusgabenView()
         self._view = sausview
+        sausview.setWindowTitle( self._title )
         jahre = BusinessLogic.inst().getExistingJahre( constants.einausart.MIETE )
         sausview.setBuchungsjahre( jahre )
         jahr = datetime.datetime.now().year
@@ -64,11 +66,8 @@ class SonstAusController( MdiChildController ):
     def onSave( self ):
         model:SonstAusTableModel = self._view.getAuszahlungenTableView().model()
         changes:Dict[str, List[XSonstAus]] = model.getChanges()
-        for actionstring, xlist in changes.items():
-            for x in xlist:
-                self._dispatchSaveAction( actionstring, x )
+        self.writeChanges( changes )
         model.resetChanges()
-        self._view.setSaveButtonEnabled( False )
 
     def _dispatchSaveAction( self, actionstring:str, x:XSonstAus ):
         try:
@@ -120,6 +119,8 @@ class SonstAusController( MdiChildController ):
             elif action == self._duplicateAction:
                 model.duplicate( x )
             self._view.setSaveButtonEnabled( True )
+            self._setChangedFlag( True )
+            self._view.clearEditFields()
 
     def onBuchungsjahrChanged( self, newjahr:int ):
         print( "SonstausController.onBuchungsjahrChanged" )
@@ -152,24 +153,6 @@ class SonstAusController( MdiChildController ):
                 buchungstexte = BusinessLogic.inst().getBuchungstexteFuerMasterobjekt( master_name, kreditor )
         self._view.setLeistungsidentifikationen( buchungstexte )
 
-    def onCloseSubWindow( self, window: MdiSubWindow ) -> bool:
-        """
-        wird als Callback-Funktion vom zu schließenden MdiSubWindow aufgerufen.
-        Prüft, ob es am Model der View, die zu diesem Controller gehört, nicht gespeicherte
-        Änderungen gibt. Wenn ja, wird der Anwender gefragt, ob er speichern möchte.
-        :param window:
-        :return: True, wenn keine Änderungen offen sind.
-                 True, wenn zwar Änderungen offen sind, der Anwender sich aber für Speichern entschlossen hat und
-                 erfolgreicht gespeichert wurde.
-                 True, wenn der Anwender offene Änderungen verwirft
-                 False, wenn der Anwender offene Änderungen nicht verwerfen aber auch nicht speichern will.
-
-        """
-        #model: CheckTableModel = self._subwin.widget().getModel()
-        #i model.isChanged():
-        #    return self._askWhatToDo( model )
-        return True
-
     def onSubmitChanges( self, x:XSonstAus ):
         """
         wird gerufen, wenn der Anwender OK im Edit-Feld-Bereich drückt.
@@ -182,18 +165,40 @@ class SonstAusController( MdiChildController ):
             self._view.getAuszahlungenTableView().model().updateOrInsert( x )
             self._view.clearEditFields()
             self._view.setSaveButtonEnabled( True )
+            self._setChangedFlag( True )
         else:
             self._view.showException( "Validation Fehler", "Falsche oder fehlende Daten bei der Erfassung der Auszahlung", msg )
 
     def getViewTitle( self ) -> str:
-        return "Rechnungen, Abgaben, Gebühren,... " + str( self._jahr )
+        return self._title
+
+    def _setChangedFlag( self, on:bool=True ):
+        if on:
+            if self._title.endswith( "*" ): return
+            self._title += " *"
+            if self.changedCallback:
+                # MainController informieren
+                self.changedCallback()
+        else:
+            self._title = self._title[:-2]
+            if self.savedCallback:
+                # Main Controller informieren
+                self.savedCallback()
+        self._view.setWindowTitle( self._title )
 
     def save( self ):
         """
         Implementation der abstrakten Methode aus MdiChildController
         :return:
         """
-        print( "ServiceController.save()" )
+        print( "SonstAusController.save()" )
+
+    def writeChanges( self, changes ) -> None:
+        for actionstring, xlist in changes.items():
+            for x in xlist:
+                self._dispatchSaveAction( actionstring, x )
+        self._view.setSaveButtonEnabled( False )
+        self._setChangedFlag( False )
 
     def _validateEditFields( self, x:XSonstAus ) -> str:
         """

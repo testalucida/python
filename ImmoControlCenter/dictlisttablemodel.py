@@ -4,7 +4,10 @@ from PySide2.QtGui import QFont, QBrush, QColor
 import numbers
 from typing import List, Dict, Any
 
-class DictListTableModel( QAbstractTableModel ):
+from icctablemodel import IccTableModel
+
+
+class DictListTableModel( IccTableModel ):
     def __init__(self, dictList:List[Dict]):
         QAbstractTableModel.__init__( self )
         self.rowlist:List[Dict] = dictList

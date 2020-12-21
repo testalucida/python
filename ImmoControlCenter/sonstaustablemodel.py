@@ -5,11 +5,13 @@ from functools import cmp_to_key
 from PySide2.QtGui import QFont, QBrush, QColor
 from PySide2.QtCore import *
 from typing import List, Dict, Any
+
+from icctablemodel import IccTableModel
 from interfaces import XSonstAus
 from enum import Enum
 import constants
 
-class SonstAusTableModel( QAbstractTableModel ):
+class SonstAusTableModel( IccTableModel ):
     def __init__( self, sonstausList:List[XSonstAus] ):
         QAbstractTableModel.__init__( self )
         self._sonstauslist:List[XSonstAus] = sonstausList

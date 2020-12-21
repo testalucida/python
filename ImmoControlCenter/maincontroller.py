@@ -17,7 +17,11 @@ class MainController:
         self._hgvCtrl.changedCallback = self.onViewChanged
         self._hgvCtrl.savedCallback = self.onViewSaved
 
-        self._serviceCtrl:SonstAusController = SonstAusController()
+        self._sonstAusCtrl:SonstAusController = SonstAusController()
+        self._sonstAusCtrl.changedCallback = self.onViewChanged
+        self._sonstAusCtrl.savedCallback = self.onViewSaved
+
+        self._nChanges = 0  # zählt die Änderungen, damit nach Speichern-Vorgängen das Sternchen nicht zu früh entfernt wird.
 
         #TODO: _viewsandcontroller bereinigen, wenn ein View geschlossen wird
         self._viewsandcontroller:[Dict[MdiSubWindow, MdiChildController]] = {}
@@ -27,7 +31,7 @@ class MainController:
     def showStartViews( self ):
         self.showMieteView()
         self.showHGVView()
-        self.showServiceView()
+        self.showSonstAusView()
 
     def onMainWindowAction( self, action:MainWindowAction ):
         switcher = {
@@ -47,10 +51,13 @@ class MainController:
     def onViewChanged( self ):
         self._mainwin.setWindowTitle( "ImmoControlCenter *" )
         self._someViewChanged = True
+        self._nChanges += 1
 
     def onViewSaved( self ):
-        self._mainwin.setWindowTitle( "ImmoControlCenter" )
-        self._someViewChanged = False
+        self._nChanges -= 1
+        if self._nChanges == 0:
+            self._mainwin.setWindowTitle( "ImmoControlCenter" )
+            self._someViewChanged = False
 
     def arrange( self, *views ):
         print( views )
@@ -120,12 +127,12 @@ class MainController:
     #     self._y += 20
     #     subwin.show()
 
-    def showServiceView( self ):
-        self.createServiceViewAndShow()
+    def showSonstAusView( self ):
+        self.createSonstAusViewAndShow()
 
-    def createServiceViewAndShow( self ):
-        subwin = self._serviceCtrl.createSubwindow()
-        self._installView( subwin, self._serviceCtrl )
+    def createSonstAusViewAndShow( self ):
+        subwin = self._sonstAusCtrl.createSubwindow()
+        self._installView( subwin, self._sonstAusCtrl )
         w, h = self.getMainWindowSize()
         w2 = w / 2
         x = w2
@@ -136,7 +143,7 @@ class MainController:
         subwin.show()
 
     def _installView( self, subwin:MdiSubWindow, ctrl:MdiChildController ):
-        subwin.addQuitCallback( self.onCloseSubWindow )
+        #subwin.addQuitCallback( self.onCloseSubWindow )
         self._viewsandcontroller[subwin] = ctrl
         self._mainwin.addMdiChild( subwin )
 
