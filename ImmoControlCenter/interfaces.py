@@ -40,6 +40,17 @@ class XSonstAus( XBase ):
     buchungsjahr:int = 0
     buchungstext:str = "" # der Text auf dem Buchungsbeleg, der bei öfftl. Providern identifizierend ist. (Kundennummer, Vertragsnummer etc.)
 
+class XSonstAusSummen( XBase ):
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self, valuedict )
+
+    summe_aus:int = 0
+    #summe_ein:int = 0
+    summe_werterhaltend = 0
+    #summe_nicht_werterhaltend = 0
+    summe_umlegbar = 0
+    #summe_nicht_umlegbar = 0
+
 def printX( x:XSonstAus ):
     print( x )
     d = x.__dict__

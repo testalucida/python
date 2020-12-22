@@ -1,7 +1,7 @@
 from dbaccess import DbAccess
 from typing import List, Dict, Tuple
 from constants import einausart
-from interfaces import XSonstAus, XServiceLeistung
+from interfaces import XSonstAus, XServiceLeistung, XSonstAusSummen
 #from monthlist import monthList, monatsletzter
 #from datehelper import monthList, monatsletzter, getLastMonth
 import datehelper
@@ -293,8 +293,18 @@ class BusinessLogic:
     def getBuchungstexteFuerMietobjekt( self, mobj_id:str, kreditor:str ) -> List[str]:
         return self._db.getBuchungstexteFuerMasterobjekt( mobj_id, kreditor )
 
-    def getSonstigeAusgaben( self, jahr:int ) -> List[XSonstAus]:
-        return self._db.getSonstigeAusgaben( jahr )
+    def getSonstigeAusgabenUndSummen( self, jahr:int ) -> Tuple[List[XSonstAus], XSonstAusSummen]:
+        sonstauslist:List[XSonstAus] = self._db.getSonstigeAusgaben( jahr )
+        # Summe der Ausgaben berechnen
+        summen = XSonstAusSummen()
+        for aus in sonstauslist:
+            betrag = int( round( aus.betrag ) )
+            summen.summe_aus += betrag
+            if aus.werterhaltend:
+                summen.summe_werterhaltend += betrag
+            if aus.umlegbar:
+                summen.summe_umlegbar += betrag
+        return sonstauslist, summen
 
 def test():
     busi = BusinessLogic.inst()

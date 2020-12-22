@@ -6,7 +6,7 @@ from PySide2.QtWidgets import QWidget, QComboBox, QLineEdit, QCheckBox, QPushBut
 from typing import List
 
 from icctablemodel import IccTableModel
-from interfaces import XSonstAus
+from interfaces import XSonstAus, XSonstAusSummen
 from sonstaustablemodel import SonstAusTableModel
 from tableviewext import TableViewExt
 import datehelper
@@ -136,7 +136,10 @@ class FloatEdit( QLineEdit ):
 
     def getFloatValue( self ) -> float:
         val = self.text()
-        if not val: val = "0.0"
+        if not val:
+            val = "0.0"
+        else:
+            val = val.replace( ",", "." )
         return float( val )
 
 ######################## Int Display  #############################
@@ -145,9 +148,17 @@ class IntDisplay( QLineEdit ):
         QLineEdit.__init__( self, parent )
         intval = QIntValidator()
         self.setValidator( intval )
+        font = QFont( "Times New Roman", 12, QFont.Bold )
+        self.setFont( font )
+        # self.setStyleSheet( "color: red;" )
+        self.setAlignment( Qt.AlignRight )
 
     def setIntValue( self, val:int ):
         self.setText( str( val ) )
+        if val < 0:
+            self.setStyleSheet( "color: green;" )
+        else:
+            self.setStyleSheet( "color: red;" )
 
     def getIntValue( self ) -> float:
         val = self.text()
@@ -171,11 +182,11 @@ class SonstigeAusgabenView( QWidget ):
         self._btnSave = QPushButton( self )
 
         self._idSummeAus = IntDisplay( self )
-        self._idSummeEin = IntDisplay( self )
+        # self._idSummeEin = IntDisplay( self )
         self._idSummeW = IntDisplay( self )
-        self._idSummeNichtW = IntDisplay( self )
+        # self._idSummeNichtW = IntDisplay( self )
         self._idSummeU = IntDisplay( self )
-        self._idSummeNichtU = IntDisplay( self )
+        # self._idSummeNichtU = IntDisplay( self )
         self._summenfont = QFont( "Times New Roman", 16, weight=QFont.Bold )
         self._summenartfont = QFont( "Times New Roman", 9 )
 
@@ -257,30 +268,30 @@ class SonstigeAusgabenView( QWidget ):
     def _assembleSummen( self ):
         parent = None
         #### Summe Auszahlungen
-        lay = self._createSummenLabel( parent, "Aus", self._idSummeAus )
+        lay = self._createSummenLabel( parent, "Aus", self._idSummeAus, "Salod aller Ausgaben und Einnahmen (Gutschriften)" )
         self._summenLayout.addLayout( lay, stretch=0 )
 
-        #### Summe Einzahlungen
-        lay = self._createSummenLabel( parent, "Ein", self._idSummeEin )
-        self._summenLayout.addLayout( lay, stretch=0 )
-
+        # #### Summe Einzahlungen
+        # lay = self._createSummenLabel( parent, "Ein", self._idSummeEin )
+        # self._summenLayout.addLayout( lay, stretch=0 )
+        #
         #### Summe werterhaltend
-        lay = self._createSummenLabel( parent, "w", self._idSummeW )
+        lay = self._createSummenLabel( parent, "w", self._idSummeW, "Saldo aller werterhaltenden Zahlungen" )
         self._summenLayout.addLayout( lay, stretch=0 )
-
-        #### Summe NICHT werterhaltend
-        lay = self._createSummenLabel( parent, "!w", self._idSummeNichtW )
-        self._summenLayout.addLayout( lay, stretch=0 )
-
+        #
+        # #### Summe NICHT werterhaltend
+        # lay = self._createSummenLabel( parent, "!w", self._idSummeNichtW )
+        # self._summenLayout.addLayout( lay, stretch=0 )
+        #
         #### Summe umlegbar
-        lay = self._createSummenLabel( parent, "u", self._idSummeU )
+        lay = self._createSummenLabel( parent, "u", self._idSummeU, "Saldo aller Zahlungen, die umlegbar sind" )
         self._summenLayout.addLayout( lay, stretch=0 )
+        #
+        # #### Summe NICHT umlegbar
+        # lay = self._createSummenLabel( parent, "!u", self._idSummeNichtU )
+        # self._summenLayout.addLayout( lay, stretch=0 )
 
-        #### Summe NICHT umlegbar
-        lay = self._createSummenLabel( parent, "!u", self._idSummeNichtU )
-        self._summenLayout.addLayout( lay, stretch=0 )
-
-    def _createSummenLabel( self, parent, sumart:str, sumfield:IntDisplay ) -> QHBoxLayout:
+    def _createSummenLabel( self, parent, sumart:str, sumfield:IntDisplay, tooltip:str ) -> QHBoxLayout:
         lay = QHBoxLayout( parent )
 
         lbl = QLabel( parent, text = "∑" )
@@ -295,6 +306,7 @@ class SonstigeAusgabenView( QWidget ):
 
         sumfield.setMaximumWidth( 70 )
         sumfield.setEnabled( False )
+        sumfield.setToolTip( tooltip )
         lay.addWidget( sumfield, stretch=0, alignment=Qt.AlignLeft | Qt.AlignVCenter )
 
         return lay
@@ -346,6 +358,7 @@ class SonstigeAusgabenView( QWidget ):
         self._editRechnungLineLayout.addWidget( self._sdRechnungsdatum, stretch=0, alignment=Qt.AlignLeft )
         self._feBetrag.setPlaceholderText( "Betrag" )
         self._feBetrag.setMaximumWidth( 70 )
+        self._feBetrag.setToolTip( "Positive Beträge sind Aus-, negative Einzahlungen (Gutschriften)" )
         self._editRechnungLineLayout.addWidget( self._feBetrag, stretch=0, alignment=Qt.AlignLeft )
 
         vbox = QVBoxLayout()
@@ -377,23 +390,35 @@ class SonstigeAusgabenView( QWidget ):
     # def setContextMenuActions( self, actions:List[QAction] ) -> None:
     #     self._contextMenuActions = actions
 
-    def setSummeAus( self, val:int ):
-        self._idSummeAus.setV
+    def getSummen( self ) -> XSonstAusSummen:
+        summen = XSonstAusSummen()
+        summen.summe_aus = self._idSummeAus.getIntValue()
+        summen.summe_werterhaltend = self._idSummeW.getIntValue()
+        summen.summe_umlegbar = self._idSummeU.getIntValue()
+        return summen
 
-    def setSummeEin( self, val:int ):
-        self._idSummeEin = val
+    def setSummen( self, summen:XSonstAusSummen ):
+        self.setSummeAus( summen.summe_aus )
+        self.setSummeU( summen.summe_umlegbar )
+        self.setSummeW( summen.summe_werterhaltend )
+
+    def setSummeAus( self, val:int ):
+        self._idSummeAus.setIntValue( val )
+
+    # def setSummeEin( self, val:int ):
+    #     self._idSummeEin = val
 
     def setSummeW( self, val:int ):
-        self._idSummeW = val
+        self._idSummeW.setIntValue( val )
 
-    def setSummeNichtW( self, val:int ):
-        self._idSummeNichtW = val
+    # def setSummeNichtW( self, val:int ):
+    #     self._idSummeNichtW = val
 
     def setSummeU( self, val: int ):
-        self._idSummeU = val
+        self._idSummeU.setIntValue( val )
 
-    def setSummeNichtU( self, val:int ):
-        self._idSummeNichtU = val
+    # def setSummeNichtU( self, val:int ):
+    #     self._idSummeNichtU = val
 
     def onAddDayToBuchungsdatum( self ):
         val = self._sdBuchungsdatum.getDate()

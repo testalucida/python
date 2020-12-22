@@ -7,7 +7,7 @@ from mdichildcontroller import MdiChildController
 from sonstaustablemodel import SonstAusTableModel
 from sonstausview import SonstigeAusgabenView
 from mdisubwindow import MdiSubWindow
-from interfaces import XSonstAus
+from interfaces import XSonstAus, XSonstAusSummen
 import constants
 import datehelper
 
@@ -40,9 +40,11 @@ class SonstAusController( MdiChildController ):
         #kreditoren = BusinessLogic.inst().getAlleKreditoren()
         #sausview.setKreditoren( kreditoren )
         #self._provideBuchungstexte( masterobjekte[0], None, kreditoren[0] )
-        sonstauslist = BusinessLogic.inst().getSonstigeAusgaben( self._jahr )
+        sonstauslist, summen = BusinessLogic.inst().getSonstigeAusgabenUndSummen( self._jahr )
         tm = SonstAusTableModel( sonstauslist )
         sausview.setAuszahlungenTableModel( tm )
+        sausview.setSummen( summen )
+        self._setSummenfelder()
         tv = sausview.getAuszahlungenTableView()
         tv.setSelectionBehavior( QAbstractItemView.SelectRows )
         tv.setAlternatingRowColors( True )
@@ -62,6 +64,10 @@ class SonstAusController( MdiChildController ):
         sausview.setSubmitChangesCallback( self.onSubmitChanges )
 
         return sausview
+
+    def _setSummenfelder( self ):
+        # todo
+        pass
 
     def onSave( self ):
         model:SonstAusTableModel = self._view.getAuszahlungenTableView().model()
@@ -114,10 +120,20 @@ class SonstAusController( MdiChildController ):
         if action:
             model:SonstAusTableModel = tv.model()
             x:XSonstAus = model.getXSonstAus( row )
+            multiplik = -1
             if action == self._deleteAction:
                 model.delete( x )
             elif action == self._duplicateAction:
                 model.duplicate( x )
+                multiplik = 1
+            summen:XSonstAusSummen = self._view.getSummen()
+            delta = int( round( x.betrag * multiplik ) )
+            summen.summe_aus += delta
+            if x.werterhaltend:
+                summen.summe_werterhaltend += delta
+            if x.umlegbar:
+                summen.summe_umlegbar += delta
+            self._view.setSummen( summen )
             self._view.setSaveButtonEnabled( True )
             self._setChangedFlag( True )
             self._view.clearEditFields()
