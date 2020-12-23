@@ -1,7 +1,7 @@
 from PySide2.QtWidgets import QMessageBox, QWidget
 from abc import ABC, abstractmethod
 from typing import List, Dict
-import datehelper
+from datehelper import *
 from mdichildcontroller import MdiChildController
 from checkview import CheckView
 from checktablemodel import CheckTableModel
@@ -12,7 +12,7 @@ from mdisubwindow import MdiSubWindow
 class CheckController( MdiChildController, ABC ):
     def __init__(self ):
         MdiChildController.__init__( self )
-        curr = datehelper.getCurrentYearAndMonth()
+        curr = getCurrentYearAndMonth()
         self._currentYear:int = curr["year"]
         self._currentCheckMonth:int = curr["month"]
 
@@ -23,10 +23,14 @@ class CheckController( MdiChildController, ABC ):
         if jahr == self._currentYear: return
         eaart:einausart = self.getEinAusArt()
         if not BusinessLogic.inst().existsEinAusArt( eaart, jahr ):
-            BusinessLogic.inst().createMtlEinAusJahresSet( eaart, jahr )
+            BusinessLogic.inst().createMtlEinAusJahresSet( jahr )
         model = self.createModel( jahr, self._currentCheckMonth )
         self._subwin.widget().setModel( model )
         self._currentYear = jahr
+
+    @abstractmethod
+    def addJahr( self, jahr:int ):
+        pass
 
     def monatChangedCallback( self, monat:int ):
         self._currentCheckMonth = monat
@@ -47,9 +51,13 @@ class CheckController( MdiChildController, ABC ):
     def createView( self ) -> QWidget:
         checkView = CheckView()
         checkView.saveCallback = self.onSaveData
-        checkView.setJahre( BusinessLogic.inst().getExistingJahre( einausart.MIETE ) )
+        jahrelist = BusinessLogic.inst().getExistingJahre( einausart.MIETE )
+        if len( jahrelist ) == 0:
+            BusinessLogic.inst().createMtlEinAusJahresSet( self._currentYear )
+            jahrelist.append( self._currentYear )
+        checkView.setJahre( jahrelist )
         # neue CheckViews immer mit aktuellem Jahr/Monat
-        curr = datehelper.getCurrentYearAndMonth()
+        curr = getCurrentYearAndMonth()
         checkView.setJahr( self._currentYear )
         checkView.setCheckMonat( self._currentCheckMonth )
         model:CheckTableModel = self.createModel( self._currentYear, self._currentCheckMonth )
@@ -129,6 +137,8 @@ class MietenController( CheckController ):
     def writeChanges( self, changes:Dict[int, Dict] ):
         BusinessLogic.inst().updateMietzahlungen( changes )
 
+    def addJahr( self, jahr:int ):
+        self._subwin.widget().addJahr( jahr )
 
 #################### HGVController ########################
 class HGVController( CheckController ):
@@ -149,3 +159,6 @@ class HGVController( CheckController ):
 
     def writeChanges( self, changes:Dict[int, Dict] ):
         BusinessLogic.inst().updateHausgeldvorauszahlungen( changes )
+
+    def addJahr( self, jahr: int ):
+        self._subwin.widget().addJahr( jahr )

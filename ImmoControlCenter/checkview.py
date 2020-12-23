@@ -202,6 +202,9 @@ class CheckView( QWidget ):
             print( jahr )
             self._cboJahr.addItem( str( jahr ) )
 
+    def addJahr( self, jahr:int ) -> None:
+        self._cboJahr.addItem( str( jahr ) )
+
     def setJahr( self, jahr:int ):
         self._cboJahr.setCurrentText( str( jahr ) )
 

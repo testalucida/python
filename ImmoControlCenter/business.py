@@ -4,7 +4,7 @@ from constants import einausart
 from interfaces import XSonstAus, XServiceLeistung, XSonstAusSummen
 #from monthlist import monthList, monatsletzter
 #from datehelper import monthList, monatsletzter, getLastMonth
-import datehelper
+from datehelper import *
 #import datetime, dateutil
 
 class BusinessLogic:
@@ -226,11 +226,11 @@ class BusinessLogic:
         # monat = 12 if monat == 1 else monat-1
         # smonat = monthList[monat-1]
         # return monat, smonat
-        return datehelper.getLastMonth()
+        return getLastMonth()
 
     def getMonatsletzter( self, monatidx:int ) -> int:
-        smonat = datehelper.monthList[monatidx-1]
-        return datehelper.monatsletzter[smonat]
+        smonat = monthList[monatidx-1]
+        return monatsletzter[smonat]
 
     # def getServiceLeistungen( self ) -> List[XServiceLeistung]:
     #     dictlist:List[Dict] = self._db.getServiceleistungen()

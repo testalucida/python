@@ -481,7 +481,7 @@ m2=0..n</panel_attributes>
       <w>108</w>
       <h>99</h>
     </coordinates>
-    <panel_attributes>serviceleistung
+    <panel_attributes>kreditorleistung
 --
 - name:text
 - master_id:int

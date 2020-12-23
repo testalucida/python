@@ -9,7 +9,7 @@ from icctablemodel import IccTableModel
 from interfaces import XSonstAus, XSonstAusSummen
 from sonstaustablemodel import SonstAusTableModel
 from tableviewext import TableViewExt
-import datehelper
+from datehelper import *
 
 ##################  CalendarWindow  ###########################
 class CalendarDialog( QDialog ):
@@ -103,7 +103,7 @@ class SmartDateEdit( QLineEdit ):
         :return:
         """
         ds = self.text()
-        if datehelper.isValidIsoDatestring( ds ) or datehelper.isValidEurDatestring( ds ):
+        if isValidIsoDatestring( ds ) or isValidEurDatestring( ds ):
             return ds
         else:
             return ""
@@ -113,13 +113,13 @@ class SmartDateEdit( QLineEdit ):
         text = self.text()
         d:QDate = None
         if text == "":
-            d = datehelper.getRelativeQDate( -1, 1 )
+            d = getRelativeQDate( -1, 1 )
         else:
-            if datehelper.isValidIsoDatestring( text ):
-                d = datehelper.getQDateFromIsoString( text )
+            if isValidIsoDatestring( text ):
+                d = getQDateFromIsoString( text )
 
             else:
-                d =datehelper.getRelativeQDate( -1, 1 )
+                d =getRelativeQDate( -1, 1 )
         cal.setSelectedDate( d )
         cal.setCallback( self.onDatumSelected )
         cal.show()
@@ -423,7 +423,7 @@ class SonstigeAusgabenView( QWidget ):
     def onAddDayToBuchungsdatum( self ):
         val = self._sdBuchungsdatum.getDate()
         if val:
-            dt = datehelper.getQDateFromIsoString( val )
+            dt = getQDateFromIsoString( val )
             dt = dt.addDays( 1 )
             self._sdBuchungsdatum.setDate( dt.year(), dt.month(), dt.day() )
 
@@ -526,7 +526,7 @@ class SonstigeAusgabenView( QWidget ):
         # self._sbTag.setValue( tag )
         # self._cboMonat.setCurrentText( monat )
         self._sdBuchungsdatum.\
-            setDate( int(self._cboBuchungsjahr.currentText()), datehelper.getMonthIndex( monat ), tag )
+            setDate( int(self._cboBuchungsjahr.currentText()), getMonthIndex( monat ), tag )
 
     def setMasterobjekte( self, masterobjekte:List[str] ):
         for obj in masterobjekte:
@@ -591,7 +591,7 @@ class SonstigeAusgabenView( QWidget ):
         #self._suspendCallbacks = True
         self._justEditing = x
         if x.buchungsdatum:
-            y, m, d = datehelper.getDateParts( x.buchungsdatum )
+            y, m, d = getDateParts( x.buchungsdatum )
             self._sdBuchungsdatum.setDate( y, m, d )
         if x.master_id:
             self._cboMasterobjekt.setCurrentText( x.master_name )
@@ -602,7 +602,7 @@ class SonstigeAusgabenView( QWidget ):
         if x.buchungstext:
             self._cboBuchungstext.setCurrentText( x.buchungstext )
         if x.rgdatum:
-            y, m, d = datehelper.getDateParts( x.rgdatum )
+            y, m, d = getDateParts( x.rgdatum )
             self._sdRechnungsdatum.setDate( y, m, d )
         self._feBetrag.setText( str( x.betrag ) )
         self._cbUmlegbar.setChecked( x.umlegbar )

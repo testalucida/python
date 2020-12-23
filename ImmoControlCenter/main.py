@@ -1,7 +1,9 @@
+import sys
+# sys.path.append( "/home/martin/Projects/python/common" )
+sys.path.append( "../common" )
 from PySide2.QtWidgets import QApplication
 from PySide2 import QtCore
 from PySide2.QtWidgets import QWidget, QMdiSubWindow
-#from mainwindow import MainWindow
 from immocentermainwindow import ImmoCenterMainWindow, MainWindowAction
 from business import BusinessLogic
 from maincontroller import MainController

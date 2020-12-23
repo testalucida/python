@@ -1,4 +1,8 @@
 from typing import List, Dict, Tuple
+
+from business import BusinessLogic
+from constants import einausart
+from datehelper import getCurrentYear
 from mdisubwindow import MdiSubWindow
 from immocentermainwindow import ImmoCenterMainWindow, MainWindowAction
 from checkcontroller import MdiChildController, MietenController, HGVController
@@ -40,7 +44,8 @@ class MainController:
             MainWindowAction.SAVE_ALL: self._saveAll,
             MainWindowAction.PRINT_ACTIVE_VIEW: self._printActiveView,
             MainWindowAction.OPEN_MIETE_VIEW: self.showMieteView,
-            MainWindowAction.OPEN_HGV_VIEW: self.showHGVView
+            MainWindowAction.OPEN_HGV_VIEW: self.showHGVView,
+            MainWindowAction.FOLGEJAHR: self.createFolgejahr
         }
         m = switcher.get( action, lambda: "Nicht unterstützte Action: " + str( action ) )
         m()
@@ -150,6 +155,15 @@ class MainController:
     def getMainWindowSize( self ) -> Tuple:
         geom = self._mainwin.mdiArea.geometry()
         return geom.width(), geom.height()
+
+    def createFolgejahr( self ):
+        y = getCurrentYear()
+        y += 1
+        if not BusinessLogic.inst().existsEinAusArt( einausart.MIETE, y ):
+            BusinessLogic.inst().createMtlEinAusJahresSet( y )
+            self._mietenCtrl.addJahr( y )
+            self._hgvCtrl.addJahr( y )
+        #TODO testen!!!!!
 
     def getView( self, ctrl:MdiChildController ) -> MdiSubWindow:
         for w, c in self._viewsandcontroller.items():

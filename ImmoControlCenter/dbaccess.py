@@ -250,13 +250,21 @@ class DbAccess:
         except:
             return -1
 
+    def insertMietobjekt( self, d:Dict, commit:bool=True ) -> int :
+        sql = "insert into mietobjekt " \
+              "(mobj_id, master_id, whg_bez, qm, container_nr, bemerkung, aktiv) " \
+              "values " \
+              "('%s', %d, '%s', %d, '%s', '%s', %d) " % \
+              (d["mobj_id"], d["master_id"], d["whg_bez"], d["qm"], d["container_nr"], d["bemerkung"], d["aktiv"] )
+        return self._doWrite( sql, commit )
+
     def insertMietverhaeltnis( self, d:Dict, commit:bool=True ) -> int:
         sql = "insert into mietverhaeltnis " \
-              "(mietobjekt_id, von, bis, name, vorname, telefon, mobil, mailto, anzahl_pers, mietkonto, bemerkung1, bemerkung2) " \
+              "(mv_id, mobj_id, von, bis, name, vorname, telefon, mobil, mailto, anzahl_pers, mietkonto, bemerkung1, bemerkung2) " \
               "values " \
-              "('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s') " % \
-              (d["Objekt"].lower(), d["von"], d["bis"], d["Name"], d["Vorname"], "", d["mobil"], d["mailto"], d["anzpers"],
-               d["Mietkonto"], d["Bemerkung1"], d["Bemerkung2"])
+              "('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s') " % \
+              (d["mv_id"], d["mobj_id"], d["von"], d["bis"], d["name"], d["vorname"], "", d["mobil"], d["mailto"], d["anzahl_pers"],
+               d["mietkonto"], d["bemerkung1"], d["bemerkung2"])
         return self._doWrite( sql, commit )
 
     def insertSollmiete(self, d:Dict, commit:bool=True ) -> int:
@@ -347,6 +355,14 @@ class DbAccess:
               "values('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )" \
               % (d["vw_id"], d["name"], d["strasse"], d["plz_ort"], d["telefon_1"], d["telefon_2"], d["mailto"],
                  d["ansprechpartner_1"], d["ansprechpartner_2"], d["bemerkung"] )
+        return self._doWrite( sql, commit )
+
+    def insertVerwaltung( self, d:Dict, commit:bool=True ) -> int:
+        sql = "insert into verwaltung " \
+              "(mobj_id, vw_id, weg_name, von, bis) " \
+              "values " \
+              "('%s', '%s', '%s', '%s', '%s')" % \
+              ( d["mobj_id"], d["vw_id"], d["weg_name"], d["von"], d["bis"] )
         return self._doWrite( sql, commit )
 
     def updateMtlEinAus( self, meinaus_id:str, monat:int or str, value:float, commit:bool=True ) -> int:

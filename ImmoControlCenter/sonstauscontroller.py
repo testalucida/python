@@ -9,7 +9,7 @@ from sonstausview import SonstigeAusgabenView
 from mdisubwindow import MdiSubWindow
 from interfaces import XSonstAus, XSonstAusSummen
 import constants
-import datehelper
+from datehelper import *
 
 class SonstAusController( MdiChildController ):
     """
@@ -17,7 +17,7 @@ class SonstAusController( MdiChildController ):
     """
     def __init__( self ):
         MdiChildController.__init__( self )
-        curr = datehelper.getCurrentYearAndMonth()
+        curr = getCurrentYearAndMonth()
         self._jahr:int = curr["year"]
         self._title = "Rechnungen, Abgaben, Gebühren,... " + str( self._jahr )
         self._view:SonstigeAusgabenView = None
@@ -30,7 +30,7 @@ class SonstAusController( MdiChildController ):
         sausview.setWindowTitle( self._title )
         jahre = BusinessLogic.inst().getExistingJahre( constants.einausart.MIETE )
         sausview.setBuchungsjahre( jahre )
-        jahr = datetime.datetime.now().year
+        jahr = datetime.now().year
         sausview.setBuchungsjahr( jahr )
         self._jahr = jahr
         monidx, monat = BusinessLogic.inst().getLetztenMonat()

@@ -12,6 +12,7 @@ class MainWindowAction( Enum ):
     PRINT_ACTIVE_VIEW=5
     OPEN_MIETE_VIEW=6
     OPEN_HGV_VIEW=7
+    FOLGEJAHR=8
     EXIT=99
 
 
@@ -72,6 +73,13 @@ class ImmoCenterMainWindow( QMainWindow ):
         action = QAction( self, text="Alle Änderungen speichern" )
         action.setShortcut( QKeySequence( "Ctrl+Shift+s" ) )
         action.triggered.connect( self.onSaveAll )
+        menu.addAction( action )
+
+        menu.addSeparator()
+
+        # Menüpunkt "Folgejahr einrichten"
+        action = QAction( self, text="Folgejahr einrichten" )
+        action.triggered.connect( self.onFolgejahrEinrichten )
         menu.addAction( action )
 
         menu.addSeparator()
@@ -217,6 +225,9 @@ class ImmoCenterMainWindow( QMainWindow ):
 
     def onSaveAll( self ):
         self.doCallback( MainWindowAction.SAVE_ALL )
+
+    def onFolgejahrEinrichten( self ):
+        self.doCallback( MainWindowAction.FOLGEJAHR )
 
     def onPrintActiveView( self ):
         self.doCallback( MainWindowAction.PRINT_ACTIVE_VIEW )
