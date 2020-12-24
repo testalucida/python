@@ -25,14 +25,14 @@ def provideMietobjekte():
 
 
 def provideSollmiete():
-    sheetname = "sollmiete"
+    sheetname = "Mietverhaeltnis"
     df = read_ods(stammdatenpath, sheetname)
     for index, row in df.iterrows():
         d = row.to_dict()
-        for k, v, in d.items():
-            if v is None:
-                d[k] = ''
-        #TODO: re-implement insertSollmiete (data structure has changed)
+        d["mv_id"] = create_mv_id( d["name"], d["vorname"] )
+        d["bis"] = ""
+        if math.isnan( d["netto"] ): d["netto"] = 0.0
+        if math.isnan( d["nkv"] ): d["nkv"] = 0.0
         db.insertSollmiete( d, False )
     db.commit()
 
@@ -168,11 +168,11 @@ def insertIntoServiceleistung( servicelist:List[Dict] ) -> None:
 ############################## provideServiceleistungen2020 E N D E #############################
 
 if __name__ == "__main__":
+    provideSollmiete()
     pass
     #provideVerwaltung()
     #provideServiceleistungen2020()
     #provideMietobjekte()
     #pass
     #provideMietverhaeltnis()
-    #provideSollmiete()
     #provideMiete2020()

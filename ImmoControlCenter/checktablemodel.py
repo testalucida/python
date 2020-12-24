@@ -193,9 +193,11 @@ class CheckTableModel( DictListTableModel ):
                     return self._inactiveBrush
             bis = self.rowlist[indexrow]["bis"]
             if bis > "":
-                monatbis = int( bis[5:7] ) #bis zu diesem Monat (einschließlich) bestand das MV
-                if monatbis < monat:
-                    return self._inactiveBrush
+                jahr = int( bis[:4] )
+                if jahr == self._jahr:
+                    monatbis = int( bis[5:7] ) #bis zu diesem Monat (einschließlich) bestand das MV
+                    if monatbis < monat:
+                        return self._inactiveBrush
             # wir sind immer noch hier - also handelt es sich um eine Zelle mit aktivem MV
             if indexcolumn == self._checkMonatColumnIdx:
                 return self._yellowBrush
