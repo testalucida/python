@@ -8,8 +8,8 @@ class CheckTableModel( DictListTableModel ):
     """ CheckTableModel hat einen genau definierten Aufbau bzgl. der ersten 7 Spalten
         Spalte 0: meinaus_id
         Spalte 1: mv_id oder vwg_id
-        Spalte 2: von
-        Spalte 3: bis
+        Spalte 2: von (ab wann das Mietverhältnis besteht)
+        Spalte 3: bis (bis wann es besteht)
         Spalte 4: objekt
         Spalte 5: name  (kann Mieter oder Hausverwalter sein)
         Spalte 6: soll  (soll-miete oder soll-hausgeld)
@@ -18,7 +18,7 @@ class CheckTableModel( DictListTableModel ):
         Die nachfolgenden Spalten sind beliebig. Derzeit: Je Monat eine Spalte, dann eine Zeilen-Summen-Spalte,
         dann eine Kommentarspalte.
     """
-    def __init__( self, dictList:List[Dict], checkmonat:int ):
+    def __init__( self, dictList:List[Dict], checkmonat:int, jahr:int ):
         DictListTableModel.__init__( self, dictList )
         self._greyColor = QColor( "#A19696" )
         self._greyBrush = QBrush( self._greyColor )
@@ -36,6 +36,7 @@ class CheckTableModel( DictListTableModel ):
         self._okColumnIdx = 7  # Spalte des OK-Buttons
         self._nokColumnIdx = 8  # Spalte des NOK-Buttons
         self._summeColumnIdx = 21  # Summe aller Monatszahlungen - Spalte
+        self._jahr = jahr
         self.setCheckmonat( checkmonat )
         self.okstatecallback = None
         # self._changedCallback = None
@@ -184,10 +185,12 @@ class CheckTableModel( DictListTableModel ):
         if self._leadingColumns <= indexcolumn < self._summeColumnIdx:
             monat = indexcolumn - self._leadingColumns + 1  # der Hintergrund dieses Monats wird gerade abgefragt
             von = self.rowlist[indexrow]["von"]
-            monatvon = int( von[5:7] ) # ab diesem Monat besteht das MV
-            #print( von, "-", bis, " monatVon: ", monatvon, " monatIdx=", monat )
-            if monatvon > monat: # MV bestand noch nicht
-                return self._inactiveBrush
+            jahr = int( von[:4] )
+            if jahr >= self._jahr: # Mietverhältnis entstand möglicherweise NACH dem 1.1.
+                monatvon = int( von[5:7] ) # ab diesem Monat besteht das MV
+                #print( von, "-", bis, " monatVon: ", monatvon, " monatIdx=", monat )
+                if monatvon > monat: # MV bestand noch nicht
+                    return self._inactiveBrush
             bis = self.rowlist[indexrow]["bis"]
             if bis > "":
                 monatbis = int( bis[5:7] ) #bis zu diesem Monat (einschließlich) bestand das MV

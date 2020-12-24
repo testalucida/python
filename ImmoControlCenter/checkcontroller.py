@@ -44,7 +44,7 @@ class CheckController( MdiChildController, ABC ):
         if len( rowlist ) == 0:
             raise Exception( "Zum gewählten Jahr sind keine Daten vorhanden.",
                              'Daten sind für das aktuelle Jahr und für max. zwei zurückliegende Jahre vorhanden.' )
-        model = CheckTableModel( rowlist, monat )
+        model = CheckTableModel( rowlist, monat, jahr )
         model.setChangedCallback( self.onDataChanged )
         return model
 
