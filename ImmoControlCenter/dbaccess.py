@@ -1,7 +1,8 @@
 import sqlite3
 from typing import List, Tuple, Dict
 from constants import einausart
-from interfaces import XSonstAus
+from interfaces import XSonstAus, XZahlung
+
 mon_dbnames = ("jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dez" )
 
 # def dict_factory(cursor, row):
@@ -94,6 +95,47 @@ class DbAccess:
 	          "order by mv.mv_id" % ( jahr, jahr )
         diclist: List[Dict] = self._doReadAllGetDict(sql)
         return diclist
+
+    def getJahrFromMtlEinAus( self, meinaus_id:int ) -> int:
+        sql = "select jahr from mtleinaus where meinaus_id = " + str( meinaus_id )
+        l = self._doRead( sql )
+        return l[0][0]
+
+    def getMasterUndMietobjekt( self, meinaus_id:int ) -> Dict:
+        """
+        Liest den Satz mit der Id meinaus_id aus der Tabelle mtleinaus.
+        Ist die mv_id belegt, werden master_id, master_name und mobj_id aus den Tabellen mietverhaeltnis und mietobjekt ermittelt.
+        Ist die vwg_id belegt, werden master_id, master_name und mobj_id aus den Tabellen verwaltung und mietobjekt ermittelt.
+        :param meinaus_id:
+        :return: einen Dict mit den Keys meinaus_id, mobj_id, master_id, master_name.
+                 Zusätzlich: mv_id, wenn die meinaus_id sich auf einen Mietzahlungssatz bezieht bzw.
+                             vwg_id, wenn die meinaus_id sich auf einen HGV-Satz bezieht.
+        """
+        sql = "select meinaus_id, mv_id, vwg_id from mtleinaus where meinaus_id = " + str( meinaus_id )
+        d = self._doReadOneGetDict( sql )
+        ret:Dict = None
+        if d["mv_id"]:
+            ret = self.getMasterUndMietobjektFromMietverhaeltnis( d["mv_id"] )
+        else:
+            ret = self.getMasterUndMietobjektFromVerwaltung( d["vwg_id"] )
+        return ret
+        #raise Exception( "Kann zu meinaus_id '%d' kein Master- und Mietobjekt ermitteln." % (meinaus_id))
+
+    def getMasterUndMietobjektFromMietverhaeltnis( self, mv_id:str ) -> Dict:
+        sql = "select mv.mv_id, mi.mobj_id, mo.master_id, mo.master_name " \
+              "from mietverhaeltnis mv " \
+              "inner join mietobjekt mi on mi.mobj_id = mv.mobj_id " \
+              "inner join masterobjekt mo on mo.master_id = mi.master_id " \
+              "where mv.mv_id = '%s'" % (mv_id)
+        return self._doReadOneGetDict( sql )
+
+    def getMasterUndMietobjektFromVerwaltung( self, vwg_id:int ) -> Dict:
+        sql = "select vwg.vwg_id, mi.mobj_id, mo.master_id, mo.master_name " \
+              "from verwaltung vwg " \
+              "inner join mietobjekt mi on mi.mobj_id = vwg.mobj_id " \
+              "inner join masterobjekt mo on mo.master_id = mi.master_id " \
+              "where vwg.vwg_id = " + str( vwg_id )
+        return self._doReadOneGetDict( sql )
 
     def getVerwaltungen( self, jahr:int ) -> List[Dict]:
         vgldat = str(jahr) + "-01-01"
@@ -308,7 +350,7 @@ class DbAccess:
         sql = "insert into mtleinaus (%s, jahr) values ('%s', %d) " % (id, mv_or_vwg_id, jahr)
         return self._doWrite(sql, commit)
 
-    def insertSonstAus( self, x:XSonstAus, commit:bool=True ):
+    def insertSonstAus( self, x:XSonstAus, commit:bool=True ) -> int:
         sql = "insert into sonstaus " \
               "(master_id, mobj_id, buchungsjahr, buchungsdatum, kreditor, rgnr, betrag, rgdatum, rgtext, umlegbar, werterhaltend, buchungstext) " \
               "values " \
@@ -363,6 +405,34 @@ class DbAccess:
               "values " \
               "('%s', '%s', '%s', '%s', '%s')" % \
               ( d["mobj_id"], d["vw_id"], d["weg_name"], d["von"], d["bis"] )
+        return self._doWrite( sql, commit )
+
+    def insertZahlung( self, z:XZahlung, commit:bool=True ) -> int:
+        sql = "insert into zahlung " \
+              "(master_id, mobj_id, meinaus_id, saus_id, nka_id, hga_id, write_time, jahr, monat, betrag, zahl_art) " \
+              "values " \
+              "(%d, '%s', %d, %d, %d, %d, '%s', %d, '%s', %.2f, '%s') " % \
+              (z.master_id, z.mobj_id, z.meinaus_id, z.saus_id, z.nka_id, z.hga_id, z.write_time, z.jahr, z.monat, z.betrag, z.zahl_art)
+        return self._doWrite( sql, commit )
+
+    def deleteZahlung( self, id:int, id_name:str, monat:str=None, zahl_art:str=None, commit:bool=True ) -> int:
+        sql = "delete from zahlung " \
+              "where %s = %d " % ( id_name, id )
+        if monat:
+            sql += " and monat = '%s' " % ( monat )
+        if zahl_art:
+            sql += " and zahl_art = '%s' " % ( zahl_art )
+        return self._doWrite( sql, commit )
+
+    def updateZahlung( self, id:int, id_name:str, z:XZahlung, commit:bool=True ):
+        sql = "update zahlung " \
+              "set master_id = %d, " \
+              "mobj_id = '%s', " \
+              "write_time = '%s', " \
+              "jahr = %d, " \
+              "monat = '%s', " \
+              "betrag = %.2f " \
+              "where %s = %d " % ( z.master_id, z.mobj_id, z.write_time, z.jahr, z.monat, z.betrag, id_name, id )
         return self._doWrite( sql, commit )
 
     def updateMtlEinAus( self, meinaus_id:str, monat:int or str, value:float, commit:bool=True ) -> int:
@@ -420,8 +490,28 @@ class DbAccess:
 # =============================================================================
 
 def test():
-    db = DbAccess( "immo_TEST.db" )
+    db = DbAccess( "immo.db" )
     db.open()
+
+    d = db.getMasterUndMietobjekt( 396 )
+
+
+    #y = db.getJahrFromMtlEinAus( 350 )
+
+    # z = XZahlung()
+    # z.betrag =  - 5.44
+    # z.hga_id =   0
+    # z.jahr =  2020
+    # z.master_id =  10
+    # z.meinaus_id =  0
+    # z.mobj_id =   ''
+    # z.monat =   0
+    # z.nka_id = 0
+    # z.saus_id =  12
+    # z.write_time =  '2020-12-26:16.08.04'
+    # z.zahl_art = 'sonstaus'
+    #db.updateZahlung( 12, "saus_id", z, False )
+
 
     #dictlist = db.getKreditorleistungen()
     n = db.existsKreditorleistung( 4, "zweibrueck", "EVS Abfall", "BNR 6611020394" )

@@ -1,11 +1,28 @@
+from enum import  IntEnum
 from dbaccess import DbAccess
 from typing import List, Dict, Tuple
 from constants import einausart
-from interfaces import XSonstAus, XServiceLeistung, XSonstAusSummen
+from interfaces import XSonstAus, XSonstAusSummen, XZahlung
 #from monthlist import monthList, monatsletzter
 #from datehelper import monthList, monatsletzter, getLastMonth
 from datehelper import *
-#import datetime, dateutil
+from datetime import datetime
+
+#---------------------------------------------------------------------
+class Zahlart( IntEnum ):
+    BRUTTOMIETE = 0,
+    NKA = 1,
+    HGV = 2,
+    HGA = 3,
+    SONSTAUS = 4
+
+zahlartstrings = ("bruttomiete", "nka", "hgv", "hga", "sonstaus")
+id_names = ( "meinaus_id", "nka_id", "meinaus_id", "hga_id", "saus_id" )
+#---------------------------------------------------------------------
+class InsertOrUpdate( IntEnum ):
+    INSERT = 0,
+    UPDATE = 1
+#----------------------------------------------------------------------
 
 class BusinessLogic:
     __instance = None
@@ -111,9 +128,65 @@ class BusinessLogic:
             x.master_id = self._db.getMasterId( x.master_name )
         if x.master_id <= 0:
             raise Exception( "couldn't get master_id for master_name '%s' " % (x.master_name))
-        self._db.insertSonstAus( x, True )
+        self._db.insertSonstAus( x, False )
         x.saus_id = self._db.getMaxId( "sonstaus", "saus_id" )
+        self._writeZahlungFromXSonstAus( x, insert=True )
+        self._db.commit()
         self._checkKreditorleistung( x.master_id, x.mobj_id, x.kreditor, x.buchungstext )
+
+    def _writeZahlungMtlEinAus( self, meinaus_id:int, jahr:int, monat:str, betrag:float ):
+        """
+        Könnte sein, dass es schon einen Satz in zahlung mit der geg. meinaus_id gibt.
+        Z.B. wenn die Miete in 2 Tranchen bezahlt wird.
+        Der entsprechende Monatsbetrag in mtleinaus wird dann mit der Summe aus 1. und 2. Teilzahlung upgedatet.
+        Also: wenn mit der 1. Zahlung 100 und mit der 2. Zahlung 50 Euro bezahlt werden, gibt es in mtleinaus
+        einen Update mit Monatswert = 150.
+        Wir dürfen in zahlung dann keinen zweiten Satz mit Betrag 150 anlegen, denn es gibt ja schon einen Satz
+        mit Betrag = 100.
+        ==> den ersten Satz löschen wir und legen dann einen neuen mit Wert 150 an.
+        :param meinaus_id:
+        :param jahr:
+        :param monat:
+        :param betrag:
+        :return:
+        """
+        d = self._db.getMasterUndMietobjekt( meinaus_id )
+        z: XZahlung = XZahlung()
+        z.betrag = betrag
+        z.jahr = jahr
+        z.monat = monat
+        z.mobj_id = d["mobj_id"]
+        z.master_id = d["master_id"]
+        z.meinaus_id = meinaus_id
+        z.write_time = datetime.now().strftime( "%Y-%m-%d:%H.%M.%S" )
+        if "mv_id" in d.keys():
+            self._deleteZahlung( meinaus_id, Zahlart.BRUTTOMIETE, monat )
+            z.zahl_art = zahlartstrings[Zahlart.BRUTTOMIETE]
+        else:
+            self._deleteZahlung( meinaus_id, Zahlart.HGV, monat )
+            z.zahl_art = zahlartstrings[Zahlart.HGV]
+            if z.betrag > 0: z.betrag = z.betrag * (-1)
+
+        self._db.insertZahlung( z, False)
+
+    def _writeZahlungFromXSonstAus( self, x:XSonstAus, insert:bool ):
+        z:XZahlung = XZahlung()
+        z.betrag = x.betrag if x.betrag < 0 else x.betrag*(-1)
+        z.jahr = x.buchungsjahr
+        z.mobj_id = x.mobj_id
+        z.master_id = x.master_id
+        z.saus_id = x.saus_id
+        z.write_time = datetime.now().strftime( "%Y-%m-%d:%H.%M.%S" )
+        z.zahl_art = zahlartstrings[Zahlart.SONSTAUS.value]
+        if insert:
+            self._db.insertZahlung( z, False )
+        else:
+            self._db.updateZahlung( z.saus_id, id_names[Zahlart.SONSTAUS.value], z, False )
+
+    def _deleteZahlung( self, id:int, art:Zahlart, monat:str=None ):
+        id_name = id_names[art.value]
+        zahl_art = zahlartstrings[art.value]
+        self._db.deleteZahlung( id, id_name, monat, zahl_art, commit=False )
 
     def _checkKreditorleistung( self, master_id:int, mobj_id:str, kreditor:str, buchungstext:str ) -> None:
         """
@@ -152,16 +225,22 @@ class BusinessLogic:
         }
         """
         for meinaus_id, change in changes.items():
+            y = self._db.getJahrFromMtlEinAus( meinaus_id )
             for monat, betrag in change.items():
                 self._db.updateMtlEinAus( meinaus_id, monat, betrag, False )
+                self._writeZahlungMtlEinAus( meinaus_id, y, monat, betrag )
         self._db.commit()
 
     def updateSonstigeAuszahlung( self, x:XSonstAus ) -> None:
-        self._db.updateSonstAus( x, True )
+        self._db.updateSonstAus( x, False )
+        self._writeZahlungFromXSonstAus( x, insert=False )
+        self._db.commit()
         self._checkKreditorleistung( x.master_id, x.mobj_id, x.kreditor, x.buchungstext )
 
     def deleteSonstigeAuszahlung( self, x:XSonstAus ) -> None:
-        self._db.deleteSonstAus( x.saus_id )
+        self._db.deleteSonstAus( x.saus_id, False )
+        self._deleteZahlung( x.saus_id, Zahlart.SONSTAUS )
+        self._db.commit()
 
     def getSollmietenMonat( self, jahr:int, monat:int ) -> List[Dict]:
         return self._db.getSollmietenMonat( jahr, monat )

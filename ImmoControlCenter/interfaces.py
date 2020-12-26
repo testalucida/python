@@ -10,16 +10,21 @@ class XBase:
         for k, v in d.items():
             _d[k] = v
 
-class XServiceLeistung( XBase ):
-    def __init__( self, valuedict:Dict=None ):
-        XBase.__init__( self, valuedict )
+class XZahlung:
 
-    kreditor:str = ""
-    master_id:int = 0
-    name:str = ""
-    mobj_id:str = ""
-    buchungstext:str = ""
-    umlegbar:int = 0
+    master_id:int = 0 # ID des Master-Objekts (Tabelle masterobjekt)
+    mobj_id:str = "" # ID des Mietobjekts (Tabelle mietobjekt) --- kann frei sein, dann muss aber master_id versorgt sein
+    # GENAU einer der nachfolgenden 4 IDs muss versorgt sein
+    meinaus_id:int = 0 # ID der monatlichen Einzahlung (Tabelle mtleinaus)
+    saus_id:int = 0 # ID der sonstigen Auszahlung (Tabelle sonstaus)
+    nka_id:int = 0  # ID der Nebenkostenabrechnung (Tabelle nkabrechng)
+    hga_id:int = 0  # ID der Hausgeld-Abrechnung (Tabelle hgabrechng)
+    #---
+    write_time:str = ""  # Zeitpunkt der Anlage dieses Satzes
+    jahr:int = 0 # Veranlagungsjahr
+    monat:str = ""  # auf welchen Monat sich die Zahlung bezieht (nur für Miete und HGV relevant)
+    betrag:float = 0.0
+    zahl_art:str = ""  # {'brutto_miete', 'nka', 'hgv', 'hga', 'rechng'}
 
 class XSonstAus( XBase ):
     def __init__( self, valuedict:Dict=None ):
