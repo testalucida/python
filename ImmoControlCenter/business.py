@@ -77,6 +77,11 @@ class BusinessLogic:
                         m["soll"] = solldict["brutto"]
                     n += 1
             else: # Mietverh. besteht in diesem Monat noch nicht oder nicht mehr
+                # TODO
+                #  das ist wahrscheinlich falsch. Beispiel fehlende Murasov am Jahresanfang: alle im Alphabet
+                # nach Murasov waren auf 0 gestanden.
+                # Wahrscheinlich ist es besser, es so zu programmieren, dass man sich nicht auf die Konsistenz
+                # von mieten und sollwerte verlässt.
                 m["soll"] = 0
         return mieten
 

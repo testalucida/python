@@ -56,6 +56,17 @@ class XSonstAusSummen( XBase ):
     summe_umlegbar = 0
     #summe_nicht_umlegbar = 0
 
+class XSollzahlung( XBase ):
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self, valuedict )
+
+    name:str = ""
+    von:str = ""
+    bis:str = ""
+    netto:float = 0.0  # Nettomiete bei Soll-Miete, Netto-HG (ohne rüzufü) bei HGV
+    zusatz:float = 0.0 # NKV bei Soll-Miete, RüZuFü bei Soll-HGV
+    summe:float = 0.0  # Summe aus netto und zusatz
+
 def printX( x:XSonstAus ):
     print( x )
     d = x.__dict__

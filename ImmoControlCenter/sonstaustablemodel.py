@@ -13,7 +13,7 @@ import constants
 
 class SonstAusTableModel( IccTableModel ):
     def __init__( self, sonstausList:List[XSonstAus] ):
-        QAbstractTableModel.__init__( self )
+        IccTableModel.__init__( self )
         self._sonstauslist:List[XSonstAus] = sonstausList
         """
         Gewünschte Spaltenfolge: 

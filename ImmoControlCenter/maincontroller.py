@@ -45,7 +45,8 @@ class MainController:
             MainWindowAction.PRINT_ACTIVE_VIEW: self._printActiveView,
             MainWindowAction.OPEN_MIETE_VIEW: self.showMieteView,
             MainWindowAction.OPEN_HGV_VIEW: self.showHGVView,
-            MainWindowAction.FOLGEJAHR: self.createFolgejahr
+            MainWindowAction.FOLGEJAHR: self.createFolgejahr,
+            MainWindowAction.OPEN_SOLLZAHLUNGEN_VIEW: self.showSollzahlungenView
         }
         m = switcher.get( action, lambda: "Nicht unterstützte Action: " + str( action ) )
         m()
@@ -121,17 +122,6 @@ class MainController:
         self._y += 20
         subwin.show()
 
-    # def createHgvViewAndShow( self ):
-    #     subwin = self._hgvCtrl.createSubwindow()
-    #     self._installView( subwin, self._hgvCtrl )
-    #     w, h = self.getMainWindowSize()
-    #     w2 = w / 2
-    #     x = w2
-    #     subwin.setGeometry( x, 0, w2, h / 2 )
-    #     self._x += 20
-    #     self._y += 20
-    #     subwin.show()
-
     def showSonstAusView( self ):
         self.createSonstAusViewAndShow()
 
@@ -146,6 +136,14 @@ class MainController:
         h2 = h - y - 25
         subwin.setGeometry( x, y, w2, h2 )
         subwin.show()
+
+    def showSollzahlungenView( self ):
+        # TODO: prüfen, ob shon ein SollzahlungenView vorhanden ist. Nur wenn nein, einen anlegen.
+        self.createSollzahlungenViewAndShow()
+
+    def createSollzahlungenViewAndShow( self ):
+        # TODO
+        pass
 
     def _installView( self, subwin:MdiSubWindow, ctrl:MdiChildController ):
         #subwin.addQuitCallback( self.onCloseSubWindow )

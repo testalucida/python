@@ -4,7 +4,7 @@
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>63</x>
+      <x>72</x>
       <y>9</y>
       <w>144</w>
       <h>135</h>
@@ -25,7 +25,7 @@
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>360</x>
+      <x>369</x>
       <y>405</y>
       <w>135</w>
       <h>117</h>
@@ -43,7 +43,7 @@
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>369</x>
+      <x>378</x>
       <y>594</y>
       <w>117</w>
       <h>108</h>
@@ -60,7 +60,7 @@
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>45</x>
+      <x>54</x>
       <y>378</y>
       <w>234</w>
       <h>162</h>
@@ -81,7 +81,7 @@
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>306</x>
+      <x>315</x>
       <y>18</y>
       <w>108</w>
       <h>108</h>
@@ -98,7 +98,7 @@
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>639</x>
+      <x>648</x>
       <y>477</y>
       <w>162</w>
       <h>162</h>
@@ -120,7 +120,7 @@
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>198</x>
+      <x>207</x>
       <y>63</y>
       <w>126</w>
       <h>36</h>
@@ -133,7 +133,7 @@ m2=1</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>126</x>
+      <x>135</x>
       <y>135</y>
       <w>45</w>
       <h>261</h>
@@ -146,7 +146,7 @@ m2=0..1</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>342</x>
+      <x>351</x>
       <y>153</y>
       <w>162</w>
       <h>135</h>
@@ -164,7 +164,7 @@ m2=0..1</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>486</x>
+      <x>495</x>
       <y>486</y>
       <w>171</w>
       <h>36</h>
@@ -177,7 +177,7 @@ m2=1</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>756</x>
+      <x>765</x>
       <y>0</y>
       <w>162</w>
       <h>243</h>
@@ -204,7 +204,7 @@ m2=1</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>495</x>
+      <x>504</x>
       <y>108</y>
       <w>279</w>
       <h>117</h>
@@ -217,7 +217,7 @@ m2=1..n</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>198</x>
+      <x>207</x>
       <y>99</y>
       <w>162</w>
       <h>126</h>
@@ -230,7 +230,7 @@ m2=1</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>423</x>
+      <x>432</x>
       <y>513</y>
       <w>45</w>
       <h>99</h>
@@ -243,7 +243,7 @@ m2=1</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>414</x>
+      <x>423</x>
       <y>279</y>
       <w>27</w>
       <h>144</h>
@@ -256,7 +256,7 @@ m2=1</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>270</x>
+      <x>279</x>
       <y>450</y>
       <w>108</w>
       <h>36</h>
@@ -269,7 +269,7 @@ m2=0..1</panel_attributes>
   <element>
     <id>UMLNote</id>
     <coordinates>
-      <x>63</x>
+      <x>72</x>
       <y>567</y>
       <w>216</w>
       <h>153</h>
@@ -288,7 +288,7 @@ die mv_id ist null.
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>135</x>
+      <x>144</x>
       <y>531</y>
       <w>27</w>
       <h>54</h>
@@ -299,7 +299,7 @@ die mv_id ist null.
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>693</x>
+      <x>702</x>
       <y>252</y>
       <w>144</w>
       <h>207</h>
@@ -324,7 +324,7 @@ die mv_id ist null.
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>495</x>
+      <x>504</x>
       <y>207</y>
       <w>216</w>
       <h>90</h>
@@ -337,7 +337,7 @@ m2=1</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>1026</x>
+      <x>1035</x>
       <y>0</y>
       <w>135</w>
       <h>126</h>
@@ -355,7 +355,7 @@ m2=1</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>909</x>
+      <x>918</x>
       <y>54</y>
       <w>135</w>
       <h>36</h>
@@ -368,7 +368,7 @@ m2=1</panel_attributes>
   <element>
     <id>UMLNote</id>
     <coordinates>
-      <x>1035</x>
+      <x>1044</x>
       <y>189</y>
       <w>216</w>
       <h>171</h>
@@ -384,7 +384,7 @@ Grundsteuer (Illingen)</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>1080</x>
+      <x>1089</x>
       <y>117</y>
       <w>27</w>
       <h>90</h>
@@ -395,7 +395,7 @@ Grundsteuer (Illingen)</panel_attributes>
   <element>
     <id>UMLNote</id>
     <coordinates>
-      <x>909</x>
+      <x>918</x>
       <y>387</y>
       <w>207</w>
       <h>81</h>
@@ -407,7 +407,7 @@ Kommunen, Energielieferanten, Versicherungen, Haus und Grund etc.</panel_attribu
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>828</x>
+      <x>837</x>
       <y>396</y>
       <w>99</w>
       <h>36</h>
@@ -418,15 +418,16 @@ Kommunen, Energielieferanten, Versicherungen, Haus und Grund etc.</panel_attribu
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>144</x>
+      <x>153</x>
       <y>198</y>
-      <w>108</w>
-      <h>99</h>
+      <w>126</w>
+      <h>108</h>
     </coordinates>
     <panel_attributes>nkabrechng
 --
 - nka_id:int
-- jahr:int
+- nk_jahr:int //Jahr, auf das sich die NKA bezieht
+- veranl_jahr:int //Jahr, in der die Zahlung stattfindet
 - mv_id:text
 - betrag:float
 - bemerkung</panel_attributes>
@@ -435,28 +436,29 @@ Kommunen, Energielieferanten, Versicherungen, Haus und Grund etc.</panel_attribu
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>486</x>
-      <y>396</y>
+      <x>495</x>
+      <y>414</y>
       <w>117</w>
-      <h>72</h>
+      <h>54</h>
     </coordinates>
     <panel_attributes>lt=-
 m1=1
 m2=0..n</panel_attributes>
-    <additional_attributes>10.0;60.0;110.0;10.0</additional_attributes>
+    <additional_attributes>10.0;40.0;110.0;10.0</additional_attributes>
   </element>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>540</x>
+      <x>549</x>
       <y>306</y>
       <w>108</w>
-      <h>99</h>
+      <h>117</h>
     </coordinates>
     <panel_attributes>hgabrechng
 --
 - hga_id:int
-- jahr:int
+- hg_jahr:int
+- veranl_jahr:int
 - vwg_id:int
 - betrag:float
 - bemerkung</panel_attributes>
@@ -465,7 +467,7 @@ m2=0..n</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>549</x>
+      <x>558</x>
       <y>27</y>
       <w>108</w>
       <h>99</h>
@@ -482,7 +484,7 @@ m2=0..n</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>495</x>
+      <x>504</x>
       <y>117</y>
       <w>117</w>
       <h>99</h>
@@ -495,7 +497,7 @@ m2=0..1</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>648</x>
+      <x>657</x>
       <y>72</y>
       <w>126</w>
       <h>36</h>
@@ -508,7 +510,7 @@ m2=0..1</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>873</x>
+      <x>882</x>
       <y>531</y>
       <w>162</w>
       <h>189</h>
@@ -528,5 +530,19 @@ m2=0..1</panel_attributes>
 - betrag:float
 - zahl_art:text {'bruttomiete', 'nka', 'hgv', 'hga', 'sonstaus' }</panel_attributes>
     <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>162</x>
+      <y>135</y>
+      <w>72</w>
+      <h>81</h>
+    </coordinates>
+    <panel_attributes>lt=-
+m1=1
+m2=0..n
+</panel_attributes>
+    <additional_attributes>10.0;10.0;50.0;70.0</additional_attributes>
   </element>
 </diagram>

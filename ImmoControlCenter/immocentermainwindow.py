@@ -6,13 +6,14 @@ from PySide2.QtGui import QKeySequence
 from enum import Enum
 
 class MainWindowAction( Enum ):
-    NEW_WINDOW=2
-    SAVE_ACTIVE_VIEW=3
-    SAVE_ALL=4
-    PRINT_ACTIVE_VIEW=5
-    OPEN_MIETE_VIEW=6
-    OPEN_HGV_VIEW=7
-    FOLGEJAHR=8
+    NEW_WINDOW=2,
+    SAVE_ACTIVE_VIEW=3,
+    SAVE_ALL=4,
+    PRINT_ACTIVE_VIEW=5,
+    OPEN_MIETE_VIEW=6,
+    OPEN_HGV_VIEW=7,
+    FOLGEJAHR=8,
+    OPEN_SOLLZAHLUNGEN_VIEW = 9,
     EXIT=99
 
 
@@ -144,7 +145,7 @@ class ImmoCenterMainWindow( QMainWindow ):
         menu.addAction( action )
 
         # Menüpunkt "Handwerker, Kommunen, Versorger..."
-        action = QAction( self, text="Handwerker, Kommunen, Versorger..." )
+        action = QAction( self, text="Rechnungen, Abgaben, Gebühren..." )
         action.triggered.connect( self.onViewRechnungen )
         menu.addAction( action )
 
@@ -242,7 +243,7 @@ class ImmoCenterMainWindow( QMainWindow ):
         self.doCallback( MainWindowAction.OPEN_HGV_VIEW )
 
     def onViewSollzahlungen( self ):
-        pass
+        self.doCallback( MainWindowAction.OPEN_SOLLZAHLUNGEN_VIEW )
 
     def onViewAbrechnungen( self ):
         pass
