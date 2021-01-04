@@ -13,7 +13,8 @@ class MainWindowAction( Enum ):
     OPEN_MIETE_VIEW=6,
     OPEN_HGV_VIEW=7,
     FOLGEJAHR=8,
-    OPEN_SOLLZAHLUNGEN_VIEW = 9,
+    OPEN_SOLL_MIETE_VIEW = 9,
+    OPEN_SOLL_HG_VIEW = 10,
     EXIT=99
 
 
@@ -134,9 +135,14 @@ class ImmoCenterMainWindow( QMainWindow ):
         action.triggered.connect( self.onViewHGVorauszahlungen )
         menu.addAction( action )
 
-        # Menüpunkt "Soll-Zahlungen..."
-        action = QAction( self, text="Soll-Zahlungen..." )
-        action.triggered.connect( self.onViewSollzahlungen )
+        # Menüpunkt "Soll-Miete..."
+        action = QAction( self, text="Soll-Miete..." )
+        action.triggered.connect( self.onViewSollMiete )
+        menu.addAction( action )
+
+        # Menüpunkt "Soll-Hausgeld..."
+        action = QAction( self, text="Soll-Hausgeld..." )
+        action.triggered.connect( self.onViewSollHausgeld )
         menu.addAction( action )
 
         # Menüpunkt "NK- und HG-Abrechnungen Vorjahr..."
@@ -242,8 +248,11 @@ class ImmoCenterMainWindow( QMainWindow ):
     def onViewHGVorauszahlungen( self ):
         self.doCallback( MainWindowAction.OPEN_HGV_VIEW )
 
-    def onViewSollzahlungen( self ):
-        self.doCallback( MainWindowAction.OPEN_SOLLZAHLUNGEN_VIEW )
+    def onViewSollMiete( self ):
+        self.doCallback( MainWindowAction.OPEN_SOLL_MIETE_VIEW )
+
+    def onViewSollHausgeld( self ):
+        self.doCallback( MainWindowAction.OPEN_SOLL_HG_VIEW )
 
     def onViewAbrechnungen( self ):
         pass

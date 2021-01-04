@@ -1,7 +1,7 @@
 import sqlite3
 from typing import List, Tuple, Dict
 from constants import einausart
-from interfaces import XSonstAus, XZahlung
+from interfaces import XSonstAus, XZahlung, XSollHausgeld
 
 mon_dbnames = ("jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dez" )
 
@@ -191,6 +191,26 @@ class DbAccess:
               "and (bis is NULL or bis = '' or bis > '%s') " \
               "order by vwg_id" % (datum, datum)
         return self._doReadAllGetDict( sql )
+
+    def getAlleSollHausgelder( self ) -> List[XSollHausgeld]:
+        """
+        Liefert alle aktiven und inaktiven Soll-Hausgelder.
+        # Todo: Besonders testen: sowohl in verwaltung wie auch in sollhausgeld gibt es von und bis.
+        # Was passiert, wenn eine Verwaltung bei gleich bleibenden Hausgeldern wechselt?
+        :return:
+        """
+        sql = "select v.vw_id, s.vwg_id, s.von, coalesce(s.bis, '') as bis, s.netto, s.ruezufue, " \
+              "(s.netto + s.ruezufue) as brutto, " \
+              "v.mobj_id, v.weg_name,  s.bemerkung " \
+              "from sollhausgeld s " \
+              "inner join verwaltung v on v.vwg_id = s.vwg_id " \
+              "order by v.weg_name, s.von"
+        l:List[Dict] = self._doReadAllGetDict( sql )
+        sollList:List[XSollHausgeld] = list()
+        for d in l:
+            x = XSollHausgeld( d )
+            sollList.append( x )
+        return sollList
 
     def getSonstigeAusgaben( self, jahr:int ):
         sql = "select saus_id, m.master_id, m.master_name, mobj_id, " \

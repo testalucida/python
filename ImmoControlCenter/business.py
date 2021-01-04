@@ -2,7 +2,7 @@ from enum import  IntEnum
 from dbaccess import DbAccess
 from typing import List, Dict, Tuple
 from constants import einausart
-from interfaces import XSonstAus, XSonstAusSummen, XZahlung
+from interfaces import XSonstAus, XSonstAusSummen, XZahlung, XSollHausgeld
 #from monthlist import monthList, monatsletzter
 #from datehelper import monthList, monatsletzter, getLastMonth
 from datehelper import *
@@ -305,6 +305,9 @@ class BusinessLogic:
             self._db.insertSollhausgeld( d, False )
         self._db.commit()
 
+    def getAlleSollHausgelder( self ) -> List[XSollHausgeld]:
+        return self._db.getAlleSollHausgelder()
+
     def getLetztenMonat( self ) -> Tuple[int, str]:
         # monat = datetime.datetime.now().month
         # monat = 12 if monat == 1 else monat-1
@@ -392,6 +395,8 @@ class BusinessLogic:
 
 def test():
     busi = BusinessLogic.inst()
+
+    li = busi.getAlleSollHausgelder()
 
     li = busi.getMasterobjekte()
     print( li )

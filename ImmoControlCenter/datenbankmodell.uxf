@@ -50,11 +50,12 @@
     </coordinates>
     <panel_attributes>sollhausgeld
 --
-- vwg_id
+- vwg_id:int
 - von
 - bis
-- netto
-- ruezufue</panel_attributes>
+- netto:float
+- ruezufue:float
+- bemerkung:text</panel_attributes>
     <additional_attributes/>
   </element>
   <element>

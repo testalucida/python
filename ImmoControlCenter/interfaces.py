@@ -60,12 +60,22 @@ class XSollzahlung( XBase ):
     def __init__( self, valuedict:Dict=None ):
         XBase.__init__( self, valuedict )
 
-    name:str = ""
     von:str = ""
     bis:str = ""
     netto:float = 0.0  # Nettomiete bei Soll-Miete, Netto-HG (ohne rüzufü) bei HGV
-    zusatz:float = 0.0 # NKV bei Soll-Miete, RüZuFü bei Soll-HGV
-    summe:float = 0.0  # Summe aus netto und zusatz
+    brutto:float = 0.0  # Summe aus netto und zusatz
+    bemerkung:str = ""
+
+class XSollHausgeld( XSollzahlung ):
+    def __init__( self, valuedict:Dict=None ):
+        XSollzahlung.__init__( self, valuedict )
+
+    vw_id = ""
+    vwg_id = 0
+    mobj_id = ""
+    weg_name = ""
+    ruezufue:float = 0.0
+
 
 def printX( x:XSonstAus ):
     print( x )

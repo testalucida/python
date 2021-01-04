@@ -10,3 +10,7 @@ class tableAction( IntEnum ):
     DELETE = 2
 
 actionList = ( "INSERT", "UPDATE", "DELETE" )
+
+class SollType( IntEnum ):
+    MIETE_SOLL = 0,
+    HAUSGELD_SOLL = 1

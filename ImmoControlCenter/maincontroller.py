@@ -6,6 +6,7 @@ from datehelper import getCurrentYear
 from mdisubwindow import MdiSubWindow
 from immocentermainwindow import ImmoCenterMainWindow, MainWindowAction
 from checkcontroller import MdiChildController, MietenController, HGVController
+from sollzahlungencontroller import SollzahlungenController, SollType
 from sonstauscontroller import SonstAusController
 
 class MainController:
@@ -24,6 +25,9 @@ class MainController:
         self._sonstAusCtrl:SonstAusController = SonstAusController()
         self._sonstAusCtrl.changedCallback = self.onViewChanged
         self._sonstAusCtrl.savedCallback = self.onViewSaved
+
+        self._sollMietenCtrl = SollzahlungenController( SollType.MIETE_SOLL )
+        self._sollHausgelderCtrl = SollzahlungenController( SollType.HAUSGELD_SOLL )
 
         self._nChanges = 0  # zählt die Änderungen, damit nach Speichern-Vorgängen das Sternchen nicht zu früh entfernt wird.
 
@@ -46,7 +50,8 @@ class MainController:
             MainWindowAction.OPEN_MIETE_VIEW: self.showMieteView,
             MainWindowAction.OPEN_HGV_VIEW: self.showHGVView,
             MainWindowAction.FOLGEJAHR: self.createFolgejahr,
-            MainWindowAction.OPEN_SOLLZAHLUNGEN_VIEW: self.showSollzahlungenView
+            MainWindowAction.OPEN_SOLL_MIETE_VIEW: self.showSollMietenView,
+            MainWindowAction.OPEN_SOLL_HG_VIEW: self.showSollHausgelderView
         }
         m = switcher.get( action, lambda: "Nicht unterstützte Action: " + str( action ) )
         m()
@@ -137,13 +142,26 @@ class MainController:
         subwin.setGeometry( x, y, w2, h2 )
         subwin.show()
 
-    def showSollzahlungenView( self ):
+    def showSollMietenView( self ):
         # TODO: prüfen, ob shon ein SollzahlungenView vorhanden ist. Nur wenn nein, einen anlegen.
-        self.createSollzahlungenViewAndShow()
+        self.createSollMietenViewAndShow()
 
-    def createSollzahlungenViewAndShow( self ):
-        # TODO
-        pass
+    def createSollMietenViewAndShow( self ):
+        subwin = self._sollMietenCtrl.createSubwindow()
+        self._installView( subwin, self._sollMietenCtrl )
+        # w, h = self.getMainWindowSize()
+        subwin.setGeometry( 10, 10, 400, 400 )
+        subwin.show()
+
+    def showSollHausgelderView( self ):
+        # TODO: prüfen, ob shon ein SollzahlungenView vorhanden ist. Nur wenn nein, einen anlegen.
+        self.createSollHausgelderViewAndShow()
+
+    def createSollHausgelderViewAndShow( self ):
+        subwin = self._sollHausgelderCtrl.createSubwindow()
+        self._installView( subwin, self._sollHausgelderCtrl )
+        subwin.setGeometry( 20, 20, 400, 400 )
+        subwin.show()
 
     def _installView( self, subwin:MdiSubWindow, ctrl:MdiChildController ):
         #subwin.addQuitCallback( self.onCloseSubWindow )

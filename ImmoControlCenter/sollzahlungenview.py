@@ -4,6 +4,7 @@ from PySide2.QtCore import QSize
 from PySide2.QtGui import QIcon, Qt
 from PySide2.QtWidgets import QWidget, QGridLayout, QApplication, QHBoxLayout, QPushButton, QComboBox
 
+from constants import SollType
 from interfaces import XSollzahlung
 from sollzahlungentablemodel import SollzahlungenTableModel
 from tableviewext import TableViewExt
@@ -15,8 +16,9 @@ class SollzahlungenView( QWidget ):
     - um die Soll-Mieten anzuzeigen
     - um die Soll-HGV anzuzeigen
     """
-    def __init__( self, parent=None ):
+    def __init__( self, soll_type:SollType, parent=None ):
         QWidget.__init__( self, parent )
+        self._sollType = soll_type
         #self.setWindowTitle( "Sonstige Ausgaben: Rechnungen, Abgaben, Gebühren etc." )
         self._mainLayout = QGridLayout( self )
         self._toolbarLayout = QHBoxLayout()
@@ -28,7 +30,7 @@ class SollzahlungenView( QWidget ):
         #callbacks
         self._saveActionCallback = None
         #TableModel für die anzuzeigenden Zahlungen
-        self._tmSoll:SollzahlungenTableModel
+        self._tmSoll:SollzahlungenTableModel = None
 
         self._createGui()
 
@@ -68,11 +70,15 @@ class SollzahlungenView( QWidget ):
 
     def _assembleEditFields( self ):
         cbo = self._cboMietverhaeltnisse
-        cbo.setPlaceholderText( "Mieter auswählen" )
+        cbo.setPlaceholderText( "Mieter auswählen" if self._sollType == SollType.MIETE_SOLL else "Verwaltung auswählen" )
         self._editFieldsLayout.addWidget( cbo )
 
-    def setSollzahlungen( self, tm:SollzahlungenTableModel ):
+    def setSollzahlungenTableModel( self, tm:SollzahlungenTableModel ):
         self._tmSoll = tm
+        self._tvSoll.setModel( tm )
+
+    def getModel( self ) -> SollzahlungenTableModel:
+        return self._tmSoll
 
     def onSave( self ):
         if self._saveActionCallback:
