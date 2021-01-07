@@ -2,7 +2,7 @@ from enum import  IntEnum
 from dbaccess import DbAccess
 from typing import List, Dict, Tuple
 from constants import einausart
-from interfaces import XSonstAus, XSonstAusSummen, XZahlung, XSollHausgeld
+from interfaces import XSonstAus, XSonstAusSummen, XZahlung, XSollHausgeld, XSollMiete
 #from monthlist import monthList, monatsletzter
 #from datehelper import monthList, monatsletzter, getLastMonth
 from datehelper import *
@@ -302,7 +302,7 @@ class BusinessLogic:
                 "netto": 0,
                 "ruezufue": 0
             }
-            self._db.insertSollhausgeld( d, False )
+            self._db.insertSollHausgeld( d, False )
         self._db.commit()
 
     def getAlleSollHausgelder( self ) -> List[XSollHausgeld]:
@@ -392,6 +392,22 @@ class BusinessLogic:
             if aus.umlegbar:
                 summen.summe_umlegbar += betrag
         return sonstauslist, summen
+
+    def insertSollmieten( xlist:List[XSollMiete] ):
+        pass
+
+    def updateSollmieten( xlist:List[XSollMiete] ) -> int:
+        pass
+
+    def insertSollHausgelder( self, xlist:List[XSollHausgeld] ) -> int:
+        for x in xlist:
+            self._db.insertSollHausgeld( x, False )
+        self._db.commit()
+
+    def updateSollHausgelder( self, xlist:List[XSollHausgeld] ) -> int:
+        for x in xlist:
+            self._db.updateSollHausgeld( x, False )
+        self._db.commit()
 
 def test():
     busi = BusinessLogic.inst()

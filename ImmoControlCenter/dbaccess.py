@@ -1,7 +1,7 @@
 import sqlite3
 from typing import List, Tuple, Dict
 from constants import einausart
-from interfaces import XSonstAus, XZahlung, XSollHausgeld
+from interfaces import XSonstAus, XZahlung, XSollHausgeld, XSollMiete
 
 mon_dbnames = ("jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dez" )
 
@@ -55,7 +55,7 @@ class DbAccess:
               "from masterobjekt ma " \
               "inner join mietobjekt mi on mi.master_id = ma.master_id " \
               "where mi.aktiv = 1 " \
-              "order by ma.master_id, mi.mobj_id "
+              "order by ma.master_name, mi.mobj_id "
         return self._doReadAllGetDict( sql )
 
     def getMietverhaeltnisseEssentials( self, jahr:int ) -> List[Dict]:
@@ -199,7 +199,7 @@ class DbAccess:
         # Was passiert, wenn eine Verwaltung bei gleich bleibenden Hausgeldern wechselt?
         :return:
         """
-        sql = "select v.vw_id, s.vwg_id, s.von, coalesce(s.bis, '') as bis, s.netto, s.ruezufue, " \
+        sql = "select s.shg_id, v.vw_id, s.vwg_id, s.von, coalesce(s.bis, '') as bis, s.netto, s.ruezufue, " \
               "(s.netto + s.ruezufue) as brutto, " \
               "v.mobj_id, v.weg_name,  s.bemerkung " \
               "from sollhausgeld s " \
@@ -335,11 +335,23 @@ class DbAccess:
               "values( '%s', '%s', '%s', %f, %f ) " % ( d["mv_id"], d["von"], d["bis"], d["netto"], d["nkv"] )
         return self._doWrite( sql, commit )
 
-    def insertSollhausgeld( self, d:Dict, commit:bool=True ) -> int:
+    def insertSollHausgeld( self, d:Dict, commit:bool=True ) -> int:
         bis = "NULL" if not d["bis"] else "'" + d["bis"] + "'"
         sql = "insert into sollhausgeld " \
               "(vwg_id, von, bis, netto, ruezufue) " \
               "values( '%s', '%s', %s, %f, %f ) " % ( d["vwg_id"], d["von"], bis, d["netto"], d["ruezufue"] )
+        return self._doWrite( sql, commit )
+
+    def updateSollHausgeld( self, x:XSollHausgeld, commit:bool=True ) -> int:
+        bis = "NULL" if not x.bis else "'" + x.bis + "'"
+        sql = "update sollhausgeld " \
+              "set " \
+              "von = '%s', " \
+              "bis = %s, " \
+              "netto = %.2f, " \
+              "ruezufue = %.2f, " \
+              "bemerkung = '%s' " \
+              "where shg_id = %d " % (x.von, bis, x.netto, x.ruezufue, x.bemerkung, x.shg_id )
         return self._doWrite( sql, commit )
 
     def insertKreditorleistung( self, master_id:int, mobj_id:str, kreditor:str, buchungstext:str, umlegbar:int=0, commit:bool=True ):

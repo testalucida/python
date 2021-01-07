@@ -160,7 +160,7 @@ class MainController:
     def createSollHausgelderViewAndShow( self ):
         subwin = self._sollHausgelderCtrl.createSubwindow()
         self._installView( subwin, self._sollHausgelderCtrl )
-        subwin.setGeometry( 20, 20, 400, 400 )
+        subwin.setGeometry( 20, 20, 1000, 400 )
         subwin.show()
 
     def _installView( self, subwin:MdiSubWindow, ctrl:MdiChildController ):

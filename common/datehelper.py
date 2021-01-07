@@ -41,6 +41,12 @@ def getMonthIndex( month:str ) -> int:
     raise Exception( "Wrong month name: '%s'" % (month) )
 
 def getDateParts( datestring:str ) -> Tuple[int, int, int]:
+    """
+    Returns the given ISO or EUR datestring converted in
+    integer parts (y, m, d)
+    :param datestring:  yyyy-mm-dd (ISO) or dd.mm.yyyy (EUR)
+    :return:
+    """
     if isValidIsoDatestring( datestring ):
         y = int( datestring[0:4] )
         m = int( datestring[5:7] )
@@ -114,6 +120,12 @@ def compareEurDates(eurstring1: str, eurstring2: str) -> int:
 def getQDateFromIsoString( isostr:str ) -> QDate:
     parts = isostr.split( "-" )
     return QDate( int(parts[0]), int(parts[1]), int(parts[2]) )
+
+def getIsoStringFromQDate( date:QDate ) -> str:
+    return getIsoStringFromDateParts( date.year(), date.month(), date.day() )
+
+def getIsoStringFromDateParts( yyyy:int, mm:int, dd:int ) -> str:
+    return str( yyyy ) + "-%.2d-%.2d" % ( mm, dd )
 
 def isWithin(datestring2check: str, startdatestring: str, enddatestring: str) -> bool:
     """
@@ -217,6 +229,11 @@ def addDays(mydate: date, cntDays: int) -> date:
     return mydate + relativedelta(days = cntDays)
 
 def test():
+    d = QDate( 2020, 12, 3 )
+    print( d )
+    iso = getIsoStringFromQDate( d )
+    print( iso )
+
     y, m, d = getDateParts( "2020-05-25" )
     y, m, d = getDateParts( "13.11.2019" )
     i = getMonthIndex( "Dezember" )

@@ -46,10 +46,6 @@ class SonstAusController( MdiChildController ):
         sausview.setSummen( summen )
         self._setSummenfelder()
         tv = sausview.getAuszahlungenTableView()
-        tv.setSelectionBehavior( QAbstractItemView.SelectRows )
-        tv.setAlternatingRowColors( True )
-        tv.verticalHeader().setVisible( False )
-        tv.horizontalHeader().setMinimumSectionSize( 0 )
         tv.resizeColumnsToContents()
         tv.setSortingEnabled( True )  # Achtung: damit wirklich sortiert werden kann, muss die Sortierbarkeit im Model eingeschaltet werden
         tm.setSortable( True )

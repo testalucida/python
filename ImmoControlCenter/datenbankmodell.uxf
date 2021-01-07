@@ -18,6 +18,9 @@
 - name
 - vorname
 - anzahl_personen
+- flag_ing_diba:int {0:nicht umgestellt, 1:umgestellt)
+- kaution:int
+- kaution_bezahlt:text (date)
 - ...
 </panel_attributes>
     <additional_attributes/>
@@ -26,7 +29,7 @@
     <id>UMLClass</id>
     <coordinates>
       <x>369</x>
-      <y>405</y>
+      <y>450</y>
       <w>135</w>
       <h>117</h>
     </coordinates>
@@ -44,12 +47,13 @@
     <id>UMLClass</id>
     <coordinates>
       <x>378</x>
-      <y>594</y>
+      <y>639</y>
       <w>117</w>
       <h>108</h>
     </coordinates>
     <panel_attributes>sollhausgeld
 --
+- shg_id:int
 - vwg_id:int
 - von
 - bis
@@ -62,7 +66,7 @@
     <id>UMLClass</id>
     <coordinates>
       <x>54</x>
-      <y>378</y>
+      <y>423</y>
       <w>234</w>
       <h>162</h>
     </coordinates>
@@ -89,6 +93,7 @@
     </coordinates>
     <panel_attributes>sollmiete
 --
+- sm_id:int
 - mv_id:text
 - von
 - bis
@@ -137,12 +142,12 @@ m2=1</panel_attributes>
       <x>135</x>
       <y>135</y>
       <w>45</w>
-      <h>261</h>
+      <h>306</h>
     </coordinates>
     <panel_attributes>lt=-
 m1=1..n
 m2=0..1</panel_attributes>
-    <additional_attributes>10.0;270.0;10.0;10.0</additional_attributes>
+    <additional_attributes>10.0;320.0;10.0;10.0</additional_attributes>
   </element>
   <element>
     <id>UMLClass</id>
@@ -168,12 +173,12 @@ m2=0..1</panel_attributes>
       <x>495</x>
       <y>486</y>
       <w>171</w>
-      <h>36</h>
+      <h>72</h>
     </coordinates>
     <panel_attributes>lt=-
 m1=1..n
 m2=1</panel_attributes>
-    <additional_attributes>10.0;10.0;170.0;10.0</additional_attributes>
+    <additional_attributes>10.0;60.0;170.0;10.0</additional_attributes>
   </element>
   <element>
     <id>UMLClass</id>
@@ -232,7 +237,7 @@ m2=1</panel_attributes>
     <id>Relation</id>
     <coordinates>
       <x>432</x>
-      <y>513</y>
+      <y>558</y>
       <w>45</w>
       <h>99</h>
     </coordinates>
@@ -247,18 +252,18 @@ m2=1</panel_attributes>
       <x>423</x>
       <y>279</y>
       <w>27</w>
-      <h>144</h>
+      <h>189</h>
     </coordinates>
     <panel_attributes>lt=-
 m1=1
 m2=1</panel_attributes>
-    <additional_attributes>10.0;10.0;10.0;140.0</additional_attributes>
+    <additional_attributes>10.0;10.0;10.0;190.0</additional_attributes>
   </element>
   <element>
     <id>Relation</id>
     <coordinates>
       <x>279</x>
-      <y>450</y>
+      <y>495</y>
       <w>108</w>
       <h>36</h>
     </coordinates>
@@ -271,7 +276,7 @@ m2=0..1</panel_attributes>
     <id>UMLNote</id>
     <coordinates>
       <x>72</x>
-      <y>567</y>
+      <y>612</y>
       <w>216</w>
       <h>153</h>
     </coordinates>
@@ -290,7 +295,7 @@ die mv_id ist null.
     <id>Relation</id>
     <coordinates>
       <x>144</x>
-      <y>531</y>
+      <y>576</y>
       <w>27</w>
       <h>54</h>
     </coordinates>
@@ -440,12 +445,12 @@ Kommunen, Energielieferanten, Versicherungen, Haus und Grund etc.</panel_attribu
       <x>495</x>
       <y>414</y>
       <w>117</w>
-      <h>54</h>
+      <h>99</h>
     </coordinates>
     <panel_attributes>lt=-
 m1=1
 m2=0..n</panel_attributes>
-    <additional_attributes>10.0;40.0;110.0;10.0</additional_attributes>
+    <additional_attributes>10.0;90.0;110.0;10.0</additional_attributes>
   </element>
   <element>
     <id>UMLClass</id>
@@ -545,5 +550,35 @@ m1=1
 m2=0..n
 </panel_attributes>
     <additional_attributes>10.0;10.0;50.0;70.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>306</x>
+      <y>333</y>
+      <w>117</w>
+      <h>108</h>
+    </coordinates>
+    <panel_attributes>notiz
+--
+- n_id:int
+- mobj_id:text
+- erfasst:text(timestamp)
+- status:text
+- text:text</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>315</x>
+      <y>279</y>
+      <w>99</w>
+      <h>72</h>
+    </coordinates>
+    <panel_attributes>lt=-
+m1=1
+m2=0..n</panel_attributes>
+    <additional_attributes>90.0;10.0;10.0;60.0</additional_attributes>
   </element>
 </diagram>
