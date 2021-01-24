@@ -117,12 +117,20 @@ def compareEurDates(eurstring1: str, eurstring2: str) -> int:
     if date1 == date2: return 0
     return -1
 
+def getDateFromIsoString( isostring:str ) -> date:
+    y, m, d = getDateParts( isostring )
+    d = date( y, m, d )
+    return d
+
 def getQDateFromIsoString( isostr:str ) -> QDate:
     parts = isostr.split( "-" )
     return QDate( int(parts[0]), int(parts[1]), int(parts[2]) )
 
 def getIsoStringFromQDate( date:QDate ) -> str:
     return getIsoStringFromDateParts( date.year(), date.month(), date.day() )
+
+def getIsoStringFromDate( dt:date ) -> str:
+    return getIsoStringFromDateParts( dt.year, dt.month, dt.day )
 
 def getIsoStringFromDateParts( yyyy:int, mm:int, dd:int ) -> str:
     return str( yyyy ) + "-%.2d-%.2d" % ( mm, dd )
@@ -227,6 +235,11 @@ def addMonths(mydate: date, cntMonths: int) -> date:
 
 def addDays(mydate: date, cntDays: int) -> date:
     return mydate + relativedelta(days = cntDays)
+
+def addDaysToIsoString( isostring:str, cntDays:int ) -> str:
+    d = getDateFromIsoString( isostring )
+    d = addDays( d, cntDays )
+    return getIsoStringFromDate( d )
 
 def test():
     d = QDate( 2020, 12, 3 )

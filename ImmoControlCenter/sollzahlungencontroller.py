@@ -1,3 +1,4 @@
+import copy
 from enum import IntEnum
 from typing import Dict, List
 
@@ -7,12 +8,13 @@ from PySide2.QtWidgets import QAction, QWidget, QMenu, QMessageBox, QInputDialog
 import constants
 from business import BusinessLogic
 from constants import SollType
-from datehelper import getIsoStringFromQDate
+from datehelper import getIsoStringFromQDate, addDaysToIsoString
 from mdichildcontroller import MdiChildController
 from qtderivates import CalendarDialog
 from sollzahlungenview import SollzahlungenView
 from sollzahlungentablemodel import SollzahlungenTableModel, SollmietenTableModel, SollHGVTableModel
-from interfaces import XSollzahlung, XSollHausgeld
+from interfaces import XSollzahlung, XSollHausgeld, XSollMiete
+
 
 class SollzahlungenController( MdiChildController ):
     """
@@ -149,20 +151,30 @@ class SollzahlungenController( MdiChildController ):
                 else:
                     # Ende-Datum und zu beendenden Satz merken
                     self._sollToTerminate =  self._tm.getXSollzahlung( row )
+                    newbegin:str = addDaysToIsoString( self._terminationDate, 1 )
                     #  Edit-Fields mit passenden Werten für neuen Satz vorbelegen
-                    pass
+                    newx = copy.copy( self._sollToTerminate )
+                    newx.von = newbegin
+                    newx.bis = ""
+                    self._view.provideEditFields( newx )
                     self._view.setSaveButtonEnabled( True )
                     self._nChanges += 1
 
+    # def _askForTerminationDate( self ) -> str:
+    #     isodate = ""
+    #     def onOk( date:QDate ):
+    #         isodate = getIsoStringFromQDate( date )
+    #     dlg = CalendarDialog( self._view )
+    #     dlg.setTitle( "Beendigungsdatum des ausgewählten Intervalls" )
+    #     dlg.setCallback( onOk )
+    #     dlg.setModal( True )
+    #     dlg.show()
+    #     return isodate
+
     def _askForTerminationDate( self ) -> str:
-        isodate = ""
-        def onOk( date:QDate ):
-            isodate = getIsoStringFromQDate( date )
-        dlg = CalendarDialog( self._view )
-        dlg.setTitle( "Beendigungsdatum des ausgewählten Intervalls" )
-        dlg.setCallback( onOk )
-        dlg.show()
-        return isodate
+        d = QInputDialog()
+        d.show()
+        return ""
 
     def _resetAction( self ):
         self._sollToTerminate = None

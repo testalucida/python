@@ -58,7 +58,7 @@ class BusinessLogic:
     def terminate(self):
         self._db.close()
 
-    def getMietzahlungenMitSollUndSummen( self, jahr:int, monat:int ):
+    def getMietzahlungenMitSollUndSummen( self, jahr:int, monat:int ) -> List[Dict]:
         mieten:List[Dict] = self._db.getMietzahlungenMitSummen( jahr )
         # sollwerte versorgen:
         return self.provideSollmieten( mieten, jahr, monat )
@@ -353,10 +353,12 @@ class BusinessLogic:
         if self._masterundmietobjekte is None:
             self._masterundmietobjekte = self._db.getMasterUndMietobjekte()
         master_id = self.getMasteridFromMastername( master_name )
-        mietobjekte:List[str] = ["",]
+        mietobjekte:List[str] = ["**alle**",]
         for d in self._masterundmietobjekte:
             if d["master_id"] == master_id:
                 mietobjekte.append( d["mobj_id"] )
+        if len( mietobjekte ) == 2:  #außer "alle" nur 1 Eintrag
+            mietobjekte.remove( "**alle**" )
         return mietobjekte
 
     def getMasteridFromMastername( self, master_name:str ) -> int:

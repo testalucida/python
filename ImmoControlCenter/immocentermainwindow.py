@@ -44,7 +44,7 @@ class ImmoCenterMainWindow( QMainWindow ):
 
         self._createImmoCenterMenu()
         self._createMietobjektMenu()
-        self._createViewMenu()
+        self._createZahlungenMenu()
         self._createSqlMenu()
 
         self.setMenuBar( self._menubar )
@@ -103,6 +103,18 @@ class ImmoCenterMainWindow( QMainWindow ):
         menu = QtWidgets.QMenu( self._menubar, title="Mietobjekt" )
         self._menubar.addMenu( menu )
 
+        # Menüpunkt "Wohnungsstammdaten..."
+        action = QAction( self, text="Wohnungsstammdaten..." )
+        action.triggered.connect( self.onViewWhgStammdaten )
+        menu.addAction( action )
+
+        # Menüpunkt "Mietverhältnisse..."
+        action = QAction( self, text="Mietverhältnisse..." )
+        action.triggered.connect( self.onViewMietverhaeltnisse )
+        menu.addAction( action )
+
+        menu.addSeparator()
+
         action = QAction( self, text="Mieterwechsel..." )
         action.triggered.connect( self.onMieterwechsel )
         menu.addAction( action )
@@ -111,18 +123,8 @@ class ImmoCenterMainWindow( QMainWindow ):
         action.triggered.connect( self.onVerwalterwechsel )
         menu.addAction( action )
 
-        menu.addSeparator()
-
-        action = QAction( self, text="Änderung Miete..." )
-        action.triggered.connect( self.onChangeSollmiete() )
-        menu.addAction( action )
-
-        action = QAction( self, text="Änderung Hausgeld..." )
-        action.triggered.connect( self.onChangeSollhausgeld() )
-        menu.addAction( action )
-
-    def _createViewMenu( self ):
-        menu = QtWidgets.QMenu( self._menubar, title="Sicht" )
+    def _createZahlungenMenu( self ):
+        menu = QtWidgets.QMenu( self._menubar, title="Ist- und Sollzahlungen" )
         self._menubar.addMenu( menu )
 
         # Menüpunkt "Mietzahlungen..."
@@ -135,6 +137,13 @@ class ImmoCenterMainWindow( QMainWindow ):
         action.triggered.connect( self.onViewHGVorauszahlungen )
         menu.addAction( action )
 
+        # Menüpunkt "Rechnungen, Abgaben, Gebühren..."
+        action = QAction( self, text="Rechnungen, Abgaben, Gebühren..." )
+        action.triggered.connect( self.onViewRechnungen )
+        menu.addAction( action )
+
+        menu.addSeparator()
+
         # Menüpunkt "Soll-Miete..."
         action = QAction( self, text="Soll-Miete..." )
         action.triggered.connect( self.onViewSollMiete )
@@ -145,24 +154,11 @@ class ImmoCenterMainWindow( QMainWindow ):
         action.triggered.connect( self.onViewSollHausgeld )
         menu.addAction( action )
 
+        menu.addSeparator()
+
         # Menüpunkt "NK- und HG-Abrechnungen Vorjahr..."
         action = QAction( self, text="NK- und HG-Abrechnungen Vorjahr..." )
         action.triggered.connect( self.onViewAbrechnungen )
-        menu.addAction( action )
-
-        # Menüpunkt "Handwerker, Kommunen, Versorger..."
-        action = QAction( self, text="Rechnungen, Abgaben, Gebühren..." )
-        action.triggered.connect( self.onViewRechnungen )
-        menu.addAction( action )
-
-        # Menüpunkt "Wohnungsstammdaten..."
-        action = QAction( self, text="Wohnungsstammdaten..." )
-        action.triggered.connect( self.onViewWhgStammdaten )
-        menu.addAction( action )
-
-        # Menüpunkt "Mietverhältnisse..."
-        action = QAction( self, text="Mietverhältnisse..." )
-        action.triggered.connect( self.onViewMietverhaeltnisse )
         menu.addAction( action )
 
     def _createSqlMenu( self ):
@@ -221,11 +217,11 @@ class ImmoCenterMainWindow( QMainWindow ):
     def onVerwalterwechsel( self ):
         pass
 
-    def onChangeSollmiete( self ):
-        pass
-
-    def onChangeSollhausgeld( self ):
-        pass
+    # def onChangeSollmiete( self ):
+    #     pass
+    #
+    # def onChangeSollhausgeld( self ):
+    #     pass
 
     def onSaveActiveView( self ):
         self.doCallback( MainWindowAction.SAVE_ACTIVE_VIEW )

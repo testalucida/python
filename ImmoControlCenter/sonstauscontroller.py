@@ -165,7 +165,7 @@ class SonstAusController( MdiChildController ):
                 buchungstexte = BusinessLogic.inst().getBuchungstexteFuerMasterobjekt( master_name, kreditor )
         self._view.setLeistungsidentifikationen( buchungstexte )
 
-    def onSubmitChanges( self, x:XSonstAus ):
+    def onSubmitChanges( self, x:XSonstAus ) -> bool:
         """
         wird gerufen, wenn der Anwender OK im Edit-Feld-Bereich drückt.
         Die Änderungen werden dann geprüft und in die Auszahlungentabelle übernommen.
@@ -174,12 +174,16 @@ class SonstAusController( MdiChildController ):
         """
         msg = self._validateEditFields( x )
         if len( msg ) == 0:
+            # das master-objekt könnte sich geändert haben - wir ermitteln vorsichtshalber die master_id
+            x.master_id = BusinessLogic.inst().getMasteridFromMastername( x.master_name )
             self._view.getAuszahlungenTableView().model().updateOrInsert( x )
             self._view.clearEditFields()
             self._view.setSaveButtonEnabled( True )
             self._setChangedFlag( True )
+            return True
         else:
             self._view.showException( "Validation Fehler", "Falsche oder fehlende Daten bei der Erfassung der Auszahlung", msg )
+            return False
 
     def getViewTitle( self ) -> str:
         return self._title

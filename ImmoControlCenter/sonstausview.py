@@ -319,7 +319,8 @@ class SonstigeAusgabenView( QWidget ):
         :return:
         """
         if self._submitChangesCallback:
-            self._submitChangesCallback( self._getEditedXSonstAus() )
+            ok:bool = self._submitChangesCallback( self._getEditedXSonstAus() )
+            if ok: self._tvAuszahlungen.clearSelection()
 
     def _getEditedXSonstAus( self ) -> XSonstAus:
         x:XSonstAus = self._justEditing if self._justEditing else XSonstAus()
@@ -340,6 +341,7 @@ class SonstigeAusgabenView( QWidget ):
 
     def onClearEditFields( self, arg ):
         self.clearEditFields()
+        self._tvAuszahlungen.clearSelection()
 
     def getAuszahlungenTableView( self ) -> QTableView:
         return self._tvAuszahlungen
@@ -388,7 +390,7 @@ class SonstigeAusgabenView( QWidget ):
         self._cboMietobjekt.clear()
         for obj in mietobjekte:
             self._cboMietobjekt.addItem( obj )
-        self._cboMietobjekt.setCurrentIndex( -1 )
+        self._cboMietobjekt.setCurrentIndex( 0 )
 
     def selectMietobjekt( self, mobj_id:str ):
         self._cboMietobjekt.setCurrentText( mobj_id )

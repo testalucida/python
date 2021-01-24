@@ -34,6 +34,11 @@ class SollzahlungenTableModel( IccTableModel ):
         self._bruttoColumn = 6
         self._sortable = False
 
+    def isChanged( self ) -> bool:
+        for k, v in self._changes.items():
+            if len( v ) > 0: return True
+        return False
+
     def setSortable( self, sortable:bool=True ):
         self._sortable = sortable
 

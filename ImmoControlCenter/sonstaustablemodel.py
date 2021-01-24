@@ -114,7 +114,9 @@ class SonstAusTableModel( IccTableModel ):
         return self._changes
 
     def isChanged( self ) -> bool:
-        return any( self._changes )
+        for k, v in self._changes.items():
+            if len( v ) > 0: return True
+        return False
 
     def updateOrInsert( self, x:XSonstAus ):
         l = self._sonstauslist
