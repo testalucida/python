@@ -121,7 +121,7 @@ class SonstAusTableModel( IccTableModel ):
     def updateOrInsert( self, x:XSonstAus ):
         l = self._sonstauslist
         cols = len( self._headers )
-        if x.saus_id: # update of existing auszahlung
+        if x.saus_id or x in self._sonstauslist: # update of existing auszahlung
             row = self.getRow( x )
             idxfrom = self.index( row, 0 )
             idxbis = self.index( row, cols-1 )
