@@ -34,7 +34,7 @@ class SonstAusController( MdiChildController ):
         sausview.setBuchungsjahr( jahr )
         self._jahr = jahr
         monidx, monat = BusinessLogic.inst().getLetztenMonat()
-        sausview.setBuchungsdatum( 1, monat )
+        #sausview.setBuchungsdatum( 1, monat )
         masterobjekte = BusinessLogic.inst().getMasterobjekte()
         sausview.setMasterobjekte( masterobjekte )
         #kreditoren = BusinessLogic.inst().getAlleKreditoren()

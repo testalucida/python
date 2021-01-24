@@ -100,6 +100,7 @@ class SmartDateEdit( QLineEdit ):
         :return:
         """
         ds = self.text()
+        if ds.endswith( "\n" ): ds = ds[:-1]
         if isValidIsoDatestring( ds ) or isValidEurDatestring( ds ):
             return ds
         else:
@@ -110,13 +111,13 @@ class SmartDateEdit( QLineEdit ):
         text = self.text()
         d:QDate = None
         if text == "":
-            d = getRelativeQDate( -1, 1 )
+            d = getRelativeQDate( 0, 0 )
         else:
             if isValidIsoDatestring( text ):
                 d = getQDateFromIsoString( text )
 
             else:
-                d =getRelativeQDate( -1, 1 )
+                d =getRelativeQDate( 0, 0 )
         cal.setSelectedDate( d )
         cal.setCallback( self.onDatumSelected )
         cal.show()
