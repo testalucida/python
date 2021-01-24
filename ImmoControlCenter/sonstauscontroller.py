@@ -2,6 +2,7 @@ from PySide2.QtCore import QModelIndex, QPoint
 from PySide2.QtWidgets import QWidget, QAbstractItemView, QAction, QMenu
 from typing import List, Dict
 import datetime
+import sys
 from business import BusinessLogic
 from mdichildcontroller import MdiChildController
 from sonstaustablemodel import SonstAusTableModel
@@ -75,15 +76,37 @@ class SonstAusController( MdiChildController ):
         try:
             idx = constants.actionList.index( actionstring )
         except:
-            raise Exception( "SonstAusController._dispatchSaveAction(): unknown action '%s'" % (actionstring) )
+            self._view.showException( "Internal Error", "SonstAusController._dispatchSaveAction(): unknown action '%s'"
+                                      % (actionstring)  )
+            sys.exit()
+
         if idx == constants.tableAction.INSERT:
-            BusinessLogic.inst().insertSonstigeAuszahlung( x )
+            try:
+                BusinessLogic.inst().insertSonstigeAuszahlung( x )
+            except Exception as e:
+                self._view.showException( "SonstAusController._dispatchSaveAction()",
+                                          "call BusinessLogic.inst().insertSonstigeAuszahlung(x)",
+                                          str( e ) )
+                sys.exit()
         elif idx == constants.tableAction.UPDATE:
-            BusinessLogic.inst().updateSonstigeAuszahlung( x )
+            try:
+                BusinessLogic.inst().updateSonstigeAuszahlung( x )
+            except Exception as e:
+                self._view.showException( "SonstAusController._dispatchSaveAction()",
+                                          "call BusinessLogic.inst().updateSonstigeAuszahlung(x)",
+                                          str( e ) )
+                sys.exit()
         elif idx == constants.tableAction.DELETE:
-            BusinessLogic.inst().deleteSonstigeAuszahlung( x )
+            try:
+                BusinessLogic.inst().deleteSonstigeAuszahlung( x )
+            except Exception as e:
+                self._view.showException( "SonstAusController._dispatchSaveAction()",
+                                          "call BusinessLogic.inst().deleteSonstigeAuszahlung(x)",
+                                          str( e ) )
+                sys.exit()
         else:
-            raise Exception( "SonstAusController._dispatchSaveAction(): known but unhandled action '%s'" % (actionstring) )
+            self._view.showException( "SonstAusController._dispatchSaveAction(): known but unhandled action '%s'" % (actionstring) )
+            sys.exit()
 
     def onAuszahlungenLeftClick( self, index: QModelIndex ):
         """

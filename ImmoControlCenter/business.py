@@ -131,7 +131,7 @@ class BusinessLogic:
         # Also erst die master_id ermitteln
         if x.master_id == 0:
             x.master_id = self._db.getMasterId( x.master_name )
-        if x.master_id <= 0:
+        if x.master_id < 0:
             raise Exception( "couldn't get master_id for master_name '%s' " % (x.master_name))
         self._db.insertSonstAus( x, False )
         x.saus_id = self._db.getMaxId( "sonstaus", "saus_id" )
@@ -353,12 +353,12 @@ class BusinessLogic:
         if self._masterundmietobjekte is None:
             self._masterundmietobjekte = self._db.getMasterUndMietobjekte()
         master_id = self.getMasteridFromMastername( master_name )
-        mietobjekte:List[str] = ["**alle**",]
+        mietobjekte:List[str] = [] #["",]
         for d in self._masterundmietobjekte:
             if d["master_id"] == master_id:
                 mietobjekte.append( d["mobj_id"] )
-        if len( mietobjekte ) == 2:  #außer "alle" nur 1 Eintrag
-            mietobjekte.remove( "**alle**" )
+        # if len( mietobjekte ) == 2:  #außer "alle" nur 1 Eintrag
+        #     mietobjekte.remove( "**alle**" )
         return mietobjekte
 
     def getMasteridFromMastername( self, master_name:str ) -> int:
