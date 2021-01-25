@@ -275,8 +275,14 @@ class CheckView( QWidget ):
             self.tableView.setIndexWidget( tm.index( r, nokColumnIdx ), btnNok )
         self.tableView.setSizeAdjustPolicy( QtWidgets.QAbstractScrollArea.AdjustToContents )
         self.tableView.resizeColumnsToContents()
-        checkmonatColumnIdx = tm.getCheckmonatColumnIndex()
-        self.tableView.scrollTo( checkmonatColumnIdx )
+        col = tm.getCheckmonatColumnIndex().column()
+        # col im Januar: 8, im Mai: 12
+        # ab Juli scrollen wir nach links, damit die Monate Okt bis Dez sichtbar werden.
+        # als Scrollwert geben wir Spalte 7 ein; das ist experimentell herausgefunden
+        if col > 13: # größer als Juni
+            idx = tm.index( 0, 7 )
+            self.tableView.scrollTo( idx )
+
         self._tm = tm
 
     def _okButtonClicked(self, checkstate:bool ):
