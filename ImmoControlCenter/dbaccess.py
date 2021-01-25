@@ -475,7 +475,7 @@ class DbAccess:
         :param value: der Wert, der im betreffenden Monat eingetragen werden soll
         :return:
         """
-        dbval = "%.2f" % (value) if value > 0 else "NULL"
+        dbval = "%.2f" % (value) if value != 0 else "NULL"  # value ist bei Mieten > 0, bei HGV < 0
         sMonat =  mon_dbnames[monat-1] if isinstance( monat, int ) else monat
         sql = "update mtleinaus set '%s' = %s where meinaus_id = %d  " % ( sMonat, dbval, meinaus_id )
         return self._doWrite( sql, commit )
