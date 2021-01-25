@@ -127,7 +127,7 @@ class TableViewExt( QTableView ):
         self._frozen.setSelectionModel( self.selectionModel() )  ##QAbstractItemView.selectionModel( self ) )
         self._frozen.setHorizontalScrollBarPolicy( Qt.ScrollBarAlwaysOff )
         self._frozen.setVerticalScrollBarPolicy( Qt.ScrollBarAlwaysOff )
-        #self._frozen.setStyleSheet( "border: none; background-color: #d1d8d8" )
+        self._frozen.setStyleSheet( "border: none; background-color: #fffff6" )
         # make columns to freeze (i.e. columns to be seen in self.frozen)
         # of same width as in the original tableview
         for n in range( self._nFrozen ):
