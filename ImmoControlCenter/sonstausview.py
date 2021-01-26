@@ -319,8 +319,12 @@ class SonstigeAusgabenView( QWidget ):
         :return:
         """
         if self._submitChangesCallback:
-            ok:bool = self._submitChangesCallback( self._getEditedXSonstAus() )
-            if ok: self._tvAuszahlungen.clearSelection()
+            x:XSonstAus = self._getEditedXSonstAus()
+            ok:bool = self._submitChangesCallback( x )
+            if ok:
+                self._tvAuszahlungen.clearSelection()
+                if x.saus_id <= 0: # neuer Eintrag in Tabelle, nach unten scrollen
+                    self._tvAuszahlungen.scrollToBottom()
 
     def _getEditedXSonstAus( self ) -> XSonstAus:
         x:XSonstAus = self._justEditing if self._justEditing else XSonstAus()

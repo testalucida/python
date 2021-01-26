@@ -154,9 +154,9 @@ class IntDisplay( QLineEdit ):
     def setIntValue( self, val:int ):
         self.setText( str( val ) )
         if val < 0:
-            self.setStyleSheet( "color: green;" )
-        else:
             self.setStyleSheet( "color: red;" )
+        else:
+            self.setStyleSheet( "color: green;" )
 
     def getIntValue( self ) -> float:
         val = self.text()

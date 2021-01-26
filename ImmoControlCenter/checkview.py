@@ -54,7 +54,7 @@ class ValueDialog( QDialog ):
         self._numEntry = QtWidgets.QLineEdit( self )
         layout.addWidget( self._numEntry, 1, 0 )
         self._numEntry.setAlignment( Qt.AlignRight | Qt.AlignTrailing | Qt.AlignVCenter )
-        self._numEntry.setValidator( QDoubleValidator( 0, 9999, 2, self ) )
+        self._numEntry.setValidator( QDoubleValidator( -9999, 9999, 2, self ) )
         self._numEntry.setFocus()
 
         self.btnAdd = QPushButton( self, text="+" )
