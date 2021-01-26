@@ -51,7 +51,8 @@ class MainController:
             MainWindowAction.OPEN_HGV_VIEW: self.showHGVView,
             MainWindowAction.FOLGEJAHR: self.createFolgejahr,
             MainWindowAction.OPEN_SOLL_MIETE_VIEW: self.showSollMietenView,
-            MainWindowAction.OPEN_SOLL_HG_VIEW: self.showSollHausgelderView
+            MainWindowAction.OPEN_SOLL_HG_VIEW: self.showSollHausgelderView,
+            MainWindowAction.RESIZE_MAIN_WINDOW: self.resizeAllViews
         }
         m = switcher.get( action, lambda: "Nicht unterstützte Action: " + str( action ) )
         m()
@@ -104,8 +105,6 @@ class MainController:
         w, h = self.getMainWindowSize()
         w2 = w/2
         subwin.setGeometry( 0, 0, w2, h-22 )
-        # self._x += 20
-        # self._y += 20
         subwin.show()
 
     def showHGVView( self ):
@@ -156,6 +155,11 @@ class MainController:
     def showSollHausgelderView( self ):
         # TODO: prüfen, ob shon ein SollzahlungenView vorhanden ist. Nur wenn nein, einen anlegen.
         self.createSollHausgelderViewAndShow()
+
+    def resizeAllViews( self ):
+        # wird gerufen, wenn das MainWindow resized wird.
+        geom = self._mainwin.geometry()
+        #print( "resized. new size: ", geom.width(), " x ", geom.height() )
 
     def createSollHausgelderViewAndShow( self ):
         subwin = self._sollHausgelderCtrl.createSubwindow()

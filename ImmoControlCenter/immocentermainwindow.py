@@ -15,6 +15,7 @@ class MainWindowAction( Enum ):
     FOLGEJAHR=8,
     OPEN_SOLL_MIETE_VIEW = 9,
     OPEN_SOLL_HG_VIEW = 10,
+    RESIZE_MAIN_WINDOW = 11,
     EXIT=99
 
 
@@ -22,7 +23,7 @@ class ImmoCenterMainWindow( QMainWindow ):
     def __init__( self ):
         QMainWindow.__init__( self )
         self.setWindowTitle( "ImmoControlCenter" )
-        self.resize( 940, 800 )
+        #self.resize( 2500, 1500 )
         self._menubar:QMenuBar
         self.mdiArea:QMdiArea
         self._toolbar: QToolBar
@@ -32,6 +33,10 @@ class ImmoCenterMainWindow( QMainWindow ):
 
         # self._addMdiChild()
         # self._addMdiChild()
+
+    def resizeEvent( self, event ):
+        QMainWindow.resizeEvent( self, event )
+        self.doCallback( MainWindowAction.RESIZE_MAIN_WINDOW )
 
     def _createUI( self ):
         mdiArea = QMdiArea( self )

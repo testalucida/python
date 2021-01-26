@@ -1,5 +1,7 @@
 import sys
 # sys.path.append( "/home/martin/Projects/python/common" )
+from typing import Tuple, Dict, List
+
 sys.path.append( "../common" )
 from PySide2.QtWidgets import QApplication
 from PySide2 import QtCore
@@ -23,9 +25,27 @@ class ShutDownFilter( QtCore.QObject ):
 
     def quit_app(self):
         # TODO: copy immo.db to all-inkl server
-        print('CLEAN EXIT')
+        geom = self._win.geometry()
+        print('CLEAN EXIT. x=%d - y=%d - w=%d - h=%d' % (geom.x(), geom.y(), geom.width(), geom.height() ) )
+        writeGeometryOnShutdown( geom.x(), geom.y(), geom.width(), geom.height() )
         self._win.removeEventFilter(self)
         self._app.quit()
+
+def getGeometryOnLastShutdown() -> Dict:
+    f = open( "icc_settings.txt", "r" )
+    s = f.read()
+    parts = s.split( "," )
+    d = dict()
+    d["x"] = int( parts[0] )
+    d["y"] = int( parts[1] )
+    d["w"] = int( parts[2] )
+    d["h"] = int( parts[3] )
+    return d
+
+def writeGeometryOnShutdown( x, y, w, h ) -> None:
+    f = open( "icc_settings.txt", "w" )
+    s = str( x ) + "," + str( y ) + "," + str( w ) + "," + str( h )
+    f.write( s )
 
 def main():
     app = QApplication()
@@ -34,19 +54,18 @@ def main():
     # see: https://stackoverflow.com/questions/53097415/pyside2-connect-close-by-window-x-to-custom-exit-method
     shutDownFilter = ShutDownFilter(win, app)
     win.installEventFilter(shutDownFilter)
-    #win.showMaximized()
-    rec = QApplication.desktop().screenGeometry( win )
-    height = rec.height()
-    width = rec.width()
 
     win.show()
+    try:
+        pos_size = getGeometryOnLastShutdown()
+        win.move( pos_size["x"], pos_size["y"] )
+        win.resize( pos_size["w"], pos_size["h"] )
+    except:
+        win.resize( 1900, 1000 )
 
-    # win.resize( 1800, 1000 )
-    win.resize( width, height )
     ctrl = MainController( win )
     ctrl.showStartViews()
-    # ctrl.onMainWindowAction( MainWindowAction.OPEN_MIETE_VIEW )
-    # ctrl.onMainWindowAction( MainWindowAction.OPEN_HGV_VIEW )
+    #win.resize( 1901, 1000 )
 
     app.exec_()
 
