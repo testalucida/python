@@ -480,6 +480,20 @@ class DbAccess:
         sql = "update mtleinaus set '%s' = %s where meinaus_id = %d  " % ( sMonat, dbval, meinaus_id )
         return self._doWrite( sql, commit )
 
+    def createObjektKonto( self, konto_name:str, commit:bool=True ) -> None:
+        ddl = """CREATE TABLE %s (
+            "buch_id"	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
+            "z_id"	INTEGER NOT NULL,
+            "lwa"	TEXT NOT NULL,
+            "buch_datum"	TEXT,
+            "monat"	INTEGER NOT NULL,
+            "jahr"	INTEGER NOT NULL,
+            "betrag"	REAL NOT NULL,
+            "art"	TEXT NOT NULL,
+            "beschreibung"	TEXT
+        )""" % ( konto_name )
+        self._doWrite( ddl, commit )
+
     def _doRead( self, sql:str ) -> List[Tuple]:
         self._cursor.execute( sql )
         records = self._cursor.fetchall()
@@ -525,7 +539,10 @@ def test():
     db = DbAccess( "immo.db" )
     db.open()
 
-    d = db.getMasterUndMietobjekt( 396 )
+    db.createObjektKonto( "**kannweg**" )
+
+
+    # d = db.getMasterUndMietobjekt( 396 )
 
 
     #y = db.getJahrFromMtlEinAus( 350 )
@@ -546,29 +563,29 @@ def test():
 
 
     #dictlist = db.getKreditorleistungen()
-    n = db.existsKreditorleistung( 4, "zweibrueck", "EVS Abfall", "BNR 6611020394" )
-
-    x = XSonstAus()
-    x.saus_id = 1
-    x.master_id = 18
-    x.mobj_id = "ww56_21"
-    x.kreditor = "K.Frantz"
-    x.rgnr = "ABC 123 / 2020"
-    x.betrag = 290.98
-    x.rgdatum = "2020-12-28"
-    x.rgtext = "Zu Weihnachten noch eine schöne Reparatur"
-    x.buchungsdatum = "2020-12-30"
-    x.buchungsjahr = 2020
-    x.umlegbar = 0
-    x.werterhaltend = 1
-    x.buchungstext = "Kd.nr 223344, Objekt Wellesweiler Str. 56"
+    # n = db.existsKreditorleistung( 4, "zweibrueck", "EVS Abfall", "BNR 6611020394" )
+    #
+    # x = XSonstAus()
+    # x.saus_id = 1
+    # x.master_id = 18
+    # x.mobj_id = "ww56_21"
+    # x.kreditor = "K.Frantz"
+    # x.rgnr = "ABC 123 / 2020"
+    # x.betrag = 290.98
+    # x.rgdatum = "2020-12-28"
+    # x.rgtext = "Zu Weihnachten noch eine schöne Reparatur"
+    # x.buchungsdatum = "2020-12-30"
+    # x.buchungsjahr = 2020
+    # x.umlegbar = 0
+    # x.werterhaltend = 1
+    # x.buchungstext = "Kd.nr 223344, Objekt Wellesweiler Str. 56"
     #rc = db.insertSonstAus( x )
     # rc = db.updateSonstAus( x )
     # print( rc )
-    xlist = db.getSonstigeAusgaben( 2020 )
-
-    dictlist = db.getMasterUndMietobjekte()
-    print( dictlist )
+    # xlist = db.getSonstigeAusgaben( 2020 )
+    #
+    # dictlist = db.getMasterUndMietobjekte()
+    # print( dictlist )
     # dictlist = db.getServiceleistungen()
     # print( dictlist )
     # list = db.getServiceleister()

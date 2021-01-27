@@ -97,7 +97,13 @@ class CheckController( MdiChildController, ABC ):
     def save( self ):
         model: CheckTableModel = self._subwin.widget().getModel()
         if model.isChanged():
-            self.writeChanges( model.getChanges() )
+            try:
+                self.writeChanges( model.getChanges() )
+            except Exception as ex:
+                view: CheckView = self._subwin.widget()
+                view.showException( "Speichern der geänderten Daten hat nicht geklappt.", str( ex ) )
+                return
+
             model.resetChanges()
             self._doDataSavedCallback()
 
