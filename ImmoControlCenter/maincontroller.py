@@ -104,7 +104,7 @@ class MainController:
         self._installView( subwin, self._mietenCtrl )
         w, h = self.getMainWindowSize()
         w2 = w/2
-        subwin.setGeometry( 0, 0, w2, h-22 )
+        subwin.setGeometry( 0, 0, w2, h ) #h-22 )
         subwin.show()
 
     def showHGVView( self ):
@@ -119,11 +119,14 @@ class MainController:
         subwin = self._hgvCtrl.createSubwindow()
         self._installView( subwin, self._hgvCtrl )
         w, h = self.getMainWindowSize()
-        w2 = w/2
+        w2 = w / 2
         x = w2
-        subwin.setGeometry( x, 0, w2, h/2 )
-        self._x += 20
-        self._y += 20
+        # sonstaussubwin = self.getView( self._sonstAusCtrl )
+        # y = h - sonstaussubwin.height()
+        # h2 = h - y - 25
+        h2 = h/2
+        y = h2
+        subwin.setGeometry( x, y, w2, h2 )
         subwin.show()
 
     def showSonstAusView( self ):
@@ -135,10 +138,7 @@ class MainController:
         w, h = self.getMainWindowSize()
         w2 = w / 2
         x = w2
-        hgvsubwin = self.getView( self._hgvCtrl )
-        y = h - hgvsubwin.height()
-        h2 = h - y - 25
-        subwin.setGeometry( x, y, w2, h2 )
+        subwin.setGeometry( x, 0, w2, h / 2 )
         subwin.show()
 
     def showSollMietenView( self ):
