@@ -176,7 +176,7 @@ class BusinessLogic:
 
     def _writeZahlungFromXSonstAus( self, x:XSonstAus, insert:bool ):
         z:XZahlung = XZahlung()
-        z.betrag = x.betrag if x.betrag < 0 else x.betrag*(-1)
+        z.betrag = x.betrag #if x.betrag < 0 else x.betrag*(-1)
         z.jahr = x.buchungsjahr
         z.mobj_id = x.mobj_id
         z.master_id = x.master_id
