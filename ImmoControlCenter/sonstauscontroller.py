@@ -38,9 +38,10 @@ class SonstAusController( MdiChildController ):
         #sausview.setBuchungsdatum( 1, monat )
         masterobjekte = BusinessLogic.inst().getMasterobjekte()
         sausview.setMasterobjekte( masterobjekte )
-        #kreditoren = BusinessLogic.inst().getAlleKreditoren()
-        #sausview.setKreditoren( kreditoren )
-        #self._provideBuchungstexte( masterobjekte[0], None, kreditoren[0] )
+        kreditoren = BusinessLogic.inst().getAlleKreditoren()
+        sausview.setKreditoren( kreditoren )
+        if len( kreditoren ) > 0:
+            self._view.setKreditoren( kreditoren )
         sonstauslist, summen = BusinessLogic.inst().getSonstigeAusgabenUndSummen( self._jahr )
         tm = SonstAusTableModel( sonstauslist )
         sausview.setAuszahlungenTableModel( tm )
@@ -161,15 +162,31 @@ class SonstAusController( MdiChildController ):
         print( "SonstausController.onBuchungsjahrChanged" )
 
     def onMasterobjektChanged( self, newname:str ):
-        #print( "SonstausController.onMasterobjektChanged: %s" % (newname,) )
+        """
+        User hat Masterobjekt geändert. Neue Mietobjekte-Liste holen.
+        Eingestellten Kreditor und Buchungstext (Leistungsidentifikation) merken.
+        Zum neuen Masterobjekte die passenden Kreditoren holen.
+        Wenn in den neuen Kreditoren der vorher eingestellte Kreditor enthalten ist, diesen auswählen.
+        Andernfalls eintragen.
+        Vorher eingestellte Leistungsidentifikation eintragen.
+        :param newname:
+        :return:
+        """
         self._view.clearMietobjekte()
         mietobjekte = BusinessLogic.inst().getMietobjekte( newname )
         if len( mietobjekte ) > 0:
             self._view.setMietobjekte( mietobjekte )
+        # momentan eingestellten Kreditor und Leistungsidentifik. merken
+        curr_kreditor = self._view.getCurrentKreditor()
+        curr_leistident = self._view.getCurrentLeistungsidentifikation()
         self._view.clearKreditoren()
         kreditoren = BusinessLogic.inst().getKreditoren( newname )
         if len( kreditoren ) > 0:
             self._view.setKreditoren( kreditoren )
+        if len( curr_kreditor ) > 0:
+            self._view.setCurrentKreditor( curr_kreditor )
+            if len( curr_leistident ) > 0:
+                self._view.setCurrentLeistungsidentifikation( curr_leistident )
 
     def onMietobjektChanged( self, mobj_id:str ):
         print( "SonstausController.onMietobjektChanged: %s" % (mobj_id,) )

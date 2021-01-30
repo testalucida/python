@@ -383,11 +383,12 @@ class DbAccess:
         return self._doWrite(sql, commit)
 
     def insertSonstAus( self, x:XSonstAus, commit:bool=True ) -> int:
+        master_id = "NULL" if x.master_id is None else str( x.master_id )
         sql = "insert into sonstaus " \
               "(master_id, mobj_id, buchungsjahr, buchungsdatum, kreditor, rgnr, betrag, rgdatum, rgtext, umlegbar, werterhaltend, buchungstext) " \
               "values " \
-              "(%d, '%s', %d, '%s', '%s', '%s', %.2f, '%s', '%s', %d, %d, '%s') " \
-              % (x.master_id, x.mobj_id, x.buchungsjahr, x.buchungsdatum, x.kreditor, x.rgnr, x.betrag, x.rgdatum, x.rgtext, x.umlegbar, x.werterhaltend, x.buchungstext)
+              "(%s, '%s', %d, '%s', '%s', '%s', %.2f, '%s', '%s', %d, %d, '%s') " \
+              % (master_id, x.mobj_id, x.buchungsjahr, x.buchungsdatum, x.kreditor, x.rgnr, x.betrag, x.rgdatum, x.rgtext, x.umlegbar, x.werterhaltend, x.buchungstext)
         return self._doWrite( sql, commit )
 
     def updateSonstAus( self, x:XSonstAus, commit:bool=True ):
@@ -440,11 +441,12 @@ class DbAccess:
         return self._doWrite( sql, commit )
 
     def insertZahlung( self, z:XZahlung, commit:bool=True ) -> int:
+        master_id = "NULL" if z.master_id is None else str( z.master_id )
         sql = "insert into zahlung " \
               "(master_id, mobj_id, meinaus_id, saus_id, nka_id, hga_id, write_time, jahr, monat, betrag, zahl_art) " \
               "values " \
-              "(%d, '%s', %d, %d, %d, %d, '%s', %d, '%s', %.2f, '%s') " % \
-              (z.master_id, z.mobj_id, z.meinaus_id, z.saus_id, z.nka_id, z.hga_id, z.write_time, z.jahr, z.monat, z.betrag, z.zahl_art)
+              "(%s, '%s', %d, %d, %d, %d, '%s', %d, '%s', %.2f, '%s') " % \
+              (master_id, z.mobj_id, z.meinaus_id, z.saus_id, z.nka_id, z.hga_id, z.write_time, z.jahr, z.monat, z.betrag, z.zahl_art)
         return self._doWrite( sql, commit )
 
     def deleteZahlung( self, id:int, id_name:str, monat:str=None, zahl_art:str=None, commit:bool=True ) -> int:

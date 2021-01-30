@@ -129,15 +129,17 @@ class BusinessLogic:
     def insertSonstigeAuszahlung( self, x:XSonstAus ) -> None:
         # typischerweise ist hier zwar master_name, aber nicht master_id besetzt.
         # Also erst die master_id ermitteln
-        if x.master_id == 0:
-            x.master_id = self._db.getMasterId( x.master_name )
-        if x.master_id < 0:
-            raise Exception( "couldn't get master_id for master_name '%s' " % (x.master_name))
+        if len( x.master_name ) > 0 : # kann auch leer sein, wenn Objekt der Auszahlung unbekannt
+            if x.master_id == 0 or x.master_id is None:
+                x.master_id = self._db.getMasterId( x.master_name )
+            if x.master_id < 0:
+                raise Exception( "couldn't get master_id for master_name '%s' " % (x.master_name))
         self._db.insertSonstAus( x, False )
         x.saus_id = self._db.getMaxId( "sonstaus", "saus_id" )
         self._writeZahlungFromXSonstAus( x, insert=True )
         self._db.commit()
-        self._checkKreditorleistung( x.master_id, x.mobj_id, x.kreditor, x.buchungstext )
+        if x.master_id is not None:
+            self._checkKreditorleistung( x.master_id, x.mobj_id, x.kreditor, x.buchungstext )
 
     def _writeZahlungMtlEinAus( self, meinaus_id:int, jahr:int, monat:str, betrag:float ):
         """

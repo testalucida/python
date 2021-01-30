@@ -417,11 +417,23 @@ class SonstigeAusgabenView( QWidget ):
             self._cboBuchungstext.addItem( i )
         #self._cboRechnungsIdent.showPopup()
 
+    def setCurrentLeistungsidentifikation( self, leistident:str ) -> None:
+        self._cboBuchungstext.setCurrentText( leistident )
+
     def getCurrentMasterobjekt( self ) -> str:
         return self._cboMasterobjekt.currentText()
 
     def getCurrentMietobjekt( self ) -> str:
         return self._cboMietobjekt.currentText()
+
+    def getCurrentKreditor( self ) -> str:
+        return self._cboKreditor.currentText()
+
+    def setCurrentKreditor( self, kreditor:str ) -> None:
+        self._cboKreditor.setCurrentText( kreditor )
+
+    def getCurrentLeistungsidentifikation( self ) -> str:
+        return self._cboBuchungstext.currentText()
 
     def resetKreditoren( self ):
         self._cboKreditor.setCurrentIndex( -1 )
@@ -451,7 +463,9 @@ class SonstigeAusgabenView( QWidget ):
         if x.buchungsdatum:
             y, m, d = getDateParts( x.buchungsdatum )
             self._sdBuchungsdatum.setDate( y, m, d )
-        if x.master_id >= 0:  #master_id kann auch 0 sein! (**alle**)
+        else:
+            self._sdBuchungsdatum.clear()
+        if x.master_id and x.master_id >= 0:  #master_id kann auch 0 sein! (**alle**)
             self._cboMasterobjekt.setCurrentText( x.master_name )
         if x.mobj_id:
             self._cboMietobjekt.setCurrentText( x.mobj_id )
