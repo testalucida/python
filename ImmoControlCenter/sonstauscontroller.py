@@ -218,6 +218,8 @@ class SonstAusController( MdiChildController ):
             x.master_id = BusinessLogic.inst().getMasteridFromMastername( x.master_name )
             self._view.getAuszahlungenTableView().model().updateOrInsert( x )
             self._view.clearEditFields()
+            kreditoren = BusinessLogic.inst().getAlleKreditoren()
+            self._view.setKreditoren( kreditoren )
             self._view.setSaveButtonEnabled( True )
             self._setChangedFlag( True )
             return True
