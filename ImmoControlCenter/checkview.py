@@ -1,10 +1,10 @@
 from PySide2 import Qt
 from PySide2.QtCore import *
 #from PySide2.QtCore import QAbstractTableModel, SIGNAL
-from PySide2.QtGui import QFont, QIcon, QDoubleValidator
+from PySide2.QtGui import QFont, QIcon, QDoubleValidator, QGuiApplication
 from PySide2.QtWidgets import QApplication, QWidget, QComboBox, QAction, \
     QHBoxLayout, QGridLayout, QPushButton, \
-    QDialog, QMessageBox
+    QDialog, QMessageBox, QMenu
 from PySide2 import QtWidgets
 import datetime
 from typing import List, Dict, Any
@@ -39,6 +39,8 @@ class ImageFactory:
         if self._nokIcon == None:
             self._nokIcon = QIcon("./images/redsquare20x20.png")
         return self._nokIcon
+
+
 
 ################ ValueDialog ########################
 class ValueDialog( QDialog ):
@@ -121,7 +123,6 @@ class ControlButton( QPushButton ):
     def setUserData(self, userdata:Any ) -> None:
         self.userdata = userdata
 
-
 ################ CheckTableView ################################
 class CheckTableView( TableView ):
     def __init__( self ):
@@ -131,6 +132,37 @@ class CheckTableView( TableView ):
         btn:ControlButton = oldwidget
         b2 = ControlButton( btn.parent(), btn.isOkButton(), btn.clicked )
         return b2
+
+    def onRightClick( self, point: QPoint ):
+        pass
+        # print( "onRightClick" )
+        # index = self.indexAt( point )
+        # row = index.row()
+        # if row < 0 or index.column() < 0: return  # nicht auf eine  Zeile geklickt
+        #
+        # selectedIndexes = self.selectedIndexes()
+        # if selectedIndexes is None or len( selectedIndexes ) < 2: return
+        # valuelist = list()
+        # model = self.model()
+        # if not model: return
+        # for idx in selectedIndexes:
+        #     val = self.model().data( idx, Qt.DisplayRole )
+        #     if isinstance( val, int ) or isinstance( val, float ):
+        #         valuelist.append( val )
+        #     else: return
+        #
+        # addNumbersAction = QAction( "Berechne Summe der selektierten Zahlen" )
+        # menu = QMenu( self )
+        # menu.addAction( addNumbersAction )
+        # menu.showNormal()
+        # action = menu.exec_( self.viewport().mapToGlobal( point ) )
+        # if action:
+        #     sumval = sum( valuelist )
+        #     dlg = SumDialog()
+        #     dlg.setSum( sumval )
+        #     dlg.show()
+        # else:
+        #     print( "nothing to do" )
 
 
 ################# MonatswerteBaseView #########################

@@ -1,4 +1,4 @@
-from PySide2.QtCore import QModelIndex, QPoint
+from PySide2.QtCore import QModelIndex, QPoint, Qt
 from PySide2.QtWidgets import QWidget, QAbstractItemView, QAction, QMenu
 from typing import List, Dict
 import datetime
@@ -11,6 +11,8 @@ from mdisubwindow import MdiSubWindow
 from interfaces import XSonstAus, XSonstAusSummen
 import constants
 from datehelper import *
+from tablecellactionhandler import TableCellActionHandler
+
 
 class SonstAusController( MdiChildController ):
     """
@@ -22,6 +24,7 @@ class SonstAusController( MdiChildController ):
         self._jahr:int = curr["year"]
         self._title = "Rechnungen, Abgaben, Gebühren,... " + str( self._jahr )
         self._view:SonstigeAusgabenView = None
+        self._tableContextMenu: TableCellActionHandler = None
         self._duplicateAction:QAction = QAction( "Auszahlung duplizieren" )
         self._deleteAction:QAction = QAction( "Auszahlung löschen" )
 
@@ -34,7 +37,7 @@ class SonstAusController( MdiChildController ):
         jahr = datetime.now().year
         sausview.setBuchungsjahr( jahr )
         self._jahr = jahr
-        monidx, monat = BusinessLogic.inst().getLetztenMonat()
+        #monidx, monat = BusinessLogic.inst().getLetztenMonat()
         #sausview.setBuchungsdatum( 1, monat )
         masterobjekte = BusinessLogic.inst().getMasterobjekte()
         sausview.setMasterobjekte( masterobjekte )
@@ -48,10 +51,15 @@ class SonstAusController( MdiChildController ):
         sausview.setSummen( summen )
         self._setSummenfelder()
         tv = sausview.getAuszahlungenTableView()
+        # todo
+        #self._tableContextMenu = TableCellRightClickHandler( tv )
+        ####################################
         tv.resizeColumnsToContents()
         tv.setSortingEnabled( True )  # Achtung: damit wirklich sortiert werden kann, muss die Sortierbarkeit im Model eingeschaltet werden
         tm.setSortable( True )
         tv.clicked.connect( self.onAuszahlungenLeftClick )
+        tv.setMouseTracking( True )
+        tv.setContextMenuPolicy( Qt.CustomContextMenu )
         tv.customContextMenuRequested.connect( self.onAuszahlungenRightClick )
         ## set callbacks:
         sausview.setBuchungsjahrChangedCallback( self.onBuchungsjahrChanged )

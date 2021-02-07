@@ -1,7 +1,8 @@
 import sys
 from PySide2.QtCore import *
-from PySide2.QtGui import QBrush
-from PySide2.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QTableView, QHeaderView
+from PySide2.QtGui import QBrush, QKeySequence
+from PySide2.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QTableView, QHeaderView, QMenu, QAction
+
 
 class TestButton( QPushButton ):
     def __init__(self, txt:str ):
@@ -78,9 +79,21 @@ class TableViewExt( QTableView ):
         self._frozen:QTableView = None  # tableview containing only frozen columns
         self._nFrozen = 0  # number of frozen left columns
         self.clicked.connect( self.onLeftClick )
-        self.setMouseTracking( True )
-        self.setContextMenuPolicy( Qt.CustomContextMenu )
-        self.customContextMenuRequested.connect( self.onRightClick )
+        # self.setMouseTracking( True )
+        # self.setContextMenuPolicy( Qt.CustomContextMenu )
+        # self.customContextMenuRequested.connect( self.onRightClick )
+        self._copycallback = None
+
+    def setCopyCallback( self, callbackFnc ):
+        self._copycallback = callbackFnc
+
+    def keyPressEvent( self, event ):
+        if event.matches( QKeySequence.Copy ):
+            if self._copycallback:
+                self._copycallback()
+        if event.matches( QKeySequence.Paste ):
+            pass
+        QTableView.keyPressEvent( self, event )
 
     def setModel( self, model:QAbstractTableModel ) -> None:
         super().setModel( model )
@@ -101,8 +114,16 @@ class TableViewExt( QTableView ):
         val = self.model().data( index, Qt.DisplayRole )
         print( "index %d/%d clicked. Value=%s" % (index.row(), index.column(), str( val )) )
 
-    def onRightClick( self, index: QModelIndex ):
+    def onRightClick( self, point: QPoint ):
         pass
+        #TEST
+        # index = self.indexAt( point )
+        # row = index.row()
+        # if row < 0 or index.column() < 0: return  # nicht auf eine  Zeile geklickt
+        # addNumbersAction = QAction( "Addiere selektierte Zahlen" )
+        # menu = QMenu()
+        # menu.addAction( addNumbersAction )
+        # action = menu.exec_( self.viewport().mapToGlobal( point ) )
 
     def setAlternatingRowColors( self, on:bool ):
         super().setAlternatingRowColors( on )

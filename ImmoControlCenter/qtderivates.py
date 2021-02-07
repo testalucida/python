@@ -1,7 +1,7 @@
 from PySide2 import QtWidgets, QtCore
 from PySide2.QtCore import QDate, Qt
-from PySide2.QtGui import QDoubleValidator, QIntValidator, QFont
-from PySide2.QtWidgets import QDialog, QCalendarWidget, QVBoxLayout, QBoxLayout, QLineEdit
+from PySide2.QtGui import QDoubleValidator, QIntValidator, QFont, QGuiApplication
+from PySide2.QtWidgets import QDialog, QCalendarWidget, QVBoxLayout, QBoxLayout, QLineEdit, QGridLayout, QPushButton
 
 from datehelper import isValidIsoDatestring, isValidEurDatestring, getRelativeQDate, getQDateFromIsoString
 
@@ -162,3 +162,40 @@ class IntDisplay( QLineEdit ):
         val = self.text()
         if not val: val = "0"
         return int( val )
+
+################ SumDialog ########################
+class SumDialog( QDialog ):
+    def __init__( self, parent=None ):
+        QDialog.__init__( self, parent )
+        self.setModal( True )
+        self.setWindowTitle( "Summe der selektierten Zahlen" )
+        layout = QGridLayout( self )
+        self.label = QtWidgets.QLabel( self )
+        self.label.setText( "Summe:" )
+        layout.addWidget( self.label, 0, 0 )
+
+        self._sumLabel = QtWidgets.QLabel( self )
+        layout.addWidget( self._sumLabel, 0, 1 )
+
+        self._btnCopyToClipboard = QPushButton( self, text="Kopieren" )
+        layout.addWidget( self._btnCopyToClipboard, 1, 0 )
+        self._btnCopyToClipboard.clicked.connect( self._copy2clipboard )
+
+        self._btnClose = QPushButton( self, text="Schließen" )
+        layout.addWidget( self._btnClose, 1, 1 )
+        self._btnClose.clicked.connect( self._onClose )
+        self.setLayout( layout )
+
+    def _copy2clipboard( self ):
+        """
+        kopiert die angezeigte Zahl ins Clipboard
+        :return:
+        """
+        clipboard = QGuiApplication.clipboard()
+        clipboard.setText( self._sumLabel.text() )
+
+    def _onClose( self ):
+        self.close()
+
+    def setSum( self, sum:int or float ) -> None:
+        self._sumLabel.setText( str( sum ) )

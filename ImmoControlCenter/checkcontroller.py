@@ -8,10 +8,13 @@ from checktablemodel import CheckTableModel
 from business import BusinessLogic
 from constants import einausart
 from mdisubwindow import MdiSubWindow
+from tablecellactionhandler import TableCellActionHandler
+
 
 class CheckController( MdiChildController, ABC ):
     def __init__(self ):
         MdiChildController.__init__( self )
+        self._tableContextMenu: TableCellActionHandler = None
         curr = getCurrentYearAndMonth()
         self._currentYear:int = curr["year"]
         self._currentCheckMonth:int = curr["month"]
@@ -65,10 +68,12 @@ class CheckController( MdiChildController, ABC ):
         model.setSortable( True )
         checkView.setJahrChangedCallback( self.jahrChangedCallback )
         checkView.setCheckMonatChangedCallback( self.monatChangedCallback )
-        checkView.tableView.setColumnHidden( 0, True )
-        checkView.tableView.setColumnHidden( 1, True )
-        checkView.tableView.setColumnHidden( 2, True )
-        checkView.tableView.setColumnHidden( 3, True )
+        tv = checkView.tableView
+        self._tableContextMenu = TableCellActionHandler( tv )
+        tv.setColumnHidden( 0, True )
+        tv.setColumnHidden( 1, True )
+        tv.setColumnHidden( 2, True )
+        tv.setColumnHidden( 3, True )
         return checkView
 
     def onDataChanged( self ):
