@@ -43,6 +43,9 @@ class SonstAusTableModel( IccTableModel ):
         self._columnBetrag = 8
         self._sortable = False
 
+    def getBetragColumnIndex( self ) -> int:
+        return self._keylist.index( "betrag" )
+
     def setSortable( self, sortable:bool=True ):
         self._sortable = sortable
 
@@ -60,7 +63,8 @@ class SonstAusTableModel( IccTableModel ):
         key = self._keylist[indexcolumn]
         val = x.__dict__[key]
         if indexcolumn == self._columnBetrag:
-            val = "%.2f" % (val)
+            val = format( val, ".2f" )
+        #     val = "%.2f" % (val)
         if indexcolumn == self._columnWerterhaltend:
             val = 'w' if val else ''
         if indexcolumn == self._columnUmlegbar:

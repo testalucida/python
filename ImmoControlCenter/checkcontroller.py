@@ -70,6 +70,7 @@ class CheckController( MdiChildController, ABC ):
         checkView.setCheckMonatChangedCallback( self.monatChangedCallback )
         tv = checkView.tableView
         self._tableContextMenu = TableCellActionHandler( tv )
+        self._tableContextMenu.activateComputeSumAction()
         tv.setColumnHidden( 0, True )
         tv.setColumnHidden( 1, True )
         tv.setColumnHidden( 2, True )

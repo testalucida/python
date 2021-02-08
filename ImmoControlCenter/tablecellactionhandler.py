@@ -17,8 +17,11 @@ class TableCellActionHandler:
         tv.setCopyCallback( self._onCopy )  # wenn der User Ctrl+c drückt
         self._tv = tv
         self._actionList:List[List] = list() #Liste die eine Liste mit Paaren action / callback enthält.
-        self._actionList.append( ( QAction( "Berechne Summe" ), self._onComputeSum ) )
+        # self._actionList.append( ( QAction( "Berechne Summe" ), self._onComputeSum ) )
         self._actionList.append( ( QAction( "Kopiere" ), self._onCopy) ) # für Kontextmenü
+
+    def activateComputeSumAction( self, activate:bool=True ):
+        self._actionList.append( (QAction( "Berechne Summe" ), self._onComputeSum) )
 
     def addAction( self, action:QAction, callback ):
         self._actionList.append( ( action, callback ) )
@@ -49,6 +52,9 @@ class TableCellActionHandler:
             else:
                 return
         sumval = sum( valuelist )
+        self.showSumDialog( sumval )
+
+    def showSumDialog( self, sumval ):
         dlg = SumDialog( self._tv )
         dlg.setSum( sumval )
         dlg.show()

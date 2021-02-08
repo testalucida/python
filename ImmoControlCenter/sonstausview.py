@@ -28,6 +28,8 @@ class SonstigeAusgabenView( QWidget ):
         self._toolbarLayout = QHBoxLayout()
         self._summenLayout = QHBoxLayout()
         self._btnSave = QPushButton( self )
+        self._editSearch = QLineEdit( self )
+        self._btnSearchFwd = QPushButton( self )
 
         self._idSummeAus = IntDisplay( self )
         # self._idSummeEin = IntDisplay( self )
@@ -65,6 +67,7 @@ class SonstigeAusgabenView( QWidget ):
         # Callbacks
         self._buchungsjahrChangedCallback = None
         self._saveActionCallback = None
+        self._searchActionCallback = None
         self._masterobjektChangedCallback = None
         self._mietobjektChangedCallback = None
         self._kreditorChangedCallback = None
@@ -115,6 +118,20 @@ class SonstigeAusgabenView( QWidget ):
         btn.setFixedSize( size )
         iconsize = QSize( 30, 30 )
         btn.setIconSize( iconsize )
+        self._toolbarLayout.addWidget( btn, stretch=0 )
+
+        ### search field
+        edi = self._editSearch
+        edi.setToolTip( "Suchbegriff eingeben" )
+        self._toolbarLayout.addWidget( edi, stretch=0 )
+        btn = self._btnSearchFwd
+        btn.clicked.connect( self._onSearch )
+        size = QSize( 30, 30 )
+        btn.setFixedSize( size )
+        btn.setToolTip( "Suche nach eingegebenem Begriff" )
+        icon = QIcon( "./images/arrow_dn_30.png" )
+        btn.setIcon( icon )
+        btn.setEnabled( True )
         self._toolbarLayout.addWidget( btn, stretch=0 )
 
     def _assembleSummen( self ):
@@ -288,6 +305,10 @@ class SonstigeAusgabenView( QWidget ):
     def onSave( self ):
         if self._saveActionCallback:
             self._saveActionCallback()
+
+    def _onSearch( self ):
+        if self._searchActionCallback:
+            self._searchActionCallback( self._editSearch.text() )
 
     def onBuchungsjahrChanged( self, newindex ):
         """
@@ -512,6 +533,14 @@ class SonstigeAusgabenView( QWidget ):
         :return:
         """
         self._saveActionCallback = cbfnc
+
+    def setSearchActionCallback( self, cbfnc ) -> None:
+        """
+        Die callback-Funktion muss den Searchstring als Parameter empfangen.
+        :param cbfnc:
+        :return:
+        """
+        self._searchActionCallback = cbfnc
 
     def setMasterobjektChangedCallback( self, cbfnc ):
         """

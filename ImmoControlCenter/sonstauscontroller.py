@@ -20,13 +20,14 @@ class SonstAusController( MdiChildController ):
     """
     def __init__( self ):
         MdiChildController.__init__( self )
+        self._tableCellActionHandler: TableCellActionHandler = None
         curr = getCurrentYearAndMonth()
         self._jahr:int = curr["year"]
         self._title = "Rechnungen, Abgaben, Gebühren,... " + str( self._jahr )
         self._view:SonstigeAusgabenView = None
-        self._tableContextMenu: TableCellActionHandler = None
-        self._duplicateAction:QAction = QAction( "Auszahlung duplizieren" )
-        self._deleteAction:QAction = QAction( "Auszahlung löschen" )
+        self._duplicateAction:QAction = QAction( "Dupliziere Auszahlung" )
+        self._deleteAction:QAction = QAction( "Lösche Auszahlung" )
+        self._computeSumAction:QAction = QAction( "Berechne Summe" )
 
     def createView( self ) -> QWidget:
         sausview = SonstigeAusgabenView()
@@ -51,19 +52,20 @@ class SonstAusController( MdiChildController ):
         sausview.setSummen( summen )
         self._setSummenfelder()
         tv = sausview.getAuszahlungenTableView()
-        # todo
-        #self._tableContextMenu = TableCellRightClickHandler( tv )
-        ####################################
+        tcm = TableCellActionHandler( tv )
+        tcm.addAction( self._computeSumAction, self._onComputeSum )
+        tcm.addAction( self._duplicateAction, self._onDuplicateAuszahlung )
+        tcm.addAction( self._deleteAction, self._onDeleteAuszahlung )
+        self._tableCellActionHandler = tcm
+
         tv.resizeColumnsToContents()
         tv.setSortingEnabled( True )  # Achtung: damit wirklich sortiert werden kann, muss die Sortierbarkeit im Model eingeschaltet werden
         tm.setSortable( True )
         tv.clicked.connect( self.onAuszahlungenLeftClick )
-        tv.setMouseTracking( True )
-        tv.setContextMenuPolicy( Qt.CustomContextMenu )
-        tv.customContextMenuRequested.connect( self.onAuszahlungenRightClick )
         ## set callbacks:
         sausview.setBuchungsjahrChangedCallback( self.onBuchungsjahrChanged )
         sausview.setSaveActionCallback( self.onSave )
+        sausview.setSearchActionCallback( self.onSearch )
         sausview.setMasterobjektChangedCallback( self.onMasterobjektChanged )
         sausview.setMietobjektChangedCallback( self.onMietobjektChanged )
         sausview.setKreditorChangedCallback( self.onKreditorChanged )
@@ -80,6 +82,15 @@ class SonstAusController( MdiChildController ):
         changes:Dict[str, List[XSonstAus]] = model.getChanges()
         self.writeChanges( changes )
         model.resetChanges()
+
+    def onSearch( self, searchstring:str ):
+        """
+        wird bei jedem Drücken des Suchbuttons aufgerufen.
+        Hier erfolgt der Suchvorgang und die Verwaltung der Treffer.
+        :param searchstring:
+        :return:
+        """
+        print( "SonstAusController.onSearch( %s )" %searchstring )
 
     def _dispatchSaveAction( self, actionstring:str, x:XSonstAus ):
         try:
@@ -131,40 +142,93 @@ class SonstAusController( MdiChildController ):
         self._view.provideEditFields( x )
         #print( "SONSTAUSCONTROLLER: index %d/%d clicked. Value=%s" % (index.row(), index.column(), str( val )) )
 
-    def onAuszahlungenRightClick( self, point: QPoint ):
-        """
-        Kontextmenü öffnen, wenn auf eine Zeile geklickt wurde.
-        :param index:
-        :return:
-        """
+    # def onAuszahlungenRightClick( self, point: QPoint ):
+    #     """
+    #     Kontextmenü öffnen, wenn auf eine Zeile geklickt wurde.
+    #     :param index:
+    #     :return:
+    #     """
+    #     tv = self._view.getAuszahlungenTableView()
+    #     index = tv.indexAt( point )
+    #     row = index.row()
+    #     if row < 0 or index.column() < 0: return  # nicht auf eine  Zeile geklickt
+    #     menu = QMenu()
+    #     menu.addAction( self._duplicateAction )
+    #     menu.addAction( self._deleteAction )
+    #     action = menu.exec_( tv.viewport().mapToGlobal( point ) )
+    #     if action:
+    #         model:SonstAusTableModel = tv.model()
+    #         x:XSonstAus = model.getXSonstAus( row )
+    #         multiplik = -1
+    #         if action == self._deleteAction:
+    #             model.delete( x )
+    #         elif action == self._duplicateAction:
+    #             model.duplicate( x )
+    #             multiplik = 1
+    #         summen:XSonstAusSummen = self._view.getSummen()
+    #         delta = int( round( x.betrag * multiplik ) )
+    #         summen.summe_aus += delta
+    #         if x.werterhaltend:
+    #             summen.summe_werterhaltend += delta
+    #         if x.umlegbar:
+    #             summen.summe_umlegbar += delta
+    #         self._view.setSummen( summen )
+    #         self._view.setSaveButtonEnabled( True )
+    #         self._setChangedFlag( True )
+    #         self._view.clearEditFields()
+
+    def _onComputeSum( self ):
         tv = self._view.getAuszahlungenTableView()
-        index = tv.indexAt( point )
-        row = index.row()
-        if row < 0 or index.column() < 0: return  # nicht auf eine  Zeile geklickt
-        menu = QMenu()
-        menu.addAction( self._duplicateAction )
-        menu.addAction( self._deleteAction )
-        action = menu.exec_( tv.viewport().mapToGlobal( point ) )
-        if action:
-            model:SonstAusTableModel = tv.model()
-            x:XSonstAus = model.getXSonstAus( row )
-            multiplik = -1
-            if action == self._deleteAction:
-                model.delete( x )
-            elif action == self._duplicateAction:
-                model.duplicate( x )
-                multiplik = 1
-            summen:XSonstAusSummen = self._view.getSummen()
-            delta = int( round( x.betrag * multiplik ) )
-            summen.summe_aus += delta
-            if x.werterhaltend:
-                summen.summe_werterhaltend += delta
-            if x.umlegbar:
-                summen.summe_umlegbar += delta
-            self._view.setSummen( summen )
-            self._view.setSaveButtonEnabled( True )
-            self._setChangedFlag( True )
-            self._view.clearEditFields()
+        model: SonstAusTableModel = tv.model()
+        indexes = tv.selectedIndexes()
+        rows = self._getSelectedRows( indexes )
+        valuelist = list()
+        col = model.getBetragColumnIndex()
+        for row in rows:
+            idx = model.index( row, col )
+            val = model.data( idx, Qt.DisplayRole )
+            if not val: val = 0
+            valuelist.append( float( val ) ) # val is in string format due to the 2 decimals
+        sumval = sum( valuelist )
+        self._tableCellActionHandler.showSumDialog( sumval )
+
+    def _getSelectedRows( self, indexes:List ) -> List[int]:
+        rows = list()
+        for idx in indexes:
+            if idx.row() not in rows:
+                rows.append( idx.row() )
+        return rows
+
+    def _onDeleteAuszahlung( self ):
+        tv = self._view.getAuszahlungenTableView()
+        model: SonstAusTableModel = tv.model()
+        idx = tv.selectedIndexes()[0]
+        x: XSonstAus = model.getXSonstAus( idx.row() )
+        model.delete( x )
+        delta = int( round( x.betrag * (-1) ) )
+        self._updateViewAfterDuplicateAndDelete( delta, x.werterhaltend, x.umlegbar )
+
+    def _onDuplicateAuszahlung( self ):
+        tv = self._view.getAuszahlungenTableView()
+        model: SonstAusTableModel = tv.model()
+        idx = tv.selectedIndexes()[0]
+        x: XSonstAus = model.getXSonstAus( idx.row() )
+        model.duplicate( x )
+        delta = int( round( x.betrag ) )
+        self._updateViewAfterDuplicateAndDelete( delta, x.werterhaltend, x.umlegbar )
+
+    def _updateViewAfterDuplicateAndDelete( self, delta:int, isWerterhaltend:bool, isUmlegbar:bool ):
+        summen: XSonstAusSummen = self._view.getSummen()
+        summen.summe_aus += delta
+        if isWerterhaltend:
+            summen.summe_werterhaltend += delta
+        if isUmlegbar:
+            summen.summe_umlegbar += delta
+        self._view.setSummen( summen )
+        self._view.setSaveButtonEnabled( True )
+        self._setChangedFlag( True )
+        self._view.clearEditFields()
+
 
     def onBuchungsjahrChanged( self, newjahr:int ):
         print( "SonstausController.onBuchungsjahrChanged" )
