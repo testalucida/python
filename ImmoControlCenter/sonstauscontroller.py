@@ -5,6 +5,7 @@ import datetime
 import sys
 from business import BusinessLogic
 from mdichildcontroller import MdiChildController
+from searchhandler import SearchHandler
 from sonstaustablemodel import SonstAusTableModel
 from sonstausview import SonstigeAusgabenView
 from mdisubwindow import MdiSubWindow
@@ -52,6 +53,7 @@ class SonstAusController( MdiChildController ):
         sausview.setSummen( summen )
         self._setSummenfelder()
         tv = sausview.getAuszahlungenTableView()
+        self._searchhandler = SearchHandler( tv )
         tcm = TableCellActionHandler( tv )
         tcm.addAction( self._computeSumAction, self._onComputeSum )
         tcm.addAction( self._duplicateAction, self._onDuplicateAuszahlung )
@@ -65,7 +67,7 @@ class SonstAusController( MdiChildController ):
         ## set callbacks:
         sausview.setBuchungsjahrChangedCallback( self.onBuchungsjahrChanged )
         sausview.setSaveActionCallback( self.onSave )
-        sausview.setSearchActionCallback( self.onSearch )
+        sausview.setSearchActionCallback( self._searchhandler.onSearch )
         sausview.setMasterobjektChangedCallback( self.onMasterobjektChanged )
         sausview.setMietobjektChangedCallback( self.onMietobjektChanged )
         sausview.setKreditorChangedCallback( self.onKreditorChanged )
@@ -336,8 +338,8 @@ class SonstAusController( MdiChildController ):
         :param x: zu prüfendes XSonstAus-OBjekt
         :return: FEhlermeldung, wenn die Validierung nicht i.O. ist, sonst ""
         """
-        if x.master_name == "Haus":
-            return "Kein Objektbezug angegeben."
+        if x.master_name in ( "Haus", "" ) :
+            return "Kein Objektbezug angegeben. Im Zweifelsfall *unbekannt* einstellen."
         if x.kreditor == "":
             return "Kein Kreditor angegeben."
         if not x.buchungsdatum and not x.rgdatum:

@@ -122,6 +122,7 @@ class SonstigeAusgabenView( QWidget ):
 
         ### search field
         edi = self._editSearch
+        edi.returnPressed.connect( self._onSearch )
         edi.setToolTip( "Suchbegriff eingeben" )
         self._toolbarLayout.addWidget( edi, stretch=0 )
         btn = self._btnSearchFwd
