@@ -4,6 +4,10 @@ class einausart( Enum ):
     MIETE = 1,
     HGV = 2
 
+class abrechnung( Enum ):
+    NK = 0,
+    HG = 1
+
 class tableAction( IntEnum ):
     INSERT = 0,
     UPDATE = 1,

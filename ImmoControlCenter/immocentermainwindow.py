@@ -15,7 +15,9 @@ class MainWindowAction( Enum ):
     FOLGEJAHR=8,
     OPEN_SOLL_MIETE_VIEW = 9,
     OPEN_SOLL_HG_VIEW = 10,
-    RESIZE_MAIN_WINDOW = 11,
+    OPEN_NKA_VIEW = 11,
+    OPEN_HGA_VIEW = 12,
+    RESIZE_MAIN_WINDOW = 13,
     EXIT=99
 
 
@@ -50,6 +52,7 @@ class ImmoCenterMainWindow( QMainWindow ):
         self._createImmoCenterMenu()
         self._createMietobjektMenu()
         self._createZahlungenMenu()
+        self._createAbrechnungenMenu()
         self._createSqlMenu()
 
         self.setMenuBar( self._menubar )
@@ -161,9 +164,15 @@ class ImmoCenterMainWindow( QMainWindow ):
 
         menu.addSeparator()
 
-        # Menüpunkt "NK- und HG-Abrechnungen Vorjahr..."
-        action = QAction( self, text="NK- und HG-Abrechnungen Vorjahr..." )
-        action.triggered.connect( self.onViewAbrechnungen )
+    def _createAbrechnungenMenu( self ):
+        menu = QtWidgets.QMenu( self._menubar, title="Abrechnungen" )
+        self._menubar.addMenu( menu )
+        action = QAction( self, text="Nebenkostenabrechnung..." )
+        action.triggered.connect( self.onViewNebenkostenabrechnung )
+        menu.addAction( action )
+
+        action = QAction( self, text="Hausgeldabrechnung..." )
+        action.triggered.connect( self.onViewHausgeldabrechnung )
         menu.addAction( action )
 
     def _createSqlMenu( self ):
@@ -255,8 +264,11 @@ class ImmoCenterMainWindow( QMainWindow ):
     def onViewSollHausgeld( self ):
         self.doCallback( MainWindowAction.OPEN_SOLL_HG_VIEW )
 
-    def onViewAbrechnungen( self ):
-        pass
+    def onViewNebenkostenabrechnung( self ):
+        self.doCallback( MainWindowAction.OPEN_NKA_VIEW )
+
+    def onViewHausgeldabrechnung( self ):
+        self.doCallback( MainWindowAction.OPEN_HGA_VIEW )
 
     def onViewRechnungen( self ):
         pass

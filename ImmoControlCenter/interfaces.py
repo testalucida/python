@@ -11,7 +11,6 @@ class XBase:
             _d[k] = v
 
 class XZahlung:
-
     master_id:int = 0 # ID des Master-Objekts (Tabelle masterobjekt)
     mobj_id:str = "" # ID des Mietobjekts (Tabelle mietobjekt) --- kann frei sein, dann muss aber master_id versorgt sein
     # GENAU einer der nachfolgenden 4 IDs muss versorgt sein
@@ -84,6 +83,20 @@ class XSollMiete( XSollzahlung ):
     sm_id = 0
     mv_id = ""
     nkv:float = 0.0
+
+class XKontoEintrag:
+    mobj_id = ""         # Name des Objekts, z.B. ww224, ist Name des Kontos (der Tabelle)
+    name = ""            # Name des Mieters oder des Verwalters
+    id = 0
+    z_id = 0 #Referenz auf z_id in Tabelle zahlung
+    write_access = "" # Timestamp des letzten Schreibzugriffs
+    forderungsdatum = "" # wann Betrag gefordert wurde. Rechnungsdatum, Datum der NK-Abrechng. etc.
+    buchungsdatum = ""   # wann der geforderte Betrag auf dem ING-Diba-Konto gebucht wurde
+    monat = 0            # betroffener Monat (z.B. Miete, HG-Vorauszahlung)
+    jahr = 0             # dto
+    betrag = 0.0
+    art = ""             # {Bruttomiete|NKA|HGV|HGA|Rechng|Gebühr}
+    bemerkung = ""
 
 
 def printX( x:XSonstAus ):

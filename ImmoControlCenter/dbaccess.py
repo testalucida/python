@@ -484,10 +484,11 @@ class DbAccess:
 
     def createObjektKonto( self, konto_name:str, commit:bool=True ) -> None:
         ddl = """CREATE TABLE %s (
-            "buch_id"	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
+            "id"	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
             "z_id"	INTEGER NOT NULL,
             "lwa"	TEXT NOT NULL,
-            "buch_datum"	TEXT,
+            "forderungsdatum" TEXT,
+            "buchungsdatum"	TEXT,
             "monat"	INTEGER NOT NULL,
             "jahr"	INTEGER NOT NULL,
             "betrag"	REAL NOT NULL,

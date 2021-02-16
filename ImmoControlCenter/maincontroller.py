@@ -52,10 +52,15 @@ class MainController:
             MainWindowAction.FOLGEJAHR: self.createFolgejahr,
             MainWindowAction.OPEN_SOLL_MIETE_VIEW: self.showSollMietenView,
             MainWindowAction.OPEN_SOLL_HG_VIEW: self.showSollHausgelderView,
+            MainWindowAction.OPEN_NKA_VIEW: self.showNKAbrechnungenView,
+            MainWindowAction.OPEN_HGA_VIEW: self.showHGAbrechnungenView,
             MainWindowAction.RESIZE_MAIN_WINDOW: self.resizeAllViews
         }
-        m = switcher.get( action, lambda: "Nicht unterstützte Action: " + str( action ) )
-        m()
+        fnc = switcher.get( action )
+        try:
+            fnc()
+        except:
+           self._mainwin.showException( "Ungültiger Funktionsaufruf", "MainController.onMainWindowAction():\naction '%s' ist unbekannt." % (str( action ) ) )
 
     def anyViewChanged( self ) -> bool:
         return self._someViewChanged
@@ -156,6 +161,12 @@ class MainController:
         # TODO: prüfen, ob shon ein SollzahlungenView vorhanden ist. Nur wenn nein, einen anlegen.
         self.createSollHausgelderViewAndShow()
 
+    def showNKAbrechnungenView( self ):
+        self.createNkaViewAndShow()
+
+    def showHGAbrechnungenView( self ):
+        self.createHgaViewAndShow()
+
     def resizeAllViews( self ):
         # wird gerufen, wenn das MainWindow resized wird.
         geom = self._mainwin.geometry()
@@ -166,6 +177,14 @@ class MainController:
         self._installView( subwin, self._sollHausgelderCtrl )
         subwin.setGeometry( 20, 20, 1000, 400 )
         subwin.show()
+
+    def createNkaViewAndShow( self ):
+        print( "MainController.createNkaViewAndShow" )
+        #Todo
+
+    def createHgaViewAndShow( self ):
+        print( "MainController.createHgaViewAndShow" )
+        #Todo
 
     def _installView( self, subwin:MdiSubWindow, ctrl:MdiChildController ):
         #subwin.addQuitCallback( self.onCloseSubWindow )
