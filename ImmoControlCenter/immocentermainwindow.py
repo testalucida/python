@@ -62,9 +62,13 @@ class ImmoCenterMainWindow( QMainWindow ):
         self._toolBar.addSeparator()
         lbl = QLabel( self, text="Letzte verarbeitete Buchung: " )
         self._toolBar.addWidget( lbl )
+        self._sdLetzteBuchung.setToolTip( "Freier Eintrag der Kenndaten der letzten Buchung,\n "
+                                          "um beim nächsten Anwendungsstart gezielt weiterarbeiten zu können." )
         self._sdLetzteBuchung.setMaximumWidth( 90 )
         self._toolBar.addWidget( self._sdLetzteBuchung )
-        self._leLetzteBuchung.setMaximumWidth( 200 )
+        self._leLetzteBuchung.setToolTip( "Freier Eintrag der Kenndaten der letzten Buchung,\n "
+                                          "um beim nächsten Anwendungsstart gezielt weiterarbeiten zu können." )
+        self._leLetzteBuchung.setMaximumWidth( 300 )
         self._toolBar.addWidget( self._leLetzteBuchung )
 
         self.setMenuBar( self._menubar )

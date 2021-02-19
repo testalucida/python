@@ -1,11 +1,15 @@
 from PySide2 import QtWidgets, QtCore
-from PySide2.QtCore import QDate, Qt
+from PySide2.QtCore import QDate, Qt, QAbstractTableModel
 from PySide2.QtGui import QDoubleValidator, QIntValidator, QFont, QGuiApplication
-from PySide2.QtWidgets import QDialog, QCalendarWidget, QVBoxLayout, QBoxLayout, QLineEdit, QGridLayout, QPushButton
+from PySide2.QtWidgets import QDialog, QCalendarWidget, QVBoxLayout, QBoxLayout, QLineEdit, QGridLayout, QPushButton, \
+    QHBoxLayout
 
 from datehelper import isValidIsoDatestring, isValidEurDatestring, getRelativeQDate, getQDateFromIsoString
 
 ##################  CalendarWindow  ###########################
+from tableviewext import TableViewExt
+
+
 class CalendarDialog( QDialog ):
     def __init__( self, parent ):
         QDialog.__init__(self, parent)
@@ -162,6 +166,53 @@ class IntDisplay( QLineEdit ):
         val = self.text()
         if not val: val = "0"
         return int( val )
+
+################ TableViewDialog ##################
+class TableViewDialog( QDialog ):
+    def __init__( self, parent=None ):
+        QDialog.__init__( self, parent )
+        self.setModal( True )
+        self._selectedCallback = None
+
+        self._tv = TableViewExt( self )
+        self._btnOk = QPushButton( self, text = "Übernehmen zur Bearbeitung" )
+        self._btnOk.clicked.connect( self._onOk )
+        self._btnClose = QPushButton( self, text="Schließen" )
+        self._btnClose.clicked.connect( self._onClose )
+
+        vlayout = QVBoxLayout( self )
+        vlayout.addWidget( self._tv )
+        hlayout = QHBoxLayout()
+        hlayout.addWidget( self._btnOk )
+        hlayout.addWidget( self._btnClose )
+        vlayout.addLayout( hlayout )
+
+        self.setLayout( vlayout )
+
+    def getTableView( self ) -> TableViewExt:
+        return self._tv
+
+    def setSelectedCallback( self, cbfnc ):
+        """
+        Callback function must accept a list of QModelIndex representing the selected rows/columns
+        :param cbfnc:
+        :return:
+        """
+        self._selectedCallback = cbfnc
+
+    def setTableModel( self, model:QAbstractTableModel ):
+        self._tv.setModel( model )
+        self._tv.setSizeAdjustPolicy( QtWidgets.QAbstractScrollArea.AdjustToContents )
+        self._tv.resizeColumnsToContents()
+
+    def _onOk( self ):
+        if self._selectedCallback:
+            sel_list = self._tv.selectedIndexes()
+            self._selectedCallback( sel_list )
+        self._onClose()
+
+    def _onClose( self ):
+        self.close()
 
 ################ SumDialog ########################
 class SumDialog( QDialog ):

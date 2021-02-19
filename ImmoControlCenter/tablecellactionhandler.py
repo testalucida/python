@@ -16,7 +16,7 @@ class TableCellActionHandler:
         tv.customContextMenuRequested.connect( self.onRightClick )
         tv.setCopyCallback( self._onCopy )  # wenn der User Ctrl+c drückt
         self._tv = tv
-        self._actionList:List[List] = list() #Liste die eine Liste mit Paaren action / callback enthält.
+        self._actionList:List[List] = list() #Liste, die eine Liste mit Paaren action / callback enthält.
         # self._actionList.append( ( QAction( "Berechne Summe" ), self._onComputeSum ) )
         self._actionList.append( ( QAction( "Kopiere" ), self._onCopy) ) # für Kontextmenü
 

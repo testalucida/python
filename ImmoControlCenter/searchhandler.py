@@ -65,3 +65,5 @@ class SearchHandler:
         return self._model.index( row, col )
 
 
+
+

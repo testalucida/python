@@ -55,6 +55,17 @@ class XSonstAusSummen( XBase ):
     summe_umlegbar = 0
     #summe_nicht_umlegbar = 0
 
+class XBuchungstextMatch( XBase ):
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self, valuedict )
+
+    master_id:int = 0
+    master_name:str = ""
+    mobj_id:str = ""
+    kreditor:str = ""
+    buchungstext:str = ""
+    umlegbar:int = 0
+
 class XSollzahlung( XBase ):
     def __init__( self, valuedict:Dict=None ):
         XBase.__init__( self, valuedict )

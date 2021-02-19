@@ -271,7 +271,7 @@ class DbAccess:
         return list
 
     def getKreditorleistungen( self ) -> List[Dict]:
-        sql = "select distinct k.kreditor, k.master_id, m.master_name, k.mobj_id, buchungstext " \
+        sql = "select distinct k.kreditor, k.master_id, m.master_name, k.mobj_id, buchungstext, umlegbar " \
               "from kreditorleistung k " \
               "inner join masterobjekt m on m.master_id = k.master_id "
         dictlist = self._doReadAllGetDict( sql )

@@ -94,7 +94,7 @@ class MainController:
         self._someViewChanged = False
 
     def _saveAll( self ):
-        pass
+        self._setLetzteBuchung()
 
     def _printActiveView( self ):
         pass
@@ -176,12 +176,15 @@ class MainController:
         #print( "resized. new size: ", geom.width(), " x ", geom.height() )
 
     def onShutdown( self ) -> bool:
+        self._setLetzteBuchung()
+        return True
+
+    def _setLetzteBuchung( self ):
         d = self._mainwin.getLetzteBuchung()
         try:
             BusinessLogic.inst().setLetzteBuchung( d["datum"], d["text"] )
         except Exception as ex:
             self._mainwin.showException( str( ex ), "MainController.onShutdown()" )
-        return True
 
     def createSollHausgelderViewAndShow( self ):
         subwin = self._sollHausgelderCtrl.createSubwindow()

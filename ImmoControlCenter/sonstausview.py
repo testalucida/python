@@ -30,6 +30,8 @@ class SonstigeAusgabenView( QWidget ):
         self._btnSave = QPushButton( self )
         self._editSearch = QLineEdit( self )
         self._btnSearchFwd = QPushButton( self )
+        self._editDbSearch = QLineEdit( self )
+        self._btnDbSearch = QPushButton( self )
 
         self._idSummeAus = IntDisplay( self )
         # self._idSummeEin = IntDisplay( self )
@@ -68,6 +70,7 @@ class SonstigeAusgabenView( QWidget ):
         self._buchungsjahrChangedCallback = None
         self._saveActionCallback = None
         self._searchActionCallback = None
+        self._dbSearchActionCallback = None
         self._masterobjektChangedCallback = None
         self._mietobjektChangedCallback = None
         self._kreditorChangedCallback = None
@@ -122,6 +125,7 @@ class SonstigeAusgabenView( QWidget ):
 
         ### search field
         edi = self._editSearch
+        edi.setPlaceholderText( "Suche in Tabelle" )
         edi.returnPressed.connect( self._onSearch )
         edi.setToolTip( "Suchbegriff eingeben" )
         self._toolbarLayout.addWidget( edi, stretch=0 )
@@ -134,6 +138,23 @@ class SonstigeAusgabenView( QWidget ):
         btn.setIcon( icon )
         btn.setEnabled( True )
         self._toolbarLayout.addWidget( btn, stretch=0 )
+
+        #### db-search ####
+        edi = self._editDbSearch
+        edi.setPlaceholderText( "Suche in Datenbank" )
+        edi.returnPressed.connect( self._onDbSearch )
+        edi.setToolTip( "Suchbegriff eingeben; gesucht wird in der Datenbank im Feld Buchungstext." )
+        self._toolbarLayout.addWidget( edi, stretch=0 )
+        btn = self._btnDbSearch
+        btn.clicked.connect( self._onDbSearch )
+        size = QSize( 30, 30 )
+        btn.setFixedSize( size )
+        btn.setToolTip( "Suche nach eingegebenem Begriff" )
+        icon = QIcon( "./images/search_30.png" )
+        btn.setIcon( icon )
+        btn.setEnabled( True )
+        self._toolbarLayout.addWidget( btn, stretch=0 )
+
 
     def _assembleSummen( self ):
         parent = None
@@ -310,6 +331,10 @@ class SonstigeAusgabenView( QWidget ):
     def _onSearch( self ):
         if self._searchActionCallback:
             self._searchActionCallback( self._editSearch.text() )
+
+    def _onDbSearch( self ):
+        if self._dbSearchActionCallback:
+            self._dbSearchActionCallback( self._editDbSearch.text() )
 
     def onBuchungsjahrChanged( self, newindex ):
         """
@@ -542,6 +567,14 @@ class SonstigeAusgabenView( QWidget ):
         :return:
         """
         self._searchActionCallback = cbfnc
+
+    def setDbSearchActionCallback( self, cbfnc ) -> None:
+        """
+       Die callback-Funktion muss den Searchstring als Parameter empfangen.
+       :param cbfnc:
+       :return:
+       """
+        self._dbSearchActionCallback = cbfnc
 
     def setMasterobjektChangedCallback( self, cbfnc ):
         """

@@ -1,10 +1,11 @@
 from PySide2.QtCore import QModelIndex, QPoint, Qt
-from PySide2.QtWidgets import QWidget, QAbstractItemView, QAction, QMenu
+from PySide2.QtWidgets import QWidget, QAbstractItemView, QAction, QMenu, QMessageBox
 from typing import List, Dict
 import datetime
 import sys
 from business import BusinessLogic
 from mdichildcontroller import MdiChildController
+from qtderivates import TableViewDialog
 from searchhandler import SearchHandler
 from sonstaustablemodel import SonstAusTableModel
 from sonstausview import SonstigeAusgabenView
@@ -29,6 +30,7 @@ class SonstAusController( MdiChildController ):
         self._duplicateAction:QAction = QAction( "Dupliziere Auszahlung" )
         self._deleteAction:QAction = QAction( "Lösche Auszahlung" )
         self._computeSumAction:QAction = QAction( "Berechne Summe" )
+        self._showSausIdAction:QAction = QAction( "Zeige SausId" )
 
     def createView( self ) -> QWidget:
         sausview = SonstigeAusgabenView()
@@ -58,6 +60,7 @@ class SonstAusController( MdiChildController ):
         tcm.addAction( self._computeSumAction, self._onComputeSum )
         tcm.addAction( self._duplicateAction, self._onDuplicateAuszahlung )
         tcm.addAction( self._deleteAction, self._onDeleteAuszahlung )
+        tcm.addAction( self._showSausIdAction, self._onShowSausId )
         self._tableCellActionHandler = tcm
 
         tv.resizeColumnsToContents()
@@ -68,6 +71,7 @@ class SonstAusController( MdiChildController ):
         sausview.setBuchungsjahrChangedCallback( self.onBuchungsjahrChanged )
         sausview.setSaveActionCallback( self.onSave )
         sausview.setSearchActionCallback( self._searchhandler.onSearch )
+        sausview.setDbSearchActionCallback( self._onDbSearch )
         sausview.setMasterobjektChangedCallback( self.onMasterobjektChanged )
         sausview.setMietobjektChangedCallback( self.onMietobjektChanged )
         sausview.setKreditorChangedCallback( self.onKreditorChanged )
@@ -78,6 +82,18 @@ class SonstAusController( MdiChildController ):
     def _setSummenfelder( self ):
         # todo
         pass
+
+    def _onDbSearch( self, searchstring:str ):
+        def onSelected( indexes:List[QModelIndex] ):
+            #todo: übernehmen des selektierten XBuchungstextMatch in die Editfelder
+            print( indexes )
+        matchModel = BusinessLogic.inst().getBuchungstextMatches( searchstring )
+        dlg = TableViewDialog( self._view )
+        dlg.setModal( True )
+        dlg.getTableView().setSelectionBehavior( QAbstractItemView.SelectRows )
+        dlg.setTableModel( matchModel )
+        dlg.setSelectedCallback( onSelected )
+        dlg.show()
 
     def onSave( self ):
         model:SonstAusTableModel = self._view.getAuszahlungenTableView().model()
@@ -194,6 +210,24 @@ class SonstAusController( MdiChildController ):
         sumval = sum( valuelist )
         self._tableCellActionHandler.showSumDialog( sumval )
 
+    def _onShowSausId( self ):
+        tv = self._view.getAuszahlungenTableView()
+        model: SonstAusTableModel = tv.model()
+        indexes = tv.selectedIndexes()
+        rows = self._getSelectedRows( indexes )
+        msg = ""
+        if len( rows ) > 1:
+            msg = "Die SausId kann nur gezeigt werden, wenn nur 1 Zeile selektiert ist."
+        else:
+            x:XSonstAus = model.getXSonstAus( rows[0] )
+            msg = str( x.saus_id )
+        box = QMessageBox()
+        box.setWindowTitle( "Info" )
+        box.setIcon( QMessageBox.Information )
+        box.setText( "SausId = %s" % (msg) )
+        # box.setText( msg )
+        box.exec_()
+
     def _getSelectedRows( self, indexes:List ) -> List[int]:
         rows = list()
         for idx in indexes:
@@ -215,9 +249,11 @@ class SonstAusController( MdiChildController ):
         model: SonstAusTableModel = tv.model()
         idx = tv.selectedIndexes()[0]
         x: XSonstAus = model.getXSonstAus( idx.row() )
-        model.duplicate( x )
+        xcopy:XSonstAus = model.duplicate( x )
         delta = int( round( x.betrag ) )
         self._updateViewAfterDuplicateAndDelete( delta, x.werterhaltend, x.umlegbar )
+        # put copied x into edit fields for further processing
+        self._view.provideEditFields( xcopy )
 
     def _updateViewAfterDuplicateAndDelete( self, delta:int, isWerterhaltend:bool, isUmlegbar:bool ):
         summen: XSonstAusSummen = self._view.getSummen()

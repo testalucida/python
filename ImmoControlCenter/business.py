@@ -1,8 +1,10 @@
 from enum import  IntEnum
+
+from buchungstextmatchmodel import BuchungstextMatchModel
 from dbaccess import DbAccess
 from typing import List, Dict, Tuple
 from constants import einausart
-from interfaces import XSonstAus, XSonstAusSummen, XZahlung, XSollHausgeld, XSollMiete
+from interfaces import XSonstAus, XSonstAusSummen, XZahlung, XSollHausgeld, XSollMiete, XBuchungstextMatch
 #from monthlist import monthList, monatsletzter
 #from datehelper import monthList, monatsletzter, getLastMonth
 from datehelper import *
@@ -64,6 +66,24 @@ class BusinessLogic:
     def setLetzteBuchung( self, datum:str, text:str ):
         self._db.deleteLetzteBuchung( False )
         self._db.insertLetzteBuchung( datum, text )
+
+    def getBuchungstextMatches( self, searchstring:str ) -> BuchungstextMatchModel:
+        s_low = searchstring.lower()
+        lst:List[XBuchungstextMatch] = list()
+        dictlist:List[Dict] = self._db.getKreditorleistungen()
+        for d in dictlist:
+            txt = d["buchungstext"].lower()
+            if s_low in txt:
+                x = XBuchungstextMatch()
+                x.master_id = d["master_id"]
+                x.master_name = d["master_name"]
+                x.mobj_id = d["mobj_id"]
+                x.kreditor = d["kreditor"]
+                x.buchungstext = d["buchungstext"]
+                x.umlegbar = d["umlegbar"]
+                lst.append( x )
+        model = BuchungstextMatchModel( lst )
+        return model
 
     def getMietzahlungenMitSollUndSummen( self, jahr:int, monat:int ) -> List[Dict]:
         mieten:List[Dict] = self._db.getMietzahlungenMitSummen( jahr )
@@ -422,6 +442,8 @@ class BusinessLogic:
 
 def test():
     busi = BusinessLogic.inst()
+
+    model = busi.getBuchungstextMatches( "2019" )
 
     li = busi.getAlleSollHausgelder()
 

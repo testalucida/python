@@ -35,6 +35,7 @@ class SonstAusTableModel( IccTableModel ):
         """
         self._greyBrush = QBrush( Qt.gray )
         self._redBrush = QBrush( Qt.red )
+        self._yellowBrush = QBrush( Qt.yellow )
         self._blueBrush = QBrush( Qt.darkBlue )
         self._boldFont = QFont( "Arial", 11, QFont.Bold )
         self._columnWerterhaltend = 0
@@ -81,6 +82,18 @@ class SonstAusTableModel( IccTableModel ):
             except:
                 return None
 
+    def getBackground( self, indexrow:int, indexcolumn:int ) -> Any:
+        x = self.getXSonstAus( indexrow )
+        if self.isXSonstAusInsertedOrUpdated( x ):
+            return self._yellowBrush
+        return None
+
+    def isXSonstAusInsertedOrUpdated( self, x:XSonstAus ) -> bool:
+        dictChanges = self.getChanges()
+        if x in dictChanges["INSERT"]: return True
+        if x in dictChanges["UPDATE"]: return True
+        return False
+
     def getFont( self, indexrow: int, indexcolumn: int ) -> Any:
         if indexcolumn in ( self._columnBuchungsdatum, self._columnBetrag ):
             return self._boldFont
@@ -100,6 +113,8 @@ class SonstAusTableModel( IccTableModel ):
             return self.getForeground( index.row(), index.column() )
         elif role == Qt.FontRole:
             return self.getFont( index.row(), index.column() )
+        elif role == Qt.BackgroundRole:
+            return self.getBackground( index.row(), index.column() )
         return None
 
     def headerData(self, col, orientation, role=None):
@@ -113,6 +128,7 @@ class SonstAusTableModel( IccTableModel ):
     def resetChanges( self ):
         for k in self._changes.keys():
             self._changes[k] = list()
+        self.layoutChanged.emit()
 
     def getChanges( self ) -> Dict[str, List[XSonstAus]]:
         return self._changes
@@ -141,7 +157,13 @@ class SonstAusTableModel( IccTableModel ):
         self._writeChangeLog( constants.tableAction.DELETE, x )
         self.layoutChanged.emit()
 
-    def duplicate( self, x:XSonstAus ):
+    def duplicate( self, x:XSonstAus ) -> XSonstAus:
+        """
+        duplicates x and returns the duplicate copy
+        Raises an exception if x cannot be found in the list of XSonstAus
+        :param x:
+        :return:
+        """
         x2:XSonstAus = copy.copy( x )
         x2.saus_id = 0
         l = self._sonstauslist
@@ -151,7 +173,7 @@ class SonstAusTableModel( IccTableModel ):
                 l.insert( i, x2 )
                 self._writeChangeLog( constants.tableAction.INSERT, x2 )
                 self.layoutChanged.emit()
-                return
+                return x2
         raise Exception( "Auszahlung mit ID = %d nicht in der Auszahlungsliste gefunden." % (x.saus_id) )
 
     def getRow( self, x:XSonstAus ) -> int:
