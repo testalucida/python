@@ -1,9 +1,15 @@
+from typing import Dict
+
 from PySide2 import QtCore, QtWidgets, QtGui
 from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QApplication, QMainWindow, QMdiArea, QMdiSubWindow, QWidget, QGridLayout, QTextEdit, \
-    QMenuBar, QToolBar, QAction, QMessageBox
+    QMenuBar, QToolBar, QAction, QMessageBox, QLineEdit, QLabel
 from PySide2.QtGui import QKeySequence
 from enum import Enum
+
+from datehelper import isValidIsoDatestring, getDateParts
+from qtderivates import SmartDateEdit
+
 
 class MainWindowAction( Enum ):
     NEW_WINDOW=2,
@@ -20,7 +26,6 @@ class MainWindowAction( Enum ):
     RESIZE_MAIN_WINDOW = 13,
     EXIT=99
 
-
 class ImmoCenterMainWindow( QMainWindow ):
     def __init__( self ):
         QMainWindow.__init__( self )
@@ -29,12 +34,11 @@ class ImmoCenterMainWindow( QMainWindow ):
         self._menubar:QMenuBar
         self.mdiArea:QMdiArea
         self._toolbar: QToolBar
+        self._sdLetzteBuchung: SmartDateEdit = SmartDateEdit( self )
+        self._leLetzteBuchung: QLineEdit = QLineEdit( self )
         self._actionCallbackFnc = None #callback function for all action callbacks
-
+        self._shutdownCallback = None  # callback function for shutdown action
         self._createUI()
-
-        # self._addMdiChild()
-        # self._addMdiChild()
 
     def resizeEvent( self, event ):
         QMainWindow.resizeEvent( self, event )
@@ -54,6 +58,14 @@ class ImmoCenterMainWindow( QMainWindow ):
         self._createZahlungenMenu()
         self._createAbrechnungenMenu()
         self._createSqlMenu()
+
+        self._toolBar.addSeparator()
+        lbl = QLabel( self, text="Letzte verarbeitete Buchung: " )
+        self._toolBar.addWidget( lbl )
+        self._sdLetzteBuchung.setMaximumWidth( 90 )
+        self._toolBar.addWidget( self._sdLetzteBuchung )
+        self._leLetzteBuchung.setMaximumWidth( 200 )
+        self._toolBar.addWidget( self._leLetzteBuchung )
 
         self.setMenuBar( self._menubar )
         self.addToolBar( QtCore.Qt.TopToolBarArea, self._toolBar )
@@ -214,6 +226,30 @@ class ImmoCenterMainWindow( QMainWindow ):
         submenu.addAction( action )
 
         menu.addMenu( submenu )
+
+    def canShutdown( self ) -> bool:
+        if self._shutdownCallback:
+            return self._shutdownCallback()
+
+    def setLetzteBuchung( self, datum:str, text:str ) -> None:
+        try:
+            y, m, d = getDateParts( datum )
+            self._sdLetzteBuchung.setDate( y, m, d )
+        except:
+            pass
+        self._leLetzteBuchung.setText( text )
+
+    def getLetzteBuchung( self ) -> Dict:
+        """
+        :return: dictionary with keys "date" and "text"
+        """
+        d = dict()
+        d["datum"] = self._sdLetzteBuchung.getDate()
+        d["text"] = self._leLetzteBuchung.text()
+        return d
+
+    def setShutdownCallback( self, callbackFnc ) -> None:
+        self._shutdownCallback = callbackFnc
 
     def setActionCallback( self, callbackFnc ) -> None:
         self._actionCallbackFnc = callbackFnc

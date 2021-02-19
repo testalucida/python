@@ -18,7 +18,8 @@ class ShutDownFilter( QtCore.QObject ):
 
     def eventFilter(self, obj, event) -> bool:
         if obj is self._win and event.type() == QtCore.QEvent.Close:
-            self.quit_app()
+            if self._win.canShutdown():
+                self.quit_app()
             event.ignore()
             return True
         return super(ShutDownFilter, self).eventFilter(obj, event)

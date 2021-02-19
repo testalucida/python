@@ -33,6 +33,26 @@ class DbAccess:
     def commit( self ):
         self._con.commit()
 
+    def getLetzteBuchung( self ) :
+        """
+        liefert den einzigen Eintrag der Tabelle letztebuchung
+        :return:
+        """
+        sql = "select datum, text from letztebuchung"
+        row = self._doRead( sql )
+        try:
+            return row[0][0], row[0][1]
+        except:
+            return "", ""
+
+    def deleteLetzteBuchung( self, commit:bool=True ) -> int:
+        sql = "delete from letztebuchung"
+        return self._doWrite( sql, commit )
+
+    def insertLetzteBuchung( self, datum:str, text:str, commit:bool=True ) -> int:
+        sql = "insert into letztebuchung (datum, text) values ('%s', '%s')" % ( datum, text )
+        return self._doWrite( sql, commit )
+
     def getMietobjekteKurz( self ) -> List[Dict]:
         """
         Liefert folgende Informationen für alle aktiven Mietobjekte:
@@ -542,7 +562,11 @@ def test():
     db = DbAccess( "immo.db" )
     db.open()
 
-    db.createObjektKonto( "**kannweg**" )
+    res = db.deleteLetzteBuchung( False )
+    res = db.insertLetzteBuchung( "2021-02-02", "Buchung Buchung" )
+    res = db.getLetzteBuchung()
+    print( res )
+    #db.createObjektKonto( "**kannweg**" )
 
 
     # d = db.getMasterUndMietobjekt( 396 )

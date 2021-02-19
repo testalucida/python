@@ -12,7 +12,10 @@ from sonstauscontroller import SonstAusController
 class MainController:
     def __init__(self, win:ImmoCenterMainWindow ):
         self._mainwin:ImmoCenterMainWindow = win
+        datum, text = BusinessLogic.inst().getLetzteBuchung()
+        win.setLetzteBuchung( datum, text )
         win.setActionCallback( self.onMainWindowAction )
+        win.setShutdownCallback( self.onShutdown )
 
         self._mietenCtrl:MietenController = MietenController()
         self._mietenCtrl.changedCallback = self.onViewChanged
@@ -54,7 +57,7 @@ class MainController:
             MainWindowAction.OPEN_SOLL_HG_VIEW: self.showSollHausgelderView,
             MainWindowAction.OPEN_NKA_VIEW: self.showNKAbrechnungenView,
             MainWindowAction.OPEN_HGA_VIEW: self.showHGAbrechnungenView,
-            MainWindowAction.RESIZE_MAIN_WINDOW: self.resizeAllViews
+            MainWindowAction.RESIZE_MAIN_WINDOW: self.resizeAllViews,
         }
         fnc = switcher.get( action )
         try:
@@ -171,6 +174,14 @@ class MainController:
         # wird gerufen, wenn das MainWindow resized wird.
         geom = self._mainwin.geometry()
         #print( "resized. new size: ", geom.width(), " x ", geom.height() )
+
+    def onShutdown( self ) -> bool:
+        d = self._mainwin.getLetzteBuchung()
+        try:
+            BusinessLogic.inst().setLetzteBuchung( d["datum"], d["text"] )
+        except Exception as ex:
+            self._mainwin.showException( str( ex ), "MainController.onShutdown()" )
+        return True
 
     def createSollHausgelderViewAndShow( self ):
         subwin = self._sollHausgelderCtrl.createSubwindow()

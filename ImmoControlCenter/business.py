@@ -58,6 +58,13 @@ class BusinessLogic:
     def terminate(self):
         self._db.close()
 
+    def getLetzteBuchung( self ) -> Tuple[str, str]:
+        return self._db.getLetzteBuchung()
+
+    def setLetzteBuchung( self, datum:str, text:str ):
+        self._db.deleteLetzteBuchung( False )
+        self._db.insertLetzteBuchung( datum, text )
+
     def getMietzahlungenMitSollUndSummen( self, jahr:int, monat:int ) -> List[Dict]:
         mieten:List[Dict] = self._db.getMietzahlungenMitSummen( jahr )
         # sollwerte versorgen:
