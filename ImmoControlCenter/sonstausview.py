@@ -30,7 +30,7 @@ class SonstigeAusgabenView( QWidget ):
         self._btnSave = QPushButton( self )
         self._editSearch = QLineEdit( self )
         self._btnSearchFwd = QPushButton( self )
-        self._editDbSearch = QLineEdit( self )
+        #self._editDbSearch = QLineEdit( self )
         self._btnDbSearch = QPushButton( self )
 
         self._idSummeAus = IntDisplay( self )
@@ -123,7 +123,7 @@ class SonstigeAusgabenView( QWidget ):
         btn.setIconSize( iconsize )
         self._toolbarLayout.addWidget( btn, stretch=0 )
 
-        ### search field
+        ### search field for tableview search
         edi = self._editSearch
         edi.setPlaceholderText( "Suche in Tabelle" )
         edi.returnPressed.connect( self._onSearch )
@@ -140,20 +140,20 @@ class SonstigeAusgabenView( QWidget ):
         self._toolbarLayout.addWidget( btn, stretch=0 )
 
         #### db-search ####
-        edi = self._editDbSearch
-        edi.setPlaceholderText( "Suche in Datenbank" )
-        edi.returnPressed.connect( self._onDbSearch )
-        edi.setToolTip( "Suchbegriff eingeben; gesucht wird in der Datenbank im Feld Buchungstext." )
-        self._toolbarLayout.addWidget( edi, stretch=0 )
-        btn = self._btnDbSearch
-        btn.clicked.connect( self._onDbSearch )
-        size = QSize( 30, 30 )
-        btn.setFixedSize( size )
-        btn.setToolTip( "Suche nach eingegebenem Begriff" )
-        icon = QIcon( "./images/search_30.png" )
-        btn.setIcon( icon )
-        btn.setEnabled( True )
-        self._toolbarLayout.addWidget( btn, stretch=0 )
+        # edi = self._editDbSearch
+        # edi.setPlaceholderText( "Suche in Datenbank" )
+        # edi.returnPressed.connect( self._onDbSearch )
+        # edi.setToolTip( "Suchbegriff eingeben; gesucht wird in der Datenbank im Feld Buchungstext." )
+        # self._toolbarLayout.addWidget( edi, stretch=0 )
+        # btn = self._btnDbSearch
+        # btn.clicked.connect( self._onDbSearch )
+        # size = QSize( 30, 30 )
+        # btn.setFixedSize( size )
+        # btn.setToolTip( "Suche nach eingegebenem Begriff" )
+        # icon = QIcon( "./images/search_30.png" )
+        # btn.setIcon( icon )
+        # btn.setEnabled( True )
+        # self._toolbarLayout.addWidget( btn, stretch=0 )
 
 
     def _assembleSummen( self ):
@@ -243,6 +243,18 @@ class SonstigeAusgabenView( QWidget ):
         self._cboBuchungstext.setToolTip( "Identifikation der Zahlung durch Rechnungsnummer oder Buchungstext" )
         self._cboBuchungstext.setMinimumWidth( 100 )
         self._editRechnungLineLayout.addWidget( self._cboBuchungstext, stretch=2 )
+
+        #Button for DB-Search
+        btn = self._btnDbSearch
+        btn.clicked.connect( self._onDbSearch )
+        size = QSize( 30, 30 )
+        btn.setFixedSize( size )
+        btn.setToolTip( "Suche Buchungstext in der DB" )
+        icon = QIcon( "./images/search_30.png" )
+        btn.setIcon( icon )
+        btn.setEnabled( True )
+        self._editRechnungLineLayout.addWidget( btn )
+
         self._sdRechnungsdatum.setPlaceholderText( "Datum Rg." )
         self._sdRechnungsdatum.setMaximumWidth( 85 )
         self._sdRechnungsdatum.setToolTip( "optional: Datum der Rechnung" )
@@ -334,7 +346,10 @@ class SonstigeAusgabenView( QWidget ):
 
     def _onDbSearch( self ):
         if self._dbSearchActionCallback:
-            self._dbSearchActionCallback( self._editDbSearch.text() )
+            #self._dbSearchActionCallback( self._editDbSearch.text() )
+            searchstring = self._cboBuchungstext.currentText()
+            if searchstring:
+                self._dbSearchActionCallback( searchstring )
 
     def onBuchungsjahrChanged( self, newindex ):
         """
@@ -502,6 +517,15 @@ class SonstigeAusgabenView( QWidget ):
         self._teBemerkung.clear()
         self._justEditing = None
         self._suspendCallbacks = False
+
+    def provideEditFieldsPartly( self, umlegbar:bool, master_id:int, master_name:str,
+                                 mobj_id:str, kreditor:str, buchungstext:str ):
+        self._cbUmlegbar.setChecked( umlegbar )
+        self._cboMasterobjekt.setCurrentText( master_name )
+        self._cboMietobjekt.setCurrentText( mobj_id )
+        self._cboKreditor.setCurrentText( kreditor )
+        self._cboBuchungstext.setCurrentText( buchungstext )
+        #todo: weitermachen
 
     def provideEditFields( self, x:XSonstAus ):
         self.clearEditFields()

@@ -1,5 +1,7 @@
 from enum import  IntEnum
 
+from PySide2.QtCore import QAbstractItemModel, Qt
+
 from buchungstextmatchmodel import BuchungstextMatchModel
 from dbaccess import DbAccess
 from typing import List, Dict, Tuple
@@ -439,6 +441,43 @@ class BusinessLogic:
         for x in xlist:
             self._db.updateSollHausgeld( x, False )
         self._db.commit()
+
+    def exportToCsv( self, model:QAbstractItemModel, tablename:str ):
+        today = getTodayAsIsoString()
+        csv = tablename + "_" + today + ".csv"
+        f = open( csv, "w" )
+        rows = model.rowCount()
+        cols = model.columnCount()
+        for r in range( 0, rows ):
+            for c in range( 0, cols ):
+                idx = model.index( r, c )
+                val = model.data( idx, Qt.DisplayRole )
+                if self._isIntOrFloat( val ):
+                    val = val.replace( ".", "," )
+                else:
+                    val = val.replace( "\t", "   " )
+                    val = val.replace( "\n", " " )
+
+                f.write( val )
+                if not c == cols - 1:
+                    f.write( "\t" )
+            f.write( "\n" )
+
+    def _isIntOrFloat( self, val:str ) -> bool:
+        points = 0
+        minus = 0
+        for c in val:
+            if not c.isdigit():
+                if c == ".":
+                    points = points + 1
+                    if points > 1: return False
+                elif c == "-":
+                    minus = minus + 1
+                    if minus > 1: return False
+                else:
+                    return False
+        return True
+
 
 def test():
     busi = BusinessLogic.inst()

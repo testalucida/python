@@ -15,6 +15,10 @@ class MdiChildController( ABC ):
     def save( self ):
         pass
 
+    @abstractmethod
+    def exportToCsv( self ):
+        pass
+
     def createSubwindow( self ) -> MdiSubWindow:
         view = self.createView()
         self._subwin = MdiSubWindow()

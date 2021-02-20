@@ -1,4 +1,4 @@
-from PySide2.QtCore import QModelIndex, QPoint, Qt
+from PySide2.QtCore import QModelIndex, QPoint, Qt, QAbstractItemModel
 from PySide2.QtWidgets import QWidget, QAbstractItemView, QAction, QMenu, QMessageBox
 from typing import List, Dict
 import datetime
@@ -10,7 +10,7 @@ from searchhandler import SearchHandler
 from sonstaustablemodel import SonstAusTableModel
 from sonstausview import SonstigeAusgabenView
 from mdisubwindow import MdiSubWindow
-from interfaces import XSonstAus, XSonstAusSummen
+from interfaces import XSonstAus, XSonstAusSummen, XBuchungstextMatch
 import constants
 from datehelper import *
 from tablecellactionhandler import TableCellActionHandler
@@ -85,8 +85,11 @@ class SonstAusController( MdiChildController ):
 
     def _onDbSearch( self, searchstring:str ):
         def onSelected( indexes:List[QModelIndex] ):
-            #todo: übernehmen des selektierten XBuchungstextMatch in die Editfelder
-            print( indexes )
+            if len( indexes ) > 0:
+                # übernehmen des selektierten XBuchungstextMatch in die Editfelder
+                x: XBuchungstextMatch = matchModel.getXBuchungstextMatch( indexes[0].row() )
+                self._view.provideEditFieldsPartly( (x.umlegbar > 0), x.master_id, x.master_name,
+                                                    x.mobj_id, x.kreditor, x.buchungstext )
         matchModel = BusinessLogic.inst().getBuchungstextMatches( searchstring )
         dlg = TableViewDialog( self._view )
         dlg.setModal( True )
@@ -385,12 +388,22 @@ class SonstAusController( MdiChildController ):
             return "Kein Betrag angegeben."
         return ""
 
+    def exportToCsv( self ):
+        model: QAbstractItemModel = self._view.getModel()
+        try:
+            BusinessLogic.inst().exportToCsv( model, "sonstaus" )
+        except Exception as ex:
+            self._view.showException( "Export SonstAus-Tabelle als .csv-Datei", str( ex ),
+                                      "in SonstAusController.exportToCsv" )
+            return
+
 def test():
     import sys
     from PySide2 import QtWidgets
     app = QtWidgets.QApplication( sys.argv )
     c = SonstAusController()
     v = c.createView()
+    c.exportToCsv()
     v.show()
     sys.exit( app.exec_() )
 

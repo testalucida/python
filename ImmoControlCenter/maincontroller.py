@@ -58,6 +58,7 @@ class MainController:
             MainWindowAction.OPEN_NKA_VIEW: self.showNKAbrechnungenView,
             MainWindowAction.OPEN_HGA_VIEW: self.showHGAbrechnungenView,
             MainWindowAction.RESIZE_MAIN_WINDOW: self.resizeAllViews,
+            MainWindowAction.EXPORT_CALC: self.exportCalc
         }
         fnc = switcher.get( action )
         try:
@@ -174,6 +175,11 @@ class MainController:
         # wird gerufen, wenn das MainWindow resized wird.
         geom = self._mainwin.geometry()
         #print( "resized. new size: ", geom.width(), " x ", geom.height() )
+
+    def exportCalc( self ):
+        child: MdiSubWindow = self._mainwin.mdiArea.activeSubWindow()
+        ctrl: MdiChildController = self._viewsandcontroller[child]
+        ctrl.exportToCsv()
 
     def onShutdown( self ) -> bool:
         self._setLetzteBuchung()

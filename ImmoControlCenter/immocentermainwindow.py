@@ -24,6 +24,7 @@ class MainWindowAction( Enum ):
     OPEN_NKA_VIEW = 11,
     OPEN_HGA_VIEW = 12,
     RESIZE_MAIN_WINDOW = 13,
+    EXPORT_CALC = 14,
     EXIT=99
 
 class ImmoCenterMainWindow( QMainWindow ):
@@ -57,6 +58,7 @@ class ImmoCenterMainWindow( QMainWindow ):
         self._createMietobjektMenu()
         self._createZahlungenMenu()
         self._createAbrechnungenMenu()
+        self._createExtrasMenu()
         self._createSqlMenu()
 
         self._toolBar.addSeparator()
@@ -191,6 +193,13 @@ class ImmoCenterMainWindow( QMainWindow ):
         action.triggered.connect( self.onViewHausgeldabrechnung )
         menu.addAction( action )
 
+    def _createExtrasMenu( self ):
+        menu = QtWidgets.QMenu( self._menubar, title="Extras" )
+        self._menubar.addMenu( menu )
+        action = QAction( self, text="Exportiere aktive Tabelle in Calc" )
+        action.triggered.connect( self.onExportActiveTableView )
+        menu.addAction( action )
+
     def _createSqlMenu( self ):
         # Menü "ImmoCenter"
         menu = QtWidgets.QMenu( self._menubar, title="SQL" )
@@ -309,6 +318,9 @@ class ImmoCenterMainWindow( QMainWindow ):
 
     def onViewHausgeldabrechnung( self ):
         self.doCallback( MainWindowAction.OPEN_HGA_VIEW )
+
+    def onExportActiveTableView( self ):
+        self.doCallback( MainWindowAction.EXPORT_CALC )
 
     def onViewRechnungen( self ):
         pass
