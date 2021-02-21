@@ -2,14 +2,60 @@ from typing import Dict
 
 from PySide2 import QtCore, QtWidgets, QtGui
 from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QApplication, QMainWindow, QMdiArea, QMdiSubWindow, QWidget, QGridLayout, QTextEdit, \
-    QMenuBar, QToolBar, QAction, QMessageBox, QLineEdit, QLabel
-from PySide2.QtGui import QKeySequence
+from PySide2.QtWidgets import QApplication, QMainWindow, QMdiArea, QMdiSubWindow, QWidget, QTextEdit, \
+    QMenuBar, QToolBar, QAction, QMessageBox, QLineEdit, QLabel, QSizePolicy
+from PySide2.QtGui import QKeySequence, QFont
 from enum import Enum
 
-from datehelper import isValidIsoDatestring, getDateParts
-from qtderivates import SmartDateEdit
+from datehelper import getDateParts
+from qtderivates import SmartDateEdit, IntDisplay
 
+class SumFieldsAccess:
+    __instance = None
+    def __init__( self, sumMieten:IntDisplay, sumAusgaben:IntDisplay, sumHGV:IntDisplay, saldo:IntDisplay ):
+        if SumFieldsAccess.__instance != None:
+            raise Exception( "You can't instantiate SumFieldsAccess more than once." )
+        else:
+            SumFieldsAccess.__instance = self
+
+        self._sumMieten = sumMieten
+        self._sumAusgaben = sumAusgaben
+        self._sumHGV = sumHGV
+        self._saldo = saldo
+
+    @staticmethod
+    def inst() -> __instance:
+        if SumFieldsAccess.__instance == None:
+           raise Exception( "SumFieldsAccess not yet constructed." )
+        return SumFieldsAccess.__instance
+
+    def getSumMieten( self ) -> int:
+        return self._sumMieten.getIntValue()
+
+    def getSumAusgaben( self ) -> int:
+        return self._sumAusgaben.getIntValue()
+
+    def getSumHGV( self ) -> int:
+        return self._sumHGV.getIntValue()
+
+    def getSaldo( self ) -> int:
+        return self._saldo.getIntValue()
+
+    def setSumMieten( self, val:int ) -> None:
+        self._sumMieten.setIntValue( val )
+        self._calculateSaldo()
+
+    def setSumAusgaben( self, val:int ) -> None:
+        self._sumAusgaben.setIntValue( val )
+        self._calculateSaldo()
+
+    def setSumHGV( self, val:int ) -> None:
+        self._sumHGV.setIntValue( val )
+        self._calculateSaldo()
+
+    def _calculateSaldo( self ):
+        saldo = self.getSumMieten() + self.getSumAusgaben() + self.getSumHGV()
+        self._saldo.setIntValue( saldo )
 
 class MainWindowAction( Enum ):
     NEW_WINDOW=2,
@@ -37,6 +83,17 @@ class ImmoCenterMainWindow( QMainWindow ):
         self._toolbar: QToolBar
         self._sdLetzteBuchung: SmartDateEdit = SmartDateEdit( self )
         self._leLetzteBuchung: QLineEdit = QLineEdit( self )
+
+        # Summen
+        self._idSumMiete = self._createSumDisplay( "Summe aller Bruttomieten" )
+        self._idSummeSonstAus = self._createSumDisplay( "Summe aller sonstigen Ausgaben" )
+        self._idSummeHGV = self._createSumDisplay( "Summe aller Hausgeld-Vorauszahlungen" )
+        self._idSaldo = self._createSumDisplay( "Bruttomieten minus Ausgaben minus HG-Vorauszahlungen" )
+        self._summenfont = QFont( "Times New Roman", 16, weight=QFont.Bold )
+        self._summenartfont = QFont( "Times New Roman", 9 )
+        # give others access to sum fields via Singleton SumFieldsAccess:
+        self._sumfieldsAccess = SumFieldsAccess( self._idSumMiete, self._idSummeSonstAus, self._idSummeHGV, self._idSaldo )
+
         self._actionCallbackFnc = None #callback function for all action callbacks
         self._shutdownCallback = None  # callback function for shutdown action
         self._createUI()
@@ -72,6 +129,12 @@ class ImmoCenterMainWindow( QMainWindow ):
                                           "um beim nächsten Anwendungsstart gezielt weiterarbeiten zu können." )
         self._leLetzteBuchung.setMaximumWidth( 300 )
         self._toolBar.addWidget( self._leLetzteBuchung )
+
+        dummy = QWidget()
+        dummy.setSizePolicy( QSizePolicy.Expanding, QSizePolicy.Preferred )
+        self._toolBar.addWidget( dummy )
+
+        self._addSumFields()
 
         self.setMenuBar( self._menubar )
         self.addToolBar( QtCore.Qt.TopToolBarArea, self._toolBar )
@@ -239,6 +302,62 @@ class ImmoCenterMainWindow( QMainWindow ):
         submenu.addAction( action )
 
         menu.addMenu( submenu )
+
+    def _addSumFields( self ):
+        self._toolBar.addWidget( self._createSumLabel() )
+        self._toolBar.addWidget( self._createSumArtLabel( "Miete", 30 ) )
+        self._toolBar.addWidget( self._idSumMiete )
+
+        self._toolBar.addWidget( self._createLabel( "-", 20 ) )
+
+        self._toolBar.addWidget( self._createSumLabel() )
+        self._toolBar.addWidget( self._createSumArtLabel( "Ausgaben", 50 ) )
+        self._toolBar.addWidget( self._idSummeSonstAus )
+
+        self._toolBar.addWidget( self._createLabel( "-", 20 ) )
+
+        self._toolBar.addWidget( self._createSumLabel() )
+        self._toolBar.addWidget( self._createSumArtLabel( "HGV", 40 ) )
+        self._toolBar.addWidget( self._idSummeHGV )
+
+        self._toolBar.addWidget( self._createLabel( "=", 20 ) )
+
+        self._toolBar.addWidget( self._idSaldo )
+
+        self._toolBar.addWidget( self._createSpacer( 20 ) )
+
+
+    def _createSumDisplay( self, tooltip:str ) -> IntDisplay:
+        display = IntDisplay( self )
+        display.setMaximumWidth( 70 )
+        display.setEnabled( False )
+        display.setToolTip( tooltip )
+        return display
+
+    def _createSumLabel( self ) -> QLabel:
+        lbl = QLabel( self, text = "∑" )
+        lbl.setFont( self._summenfont )
+        lbl.setMaximumWidth( 15 )
+        return lbl
+
+    def _createSumArtLabel( self, sumart:str, width:int ) -> QLabel:
+        lbl = QLabel( self, text=sumart )
+        lbl.setFont( self._summenartfont )
+        lbl.setMaximumWidth( width )
+        return lbl
+
+    def _createLabel( self, text:str, width:int ) -> QLabel:
+        lbl = QLabel( self, text=text )
+        lbl.setMinimumWidth( width )
+        lbl.setMaximumWidth( width )
+        lbl.setAlignment( Qt.AlignCenter )
+        return lbl
+
+    def _createSpacer( self, width:int ) -> QWidget:
+        spacer = QWidget( self )
+        spacer.setMinimumWidth( width )
+        spacer.setMaximumWidth( width )
+        return spacer
 
     def canShutdown( self ) -> bool:
         if self._shutdownCallback:

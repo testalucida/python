@@ -6,7 +6,7 @@ from business import BusinessLogic
 from constants import einausart
 from datehelper import getCurrentYear
 from mdisubwindow import MdiSubWindow
-from immocentermainwindow import ImmoCenterMainWindow, MainWindowAction
+from immocentermainwindow import ImmoCenterMainWindow, MainWindowAction, SumFieldsAccess
 from checkcontroller import MdiChildController, MietenController, HGVController
 from sollzahlungencontroller import SollzahlungenController, SollType
 from sonstauscontroller import SonstAusController
@@ -40,6 +40,15 @@ class MainController:
         self._viewsandcontroller:[Dict[MdiSubWindow, MdiChildController]] = {}
         self._someViewChanged:bool = False
         self._x, self._y = 0, 0
+
+        self._provideSumFields()
+
+    def _provideSumFields( self ):
+        sumMieten, sumAusgaben, sumHGV = BusinessLogic.inst().getSummen()
+        sfa:SumFieldsAccess = SumFieldsAccess.inst()
+        sfa.setSumMieten( sumMieten )
+        sfa.setSumAusgaben( sumAusgaben )
+        sfa.setSumHGV( sumHGV )
 
     def showStartViews( self ):
         self.showMieteView()

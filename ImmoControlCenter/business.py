@@ -428,6 +428,12 @@ class BusinessLogic:
                 summen.summe_umlegbar += betrag
         return sonstauslist, summen
 
+    def getSummen( self ) -> Tuple[int, int, int]:
+        sumMiete:float = self._db.getSummeZahlungen( "bruttomiete" )
+        sumAusgaben:float = self._db.getSummeZahlungen( "sonstaus" )
+        sumHGV:float = self._db.getSummeZahlungen( "hgv" )
+        return ( int(sumMiete), int(sumAusgaben), int(sumHGV) )
+
     def insertSollmieten( xlist:List[XSollMiete] ):
         pass
 

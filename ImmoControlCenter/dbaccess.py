@@ -246,6 +246,11 @@ class DbAccess:
 
         return sonstalist
 
+    def getSummeZahlungen( self, zahl_art:str ) -> float:
+        sql = "select sum( betrag ) from zahlung where zahl_art = '%s'" % ( zahl_art )
+        lst = self._doRead( sql )
+        return lst[0][0]
+
     def getJahre( self, eaart:einausart ) -> List[int]:
         id = "mv_id" if eaart == einausart.MIETE else "vwg_art"
         sql = "select distinct jahr from mtleinaus where %s > 0 " % ( id )
@@ -562,8 +567,10 @@ def test():
     db = DbAccess( "immo.db" )
     db.open()
 
-    res = db.deleteLetzteBuchung( False )
-    res = db.insertLetzteBuchung( "2021-02-02", "Buchung Buchung" )
+    r = db.getSummeZahlungen( "sonstaus" )
+
+    # res = db.deleteLetzteBuchung( False )
+    # res = db.insertLetzteBuchung( "2021-02-02", "Buchung Buchung" )
     res = db.getLetzteBuchung()
     print( res )
     #db.createObjektKonto( "**kannweg**" )
