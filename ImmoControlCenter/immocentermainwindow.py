@@ -24,7 +24,7 @@ class MainWindowAction( Enum ):
     OPEN_NKA_VIEW = 11,
     OPEN_HGA_VIEW = 12,
     RESIZE_MAIN_WINDOW = 13,
-    EXPORT_CALC = 14,
+    EXPORT_CSV = 14,
     EXIT=99
 
 class ImmoCenterMainWindow( QMainWindow ):
@@ -320,7 +320,7 @@ class ImmoCenterMainWindow( QMainWindow ):
         self.doCallback( MainWindowAction.OPEN_HGA_VIEW )
 
     def onExportActiveTableView( self ):
-        self.doCallback( MainWindowAction.EXPORT_CALC )
+        self.doCallback( MainWindowAction.EXPORT_CSV )
 
     def onViewRechnungen( self ):
         pass

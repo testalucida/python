@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
+
+from PySide2.QtCore import QAbstractItemModel
 from PySide2.QtWidgets import QWidget, QMessageBox
 from typing import Any
 
+from business import BusinessLogic
 from icctablemodel import IccTableModel
 from mdisubwindow import MdiSubWindow
 
@@ -13,10 +16,6 @@ class MdiChildController( ABC ):
 
     @abstractmethod
     def save( self ):
-        pass
-
-    @abstractmethod
-    def exportToCsv( self ):
         pass
 
     def createSubwindow( self ) -> MdiSubWindow:

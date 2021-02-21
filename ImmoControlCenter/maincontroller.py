@@ -1,5 +1,7 @@
 from typing import List, Dict, Tuple
 
+from PySide2.QtCore import QAbstractItemModel
+
 from business import BusinessLogic
 from constants import einausart
 from datehelper import getCurrentYear
@@ -58,13 +60,13 @@ class MainController:
             MainWindowAction.OPEN_NKA_VIEW: self.showNKAbrechnungenView,
             MainWindowAction.OPEN_HGA_VIEW: self.showHGAbrechnungenView,
             MainWindowAction.RESIZE_MAIN_WINDOW: self.resizeAllViews,
-            MainWindowAction.EXPORT_CALC: self.exportCalc
+            MainWindowAction.EXPORT_CSV: self.exportToCsv
         }
         fnc = switcher.get( action )
         try:
             fnc()
         except:
-           self._mainwin.showException( "Ungültiger Funktionsaufruf", "MainController.onMainWindowAction():\naction '%s' ist unbekannt." % (str( action ) ) )
+           self._mainwin.showException( "function call failed", "MainController.onMainWindowAction():\nconcerned action: '%s'." % (str( action ) ) )
 
     def anyViewChanged( self ) -> bool:
         return self._someViewChanged
@@ -176,10 +178,13 @@ class MainController:
         geom = self._mainwin.geometry()
         #print( "resized. new size: ", geom.width(), " x ", geom.height() )
 
-    def exportCalc( self ):
+    def exportToCsv( self ):
         child: MdiSubWindow = self._mainwin.mdiArea.activeSubWindow()
-        ctrl: MdiChildController = self._viewsandcontroller[child]
-        ctrl.exportToCsv()
+        model: QAbstractItemModel = child.widget().getModel()
+        try:
+            BusinessLogic.inst().exportToCsv( model )
+        except Exception as ex:
+            child.showException( "Export als .csv-Datei", str( ex ), "in MainController.exportToCsv()" )
 
     def onShutdown( self ) -> bool:
         self._setLetzteBuchung()

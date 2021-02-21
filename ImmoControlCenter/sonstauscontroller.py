@@ -388,14 +388,14 @@ class SonstAusController( MdiChildController ):
             return "Kein Betrag angegeben."
         return ""
 
-    def exportToCsv( self ):
-        model: QAbstractItemModel = self._view.getModel()
-        try:
-            BusinessLogic.inst().exportToCsv( model, "sonstaus" )
-        except Exception as ex:
-            self._view.showException( "Export SonstAus-Tabelle als .csv-Datei", str( ex ),
-                                      "in SonstAusController.exportToCsv" )
-            return
+    # def exportToCsv( self ):
+    #     model: QAbstractItemModel = self._view.getModel()
+    #     try:
+    #         BusinessLogic.inst().exportToCsv( model, "sonstaus" )
+    #     except Exception as ex:
+    #         self._view.showException( "Export SonstAus-Tabelle als .csv-Datei", str( ex ),
+    #                                   "in SonstAusController.exportToCsv" )
+    #         return
 
 def test():
     import sys
@@ -403,7 +403,6 @@ def test():
     app = QtWidgets.QApplication( sys.argv )
     c = SonstAusController()
     v = c.createView()
-    c.exportToCsv()
     v.show()
     sys.exit( app.exec_() )
 

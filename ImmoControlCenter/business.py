@@ -1,3 +1,5 @@
+import os
+import sys
 from enum import  IntEnum
 
 from PySide2.QtCore import QAbstractItemModel, Qt
@@ -442,28 +444,46 @@ class BusinessLogic:
             self._db.updateSollHausgeld( x, False )
         self._db.commit()
 
-    def exportToCsv( self, model:QAbstractItemModel, tablename:str ):
-        today = getTodayAsIsoString()
-        csv = tablename + "_" + today + ".csv"
+    def exportToCsv( self, model:QAbstractItemModel, tablename:str="" ):
+        now = str( datetime.now() )
+        csv = tablename + "_" + now + ".csv"
+        csv = csv.replace( " ", "-" )
         f = open( csv, "w" )
         rows = model.rowCount()
         cols = model.columnCount()
+        #  Export headers
+        for c in range( 0, cols ):
+            header = model.headerData( c, Qt.Horizontal, Qt.DisplayRole )
+            f.write( header )
+            if not c == cols - 1:
+                f.write( "\t" )
+
         for r in range( 0, rows ):
+            f.write( "\n" )
             for c in range( 0, cols ):
                 idx = model.index( r, c )
                 val = model.data( idx, Qt.DisplayRole )
-                if self._isIntOrFloat( val ):
+                if val is None: val = ""
+                #print( "val=", val, " - r/c=", r, "/", c )
+                if isinstance( val, int ) or isinstance( val, float):
+                    val = str( val )
                     val = val.replace( ".", "," )
                 else:
-                    val = val.replace( "\t", "   " )
-                    val = val.replace( "\n", " " )
+                    if self._isIntOrFloatFormat( val ):
+                        val = val.replace( ".", "," )
+                    else:
+                        val = val.replace( "\t", "   " )
+                        val = val.replace( "\n", " " )
 
                 f.write( val )
                 if not c == cols - 1:
                     f.write( "\t" )
-            f.write( "\n" )
+        f.close()
 
-    def _isIntOrFloat( self, val:str ) -> bool:
+        if sys.platform.startswith( "linux" ):
+            os.system( "xdg-open " + csv )
+
+    def _isIntOrFloatFormat( self, val:str ) -> bool:
         points = 0
         minus = 0
         for c in val:
