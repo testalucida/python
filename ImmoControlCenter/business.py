@@ -446,7 +446,7 @@ class BusinessLogic:
 
     def exportToCsv( self, model:QAbstractItemModel, tablename:str="" ):
         now = str( datetime.now() )
-        csv = tablename + "_" + now + ".csv"
+        csv = "./csv/" + tablename + "_" + now + ".csv"
         csv = csv.replace( " ", "-" )
         f = open( csv, "w" )
         rows = model.rowCount()
@@ -481,7 +481,7 @@ class BusinessLogic:
         f.close()
 
         if sys.platform.startswith( "linux" ):
-            os.system( "xdg-open " + csv )
+            os.system( "xdg-open " +  csv )
 
     def _isIntOrFloatFormat( self, val:str ) -> bool:
         points = 0
