@@ -13,6 +13,7 @@ from mdisubwindow import MdiSubWindow
 from interfaces import XSonstAus, XSonstAusSummen, XBuchungstextMatch
 import constants
 from datehelper import *
+from sumfieldsprovider import SumFieldsProvider
 from tablecellactionhandler import TableCellActionHandler
 
 
@@ -52,8 +53,7 @@ class SonstAusController( MdiChildController ):
         sonstauslist, summen = BusinessLogic.inst().getSonstigeAusgabenUndSummen( self._jahr )
         tm = SonstAusTableModel( sonstauslist )
         sausview.setAuszahlungenTableModel( tm )
-        sausview.setSummen( summen )
-        self._setSummenfelder()
+        #sausview.setSummen( summen )
         tv = sausview.getAuszahlungenTableView()
         self._searchhandler = SearchHandler( tv )
         tcm = TableCellActionHandler( tv )
@@ -79,10 +79,6 @@ class SonstAusController( MdiChildController ):
 
         return sausview
 
-    def _setSummenfelder( self ):
-        # todo
-        pass
-
     def _onDbSearch( self, searchstring:str ):
         def onSelected( indexes:List[QModelIndex] ):
             if len( indexes ) > 0:
@@ -102,6 +98,7 @@ class SonstAusController( MdiChildController ):
         model:SonstAusTableModel = self._view.getAuszahlungenTableView().model()
         changes:Dict[str, List[XSonstAus]] = model.getChanges()
         self.writeChanges( changes )
+        SumFieldsProvider.inst().setSumFields()
         model.resetChanges()
 
     def onSearch( self, searchstring:str ):

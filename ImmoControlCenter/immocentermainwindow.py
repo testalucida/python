@@ -9,53 +9,8 @@ from enum import Enum
 
 from datehelper import getDateParts
 from qtderivates import SmartDateEdit, IntDisplay
+from sumfieldsprovider import SumFieldsProvider
 
-class SumFieldsAccess:
-    __instance = None
-    def __init__( self, sumMieten:IntDisplay, sumAusgaben:IntDisplay, sumHGV:IntDisplay, saldo:IntDisplay ):
-        if SumFieldsAccess.__instance != None:
-            raise Exception( "You can't instantiate SumFieldsAccess more than once." )
-        else:
-            SumFieldsAccess.__instance = self
-
-        self._sumMieten = sumMieten
-        self._sumAusgaben = sumAusgaben
-        self._sumHGV = sumHGV
-        self._saldo = saldo
-
-    @staticmethod
-    def inst() -> __instance:
-        if SumFieldsAccess.__instance == None:
-           raise Exception( "SumFieldsAccess not yet constructed." )
-        return SumFieldsAccess.__instance
-
-    def getSumMieten( self ) -> int:
-        return self._sumMieten.getIntValue()
-
-    def getSumAusgaben( self ) -> int:
-        return self._sumAusgaben.getIntValue()
-
-    def getSumHGV( self ) -> int:
-        return self._sumHGV.getIntValue()
-
-    def getSaldo( self ) -> int:
-        return self._saldo.getIntValue()
-
-    def setSumMieten( self, val:int ) -> None:
-        self._sumMieten.setIntValue( val )
-        self._calculateSaldo()
-
-    def setSumAusgaben( self, val:int ) -> None:
-        self._sumAusgaben.setIntValue( val )
-        self._calculateSaldo()
-
-    def setSumHGV( self, val:int ) -> None:
-        self._sumHGV.setIntValue( val )
-        self._calculateSaldo()
-
-    def _calculateSaldo( self ):
-        saldo = self.getSumMieten() + self.getSumAusgaben() + self.getSumHGV()
-        self._saldo.setIntValue( saldo )
 
 class MainWindowAction( Enum ):
     NEW_WINDOW=2,
@@ -92,7 +47,7 @@ class ImmoCenterMainWindow( QMainWindow ):
         self._summenfont = QFont( "Times New Roman", 16, weight=QFont.Bold )
         self._summenartfont = QFont( "Times New Roman", 9 )
         # give others access to sum fields via Singleton SumFieldsAccess:
-        self._sumfieldsAccess = SumFieldsAccess( self._idSumMiete, self._idSummeSonstAus, self._idSummeHGV, self._idSaldo )
+        self._sumfieldsAccess = SumFieldsProvider( self._idSumMiete, self._idSummeSonstAus, self._idSummeHGV, self._idSaldo )
 
         self._actionCallbackFnc = None #callback function for all action callbacks
         self._shutdownCallback = None  # callback function for shutdown action

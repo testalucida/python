@@ -30,17 +30,13 @@ class SonstigeAusgabenView( QWidget ):
         self._btnSave = QPushButton( self )
         self._editSearch = QLineEdit( self )
         self._btnSearchFwd = QPushButton( self )
-        #self._editDbSearch = QLineEdit( self )
         self._btnDbSearch = QPushButton( self )
 
-        self._idSummeAus = IntDisplay( self )
-        # self._idSummeEin = IntDisplay( self )
-        self._idSummeW = IntDisplay( self )
-        # self._idSummeNichtW = IntDisplay( self )
-        self._idSummeU = IntDisplay( self )
-        # self._idSummeNichtU = IntDisplay( self )
-        self._summenfont = QFont( "Times New Roman", 16, weight=QFont.Bold )
-        self._summenartfont = QFont( "Times New Roman", 9 )
+        # self._idSummeAus = IntDisplay( self )
+        # self._idSummeW = IntDisplay( self )
+        # self._idSummeU = IntDisplay( self )
+        # self._summenfont = QFont( "Times New Roman", 16, weight=QFont.Bold )
+        # self._summenartfont = QFont( "Times New Roman", 9 )
 
         self._cboBuchungsjahr = QtWidgets.QComboBox( self )
         self._tvAuszahlungen = TableViewExt( self )
@@ -83,9 +79,9 @@ class SonstigeAusgabenView( QWidget ):
     def _createGui( self ):
         self._assembleToolbar()
         self._mainLayout.addLayout( self._toolbarLayout, 0, 0, alignment=Qt.AlignLeft )
-        self._assembleSummen()
-        self._toolbarLayout.addStretch( 50 )
-        self._toolbarLayout.addLayout( self._summenLayout )
+        #self._assembleSummen()
+        # self._toolbarLayout.addStretch( 50 )
+        # self._toolbarLayout.addLayout( self._summenLayout )
         ### tableView
         tv = self._tvAuszahlungen
         tv.setSelectionBehavior( QAbstractItemView.SelectRows )
@@ -139,48 +135,19 @@ class SonstigeAusgabenView( QWidget ):
         btn.setEnabled( True )
         self._toolbarLayout.addWidget( btn, stretch=0 )
 
-        #### db-search ####
-        # edi = self._editDbSearch
-        # edi.setPlaceholderText( "Suche in Datenbank" )
-        # edi.returnPressed.connect( self._onDbSearch )
-        # edi.setToolTip( "Suchbegriff eingeben; gesucht wird in der Datenbank im Feld Buchungstext." )
-        # self._toolbarLayout.addWidget( edi, stretch=0 )
-        # btn = self._btnDbSearch
-        # btn.clicked.connect( self._onDbSearch )
-        # size = QSize( 30, 30 )
-        # btn.setFixedSize( size )
-        # btn.setToolTip( "Suche nach eingegebenem Begriff" )
-        # icon = QIcon( "./images/search_30.png" )
-        # btn.setIcon( icon )
-        # btn.setEnabled( True )
-        # self._toolbarLayout.addWidget( btn, stretch=0 )
-
-
     def _assembleSummen( self ):
         parent = None
         #### Summe Auszahlungen
         lay = self._createSummenLabel( parent, "Aus", self._idSummeAus, "Salod aller Ausgaben und Einnahmen (Gutschriften)" )
         self._summenLayout.addLayout( lay, stretch=0 )
 
-        # #### Summe Einzahlungen
-        # lay = self._createSummenLabel( parent, "Ein", self._idSummeEin )
-        # self._summenLayout.addLayout( lay, stretch=0 )
-        #
         #### Summe werterhaltend
         lay = self._createSummenLabel( parent, "w", self._idSummeW, "Saldo aller werterhaltenden Zahlungen" )
         self._summenLayout.addLayout( lay, stretch=0 )
-        #
-        # #### Summe NICHT werterhaltend
-        # lay = self._createSummenLabel( parent, "!w", self._idSummeNichtW )
-        # self._summenLayout.addLayout( lay, stretch=0 )
-        #
+
         #### Summe umlegbar
         lay = self._createSummenLabel( parent, "u", self._idSummeU, "Saldo aller Zahlungen, die umlegbar sind" )
         self._summenLayout.addLayout( lay, stretch=0 )
-        #
-        # #### Summe NICHT umlegbar
-        # lay = self._createSummenLabel( parent, "!u", self._idSummeNichtU )
-        # self._summenLayout.addLayout( lay, stretch=0 )
 
     def _createSummenLabel( self, parent, sumart:str, sumfield:IntDisplay, tooltip:str ) -> QHBoxLayout:
         lay = QHBoxLayout( parent )
@@ -300,28 +267,19 @@ class SonstigeAusgabenView( QWidget ):
         summen.summe_umlegbar = self._idSummeU.getIntValue()
         return summen
 
-    def setSummen( self, summen:XSonstAusSummen ):
-        self.setSummeAus( summen.summe_aus )
-        self.setSummeU( summen.summe_umlegbar )
-        self.setSummeW( summen.summe_werterhaltend )
+    # def setSummen( self, summen:XSonstAusSummen ):
+    #     self.setSummeAus( summen.summe_aus )
+    #     self.setSummeU( summen.summe_umlegbar )
+    #     self.setSummeW( summen.summe_werterhaltend )
 
     def setSummeAus( self, val:int ):
         self._idSummeAus.setIntValue( val )
 
-    # def setSummeEin( self, val:int ):
-    #     self._idSummeEin = val
-
     def setSummeW( self, val:int ):
         self._idSummeW.setIntValue( val )
 
-    # def setSummeNichtW( self, val:int ):
-    #     self._idSummeNichtW = val
-
     def setSummeU( self, val: int ):
         self._idSummeU.setIntValue( val )
-
-    # def setSummeNichtU( self, val:int ):
-    #     self._idSummeNichtU = val
 
     def onAddDayToBuchungsdatum( self ):
         val = self._sdBuchungsdatum.getDate()
