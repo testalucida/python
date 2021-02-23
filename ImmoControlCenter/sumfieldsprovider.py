@@ -1,10 +1,13 @@
+from PySide2.QtCore import Signal, QObject
+
 from business import BusinessLogic
 from qtderivates import IntDisplay
 
-
-class SumFieldsProvider:
+class SumFieldsProvider( QObject ):
     __instance = None
-    def __init__( self, sumMieten:IntDisplay, sumAusgaben:IntDisplay, sumHGV:IntDisplay, saldo:IntDisplay ):
+    dbaccess_failed = Signal( str )
+
+    def __init__( self, sumMieten:IntDisplay, sumAusgaben:IntDisplay, sumHGV:IntDisplay, saldo:IntDisplay, errorCallback ):
         if SumFieldsProvider.__instance != None:
             raise Exception( "You can't instantiate SumFieldsAccess more than once." )
         else:
@@ -14,6 +17,7 @@ class SumFieldsProvider:
         self._sumAusgaben = sumAusgaben
         self._sumHGV = sumHGV
         self._saldo = saldo
+        self._errorCallback = errorCallback
 
     @staticmethod
     def inst() -> __instance:
@@ -22,7 +26,14 @@ class SumFieldsProvider:
         return SumFieldsProvider.__instance
 
     def setSumFields( self ):
-        sumMieten, sumAusgaben, sumHGV = BusinessLogic.inst().getSummen()
+        try:
+            sumMieten, sumAusgaben, sumHGV = BusinessLogic.inst().getSummen()
+        except Exception as ex:
+            sumMieten = 0
+            sumAusgaben = 0
+            sumHGV = 0
+            self._errorCallback( str( ex ) )
+
         self.setSumMieten( sumMieten )
         self.setSumAusgaben( sumAusgaben )
         self.setSumHGV( sumHGV )

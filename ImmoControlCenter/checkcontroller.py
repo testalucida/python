@@ -8,6 +8,7 @@ from checktablemodel import CheckTableModel
 from business import BusinessLogic
 from constants import einausart
 from mdisubwindow import MdiSubWindow
+from sumfieldsprovider import SumFieldsProvider
 from tablecellactionhandler import TableCellActionHandler
 
 
@@ -111,6 +112,7 @@ class CheckController( MdiChildController, ABC ):
                 return
 
             model.resetChanges()
+            SumFieldsProvider.inst().setSumFields()
             self._doDataSavedCallback()
 
     @abstractmethod

@@ -1,7 +1,7 @@
 from typing import Dict
 
 from PySide2 import QtCore, QtWidgets, QtGui
-from PySide2.QtCore import Qt
+from PySide2.QtCore import Qt, QObject, Signal
 from PySide2.QtWidgets import QApplication, QMainWindow, QMdiArea, QMdiSubWindow, QWidget, QTextEdit, \
     QMenuBar, QToolBar, QAction, QMessageBox, QLineEdit, QLabel, QSizePolicy
 from PySide2.QtGui import QKeySequence, QFont
@@ -28,6 +28,11 @@ class MainWindowAction( Enum ):
     EXPORT_CSV = 14,
     EXIT=99
 
+class DummySignal(QObject):
+    signal = Signal()
+    def emitSignal( self ):
+        self.signal.emit()
+
 class ImmoCenterMainWindow( QMainWindow ):
     def __init__( self ):
         QMainWindow.__init__( self )
@@ -47,11 +52,17 @@ class ImmoCenterMainWindow( QMainWindow ):
         self._summenfont = QFont( "Times New Roman", 16, weight=QFont.Bold )
         self._summenartfont = QFont( "Times New Roman", 9 )
         # give others access to sum fields via Singleton SumFieldsAccess:
-        self._sumfieldsAccess = SumFieldsProvider( self._idSumMiete, self._idSummeSonstAus, self._idSummeHGV, self._idSaldo )
+        self._sumfieldsAccess = SumFieldsProvider( self._idSumMiete, self._idSummeSonstAus, self._idSummeHGV, self._idSaldo,
+                                                   self.onSumFieldsProvidingFailed )
 
+        # self.dummySignal = DummySignal()
+        # self.dummySignal.signal.connect( self.onSumFieldsProvidingFailed )
         self._actionCallbackFnc = None #callback function for all action callbacks
         self._shutdownCallback = None  # callback function for shutdown action
         self._createUI()
+
+    def onSumFieldsProvidingFailed( self, msg:str ):
+        self.showException( msg )
 
     def resizeEvent( self, event ):
         QMainWindow.resizeEvent( self, event )
