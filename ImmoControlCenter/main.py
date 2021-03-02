@@ -2,6 +2,8 @@ import sys
 # sys.path.append( "/home/martin/Projects/python/common" )
 from typing import Tuple, Dict, List
 
+from PySide2.QtGui import QIcon
+
 sys.path.append( "../common" )
 from PySide2.QtWidgets import QApplication
 from PySide2 import QtCore
@@ -67,6 +69,9 @@ def main():
     ctrl = MainController( win )
     ctrl.showStartViews()
     #win.resize( 1901, 1000 )
+
+    icon = QIcon( "./images/houses.png" )
+    app.setWindowIcon( icon )
 
     app.exec_()
 

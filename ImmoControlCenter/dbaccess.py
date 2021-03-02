@@ -1,7 +1,7 @@
 import sqlite3
 from typing import List, Tuple, Dict
 from constants import einausart
-from interfaces import XSonstAus, XZahlung, XSollHausgeld, XSollMiete
+from interfaces import XSonstAus, XZahlung, XSollHausgeld, XSollMiete, XNkAbrechnung
 
 mon_dbnames = ("jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dez" )
 
@@ -337,6 +337,35 @@ class DbAccess:
         except:
             return -1
 
+    def getNkAbrechnungen( self, ab_jahr:int ) -> List[XNkAbrechnung]:
+        """
+        get all records of table abrechnung concerning the given year and ab_art = "nka"
+        :param ab_jahr: e.g. 2020
+        :return:
+        """
+        sql = "select ab_id, nka.mv_id, mobj_id, mv.von, coalesce(mv.bis, '') as bis, ab_jahr, " \
+              "betrag, ab_datum, coalesce(buchungsdatum, '') as buchungsdatum, coalesce(nka.bemerkung, '') as bemerkung " \
+              "from nk_abrechnung nka " \
+              "inner join mietverhaeltnis mv on mv.mv_id = nka.mv_id " \
+              "where ab_jahr = %d " \
+              "order by nka.mv_id" % ( ab_jahr )
+        dictlist = self._doReadAllGetDict( sql )
+        xlist:List[XNkAbrechnung] = list()
+        for d in dictlist:
+            x = XNkAbrechnung()
+            x.ab_id = d["ab_id"]
+            x.mv_id = d["mv_id"]
+            x.mobj_id = d["mobj_id"]
+            x.von = d["von"]
+            x.bis = d["bis"]
+            x.ab_jahr = d["ab_jahr"]
+            x.betrag = d["betrag"]
+            x.ab_datum = d["ab_datum"]
+            x.buchungsdatum = d["buchungsdatum"]
+            x.bemerkung = d["bemerkung"]
+            xlist.append( x )
+        return xlist
+
     def insertMietobjekt( self, d:Dict, commit:bool=True ) -> int :
         sql = "insert into mietobjekt " \
               "(mobj_id, master_id, whg_bez, qm, container_nr, bemerkung, aktiv) " \
@@ -507,6 +536,15 @@ class DbAccess:
         sql = "update mtleinaus set '%s' = %s where meinaus_id = %d  " % ( sMonat, dbval, meinaus_id )
         return self._doWrite( sql, commit )
 
+    def insertNkAbrechnung( self, x:XNkAbrechnung, commit:bool=True ) -> int:
+        sql = "insert into nk_abrechnung " \
+              "(ab_jahr, mv_id, betrag, ab_datum, buchungsdatum, bemerkung) " \
+              "values" \
+              "(%d,      '%s',   %.2f,     '%s',   '%s',          '%s')" % \
+              ( x.ab_jahr, x.mv_id, x.betrag, x.ab_datum, x.buchungsdatum, x.bemerkung)
+        return self._doWrite( sql, commit )
+
+
     def createObjektKonto( self, konto_name:str, commit:bool=True ) -> None:
         ddl = """CREATE TABLE %s (
             "id"	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
@@ -567,12 +605,23 @@ def test():
     db = DbAccess( "immo.db" )
     db.open()
 
-    r = db.getSummeZahlungen( "sonstaus" )
+    res = db.getNkAbrechnungen( 2019 )
+    print( res )
+
+    x = XNkAbrechnung()
+    x.ab_jahr = 2020
+    x.mv_id = "murasov_olga"
+    x.betrag = 55.77
+    x.ab_datum = "2021-02-03"
+    x.bemerkung = "erste Abrechnung für Olga"
+    res = db.insertNkAbrechnung( x )
+
+    #r = db.getSummeZahlungen( "sonstaus" )
 
     # res = db.deleteLetzteBuchung( False )
     # res = db.insertLetzteBuchung( "2021-02-02", "Buchung Buchung" )
-    res = db.getLetzteBuchung()
-    print( res )
+    #res = db.getLetzteBuchung()
+    #print( res )
     #db.createObjektKonto( "**kannweg**" )
 
 
