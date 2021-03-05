@@ -85,14 +85,15 @@ class DbAccess:
         :return: List[Dict]:
                 [
                     {
-                        "mv_id":  "landeranke",
+                        "mv_id":  "lander_anke",
+                        "mobj_id": "volkerstal",
                         "von":    "2019-01-01"
                         "bis":    ""
                     },
                     ...
                 ]
         """
-        sql = "select mv_id, von, bis from mietverhaeltnis " \
+        sql = "select mv_id, mobj_id, von, bis from mietverhaeltnis " \
               "where substr(von, 0, 5) <= '%s' " \
               "and (bis is NULL or bis = '' or substr(bis, 0, 5) >= '%s')" % (jahr, jahr)
         return self._doReadAllGetDict( sql )
@@ -343,7 +344,7 @@ class DbAccess:
         :param ab_jahr: e.g. 2020
         :return:
         """
-        sql = "select ab_id, nka.mv_id, mobj_id, mv.von, coalesce(mv.bis, '') as bis, ab_jahr, " \
+        sql = "select nka_id, nka.mv_id, mobj_id, mv.von, coalesce(mv.bis, '') as bis, ab_jahr, " \
               "betrag, ab_datum, coalesce(buchungsdatum, '') as buchungsdatum, coalesce(nka.bemerkung, '') as bemerkung " \
               "from nk_abrechnung nka " \
               "inner join mietverhaeltnis mv on mv.mv_id = nka.mv_id " \
@@ -353,7 +354,7 @@ class DbAccess:
         xlist:List[XNkAbrechnung] = list()
         for d in dictlist:
             x = XNkAbrechnung()
-            x.ab_id = d["ab_id"]
+            x.nka_id = d["nka_id"]
             x.mv_id = d["mv_id"]
             x.mobj_id = d["mobj_id"]
             x.von = d["von"]
@@ -544,6 +545,17 @@ class DbAccess:
               ( x.ab_jahr, x.mv_id, x.betrag, x.ab_datum, x.buchungsdatum, x.bemerkung)
         return self._doWrite( sql, commit )
 
+    def updateNkAbrechnung( self, x:XNkAbrechnung, commit:bool=True ) -> int:
+        sql = "update nk_abrechnung " \
+              "set ab_jahr = %d, " \
+              "mv_id = '%s', " \
+              "betrag = %.2f, " \
+              "ab_datum = '%s', " \
+              "buchungsdatum = '%s', " \
+              "bemerkung = '%s' " \
+              "where nka_id = %d" % \
+              ( x.ab_jahr, x.mv_id, x.betrag, x.ab_datum, x.buchungsdatum, x.bemerkung, x.nka_id )
+        return self._doWrite( sql, commit )
 
     def createObjektKonto( self, konto_name:str, commit:bool=True ) -> None:
         ddl = """CREATE TABLE %s (
@@ -607,14 +619,19 @@ def test():
 
     res = db.getNkAbrechnungen( 2019 )
     print( res )
+    x = res[2]
+    x.betrag = 200.00
+    x.ab_datum = "2020-03-30"
+    x.bemerkung = "aktualisiert"
+    db.updateNkAbrechnung( x )
 
-    x = XNkAbrechnung()
-    x.ab_jahr = 2020
-    x.mv_id = "murasov_olga"
-    x.betrag = 55.77
-    x.ab_datum = "2021-02-03"
-    x.bemerkung = "erste Abrechnung für Olga"
-    res = db.insertNkAbrechnung( x )
+    # x = XNkAbrechnung()
+    # x.ab_jahr = 2020
+    # x.mv_id = "murasov_olga"
+    # x.betrag = 55.77
+    # x.ab_datum = "2021-02-03"
+    # x.bemerkung = "erste Abrechnung für Olga"
+    # res = db.insertNkAbrechnung( x )
 
     #r = db.getSummeZahlungen( "sonstaus" )
 

@@ -4,11 +4,13 @@ from enum import  IntEnum
 
 from PySide2.QtCore import QAbstractItemModel, Qt
 
+from abrechnungentablemodel import NkAbrechnungenTableModel
 from buchungstextmatchmodel import BuchungstextMatchModel
 from dbaccess import DbAccess
 from typing import List, Dict, Tuple
 from constants import einausart
-from interfaces import XSonstAus, XSonstAusSummen, XZahlung, XSollHausgeld, XSollMiete, XBuchungstextMatch
+from interfaces import XSonstAus, XSonstAusSummen, XZahlung, XSollHausgeld, XSollMiete, XBuchungstextMatch, \
+    XNkAbrechnung, XAbrechnung
 #from monthlist import monthList, monatsletzter
 #from datehelper import monthList, monatsletzter, getLastMonth
 from datehelper import *
@@ -433,6 +435,41 @@ class BusinessLogic:
         sumAusgaben:float = self._db.getSummeZahlungen( "sonstaus" )
         sumHGV:float = self._db.getSummeZahlungen( "hgv" )
         return ( int(sumMiete), int(sumAusgaben), int(sumHGV) )
+
+    def getNkAbrechnungenTableModel( self, ab_jahr:int ) -> NkAbrechnungenTableModel:
+        """
+        Gets ALL Mietverhältnisse.
+        Creates a XNkAbrechnung object for each mietverhaeltnis.
+        Merges NKA informations with mietverhaeltnis where exists.
+        :param ab_jahr:
+        :return:
+        """
+        mvlist = self._db.getMietverhaeltnisseEssentials( ab_jahr )
+        # [
+        #     {
+        #         "mv_id": "lander_anke",
+        #         "mobj_id": "volkerstal",
+        #         "von": "2019-01-01"
+        #                "bis": ""
+        #      },
+        # ...
+        # ]
+        abrechlist:List[XNkAbrechnung] = list()
+        for mv in mvlist:
+            x = XNkAbrechnung()
+            x.mv_id = mv["mv_id"]
+            x.mobj_id = mv["mobj_id"]
+            x.von = mv["von"]
+            x.bis = mv["bis"]
+            abrechlist.append( x )
+
+        # get existing nk_abrechnung records
+        realabrechlist = self._db.getNkAbrechnungen( ab_jahr )
+        for ab in realabrechlist:
+            # get corresponding element in abrechlist:
+            #todo
+        model = NkAbrechnungenTableModel( abrechlist )
+        return model
 
     def insertSollmieten( xlist:List[XSollMiete] ):
         pass

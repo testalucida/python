@@ -7,30 +7,28 @@ from PySide2.QtCore import *
 from typing import List, Dict, Any
 
 from icctablemodel import IccTableModel
-from interfaces import XSonstAus
+from interfaces import XAbrechnung, XNkAbrechnung
 from enum import Enum
 import constants
 
 class AbrechnungenTableModel( IccTableModel ):
-    def __init__( self, sonstausList:List[XSonstAus] ):
+    def __init__( self, abrechList:List[XAbrechnung] ):
         IccTableModel.__init__( self )
-        self._sonstauslist:List[XSonstAus] = sonstausList
+        self._abrechlist:List[XAbrechnung] = abrechList
         """
         Gewünschte Spaltenfolge: 
-        werterhaltend | umlegbar | master_name | mobj_id | kreditor | buchungstext | rgdatum | buchungsdatum | betrag | rgtext
+        mobj_id | mv_id oder weg_name_vw_id | von | bis | ab_jahr | betrag | ab_datum | buchungsdatum | bemerkung
         """
-        self._keylist = ("werterhaltend", "umlegbar", "master_name", "mobj_id", "kreditor", "buchungstext", "rgdatum", "buchungsdatum", "betrag", "rgtext")
-        self._headers = ("w", "u", "Haus", "Whg", "Kreditor", "Buchungstext", "Rg.datum", "Buch.datum", "Betrag", "Rg.text")
+        # self._keylist = ("mobj_id", "", "master_name", "mobj_id", "kreditor", "buchungstext", "rgdatum", "buchungsdatum", "betrag", "rgtext")
+        self._headers = ("Wohnung", "Name", "von", "bis", "Jahr", "Betrag", "Abr.-Datum", "Buchungsdatum", "Bemerkung" )
         # Änderungslog vorbereiten:
-        self._changes:Dict[str, List[XSonstAus]] = {}
+        self._changes:Dict[str, List[XAbrechnung]] = {}
         for s in constants.actionList:
             self._changes[s] = list()
         """
         Aufbau von _changes:
         {
-            "INSERT": List[XSonstAus],
-            "UPDATE": List[XSonstAus],
-            "DELETE": List[XSonstAus]
+            "UPDATE": List[XAbrechnung]
         }
         """
         self._greyBrush = QBrush( Qt.gray )
@@ -38,11 +36,18 @@ class AbrechnungenTableModel( IccTableModel ):
         self._yellowBrush = QBrush( Qt.yellow )
         self._blueBrush = QBrush( Qt.darkBlue )
         self._boldFont = QFont( "Arial", 11, QFont.Bold )
-        self._columnWerterhaltend = 0
-        self._columnUmlegbar = 1
         self._columnBuchungsdatum = 7
-        self._columnBetrag = 8
+        self._columnBetrag = 5
         self._sortable = False
+
+    def getKeylist( self ) -> List[str]:
+        pass
+
+    def getId( self, x:XAbrechnung ) -> str:
+        pass
+
+    def getName( self, x:XAbrechnung ) -> str:
+        pass
 
     def getBetragColumnIndex( self ) -> int:
         return self._keylist.index( "betrag" )
@@ -51,25 +56,20 @@ class AbrechnungenTableModel( IccTableModel ):
         self._sortable = sortable
 
     def rowCount( self, parent:QModelIndex=None ) -> int:
-        return len( self._sonstauslist )
+        return len( self._abrechlist )
 
     def columnCount( self, parent:QModelIndex=None ) -> int:
         return len( self._headers )
 
-    def getXSonstAus( self, row:int ) -> XSonstAus:
-        return self._sonstauslist[row]
+    def getXAbrechnung( self, row:int ) -> XAbrechnung:
+        return self._abrechlist[row]
 
     def getValue( self, indexrow: int, indexcolumn: int ) -> Any:
-        x = self._sonstauslist[indexrow]
+        x = self._abrechlist[indexrow]
         key = self._keylist[indexcolumn]
         val = x.__dict__[key]
         if indexcolumn == self._columnBetrag:
             val = format( val, ".2f" )
-        #     val = "%.2f" % (val)
-        if indexcolumn == self._columnWerterhaltend:
-            val = 'w' if val else ''
-        if indexcolumn == self._columnUmlegbar:
-            val = 'u' if val else ''
         return val
 
     def getForeground( self, indexrow:int, indexcolumn:int ) -> Any:
@@ -83,14 +83,14 @@ class AbrechnungenTableModel( IccTableModel ):
                 return None
 
     def getBackground( self, indexrow:int, indexcolumn:int ) -> Any:
-        x = self.getXSonstAus( indexrow )
-        if self.isXSonstAusInsertedOrUpdated( x ):
+        x = self.getXAbrechnung( indexrow )
+        if self.isXAbrechnungUpdated( x ):
             return self._yellowBrush
         return None
 
-    def isXSonstAusInsertedOrUpdated( self, x:XSonstAus ) -> bool:
+    def isXAbrechnungUpdated( self, x:XAbrechnung ) -> bool:
         dictChanges = self.getChanges()
-        if x in dictChanges["INSERT"]: return True
+        #if x in dictChanges["INSERT"]: return True
         if x in dictChanges["UPDATE"]: return True
         return False
 
@@ -121,8 +121,6 @@ class AbrechnungenTableModel( IccTableModel ):
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
                 return self._headers[col]
-            # if role == Qt.BackgroundRole:
-            #     pass
         return None
 
     def resetChanges( self ):
@@ -130,7 +128,7 @@ class AbrechnungenTableModel( IccTableModel ):
             self._changes[k] = list()
         self.layoutChanged.emit()
 
-    def getChanges( self ) -> Dict[str, List[XSonstAus]]:
+    def getChanges( self ) -> Dict[str, List[XAbrechnung]]:
         return self._changes
 
     def isChanged( self ) -> bool:
@@ -138,58 +136,29 @@ class AbrechnungenTableModel( IccTableModel ):
             if len( v ) > 0: return True
         return False
 
-    def updateOrInsert( self, x:XSonstAus ):
-        l = self._sonstauslist
+    def update( self, x:XAbrechnung ):
+        l = self._abrechlist
         cols = len( self._headers )
-        if x.saus_id or x in self._sonstauslist: # update of existing auszahlung
-            row = self.getRow( x )
-            idxfrom = self.index( row, 0 )
-            idxbis = self.index( row, cols-1 )
-            self._writeChangeLog( constants.tableAction.UPDATE, x )
-            self.dataChanged.emit( idxfrom, idxbis )
-        else:   # insert new auszahlung
-            l.append( x )
-            self._writeChangeLog( constants.tableAction.INSERT, x )
-            self.layoutChanged.emit()
+        row = self.getRow( x )
+        idxfrom = self.index( row, 0 )
+        idxbis = self.index( row, cols-1 )
+        self._writeChangeLog( constants.tableAction.UPDATE, x )
+        self.dataChanged.emit( idxfrom, idxbis )
 
-    def delete( self, x:XSonstAus ) -> None:
-        self._sonstauslist.remove( x )
-        self._writeChangeLog( constants.tableAction.DELETE, x )
-        self.layoutChanged.emit()
-
-    def duplicate( self, x:XSonstAus ) -> XSonstAus:
-        """
-        duplicates x and returns the duplicate copy
-        Raises an exception if x cannot be found in the list of XSonstAus
-        :param x:
-        :return:
-        """
-        x2:XSonstAus = copy.copy( x )
-        x2.saus_id = 0
-        l = self._sonstauslist
-        for i in range( len( l ) ):
-            tmp:XSonstAus = l[i]
-            if tmp.saus_id == x.saus_id:
-                l.insert( i, x2 )
-                self._writeChangeLog( constants.tableAction.INSERT, x2 )
-                self.layoutChanged.emit()
-                return x2
-        raise Exception( "Auszahlung mit ID = %d nicht in der Auszahlungsliste gefunden." % (x.saus_id) )
-
-    def getRow( self, x:XSonstAus ) -> int:
-        for r in range( len( self._sonstauslist ) ):
-            e:XSonstAus = self._sonstauslist[r]
-            if e.saus_id == x.saus_id:
+    def getRow( self, x:XAbrechnung ) -> int:
+        for r in range( len( self._abrechlist ) ):
+            e:XAbrechnung = self._abrechlist[r]
+            if self.getId( e ) == self.getId( x ):
                 return r
-        raise Exception( "SonstAusTableModel.getRow(): can't find saus_id %d" % (x.saus_id) )
+        raise Exception( "AbrechnungenTableModel.getRow(): can't find id '%s'" % ( self.getId( x ) ) )
 
-    def _writeChangeLog( self, actionId:constants.tableAction, x:XSonstAus ) -> None:
+    def _writeChangeLog( self, actionId:constants.tableAction, x:XAbrechnung ) -> None:
         """
         Schreibt ein in-memory-Log der eingefügten, geänderten, gelöschten Zahlungen.
         Dieses kann über getChanges() abgerufen werden.
         """
         actionstring = constants.actionList[actionId]
-        xlist:List[XSonstAus] = self._changes[actionstring]
+        xlist:List[XAbrechnung] = self._changes[actionstring]
         if not x in xlist:
             xlist.append( x )
 
@@ -203,10 +172,10 @@ class AbrechnungenTableModel( IccTableModel ):
         sort_col = col
         global sort_reverse
         sort_reverse = True if order == Qt.SortOrder.AscendingOrder else False
-        self._sonstauslist = sorted( self._sonstauslist, key=cmp_to_key( self.cmpXSonstAus ) )
+        self._abrechlist = sorted( self._abrechlist, key=cmp_to_key( self.cmpXSonstAus ) )
         self.emit(SIGNAL("layoutChanged()"))
 
-    def cmpXSonstAus( self, x1:XSonstAus, x2:XSonstAus ) -> int:
+    def cmpXAbrechnung( self, x1:XAbrechnung, x2:XAbrechnung ) -> int:
         global sort_col, sort_reverse
         key = self._keylist[sort_col]
         v1 = x1.__dict__[key]
@@ -217,3 +186,16 @@ class AbrechnungenTableModel( IccTableModel ):
         if v1 < v2: return -1 if sort_reverse else 1
         if v1 > v2: return 1 if sort_reverse else -1
         if v1 == v2: return 0
+
+class NkAbrechnungenTableModel( AbrechnungenTableModel ):
+    def __init__( self, abrechList: List[XNkAbrechnung] ):
+        AbrechnungenTableModel.__init__( abrechList )
+
+    def getKeylist( self ) -> List[str]:
+        return ( "mobj_id", "mv_id", "mobj_id", "von", "bis", "ab_jahr", "betrag", "ab_datum", "buchungsdatum", "bemerkung" )
+
+    def getId( self, x:XNkAbrechnung ) -> str:
+        return x.nka_id
+
+    def getName( self, x:XNkAbrechnung ) -> str:
+        return x.mv_id

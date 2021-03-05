@@ -11,7 +11,7 @@ from checkcontroller import MdiChildController, MietenController, HGVController
 from sollzahlungencontroller import SollzahlungenController, SollType
 from sonstauscontroller import SonstAusController
 from sumfieldsprovider import SumFieldsProvider
-
+from abrechnungencontroller import AbrechnungenController
 
 class MainController:
     def __init__(self, win:ImmoCenterMainWindow ):

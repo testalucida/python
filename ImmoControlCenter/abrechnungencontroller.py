@@ -19,9 +19,19 @@ class AbrechnungenController( MdiChildController ):
         self._tableCellActionHandler: TableCellActionHandler = None
         curr = getCurrentYearAndMonth()
         self._jahr: int = curr["year"]
-        self._title = "Abrechnungen" + str( self._jahr )
+        self._title = self.getTitle() + str( self._jahr )
         self._view: AbrechnungenView = None
 
     def createView( self ) -> QWidget:
         abrview = AbrechnungenView()
-        jahre = BusinessLogic.ins().getExistingAbrechnungsjahre( constants.abrechnung.NK )
+        jahre = BusinessLogic.inst().getExistingAbrechnungsjahre( constants.abrechnung.NK )
+
+    def getTitle( self ) -> str:
+        return "unknown"
+
+class NkAbrechnungenController( AbrechnungenController ):
+    def __init__( self ):
+        AbrechnungenController.__init__()
+
+    def getTitle( self ) -> str:
+        return "Nebenkostenabrechnungen"

@@ -44,20 +44,32 @@ class XSonstAus( XBase ):
     buchungsjahr:int = 0
     buchungstext:str = "" # der Text auf dem Buchungsbeleg, der bei öfftl. Providern identifizierend ist. (Kundennummer, Vertragsnummer etc.)
 
-class XNkAbrechnung( XBase ):
+class XAbrechnung( XBase ):
     def __init__( self, valuedict:Dict=None ):
         XBase.__init__( self, valuedict )
 
-    ab_id = 0
-    mv_id = ""
     mobj_id = ""
     von = ""
     bis = ""
-    ab_jahr = ""
+    ab_jahr = 0
     betrag = 0.0
     ab_datum = ""
     buchungsdatum = ""
     bemerkung = ""
+
+class XNkAbrechnung( XAbrechnung ):
+    def __init__( self, valuedict:Dict=None ):
+        XAbrechnung.__init__( self, valuedict )
+
+    nka_id = 0
+    mv_id = ""
+
+class XHgAbrechnung( XAbrechnung ):
+    def __init__( self, valuedict:Dict=None ):
+        XAbrechnung.__init__( self, valuedict )
+
+    hga_id = 0
+    weg_name_vw_id = ""
 
 class XSonstAusSummen( XBase ):
     def __init__( self, valuedict:Dict=None ):
