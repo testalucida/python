@@ -189,7 +189,7 @@ class AbrechnungenTableModel( IccTableModel ):
 
 class NkAbrechnungenTableModel( AbrechnungenTableModel ):
     def __init__( self, abrechList: List[XNkAbrechnung] ):
-        AbrechnungenTableModel.__init__( abrechList )
+        AbrechnungenTableModel.__init__( self, abrechList )
 
     def getKeylist( self ) -> List[str]:
         return ( "mobj_id", "mv_id", "mobj_id", "von", "bis", "ab_jahr", "betrag", "ab_datum", "buchungsdatum", "bemerkung" )

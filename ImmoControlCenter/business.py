@@ -444,30 +444,45 @@ class BusinessLogic:
         :param ab_jahr:
         :return:
         """
-        mvlist = self._db.getMietverhaeltnisseEssentials( ab_jahr )
+        def _provideAbrechnungInfo( x:XNkAbrechnung, realabrechlist:List[XNkAbrechnung], ab_jahr:int ):
+            for abr in realabrechlist:
+                if x.mv_id == abr.mv_id and abr.ab_jahr == ab_jahr:
+                    x.ab_jahr = ab_jahr
+                    x.nka_id = abr.nka_id
+                    x.betrag = abr.betrag
+                    x.ab_datum = abr.ab_datum
+                    x.buchungsdatum = abr.buchungsdatum
+                    x.bemerkung = abr.bemerkung
+                    # we don't have to deal with von and bis as we have selected conveniant mietverhaeltnisse only.
+                    print( x.mv_id, "---", x.betrag, "---", x.ab_datum, "---", x.buchungsdatum )
+                    break
+
+        # the list we will create the model with:
+        abrechlist: List[XNkAbrechnung] = list()
+        # all mietverhaeltnisse:
+        mvlist:List[Dict] = self._db.getMietverhaeltnisseEssentials( ab_jahr )
         # [
         #     {
         #         "mv_id": "lander_anke",
         #         "mobj_id": "volkerstal",
         #         "von": "2019-01-01"
-        #                "bis": ""
+        #         "bis": ""
         #      },
         # ...
         # ]
-        abrechlist:List[XNkAbrechnung] = list()
+        # get existing nk_abrechnung objects
+        realabrechlist: List[XNkAbrechnung] = self._db.getNkAbrechnungen( ab_jahr )
+        # create a XNkAbrechnung object from each mietverhaeltnis and provide it with
+        # real abrechnung information if a corresponding XNkAbrechnung object is found in realabrechlist
         for mv in mvlist:
             x = XNkAbrechnung()
             x.mv_id = mv["mv_id"]
             x.mobj_id = mv["mobj_id"]
             x.von = mv["von"]
             x.bis = mv["bis"]
+            _provideAbrechnungInfo( x, realabrechlist, ab_jahr )
             abrechlist.append( x )
 
-        # get existing nk_abrechnung records
-        realabrechlist = self._db.getNkAbrechnungen( ab_jahr )
-        for ab in realabrechlist:
-            # get corresponding element in abrechlist:
-            #todo
         model = NkAbrechnungenTableModel( abrechlist )
         return model
 
@@ -545,14 +560,17 @@ class BusinessLogic:
 def test():
     busi = BusinessLogic.inst()
 
-    model = busi.getBuchungstextMatches( "2019" )
+    model = busi.getNkAbrechnungenTableModel( 2019 )
+    print( model )
 
-    li = busi.getAlleSollHausgelder()
-
-    li = busi.getMasterobjekte()
-    print( li )
-    idx, monat = busi.getLetztenMonat()
-    letzter = busi.getMonatsletzter( 2 )
+    # model = busi.getBuchungstextMatches( "2019" )
+    #
+    # li = busi.getAlleSollHausgelder()
+    #
+    # li = busi.getMasterobjekte()
+    # print( li )
+    # idx, monat = busi.getLetztenMonat()
+    # letzter = busi.getMonatsletzter( 2 )
 
     # li = busi.getServiceLeistungen()
     # for x in li:
