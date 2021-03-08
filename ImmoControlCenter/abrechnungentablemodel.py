@@ -19,8 +19,8 @@ class AbrechnungenTableModel( IccTableModel ):
         Gewünschte Spaltenfolge: 
         mobj_id | mv_id oder weg_name_vw_id | von | bis | ab_jahr | betrag | ab_datum | buchungsdatum | bemerkung
         """
-        # self._keylist = ("mobj_id", "", "master_name", "mobj_id", "kreditor", "buchungstext", "rgdatum", "buchungsdatum", "betrag", "rgtext")
-        self._headers = ("Wohnung", "Name", "von", "bis", "Jahr", "Betrag", "Abr.-Datum", "Buchungsdatum", "Bemerkung" )
+        self._headers = ("Wohnung", "Name", "MV von", "MV bis", "Jahr", "Betrag", "Abr.-Datum", "Buchungsdatum", "Bemerkung")
+        self._keylist = ("mobj_id", "", "von", "bis", "ab_jahr", "betrag", "ab_datum", "buchungsdatum", "bemerkung")
         # Änderungslog vorbereiten:
         self._changes:Dict[str, List[XAbrechnung]] = {}
         for s in constants.actionList:
@@ -36,14 +36,34 @@ class AbrechnungenTableModel( IccTableModel ):
         self._yellowBrush = QBrush( Qt.yellow )
         self._blueBrush = QBrush( Qt.darkBlue )
         self._boldFont = QFont( "Arial", 11, QFont.Bold )
+        self._columnName = 1
         self._columnBuchungsdatum = 7
         self._columnBetrag = 5
         self._sortable = False
 
-    def getKeylist( self ) -> List[str]:
+    def getHeader( self, col:int ) -> str:
+        if col == self._columnName:
+            return self.getNameColumnHeader()
+        else:
+            return self._headers[col]
+
+    def getKey( self, col:int ) -> str:
+        if col == self._columnName:
+            return self.getNameColumnKey()
+        else:
+            return self._keylist[col]
+
+    def getNameColumnHeader( self ) -> str:
+        pass
+
+    def getNameColumnKey( self ) -> str:
         pass
 
     def getId( self, x:XAbrechnung ) -> str:
+        """
+        :param x:
+        :return: the id of the derived abrechnung table (nk or hg)
+        """
         pass
 
     def getName( self, x:XAbrechnung ) -> str:
@@ -65,8 +85,8 @@ class AbrechnungenTableModel( IccTableModel ):
         return self._abrechlist[row]
 
     def getValue( self, indexrow: int, indexcolumn: int ) -> Any:
-        x = self._abrechlist[indexrow]
-        key = self._keylist[indexcolumn]
+        x:XAbrechnung = self._abrechlist[indexrow]
+        key = self.getKey( indexcolumn )
         val = x.__dict__[key]
         if indexcolumn == self._columnBetrag:
             val = format( val, ".2f" )
@@ -120,7 +140,7 @@ class AbrechnungenTableModel( IccTableModel ):
     def headerData(self, col, orientation, role=None):
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
-                return self._headers[col]
+                return self.getHeader( col )
         return None
 
     def resetChanges( self ):
@@ -187,12 +207,16 @@ class AbrechnungenTableModel( IccTableModel ):
         if v1 > v2: return 1 if sort_reverse else -1
         if v1 == v2: return 0
 
+########################################################################################
 class NkAbrechnungenTableModel( AbrechnungenTableModel ):
     def __init__( self, abrechList: List[XNkAbrechnung] ):
         AbrechnungenTableModel.__init__( self, abrechList )
 
-    def getKeylist( self ) -> List[str]:
-        return ( "mobj_id", "mv_id", "mobj_id", "von", "bis", "ab_jahr", "betrag", "ab_datum", "buchungsdatum", "bemerkung" )
+    def getNameColumnHeader( self ) -> str:
+        return "Mieter"
+
+    def getNameColumnKey( self ) -> str:
+        return "mv_id"
 
     def getId( self, x:XNkAbrechnung ) -> str:
         return x.nka_id

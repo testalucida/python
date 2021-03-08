@@ -78,7 +78,7 @@ class DbAccess:
               "order by ma.master_name, mi.mobj_id "
         return self._doReadAllGetDict( sql )
 
-    def getMietverhaeltnisseEssentials( self, jahr:int ) -> List[Dict]:
+    def getMietverhaeltnisseEssentials( self, jahr:int, orderby:str=None ) -> List[Dict]:
         """
         Liefert zu allen Mietverhältnissen, die in <jahr> aktiv sind, die Werte der Spalten mv_id, von, bis
         :param jahr:
@@ -95,7 +95,9 @@ class DbAccess:
         """
         sql = "select mv_id, mobj_id, von, bis from mietverhaeltnis " \
               "where substr(von, 0, 5) <= '%s' " \
-              "and (bis is NULL or bis = '' or substr(bis, 0, 5) >= '%s')" % (jahr, jahr)
+              "and (bis is NULL or bis = '' or substr(bis, 0, 5) >= '%s') " % (jahr, jahr)
+        if orderby:
+            sql += "order by %s " % (orderby)
         return self._doReadAllGetDict( sql )
 
     def getMietzahlungenMitSummen( self, jahr:int ) -> List[Dict]:
@@ -338,6 +340,13 @@ class DbAccess:
         except:
             return -1
 
+    def getExistingNkAbrechnungsjahre( self ) -> List[int]:
+        sql = "select distinct ab_jahr from nk_abrechnung order by ab_jahr desc;"
+        tuplelist = self._doRead( sql )
+        li = [ x[0] for x in tuplelist ]
+        return li
+
+
     def getNkAbrechnungen( self, ab_jahr:int ) -> List[XNkAbrechnung]:
         """
         get all records of table abrechnung concerning the given year and ab_art = "nka"
@@ -349,7 +358,7 @@ class DbAccess:
               "from nk_abrechnung nka " \
               "inner join mietverhaeltnis mv on mv.mv_id = nka.mv_id " \
               "where ab_jahr = %d " \
-              "order by nka.mv_id" % ( ab_jahr )
+              "order by mobj_id" % ( ab_jahr )
         dictlist = self._doReadAllGetDict( sql )
         xlist:List[XNkAbrechnung] = list()
         for d in dictlist:

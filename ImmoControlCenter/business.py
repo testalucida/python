@@ -138,6 +138,9 @@ class BusinessLogic:
     def getExistingJahre( self, eaart:einausart ) -> List[int]:
         return self._db.getJahre( eaart )
 
+    def getExistingNkAbrechnungsjahre( self ) -> List[int]:
+        return self._db.getExistingNkAbrechnungsjahre()
+
     def existsEinAusArt(self, eaart: einausart, jahr: int) -> bool:
         return self._db.existsEinAusArt( eaart, jahr )
 
@@ -444,9 +447,9 @@ class BusinessLogic:
         :param ab_jahr:
         :return:
         """
-        def _provideAbrechnungInfo( x:XNkAbrechnung, realabrechlist:List[XNkAbrechnung], ab_jahr:int ):
+        def _provideAbrechnungInfo( x:XNkAbrechnung, realabrechlist:List[XNkAbrechnung] ):
             for abr in realabrechlist:
-                if x.mv_id == abr.mv_id and abr.ab_jahr == ab_jahr:
+                if x.mv_id == abr.mv_id and abr.ab_jahr == x.ab_jahr:
                     x.ab_jahr = ab_jahr
                     x.nka_id = abr.nka_id
                     x.betrag = abr.betrag
@@ -460,7 +463,7 @@ class BusinessLogic:
         # the list we will create the model with:
         abrechlist: List[XNkAbrechnung] = list()
         # all mietverhaeltnisse:
-        mvlist:List[Dict] = self._db.getMietverhaeltnisseEssentials( ab_jahr )
+        mvlist:List[Dict] = self._db.getMietverhaeltnisseEssentials( jahr=ab_jahr, orderby="mobj_id" )
         # [
         #     {
         #         "mv_id": "lander_anke",
@@ -476,11 +479,13 @@ class BusinessLogic:
         # real abrechnung information if a corresponding XNkAbrechnung object is found in realabrechlist
         for mv in mvlist:
             x = XNkAbrechnung()
+            d = x.__dict__
             x.mv_id = mv["mv_id"]
             x.mobj_id = mv["mobj_id"]
             x.von = mv["von"]
             x.bis = mv["bis"]
-            _provideAbrechnungInfo( x, realabrechlist, ab_jahr )
+            x.ab_jahr = ab_jahr
+            _provideAbrechnungInfo( x, realabrechlist )
             abrechlist.append( x )
 
         model = NkAbrechnungenTableModel( abrechlist )
