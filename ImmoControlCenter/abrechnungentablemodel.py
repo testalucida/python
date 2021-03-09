@@ -19,7 +19,7 @@ class AbrechnungenTableModel( IccTableModel ):
         Gewünschte Spaltenfolge: 
         mobj_id | mv_id oder weg_name_vw_id | von | bis | ab_jahr | betrag | ab_datum | buchungsdatum | bemerkung
         """
-        self._headers = ("Wohnung", "Name", "MV von", "MV bis", "Jahr", "Betrag", "Abr.-Datum", "Buchungsdatum", "Bemerkung")
+        self._headers = ("Wohnung", "Name", "MV von", "MV bis", "Jahr", "Betrag", "Ford.-Datum", "Buchungsdatum", "Bemerkung")
         self._keylist = ("mobj_id", "", "von", "bis", "ab_jahr", "betrag", "ab_datum", "buchungsdatum", "bemerkung")
         # Änderungslog vorbereiten:
         self._changes:Dict[str, List[XAbrechnung]] = {}
@@ -36,7 +36,10 @@ class AbrechnungenTableModel( IccTableModel ):
         self._yellowBrush = QBrush( Qt.yellow )
         self._blueBrush = QBrush( Qt.darkBlue )
         self._boldFont = QFont( "Arial", 11, QFont.Bold )
+        self._columnMobjId = 0
         self._columnName = 1
+        self._columnVon = 2
+        self._columnBis = 3
         self._columnBuchungsdatum = 7
         self._columnBetrag = 5
         self._sortable = False
@@ -93,7 +96,7 @@ class AbrechnungenTableModel( IccTableModel ):
         return val
 
     def getForeground( self, indexrow:int, indexcolumn:int ) -> Any:
-        if indexcolumn < 4: return self._greyBrush
+        if indexcolumn in  (self._columnMobjId, self._columnVon, self._columnBis): return self._greyBrush
         if indexcolumn == self._columnBetrag:
             val = self.getValue( indexrow, indexcolumn )
             try:

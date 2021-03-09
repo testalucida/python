@@ -55,17 +55,26 @@ class XAbrechnung:
         self.buchungsdatum = ""
         self.bemerkung = ""
 
+    def getName( self ) -> str:
+        pass
+
 class XNkAbrechnung( XAbrechnung ):
     def __init__( self ):
         XAbrechnung.__init__( self )
         self.nka_id = 0
         self.mv_id = ""
 
+    def getName( self ) -> str:
+        return self.mv_id
+
 class XHgAbrechnung( XAbrechnung ):
     def __init__( self ):
         XAbrechnung.__init__( self )
         self.hga_id = 0
         self.weg_name_vw_id = ""
+
+    def getName( self ) -> str:
+        return self.weg_name_vw_id
 
 class XSonstAusSummen( XBase ):
     def __init__( self, valuedict:Dict=None ):

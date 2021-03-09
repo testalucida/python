@@ -7,7 +7,7 @@ from PySide2.QtWidgets import QWidget, QComboBox, QLineEdit, QCheckBox, QPushBut
 from typing import List
 
 from icctablemodel import IccTableModel
-from interfaces import XSonstAus, XKontoEintrag
+from interfaces import XSonstAus, XKontoEintrag, XAbrechnung
 from qtderivates import IntDisplay, SmartDateEdit, FloatEdit
 from sonstaustablemodel import SonstAusTableModel
 from tableviewext import TableViewExt
@@ -35,7 +35,7 @@ class AbrechnungenView( QWidget ):
         self._btnClearBuchungsdatum = QPushButton( self )
 
         self._abrechnungInfoLayout = QHBoxLayout()
-        self._name = QLabel( self, text="MeierHuberMüller" )
+        self._name = QLabel( self, text="" )
         self._cboAbrechnungsjahr = QtWidgets.QComboBox( self )
         self._feBetrag: FloatEdit = FloatEdit( self )
 
@@ -49,7 +49,7 @@ class AbrechnungenView( QWidget ):
         self._saveActionCallback = None
 
         self._submitChangesCallback = None
-        self._justEditing:XKontoEintrag = None
+        self._justEditing:XAbrechnung = None
         self._suspendCallbacks = False
 
         self._createGui()
@@ -176,7 +176,7 @@ class AbrechnungenView( QWidget ):
         :return:
         """
         if self._abrechnungsjahrChangedCallback and not self._suspendCallbacks:
-            jahr = int( self._cboBuchungsjahr.currentText() )
+            jahr = int( self._cboAbrechnungsjahr.currentText() )
             self._abrechnungsjahrChangedCallback( jahr )
 
     def onAddDayToBuchungsdatum( self ):
@@ -264,18 +264,17 @@ class AbrechnungenView( QWidget ):
         self._justEditing = None
         self._suspendCallbacks = False
 
-    def provideEditFields( self, x:XKontoEintrag ):
+    def provideEditFields( self, x:XAbrechnung ):
         self.clearEditFields()
         #self._suspendCallbacks = True
         self._justEditing = x
-        if x.forderungsdatum:
-            y, m, d = getDateParts( x.forderungsdatum )
+        if x.ab_datum:
+            y, m, d = getDateParts( x.ab_datum )
             self._sdForderungsdatum.setDate( y, m, d )
         if x.buchungsdatum:
             y, m, d = getDateParts( x.buchungsdatum )
             self._sdBuchungsdatum.setDate( y, m, d )
-        self._name.setText( x.name )
-        self._cboAbrechnungsjahr.setCurrentText( x.jahr )
+        self._name.setText( x.getName() )
         self._feBetrag.setText( str( x.betrag * (-1) ) )
         self._teBemerkung.setText( x.bemerkung )
         self._suspendCallbacks = False
@@ -308,7 +307,7 @@ class AbrechnungenView( QWidget ):
         """
         sets the one and only callback when the user hits the OK button in the
         edit fields area.
-        The given callback function has to accept the edited XSonstAus object,
+        The given callback function has to accept the edited XAbrechnung object,
         :param cbfnc:
         :return:
         """
