@@ -41,6 +41,7 @@ class AbrechnungenController( MdiChildController ):
         self._tableCellActionHandler = tcm
         abrview.setAbrechnungsjahrChangedCallback( self.onJahrChanged )
         abrview.setSubmitChangesCallback( self.onSubmitChanges )
+        abrview.setSaveActionCallback( self.save )
         return abrview
 
     def _createModel( self, jahr:int ) -> AbrechnungenTableModel:
@@ -71,8 +72,69 @@ class AbrechnungenController( MdiChildController ):
                 rows.append( idx.row() )
         return rows
 
+    def _setChangedFlag( self, on:bool=True ):
+        if on:
+            if self._title.endswith( "*" ): return
+            self._title += " *"
+            if self.changedCallback:
+                # MainController informieren
+                self.changedCallback()
+        else:
+            self._title = self._title[:-2]
+            if self.savedCallback:
+                # Main Controller informieren
+                self.savedCallback()
+        self._view.setWindowTitle( self._title )
+
     def save( self ):
-        model: AbrechnungenTableModel = self._subwin.widget().getModel()
+        model: AbrechnungenTableModel = self._view.getModel()
+        changes: Dict[str, List[XAbrechnung]] = model.getChanges()
+        self.writeChanges( changes )
+        #SumFieldsProvider.inst().setSumFields()
+        model.resetChanges()
+
+    def writeChanges( self, changes ) -> None:
+        for actionstring, xlist in changes.items():
+            for x in xlist:
+                self._dispatchSaveAction( actionstring, x )
+        self._view.setSaveButtonEnabled( False )
+        self._setChangedFlag( False )
+
+    def _dispatchSaveAction( self, actionstring: str, x: XAbrechnung ):
+        try:
+            idx = constants.actionList.index( actionstring )
+        except:
+            self._view.showException( "Internal Error",
+                                      "AbrechnungenController._dispatchSaveAction(): unknown action '%s'"
+                                      % (actionstring) )
+            sys.exit()
+
+        if idx == constants.tableAction.INSERT:
+            try:
+                self._insertAbrechnung( x )
+            except Exception as e:
+                self._view.showException( "AbrechnungenController._dispatchSaveAction()",
+                                          "insertAbrechnung",
+                                          str( e ) )
+                sys.exit()
+        elif idx == constants.tableAction.UPDATE:
+            try:
+                self._updateAbrechnung( x )
+            except Exception as e:
+                self._view.showException( "AbrechnungenController._dispatchSaveAction()",
+                                          "updateAbrechnung",
+                                          str( e ) )
+                sys.exit()
+        else:
+            self._view.showException(
+                "AbrechnungenController._dispatchSaveAction(): known but unhandled action '%s'" % (actionstring) )
+            sys.exit()
+
+    def _insertAbrechnung(self, x:XAbrechnung ):
+        pass
+
+    def _updateAbrechnung(self, x:XAbrechnung ):
+        pass
 
     ########################## callbacks ############################
     def onJahrChanged( self, jahr: int ):
@@ -119,8 +181,10 @@ class AbrechnungenController( MdiChildController ):
         :return: FEhlermeldung, wenn die Validierung nicht i.O. ist, sonst ""
         """
         if not x.buchungsdatum and not x.ab_datum:
-            return "Entweder Buchungs- oder Forderungsdatum muss angegeben sein."
+            return "Entweder Buchungs- oder Abrechnungsdatum muss angegeben sein."
         return ""
+
+
 ######################################################################
 class NkAbrechnungenController( AbrechnungenController ):
     def __init__( self ):
@@ -135,6 +199,11 @@ class NkAbrechnungenController( AbrechnungenController ):
     def _getExistingAbrechnungsjahre( self ) -> List[int]:
         return BusinessLogic.inst().getExistingNkAbrechnungsjahre()
 
+    def _insertAbrechnung(self, x:XAbrechnung ):
+        BusinessLogic.inst().insertNkAbrechnung( x )
+
+    def _updateAbrechnung(self, x:XAbrechnung ):
+        BusinessLogic.inst().updateNkAbrechnung( x )
 
 
 def test():

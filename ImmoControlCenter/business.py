@@ -177,6 +177,12 @@ class BusinessLogic:
         if x.master_id is not None:
             self._checkKreditorleistung( x.master_id, x.mobj_id, x.kreditor, x.buchungstext )
 
+    def insertNkAbrechnung( self, x:XNkAbrechnung ) -> None:
+        print( "BusinessLogic: insertNkAbrechnung")
+
+    def updateNkAbrechnung( self, x:XNkAbrechnung ) -> None:
+        print( "BusinessLogic: updateNkAbrechnung")
+
     def _writeZahlungMtlEinAus( self, meinaus_id:int, jahr:int, monat:str, betrag:float ):
         """
         Könnte sein, dass es schon einen Satz in zahlung mit der geg. meinaus_id gibt.

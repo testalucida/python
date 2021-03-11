@@ -85,6 +85,8 @@ class AbrechnungenTableModel( IccTableModel ):
         return len( self._headers )
 
     def getXAbrechnung( self, row:int ) -> XAbrechnung:
+        #x = self._abrechlist[row]
+        #print( "getXAbrechnung: row= ", row, "name= ", x.getName() )
         return self._abrechlist[row]
 
     def getValue( self, indexrow: int, indexcolumn: int ) -> Any:
@@ -113,9 +115,7 @@ class AbrechnungenTableModel( IccTableModel ):
 
     def isXAbrechnungUpdated( self, x:XAbrechnung ) -> bool:
         dictChanges = self.getChanges()
-        #if x in dictChanges["INSERT"]: return True
         if x in dictChanges["UPDATE"]: return True
-        return False
 
     def getFont( self, indexrow: int, indexcolumn: int ) -> Any:
         if indexcolumn in ( self._columnBuchungsdatum, self._columnBetrag ):

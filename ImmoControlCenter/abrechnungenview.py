@@ -7,7 +7,7 @@ from PySide2.QtWidgets import QWidget, QComboBox, QLineEdit, QCheckBox, QPushBut
 from typing import List
 
 from icctablemodel import IccTableModel
-from interfaces import XSonstAus, XKontoEintrag, XAbrechnung
+from interfaces import  XAbrechnung
 from qtderivates import IntDisplay, SmartDateEdit, FloatEdit
 from sonstaustablemodel import SonstAusTableModel
 from tableviewext import TableViewExt
@@ -26,9 +26,9 @@ class AbrechnungenView( QWidget ):
         self._tvAbrechnungen = TableViewExt( self )
 
         self._buchungsdatumLayout = QHBoxLayout()
-        self._sdForderungsdatum = SmartDateEdit( self )
-        self._btnAddDayToForderungsdatum = QPushButton( self )
-        self._btnClearForderungsdatum = QPushButton( self )
+        self._sdAbrechnungsdatum = SmartDateEdit( self )
+        self._btnAddDayToAbrechnungsdatum = QPushButton( self )
+        self._btnClearAbrechnungsdatum = QPushButton( self )
 
         self._sdBuchungsdatum = SmartDateEdit( self )
         self._btnAddDay = QPushButton( self )
@@ -98,23 +98,23 @@ class AbrechnungenView( QWidget ):
         self._toolbarLayout.addWidget( btn, stretch=0 )
 
     def _assembleBuchungsdatum( self ):
-        lbl = QLabel( self, text="Forderungsdatum: " )
+        lbl = QLabel( self, text="Abrechng.datum: " )
         lbl.setFixedWidth( 130 )
         self._buchungsdatumLayout.addWidget( lbl )
-        self._sdForderungsdatum.setFixedWidth( 85 )
-        self._sdForderungsdatum.setToolTip( "Datum der Forderung. Mussfeld." )
-        self._buchungsdatumLayout.addWidget( self._sdForderungsdatum )
+        self._sdAbrechnungsdatum.setFixedWidth( 85 )
+        self._sdAbrechnungsdatum.setToolTip( "Datum der Forderung. Mussfeld." )
+        self._buchungsdatumLayout.addWidget( self._sdAbrechnungsdatum )
         size = QSize( 25, 25 )
-        self._btnAddDayToForderungsdatum.setIcon( QIcon( "./images/plus.png" ) )
-        self._btnAddDayToForderungsdatum.setFixedSize( size )
-        self._btnAddDayToForderungsdatum.setToolTip( "Forderungsdatum um 1 Tag erhöhen" )
-        self._btnAddDayToForderungsdatum.clicked.connect( self.onAddDayToForderungsdatum )
-        self._buchungsdatumLayout.addWidget( self._btnAddDayToForderungsdatum )
-        self._btnClearForderungsdatum.setIcon( QIcon( "./images/cancel.png" ) )
-        self._btnClearForderungsdatum.setFixedSize( size )
-        self._btnClearForderungsdatum.setToolTip( "Forderungsdatum löschen" )
-        self._btnClearForderungsdatum.clicked.connect( self.onClearForderungsdatum )
-        self._buchungsdatumLayout.addWidget( self._btnClearForderungsdatum )
+        self._btnAddDayToAbrechnungsdatum.setIcon( QIcon( "./images/plus.png" ) )
+        self._btnAddDayToAbrechnungsdatum.setFixedSize( size )
+        self._btnAddDayToAbrechnungsdatum.setToolTip( "Abrechnungsdatum um 1 Tag erhöhen" )
+        self._btnAddDayToAbrechnungsdatum.clicked.connect( self.onAddDayToAbrechnungsdatum )
+        self._buchungsdatumLayout.addWidget( self._btnAddDayToAbrechnungsdatum )
+        self._btnClearAbrechnungsdatum.setIcon( QIcon( "./images/cancel.png" ) )
+        self._btnClearAbrechnungsdatum.setFixedSize( size )
+        self._btnClearAbrechnungsdatum.setToolTip( "Forderungsdatum löschen" )
+        self._btnClearAbrechnungsdatum.clicked.connect( self.onClearForderungsdatum )
+        self._buchungsdatumLayout.addWidget( self._btnClearAbrechnungsdatum )
 
         lbl = QLabel( self, text="Buchungsdatum: " )
         lbl.setFixedWidth( 120 )
@@ -148,6 +148,7 @@ class AbrechnungenView( QWidget ):
         # Gutschrift/Nachzahlung
         lbl = QLabel( self, text="Betrag: " )
         self._abrechnungInfoLayout.addWidget( lbl )
+        self._feBetrag.setAlignment( Qt.AlignRight )
         self._feBetrag.setToolTip( "'+' für Einzahlung, '-' für Auszahlung")
         self._feBetrag.setFixedWidth( 60 )
         self._abrechnungInfoLayout.addWidget( self._feBetrag )
@@ -189,15 +190,15 @@ class AbrechnungenView( QWidget ):
     def onClearBuchungsdatum( self ):
         self._sdBuchungsdatum.clear()
 
-    def onAddDayToForderungsdatum( self ):
-        val = self._sdForderungsdatum.getDate()
+    def onAddDayToAbrechnungsdatum( self ):
+        val = self._sdAbrechnungsdatum.getDate()
         if val:
             dt = getQDateFromIsoString( val )
             dt = dt.addDays( 1 )
-            self._sdForderungsdatum.setDate( dt.year(), dt.month(), dt.day() )
+            self._sdAbrechnungsdatum.setDate( dt.year(), dt.month(), dt.day() )
 
     def onClearForderungsdatum( self ):
-        self._sdForderungsdatum.clear()
+        self._sdAbrechnungsdatum.clear()
 
     def setSaveButtonEnabled( self, enable:bool=True ):
         self._btnSave.setEnabled( enable )
@@ -213,18 +214,17 @@ class AbrechnungenView( QWidget ):
         :return:
         """
         if self._submitChangesCallback:
-            x:XKontoEintrag = self._getEditedXKontoEintrag()
+            x:XAbrechnung = self._getEditedXAbrechnung()
             ok:bool = self._submitChangesCallback( x )
             if ok:
                 self._tvAbrechnungen.clearSelection()
 
-    def _getEditedXKontoEintrag( self ) -> XKontoEintrag:
+    def _getEditedXAbrechnung( self ) -> XAbrechnung:
         if self._justEditing is None:
-            self.showException( "Interner Fehler", "AbrechnungenView._getEditedXKontoEintrag()", "XKontoEintrag ist leer" )
-        x:XKontoEintrag = self._justEditing
-        x.forderungsdatum = self._sdForderungsdatum.getDate()
+            self.showException( "Interner Fehler", "AbrechnungenView._getXAbrechnung()", "XAbrechnung ist leer" )
+        x:XAbrechnung = self._justEditing
+        x.ab_datum = self._sdAbrechnungsdatum.getDate()
         x.buchungsdatum = self._sdBuchungsdatum.getDate()
-        x.jahr = int( self._cboAbrechnungsjahr.currentText() )
         x.betrag = self._feBetrag.getFloatValue()
         x.bemerkung = self._teBemerkung.toPlainText()
         return x
@@ -255,10 +255,9 @@ class AbrechnungenView( QWidget ):
 
     def clearEditFields( self ):
         self._suspendCallbacks = True
-        self._sdForderungsdatum.clear()
+        self._sdAbrechnungsdatum.clear()
         self._sdBuchungsdatum.clear()
         self._name.clear()
-        self._cboAbrechnungsjahr.setCurrentIndex( -1 )
         self._feBetrag.clear()
         self._teBemerkung.clear()
         self._justEditing = None
@@ -270,12 +269,15 @@ class AbrechnungenView( QWidget ):
         self._justEditing = x
         if x.ab_datum:
             y, m, d = getDateParts( x.ab_datum )
-            self._sdForderungsdatum.setDate( y, m, d )
+            self._sdAbrechnungsdatum.setDate( y, m, d )
         if x.buchungsdatum:
             y, m, d = getDateParts( x.buchungsdatum )
             self._sdBuchungsdatum.setDate( y, m, d )
         self._name.setText( x.getName() )
-        self._feBetrag.setText( str( x.betrag * (-1) ) )
+        if self._feBetrag.getFloatValue() == 0.0:
+            self._feBetrag.setText( "0" )
+        else:
+            self._feBetrag.setText( str( x.betrag * (-1) ) )
         self._teBemerkung.setText( x.bemerkung )
         self._suspendCallbacks = False
 
@@ -302,7 +304,6 @@ class AbrechnungenView( QWidget ):
         """
         self._abrechnungsjahrChangedCallback = cbfnc
 
-
     def setSubmitChangesCallback( self, cbfnc ):
         """
         sets the one and only callback when the user hits the OK button in the
@@ -312,6 +313,14 @@ class AbrechnungenView( QWidget ):
         :return:
         """
         self._submitChangesCallback = cbfnc
+
+    def setSaveActionCallback( self, cbfnc ) -> None:
+        """
+        Die callback-FUnktion braucht keine Parameter empfangen.
+        :param cbfnc:
+        :return:
+        """
+        self._saveActionCallback = cbfnc
 
 ###################################################################
 
