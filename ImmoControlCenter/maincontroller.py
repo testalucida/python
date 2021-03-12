@@ -11,7 +11,8 @@ from checkcontroller import MdiChildController, MietenController, HGVController
 from sollzahlungencontroller import SollzahlungenController, SollType
 from sonstauscontroller import SonstAusController
 from sumfieldsprovider import SumFieldsProvider
-from abrechnungencontroller import AbrechnungenController
+from abrechnungencontroller import AbrechnungenController, NkAbrechnungenController
+
 
 class MainController:
     def __init__(self, win:ImmoCenterMainWindow ):
@@ -35,6 +36,8 @@ class MainController:
 
         self._sollMietenCtrl = SollzahlungenController( SollType.MIETE_SOLL )
         self._sollHausgelderCtrl = SollzahlungenController( SollType.HAUSGELD_SOLL )
+
+        self._nkaCtrl = NkAbrechnungenController()
 
         self._nChanges = 0  # zählt die Änderungen, damit nach Speichern-Vorgängen das Sternchen nicht zu früh entfernt wird.
 
@@ -216,8 +219,11 @@ class MainController:
         subwin.show()
 
     def createNkaViewAndShow( self ):
-        print( "MainController.createNkaViewAndShow" )
-        #Todo
+        subwin = self._nkaCtrl.createSubwindow()
+        self._installView( subwin, self._nkaCtrl )
+        w, h = self._nkaCtrl.getViewSize()
+        subwin.setGeometry( 0, 0, w, h )
+        subwin.show()
 
     def createHgaViewAndShow( self ):
         print( "MainController.createHgaViewAndShow" )

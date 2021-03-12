@@ -149,11 +149,11 @@ class AbrechnungenView( QWidget ):
         lbl = QLabel( self, text="Betrag: " )
         self._abrechnungInfoLayout.addWidget( lbl )
         self._feBetrag.setAlignment( Qt.AlignRight )
-        self._feBetrag.setToolTip( "'+' für Einzahlung, '-' für Auszahlung")
+        self._feBetrag.setToolTip( "'+' für Einnahme, '-' für Ausgabe")
         self._feBetrag.setFixedWidth( 60 )
         self._abrechnungInfoLayout.addWidget( self._feBetrag )
 
-        self._teBemerkung.setPlaceholderText( "Bemerkung zur Auszahlung" )
+        self._teBemerkung.setPlaceholderText( "Bemerkung zur Zahlung" )
         self._teBemerkung.setMaximumSize( QtCore.QSize( 16777215, 50 ) )
         self._abrechnungInfoLayout.addWidget( self._teBemerkung, stretch=1 )
 
@@ -222,6 +222,7 @@ class AbrechnungenView( QWidget ):
     def _getEditedXAbrechnung( self ) -> XAbrechnung:
         if self._justEditing is None:
             self.showException( "Interner Fehler", "AbrechnungenView._getXAbrechnung()", "XAbrechnung ist leer" )
+            return
         x:XAbrechnung = self._justEditing
         x.ab_datum = self._sdAbrechnungsdatum.getDate()
         x.buchungsdatum = self._sdBuchungsdatum.getDate()
@@ -274,10 +275,10 @@ class AbrechnungenView( QWidget ):
             y, m, d = getDateParts( x.buchungsdatum )
             self._sdBuchungsdatum.setDate( y, m, d )
         self._name.setText( x.getName() )
-        if self._feBetrag.getFloatValue() == 0.0:
+        if x.betrag == 0.0:
             self._feBetrag.setText( "0" )
         else:
-            self._feBetrag.setText( str( x.betrag * (-1) ) )
+            self._feBetrag.setText( str( x.betrag ) )
         self._teBemerkung.setText( x.bemerkung )
         self._suspendCallbacks = False
 

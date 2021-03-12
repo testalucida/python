@@ -19,7 +19,7 @@ class AbrechnungenTableModel( IccTableModel ):
         Gewünschte Spaltenfolge: 
         mobj_id | mv_id oder weg_name_vw_id | von | bis | ab_jahr | betrag | ab_datum | buchungsdatum | bemerkung
         """
-        self._headers = ("Wohnung", "Name", "MV von", "MV bis", "Jahr", "Betrag", "Ford.-Datum", "Buchungsdatum", "Bemerkung")
+        self._headers = ("Wohnung", "Name", "MV von", "MV bis", "Jahr", "Betrag", "Abr.-Datum", "Buchungsdatum", "Bemerkung")
         self._keylist = ("mobj_id", "", "von", "bis", "ab_jahr", "betrag", "ab_datum", "buchungsdatum", "bemerkung")
         # Änderungslog vorbereiten:
         self._changes:Dict[str, List[XAbrechnung]] = {}
@@ -30,6 +30,9 @@ class AbrechnungenTableModel( IccTableModel ):
         {
             "UPDATE": List[XAbrechnung]
         }
+        Wir haben hier nur Updates, keine Inserts, weil in _abrechlist jeder Mieter bzw. jede WEG bereits
+        in einem XAbrechnung-Objekt geliefert wird. Es kommen keine XAbrechnung-Objekte dazu und es werden 
+        keine gelöscht.
         """
         self._greyBrush = QBrush( Qt.gray )
         self._redBrush = QBrush( Qt.red )
@@ -159,7 +162,13 @@ class AbrechnungenTableModel( IccTableModel ):
             if len( v ) > 0: return True
         return False
 
-    def update( self, x:XAbrechnung ):
+    def delete( self, x:XAbrechnung ):
+        x.betrag = 0.0
+        x.ab_datum = x.buchungsdatum = x.bemerkung = ""
+        self.update( x, deleteFlag=True )
+
+    def update( self, x:XAbrechnung, deleteFlag:bool=False ):
+        x.deleteFlag = deleteFlag
         l = self._abrechlist
         cols = len( self._headers )
         row = self.getRow( x )

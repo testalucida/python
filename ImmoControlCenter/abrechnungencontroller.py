@@ -1,5 +1,5 @@
 from PySide2.QtCore import QModelIndex, QPoint, Qt
-from PySide2.QtWidgets import QWidget, QAbstractItemView, QAction, QMenu, QApplication
+from PySide2.QtWidgets import QWidget, QAbstractItemView, QAction, QMenu, QApplication, QSizePolicy
 from typing import List, Dict
 import datetime
 import sys
@@ -24,6 +24,7 @@ class AbrechnungenController( MdiChildController ):
         self._view: AbrechnungenView = None
         self._tableCellActionHandler:TableCellActionHandler = None
         self._computeSumAction: QAction = QAction( "Berechne Summe" )
+        self._deleteAction: QAction = QAction( "Lösche diese Abrechnung" )
 
     def createView( self ) -> QWidget:
         self._view = abrview = AbrechnungenView()
@@ -31,6 +32,8 @@ class AbrechnungenController( MdiChildController ):
         jahre = self._getExistingAbrechnungsjahre()
         if not self._jahr - 1 in jahre:
             jahre.insert( 0, self._jahr - 1 )
+        if not self._jahr - 2 in jahre:
+            jahre.append( self._jahr - 2 )
         model = self._createModel( jahre[0] )
         abrview.setAbrechnungsjahre( jahre )
         abrview.setAbrechnungenTableModel( model )
@@ -38,11 +41,16 @@ class AbrechnungenController( MdiChildController ):
         tv.clicked.connect( self.onAbrechnungenLeftClick )
         tcm = TableCellActionHandler( tv )
         tcm.addAction( self._computeSumAction, self._onComputeSum )
+        tcm.addAction( self._deleteAction, self._onDeleteAbrechnung )
         self._tableCellActionHandler = tcm
         abrview.setAbrechnungsjahrChangedCallback( self.onJahrChanged )
         abrview.setSubmitChangesCallback( self.onSubmitChanges )
         abrview.setSaveActionCallback( self.save )
+        abrview.resize( 1050, 1000 )
         return abrview
+
+    def getViewSize( self ) -> (int, int):
+        return 1050, 1000
 
     def _createModel( self, jahr:int ) -> AbrechnungenTableModel:
         pass
@@ -64,6 +72,17 @@ class AbrechnungenController( MdiChildController ):
             valuelist.append( float( val ) ) # val is in string format due to the 2 decimals
         sumval = sum( valuelist )
         self._tableCellActionHandler.showSumDialog( sumval )
+
+    def _onDeleteAbrechnung( self ):
+        tv = self._view.getAbrechnungenTableView()
+        model: AbrechnungenTableModel = tv.model()
+        indexes = tv.selectedIndexes()
+        rows = self._getSelectedRows( indexes )
+        x:XAbrechnung = model.getXAbrechnung( rows[0] )
+        model.delete( x )
+        self._view.clearEditFields()
+        self._view.setSaveButtonEnabled( True )
+        self._setChangedFlag( True )
 
     def _getSelectedRows( self, indexes:List ) -> List[int]:
         rows = list()
@@ -89,51 +108,40 @@ class AbrechnungenController( MdiChildController ):
     def save( self ):
         model: AbrechnungenTableModel = self._view.getModel()
         changes: Dict[str, List[XAbrechnung]] = model.getChanges()
-        self.writeChanges( changes )
+        self.writeChanges( changes[constants.actionList[constants.tableAction.UPDATE]] )
         #SumFieldsProvider.inst().setSumFields()
         model.resetChanges()
 
-    def writeChanges( self, changes ) -> None:
-        for actionstring, xlist in changes.items():
-            for x in xlist:
-                self._dispatchSaveAction( actionstring, x )
+    def writeChanges( self, changes:List[XAbrechnung] ) -> None:
+        for x in changes:
+            if x.deleteFlag == True:
+                try:
+                    self._deleteAbrechnung( x )
+                except Exception as e:
+                    self._view.showException( "AbrechnungenController.writeChanges()", "deleteAbrechnung", str( e ) )
+            elif x.getId() == 0:
+                # insert new abrechnung
+                try:
+                    self._insertAbrechnung( x )
+                except Exception as e:
+                    self._view.showException( "AbrechnungenController.writeChanges()", "insertAbrechnung", str( e ) )
+            else:
+                # update existing abrechnung
+                try:
+                    self._updateAbrechnung( x )
+                except Exception as e:
+                    self._view.showException( "AbrechnungenController.writeChanges()", "updateAbrechnung", str( e ) )
+
         self._view.setSaveButtonEnabled( False )
         self._setChangedFlag( False )
-
-    def _dispatchSaveAction( self, actionstring: str, x: XAbrechnung ):
-        try:
-            idx = constants.actionList.index( actionstring )
-        except:
-            self._view.showException( "Internal Error",
-                                      "AbrechnungenController._dispatchSaveAction(): unknown action '%s'"
-                                      % (actionstring) )
-            sys.exit()
-
-        if idx == constants.tableAction.INSERT:
-            try:
-                self._insertAbrechnung( x )
-            except Exception as e:
-                self._view.showException( "AbrechnungenController._dispatchSaveAction()",
-                                          "insertAbrechnung",
-                                          str( e ) )
-                sys.exit()
-        elif idx == constants.tableAction.UPDATE:
-            try:
-                self._updateAbrechnung( x )
-            except Exception as e:
-                self._view.showException( "AbrechnungenController._dispatchSaveAction()",
-                                          "updateAbrechnung",
-                                          str( e ) )
-                sys.exit()
-        else:
-            self._view.showException(
-                "AbrechnungenController._dispatchSaveAction(): known but unhandled action '%s'" % (actionstring) )
-            sys.exit()
 
     def _insertAbrechnung(self, x:XAbrechnung ):
         pass
 
     def _updateAbrechnung(self, x:XAbrechnung ):
+        pass
+
+    def _deleteAbrechnung( self, x:XAbrechnung ):
         pass
 
     ########################## callbacks ############################
@@ -205,6 +213,8 @@ class NkAbrechnungenController( AbrechnungenController ):
     def _updateAbrechnung(self, x:XAbrechnung ):
         BusinessLogic.inst().updateNkAbrechnung( x )
 
+    def _deleteAbrechnung( self, x:XAbrechnung ):
+        BusinessLogic.inst().deleteNkAbrechnung( x )
 
 def test():
     app = QApplication()

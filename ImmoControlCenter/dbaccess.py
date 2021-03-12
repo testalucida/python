@@ -566,6 +566,11 @@ class DbAccess:
               ( x.ab_jahr, x.mv_id, x.betrag, x.ab_datum, x.buchungsdatum, x.bemerkung, x.nka_id )
         return self._doWrite( sql, commit )
 
+    def deleteNkAbrechnung( self, nka_id:int, commit:bool=True ) -> int:
+        sql = "delete from nk_abrechnung " \
+              "where nka_id = %d" % (nka_id)
+        return self._doWrite( sql, commit )
+
     def createObjektKonto( self, konto_name:str, commit:bool=True ) -> None:
         ddl = """CREATE TABLE %s (
             "id"	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,

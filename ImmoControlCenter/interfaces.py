@@ -25,6 +25,7 @@ class XZahlung:
     betrag:float = 0.0
     zahl_art:str = ""  # {'brutto_miete', 'nka', 'hgv', 'hga', 'rechng'}
 
+#################### SonstAus  ###################################
 class XSonstAus( XBase ):
     def __init__( self, valuedict:Dict=None ):
         XBase.__init__( self, valuedict )
@@ -44,6 +45,7 @@ class XSonstAus( XBase ):
     buchungsjahr:int = 0
     buchungstext:str = "" # der Text auf dem Buchungsbeleg, der bei öfftl. Providern identifizierend ist. (Kundennummer, Vertragsnummer etc.)
 
+#################### Abrechnung ##################################
 class XAbrechnung:
     def __init__( self ):
         self.mobj_id = ""
@@ -54,8 +56,12 @@ class XAbrechnung:
         self.ab_datum = ""
         self.buchungsdatum = ""
         self.bemerkung = ""
+        self.deleteFlag = False
 
     def getName( self ) -> str:
+        pass
+
+    def getId( self ) -> int:
         pass
 
 class XNkAbrechnung( XAbrechnung ):
@@ -67,6 +73,9 @@ class XNkAbrechnung( XAbrechnung ):
     def getName( self ) -> str:
         return self.mv_id
 
+    def getId( self ) -> int:
+        return self.nka_id
+
 class XHgAbrechnung( XAbrechnung ):
     def __init__( self ):
         XAbrechnung.__init__( self )
@@ -76,6 +85,10 @@ class XHgAbrechnung( XAbrechnung ):
     def getName( self ) -> str:
         return self.weg_name_vw_id
 
+    def getId( self ) -> int:
+        return self.hga_id
+
+##################### SonstAusSummen ###################################
 class XSonstAusSummen( XBase ):
     def __init__( self, valuedict:Dict=None ):
         XBase.__init__( self, valuedict )

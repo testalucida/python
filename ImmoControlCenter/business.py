@@ -178,10 +178,15 @@ class BusinessLogic:
             self._checkKreditorleistung( x.master_id, x.mobj_id, x.kreditor, x.buchungstext )
 
     def insertNkAbrechnung( self, x:XNkAbrechnung ) -> None:
-        print( "BusinessLogic: insertNkAbrechnung")
+        self._db.insertNkAbrechnung( x )
+        x.nka_id = self._db.getMaxId( "nk_abrechnung", "nka_id" )
 
     def updateNkAbrechnung( self, x:XNkAbrechnung ) -> None:
-        print( "BusinessLogic: updateNkAbrechnung")
+        self._db.updateNkAbrechnung( x )
+
+    def deleteNkAbrechnung( self, x:XNkAbrechnung ) -> None:
+        self._db.deleteNkAbrechnung( x.nka_id )
+        x.nka_id = 0
 
     def _writeZahlungMtlEinAus( self, meinaus_id:int, jahr:int, monat:str, betrag:float ):
         """
@@ -353,24 +358,11 @@ class BusinessLogic:
         return self._db.getAlleSollHausgelder()
 
     def getLetztenMonat( self ) -> Tuple[int, str]:
-        # monat = datetime.datetime.now().month
-        # monat = 12 if monat == 1 else monat-1
-        # smonat = monthList[monat-1]
-        # return monat, smonat
         return getLastMonth()
 
     def getMonatsletzter( self, monatidx:int ) -> int:
         smonat = monthList[monatidx-1]
         return monatsletzter[smonat]
-
-    # def getServiceLeistungen( self ) -> List[XServiceLeistung]:
-    #     dictlist:List[Dict] = self._db.getServiceleistungen()
-    #     li = list()
-    #     for d in dictlist:
-    #         x:XServiceLeistung = XServiceLeistung( d )
-    #         li.append( x )
-    #     li = sorted( li, key=lambda service: service.kreditor.casefold() )
-    #     return li
 
     def getMasterobjekte( self ) -> List[str]:
         """
@@ -401,8 +393,6 @@ class BusinessLogic:
         for d in self._masterundmietobjekte:
             if d["master_id"] == master_id:
                 mietobjekte.append( d["mobj_id"] )
-        # if len( mietobjekte ) == 2:  #außer "alle" nur 1 Eintrag
-        #     mietobjekte.remove( "**alle**" )
         return mietobjekte
 
     def getMasteridFromMastername( self, master_name:str ) -> int:
