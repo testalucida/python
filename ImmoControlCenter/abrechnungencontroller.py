@@ -12,6 +12,7 @@ from mdisubwindow import MdiSubWindow
 from interfaces import XSonstAus, XSonstAusSummen, XAbrechnung
 import constants
 from datehelper import *
+from sumfieldsprovider import SumFieldsProvider
 from tablecellactionhandler import TableCellActionHandler
 
 class AbrechnungenController( MdiChildController ):
@@ -109,7 +110,7 @@ class AbrechnungenController( MdiChildController ):
         model: AbrechnungenTableModel = self._view.getModel()
         changes: Dict[str, List[XAbrechnung]] = model.getChanges()
         self.writeChanges( changes[constants.actionList[constants.tableAction.UPDATE]] )
-        #SumFieldsProvider.inst().setSumFields()
+        SumFieldsProvider.inst().setSumFields()
         model.resetChanges()
 
     def writeChanges( self, changes:List[XAbrechnung] ) -> None:

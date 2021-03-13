@@ -252,7 +252,29 @@ class DbAccess:
     def getSummeZahlungen( self, zahl_art:str ) -> float:
         sql = "select sum( betrag ) from zahlung where zahl_art = '%s'" % ( zahl_art )
         lst = self._doRead( sql )
-        return lst[0][0]
+        sum = lst[0][0]
+        return 0.0 if sum is None else sum
+
+    def getZahlung( self, id:int, id_name:str ) -> XZahlung:
+        sql = "select z_id, master_id, mobj_id, meinaus_id, saus_id, nka_id, hga_id, write_time, jahr, monat, betrag, zahl_art " \
+              "from zahlung " \
+              "where %s = %d " % ( id_name, id )
+        d = self._doReadOneGetDict( sql )
+        x = XZahlung()
+        if d:
+            x.z_id = d["z_id"]
+            x.master_id = d["master_id"]
+            x.mobj_id = d["mobj_id"]
+            x.meinaus_id = d["meinaus_id"]
+            x.saus_id = d["saus_id"]
+            x.nka_id = d["nka_id"]
+            x.hga_id = d["hga_id"]
+            x.write_time = d["write_time"]
+            x.jahr = d["jahr"]
+            x.monat = d["monat"]
+            x.betrag = d["betrag"]
+            x.zahl_art = d["zahl_art"]
+        return x
 
     def getJahre( self, eaart:einausart ) -> List[int]:
         id = "mv_id" if eaart == einausart.MIETE else "vwg_art"
@@ -339,6 +361,11 @@ class DbAccess:
             return r[0][0]
         except:
             return -1
+
+    def getMasterIdFromMietobjekt( self, mobj_id:str ) -> int:
+        sql = "select master_id from mietobjekt where mobj_id = '%s' " % (mobj_id)
+        res = self._doRead( sql )
+        return int( res[0][0] )
 
     def getExistingNkAbrechnungsjahre( self ) -> List[int]:
         sql = "select distinct ab_jahr from nk_abrechnung order by ab_jahr desc;"
@@ -630,14 +657,19 @@ class DbAccess:
 def test():
     db = DbAccess( "immo.db" )
     db.open()
+    # res = db.getMasterIdFromMietobjekt( "bueb" )
+    # print( res )
 
-    res = db.getNkAbrechnungen( 2019 )
-    print( res )
-    x = res[2]
-    x.betrag = 200.00
-    x.ab_datum = "2020-03-30"
-    x.bemerkung = "aktualisiert"
-    db.updateNkAbrechnung( x )
+    # d = db.getZahlung( 61, "saus_id" )
+    # print( d )
+
+    # res = db.getNkAbrechnungen( 2019 )
+    # print( res )
+    # x = res[2]
+    # x.betrag = 200.00
+    # x.ab_datum = "2020-03-30"
+    # x.bemerkung = "aktualisiert"
+    # db.updateNkAbrechnung( x )
 
     # x = XNkAbrechnung()
     # x.ab_jahr = 2020

@@ -16,7 +16,7 @@ class MdiSubWindow( QMdiSubWindow ):
         self._quitCallbackList.append( callbackFnc )
 
     def closeEvent( self, event ):
-        print( "closeEvent")
+        #print( "closeEvent")
         for cb in self._quitCallbackList:
             if cb( self ) == False:
                 event.ignore()

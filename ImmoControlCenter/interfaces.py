@@ -11,6 +11,7 @@ class XBase:
             _d[k] = v
 
 class XZahlung:
+    z_id:int = 0
     master_id:int = 0 # ID des Master-Objekts (Tabelle masterobjekt)
     mobj_id:str = "" # ID des Mietobjekts (Tabelle mietobjekt) --- kann frei sein, dann muss aber master_id versorgt sein
     # GENAU einer der nachfolgenden 4 IDs muss versorgt sein

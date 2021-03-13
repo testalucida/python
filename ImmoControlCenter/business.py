@@ -178,14 +178,32 @@ class BusinessLogic:
             self._checkKreditorleistung( x.master_id, x.mobj_id, x.kreditor, x.buchungstext )
 
     def insertNkAbrechnung( self, x:XNkAbrechnung ) -> None:
-        self._db.insertNkAbrechnung( x )
+        self._db.insertNkAbrechnung( x, commit=False )
         x.nka_id = self._db.getMaxId( "nk_abrechnung", "nka_id" )
+        if x.buchungsdatum > "":
+            self._writeZahlungFromXAbrechnung( x, Zahlart.NKA, insert=True )
+        self._db.commit()
 
     def updateNkAbrechnung( self, x:XNkAbrechnung ) -> None:
-        self._db.updateNkAbrechnung( x )
+        self._db.updateNkAbrechnung( x, commit=False )
+        z:XZahlung = self._db.getZahlung( x.nka_id, "nka_id" )
+        if z.z_id == 0:
+            # abrechnung not yet payed (booked) so not inserted yet.
+            # Insert into zahlung if buchungsdatum is set
+            if x.buchungsdatum > "":
+                self._writeZahlungFromXAbrechnung( x, Zahlart.NKA, insert=True )
+        else:
+            # got an abrechnung record. Delete it if buchungsdatum is "". Else update.
+            if x.buchungsdatum is None or x.buchungsdatum == "":
+                self._deleteZahlung( x.nka_id, Zahlart.NKA )
+            else:
+                self._writeZahlungFromXAbrechnung( x, Zahlart.NKA, insert=False )
+        self._db.commit()
 
     def deleteNkAbrechnung( self, x:XNkAbrechnung ) -> None:
-        self._db.deleteNkAbrechnung( x.nka_id )
+        self._db.deleteNkAbrechnung( x.nka_id, commit=False )
+        self._db.deleteZahlung( x.nka_id, "nka_id", commit=False )
+        self._db.commit()
         x.nka_id = 0
 
     def _writeZahlungMtlEinAus( self, meinaus_id:int, jahr:int, monat:str, betrag:float ):
@@ -236,6 +254,26 @@ class BusinessLogic:
             self._db.insertZahlung( z, False )
         else:
             self._db.updateZahlung( z.saus_id, id_names[Zahlart.SONSTAUS.value], z, False )
+
+    def _writeZahlungFromXAbrechnung( self, x:XAbrechnung, zahlart:Zahlart, insert:bool ):
+        z = XZahlung()
+        z.betrag = x.betrag
+        z.jahr = int( x.buchungsdatum[0:4] )
+        z.mobj_id = x.mobj_id
+        z.master_id = self._db.getMasterIdFromMietobjekt( x.mobj_id )
+        z.write_time = datetime.now().strftime( "%Y-%m-%d:%H.%M.%S" )
+        z.zahl_art = zahlartstrings[zahlart.value]
+        id = x.getId()
+        if zahlart == Zahlart.NKA:
+            id_name = "nka_id"
+            z.nka_id = id
+        else:
+            id_name = "hga_id"
+            z.hga_id = id
+        if insert:
+            self._db.insertZahlung( z, False )
+        else:
+            self._db.updateZahlung(id, id_name, z, False )
 
     def _deleteZahlung( self, id:int, art:Zahlart, monat:str=None ):
         id_name = id_names[art.value]
@@ -431,7 +469,10 @@ class BusinessLogic:
 
     def getSummen( self ) -> Tuple[int, int, int]:
         sumMiete:float = self._db.getSummeZahlungen( "bruttomiete" )
-        sumAusgaben:float = self._db.getSummeZahlungen( "sonstaus" )
+        sumSonstAus:float = self._db.getSummeZahlungen( "sonstaus" )
+        sumNka:float = self._db.getSummeZahlungen( "nka" )
+        sumHga:float = self._db.getSummeZahlungen( "hga" )
+        sumAusgaben: float = sumSonstAus + sumNka + sumHga
         sumHGV:float = self._db.getSummeZahlungen( "hgv" )
         return ( int(sumMiete), int(sumAusgaben), int(sumHGV) )
 
@@ -453,7 +494,7 @@ class BusinessLogic:
                     x.buchungsdatum = abr.buchungsdatum
                     x.bemerkung = abr.bemerkung
                     # we don't have to deal with von and bis as we have selected conveniant mietverhaeltnisse only.
-                    print( x.mv_id, "---", x.betrag, "---", x.ab_datum, "---", x.buchungsdatum )
+                    # print( x.mv_id, "---", x.betrag, "---", x.ab_datum, "---", x.buchungsdatum )
                     break
 
         # the list we will create the model with:
