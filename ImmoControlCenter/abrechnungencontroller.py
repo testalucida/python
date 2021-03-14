@@ -217,10 +217,34 @@ class NkAbrechnungenController( AbrechnungenController ):
     def _deleteAbrechnung( self, x:XAbrechnung ):
         BusinessLogic.inst().deleteNkAbrechnung( x )
 
+########################################################################
+class HgAbrechnungenController( AbrechnungenController ):
+    def __init__( self ):
+        AbrechnungenController.__init__( self )
+
+    def getViewTitle( self ) -> str:
+        return "Hausgeldabrechnungen"
+
+    def _createModel( self, jahr: int ) -> AbrechnungenTableModel:
+        return BusinessLogic.inst().getHgAbrechnungenTableModel( jahr )
+
+    def _getExistingAbrechnungsjahre( self ) -> List[int]:
+        return BusinessLogic.inst().getExistingHgAbrechnungsjahre()
+
+    def _insertAbrechnung(self, x:XAbrechnung ):
+        BusinessLogic.inst().insertHgAbrechnung( x )
+
+    def _updateAbrechnung(self, x:XAbrechnung ):
+        BusinessLogic.inst().updateHgAbrechnung( x )
+
+    def _deleteAbrechnung( self, x:XAbrechnung ):
+        BusinessLogic.inst().deleteHgAbrechnung( x )
+
+
 def test():
     app = QApplication()
 
-    c = NkAbrechnungenController()
+    c = HgAbrechnungenController()
     v = c.createView()
     v.show()
 

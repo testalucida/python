@@ -7,7 +7,7 @@ from PySide2.QtCore import *
 from typing import List, Dict, Any
 
 from icctablemodel import IccTableModel
-from interfaces import XAbrechnung, XNkAbrechnung
+from interfaces import XAbrechnung, XNkAbrechnung, XHgAbrechnung
 from enum import Enum
 import constants
 
@@ -235,3 +235,20 @@ class NkAbrechnungenTableModel( AbrechnungenTableModel ):
 
     def getName( self, x:XNkAbrechnung ) -> str:
         return x.mv_id
+
+#########################################################################################
+class HgAbrechnungenTableModel( AbrechnungenTableModel ):
+    def __init__( self, abrechList: List[XNkAbrechnung] ):
+        AbrechnungenTableModel.__init__( self, abrechList )
+
+    def getNameColumnHeader( self ) -> str:
+        return "WEG"
+
+    def getNameColumnKey( self ) -> str:
+        return "weg_name_vw_id"
+
+    def getId( self, x:XHgAbrechnung ) -> str:
+        return x.hga_id
+
+    def getName( self, x:XHgAbrechnung ) -> str:
+        return x.vwg_id

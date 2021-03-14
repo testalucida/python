@@ -1,7 +1,7 @@
 import sqlite3
 from typing import List, Tuple, Dict
 from constants import einausart
-from interfaces import XSonstAus, XZahlung, XSollHausgeld, XSollMiete, XNkAbrechnung
+from interfaces import XSonstAus, XZahlung, XSollHausgeld, XSollMiete, XNkAbrechnung, XHgAbrechnung
 
 mon_dbnames = ("jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dez" )
 
@@ -160,11 +160,13 @@ class DbAccess:
               "where vwg.vwg_id = " + str( vwg_id )
         return self._doReadOneGetDict( sql )
 
-    def getVerwaltungen( self, jahr:int ) -> List[Dict]:
+    def getVerwaltungen( self, jahr:int, orderby:str=None ) -> List[Dict]:
         vgldat = str(jahr) + "-01-01"
         sql = "select vwg_id, mobj_id, vw_id, weg_name, von, coalesce( bis, '' ) as bis " \
               "from verwaltung " \
-              "where von <= '%s' and (bis is NULL or bis = '' or bis > '%s')" % (vgldat, vgldat)
+              "where von <= '%s' and (bis is NULL or bis = '' or bis > '%s') " % (vgldat, vgldat)
+        if orderby:
+            sql += "order by %s" % (orderby)
         diclist: List[Dict] = self._doReadAllGetDict( sql )
         return diclist
 
@@ -376,7 +378,7 @@ class DbAccess:
 
     def getNkAbrechnungen( self, ab_jahr:int ) -> List[XNkAbrechnung]:
         """
-        get all records of table abrechnung concerning the given year and ab_art = "nka"
+        get all records of table nk_abrechnung concerning the given year
         :param ab_jahr: e.g. 2020
         :return:
         """
@@ -392,6 +394,44 @@ class DbAccess:
             x = XNkAbrechnung()
             x.nka_id = d["nka_id"]
             x.mv_id = d["mv_id"]
+            x.mobj_id = d["mobj_id"]
+            x.von = d["von"]
+            x.bis = d["bis"]
+            x.ab_jahr = d["ab_jahr"]
+            x.betrag = d["betrag"]
+            x.ab_datum = d["ab_datum"]
+            x.buchungsdatum = d["buchungsdatum"]
+            x.bemerkung = d["bemerkung"]
+            xlist.append( x )
+        return xlist
+
+    def getExistingHgAbrechnungsjahre( self ) -> List[int]:
+        sql = "select distinct ab_jahr from hg_abrechnung order by ab_jahr desc;"
+        tuplelist = self._doRead( sql )
+        li = [ x[0] for x in tuplelist ]
+        return li
+
+
+    def getHgAbrechnungen( self, ab_jahr:int ) -> List[XHgAbrechnung]:
+        """
+        get all records of table hg_abrechnung concerning the given year
+        :param ab_jahr: e.g. 2020
+        :return:
+        """
+        sql = "select hga_id, hga.vwg_id, vw.vw_id, vwg.mobj_id, vwg.weg_name, vwg.von, coalesce(vwg.bis, '') as bis, ab_jahr, " \
+              "betrag, ab_datum, coalesce(buchungsdatum, '') as buchungsdatum, coalesce(hga.bemerkung, '') as bemerkung " \
+              "from hg_abrechnung hga " \
+              "inner join verwaltung vwg on vwg.vwg_id = hga.vwg_id " \
+              "inner join verwalter vw on vw.vw_id = vwg.vw_id " \
+              "where ab_jahr = %d " \
+              "order by mobj_id" % ( ab_jahr )
+        dictlist = self._doReadAllGetDict( sql )
+        xlist:List[XHgAbrechnung] = list()
+        for d in dictlist:
+            x = XHgAbrechnung()
+            x.hga_id = d["hga_id"]
+            x.vwg_id = d["vwg_id"]
+            x.weg_name_vw_id = d["weg_name"] + " / " + d["vw_id"]
             x.mobj_id = d["mobj_id"]
             x.von = d["von"]
             x.bis = d["bis"]
@@ -598,6 +638,31 @@ class DbAccess:
               "where nka_id = %d" % (nka_id)
         return self._doWrite( sql, commit )
 
+    def insertHgAbrechnung( self, x: XHgAbrechnung, commit: bool = True ) -> int:
+        sql = "insert into hg_abrechnung " \
+              "(ab_jahr, vwg_id, betrag, ab_datum, buchungsdatum, bemerkung) " \
+              "values" \
+              "(%d,      %d,   %.2f,     '%s',   '%s',          '%s')" % \
+              (x.ab_jahr, x.vwg_id, x.betrag, x.ab_datum, x.buchungsdatum, x.bemerkung)
+        return self._doWrite( sql, commit )
+
+    def updateHgAbrechnung( self, x: XHgAbrechnung, commit: bool = True ) -> int:
+        sql = "update hg_abrechnung " \
+              "set ab_jahr = %d, " \
+              "vwg_id = %d, " \
+              "betrag = %.2f, " \
+              "ab_datum = '%s', " \
+              "buchungsdatum = '%s', " \
+              "bemerkung = '%s' " \
+              "where hga_id = %d" % \
+              (x.ab_jahr, x.vwg_id, x.betrag, x.ab_datum, x.buchungsdatum, x.bemerkung, x.hga_id)
+        return self._doWrite( sql, commit )
+
+    def deleteHgAbrechnung( self, hga_id: int, commit: bool = True ) -> int:
+        sql = "delete from hg_abrechnung " \
+              "where hga_id = %d" % ( hga_id )
+        return self._doWrite( sql, commit )
+
     def createObjektKonto( self, konto_name:str, commit:bool=True ) -> None:
         ddl = """CREATE TABLE %s (
             "id"	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
@@ -657,6 +722,9 @@ class DbAccess:
 def test():
     db = DbAccess( "immo.db" )
     db.open()
+
+    res = db.getHgAbrechnungen( 2020 )
+    print( res )
     # res = db.getMasterIdFromMietobjekt( "bueb" )
     # print( res )
 

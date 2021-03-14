@@ -81,6 +81,7 @@ class XHgAbrechnung( XAbrechnung ):
     def __init__( self ):
         XAbrechnung.__init__( self )
         self.hga_id = 0
+        self.vwg_id = 0
         self.weg_name_vw_id = ""
 
     def getName( self ) -> str:

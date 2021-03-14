@@ -4,13 +4,13 @@ from enum import  IntEnum
 
 from PySide2.QtCore import QAbstractItemModel, Qt
 
-from abrechnungentablemodel import NkAbrechnungenTableModel
+from abrechnungentablemodel import NkAbrechnungenTableModel, HgAbrechnungenTableModel
 from buchungstextmatchmodel import BuchungstextMatchModel
 from dbaccess import DbAccess
 from typing import List, Dict, Tuple
 from constants import einausart
 from interfaces import XSonstAus, XSonstAusSummen, XZahlung, XSollHausgeld, XSollMiete, XBuchungstextMatch, \
-    XNkAbrechnung, XAbrechnung
+    XNkAbrechnung, XAbrechnung, XHgAbrechnung
 #from monthlist import monthList, monatsletzter
 #from datehelper import monthList, monatsletzter, getLastMonth
 from datehelper import *
@@ -141,6 +141,9 @@ class BusinessLogic:
     def getExistingNkAbrechnungsjahre( self ) -> List[int]:
         return self._db.getExistingNkAbrechnungsjahre()
 
+    def getExistingHgAbrechnungsjahre( self ) -> List[int]:
+        return self._db.getExistingHgAbrechnungsjahre()
+
     def existsEinAusArt(self, eaart: einausart, jahr: int) -> bool:
         return self._db.existsEinAusArt( eaart, jahr )
 
@@ -205,6 +208,35 @@ class BusinessLogic:
         self._db.deleteZahlung( x.nka_id, "nka_id", commit=False )
         self._db.commit()
         x.nka_id = 0
+
+    def insertHgAbrechnung( self, x: XHgAbrechnung ) -> None:
+        self._db.insertHgAbrechnung( x, commit=False )
+        x.hga_id = self._db.getMaxId( "hg_abrechnung", "hga_id" )
+        if x.buchungsdatum > "":
+            self._writeZahlungFromXAbrechnung( x, Zahlart.HGA, insert=True )
+        self._db.commit()
+
+    def updateHgAbrechnung( self, x: XHgAbrechnung ) -> None:
+        self._db.updateHgAbrechnung( x, commit=False )
+        z: XZahlung = self._db.getZahlung( x.hga_id, "hga_id" )
+        if z.z_id == 0:
+            # abrechnung not yet payed (booked) so not inserted yet.
+            # Insert into zahlung if buchungsdatum is set
+            if x.buchungsdatum > "":
+                self._writeZahlungFromXAbrechnung( x, Zahlart.HGA, insert=True )
+        else:
+            # got an abrechnung record. Delete it if buchungsdatum is "". Else update.
+            if x.buchungsdatum is None or x.buchungsdatum == "":
+                self._deleteZahlung( x.hga_id, Zahlart.HGA )
+            else:
+                self._writeZahlungFromXAbrechnung( x, Zahlart.HGA, insert=False )
+        self._db.commit()
+
+    def deleteHgAbrechnung( self, x:XHgAbrechnung ) -> None:
+        self._db.deleteHgAbrechnung( x.hga_id, commit=False )
+        self._db.deleteZahlung( x.hga_id, "hga_id", commit=False )
+        self._db.commit()
+        x.hga_id = 0
 
     def _writeZahlungMtlEinAus( self, meinaus_id:int, jahr:int, monat:str, betrag:float ):
         """
@@ -516,7 +548,6 @@ class BusinessLogic:
         # real abrechnung information if a corresponding XNkAbrechnung object is found in realabrechlist
         for mv in mvlist:
             x = XNkAbrechnung()
-            d = x.__dict__
             x.mv_id = mv["mv_id"]
             x.mobj_id = mv["mobj_id"]
             x.von = mv["von"]
@@ -526,6 +557,59 @@ class BusinessLogic:
             abrechlist.append( x )
 
         model = NkAbrechnungenTableModel( abrechlist )
+        return model
+
+    def getHgAbrechnungenTableModel( self, ab_jahr:int ) -> NkAbrechnungenTableModel:
+        """
+        Gets ALL Verwaltungen (WEG).
+        Creates a XHgAbrechnung object for each verwaltung.
+        Merges HGA informations with verwaltung where exists.
+        :param ab_jahr:
+        :return:
+        """
+        def _provideAbrechnungInfo( x:XHgAbrechnung, realabrechlist:List[XHgAbrechnung] ):
+            for abr in realabrechlist:
+                if x.vwg_id == abr.vwg_id and abr.ab_jahr == x.ab_jahr:
+                    x.ab_jahr = ab_jahr
+                    x.hga_id = abr.hga_id
+                    x.betrag = abr.betrag
+                    x.ab_datum = abr.ab_datum
+                    x.buchungsdatum = abr.buchungsdatum
+                    x.bemerkung = abr.bemerkung
+                    # we don't have to deal with von and bis as we have selected conveniant verwaltungen only.
+                    break
+
+        # the list we will create the model with:
+        abrechlist: List[XHgAbrechnung] = list()
+        # all verwaltungen:
+        vwglist:List[Dict] = self._db.getVerwaltungen( jahr=ab_jahr, orderby="mobj_id" )
+        # [
+        #     {
+        #         "vwg_id": 19,
+        #         "mobj_id": "volkerstal",
+        #         "vw_id": "Palm"
+        #         "weg_name": "WEG Thomas-Mann-Str. 2"
+        #         "von": "2019-01-01"
+        #         "bis": ""
+        #      },
+        # ...
+        # ]
+        # get existing hg_abrechnung objects
+        realabrechlist: List[XHgAbrechnung] = self._db.getHgAbrechnungen( ab_jahr )
+        # create a XHgAbrechnung object from each verwaltung and provide it with
+        # real abrechnung information if a corresponding XHgAbrechnung object is found in realabrechlist
+        for vwg in vwglist:
+            x = XHgAbrechnung()
+            x.vwg_id = vwg["vwg_id"]
+            x.weg_name_vw_id = vwg["weg_name"] + " / " + vwg["vw_id"]
+            x.mobj_id = vwg["mobj_id"]
+            x.von = vwg["von"]
+            x.bis = vwg["bis"]
+            x.ab_jahr = ab_jahr
+            _provideAbrechnungInfo( x, realabrechlist )
+            abrechlist.append( x )
+
+        model = HgAbrechnungenTableModel( abrechlist )
         return model
 
     def insertSollmieten( xlist:List[XSollMiete] ):

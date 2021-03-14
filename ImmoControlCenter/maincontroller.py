@@ -11,7 +11,7 @@ from checkcontroller import MdiChildController, MietenController, HGVController
 from sollzahlungencontroller import SollzahlungenController, SollType
 from sonstauscontroller import SonstAusController
 from sumfieldsprovider import SumFieldsProvider
-from abrechnungencontroller import AbrechnungenController, NkAbrechnungenController
+from abrechnungencontroller import AbrechnungenController, NkAbrechnungenController, HgAbrechnungenController
 
 
 class MainController:
@@ -38,6 +38,7 @@ class MainController:
         self._sollHausgelderCtrl = SollzahlungenController( SollType.HAUSGELD_SOLL )
 
         self._nkaCtrl = NkAbrechnungenController()
+        self._hgaCtrl = HgAbrechnungenController()
 
         self._nChanges = 0  # zählt die Änderungen, damit nach Speichern-Vorgängen das Sternchen nicht zu früh entfernt wird.
 
@@ -226,8 +227,11 @@ class MainController:
         subwin.show()
 
     def createHgaViewAndShow( self ):
-        print( "MainController.createHgaViewAndShow" )
-        #Todo
+        subwin = self._hgaCtrl.createSubwindow()
+        self._installView( subwin, self._hgaCtrl )
+        w, h = self._hgaCtrl.getViewSize()
+        subwin.setGeometry( 0, 0, w, h )
+        subwin.show()
 
     def _installView( self, subwin:MdiSubWindow, ctrl:MdiChildController ):
         #subwin.addQuitCallback( self.onCloseSubWindow )
