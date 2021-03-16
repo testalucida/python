@@ -494,7 +494,7 @@ class SonstigeAusgabenView( QWidget ):
             self._sdBuchungsdatum.setDate( y, m, d )
         else:
             self._sdBuchungsdatum.clear()
-        if x.master_id and x.master_id >= 0:  #master_id kann auch 0 sein! (**alle**)
+        if x.master_id is not None and x.master_id >= 0:  #master_id kann auch 0 sein! (**alle**)
             self._cboMasterobjekt.setCurrentText( x.master_name )
         if x.mobj_id:
             self._cboMietobjekt.setCurrentText( x.mobj_id )
