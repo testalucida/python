@@ -125,6 +125,7 @@ class ControlButton( QPushButton ):
 
 ################ CheckTableView ################################
 class CheckTableView( TableView ):
+    frozenRightClick = Signal( QPoint )
     def __init__( self ):
         TableView.__init__( self )
 
@@ -133,8 +134,13 @@ class CheckTableView( TableView ):
         b2 = ControlButton( btn.parent(), btn.isOkButton(), btn.clicked )
         return b2
 
+    def onRightClickFrozen( self, point: QPoint ):
+        # overrides TableViewExt.onRightClickFrozen
+        print( "CheckTableView:onRightClick: ", point )
+        self.frozenRightClick.emit( point )
+
     def onRightClick( self, point: QPoint ):
-        pass
+        print( "CheckTableView.onRightClick" )
         # print( "onRightClick" )
         # index = self.indexAt( point )
         # row = index.row()

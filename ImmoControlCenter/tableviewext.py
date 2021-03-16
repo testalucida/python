@@ -3,6 +3,8 @@ from PySide2.QtCore import *
 from PySide2.QtGui import QBrush, QKeySequence
 from PySide2.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QTableView, QHeaderView, QMenu, QAction
 
+#from tablecellactionhandler import TableCellActionHandler
+
 
 class TestButton( QPushButton ):
     def __init__(self, txt:str ):
@@ -77,6 +79,7 @@ class TableViewExt( QTableView ):
     def __init__( self, parent=None ):
         QTableView.__init__( self, parent )
         self._frozen:QTableView = None  # tableview containing only frozen columns
+        #self._frozenContextMenu:TableCellActionHandler = None
         self._nFrozen = 0  # number of frozen left columns
         self.clicked.connect( self.onLeftClick )
         # self.setMouseTracking( True )
@@ -115,7 +118,7 @@ class TableViewExt( QTableView ):
         print( "index %d/%d clicked. Value=%s" % (index.row(), index.column(), str( val )) )
 
     def onRightClick( self, point: QPoint ):
-        pass
+        print( "TableViewExt: onRightClick" )
         #TEST
         # index = self.indexAt( point )
         # row = index.row()
@@ -163,7 +166,16 @@ class TableViewExt( QTableView ):
         self.verticalHeader().sectionResized.connect( self._updateFrozenSectionHeight )
         self._frozen.verticalScrollBar().valueChanged.connect( self.verticalScrollBar().setValue )
         self.verticalScrollBar().valueChanged.connect( self._frozen.verticalScrollBar().setValue )
+        #self._frozenContextMenu = TableCellActionHandler( self )
+        # initialize ContextMenu of frozen tableview
+        self._frozen.setMouseTracking( True )
+        self._frozen.setContextMenuPolicy( Qt.CustomContextMenu )
+        self._frozen.customContextMenuRequested.connect( self.onRightClickFrozen )
         self._frozen.show()
+
+    def onRightClickFrozen( self, point:QPoint ):
+        # may be overridden in a derived class
+        pass
 
     def resetFrozen( self ):
         if self._frozen:

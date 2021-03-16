@@ -23,6 +23,9 @@ monatsletzter = {
     "Dezember": 31
 }
 
+def getNumberOfDays( month:int ) -> int:
+    return monatsletzter[monthList[month-1] ]
+
 def getCurrentYearAndMonth() -> Dict:
     d = { }
     d["month"] = datetime.now().month

@@ -31,6 +31,7 @@ class CheckTableModel( DictListTableModel ):
         self._checkMonatColumnIdx = 0
         self._checkMonat = 0
         self._meinausidIdx = 0 # in Spalte 0 steht die meinaus_id
+        self._idColumnIdx = 1 # mv_id oder vwg_id
         self._nameColumnIdx = 5
         self._sollColumnIdx = 6  # die Spalte mit den Soll-Werten
         self._okColumnIdx = 7  # Spalte des OK-Buttons
@@ -54,6 +55,9 @@ class CheckTableModel( DictListTableModel ):
                                 }
         }
         """
+
+    def getId( self, row:int ) ->str:
+        return self.getValue( row, self._idColumnIdx )
 
     def resetChanges( self ):
         self._changes.clear()

@@ -19,9 +19,6 @@ class TableView( TableViewExt ):
     def onLeftClick(self, index:QModelIndex):
         print( "cell %d/%d clicked." % ( index.row(), index.column() ) )
 
-    def onRightClick(self, qPoint:QPoint):
-        pass
-
     def setModel(self, model: DictListTableModel) -> None:
         super().setModel( model )
         self.setSizeAdjustPolicy(QAbstractScrollArea.AdjustToContents)

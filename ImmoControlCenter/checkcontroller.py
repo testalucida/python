@@ -1,13 +1,15 @@
-from PySide2.QtWidgets import QMessageBox, QWidget
+from PySide2.QtCore import QObject, Slot, QPoint
+from PySide2.QtWidgets import QMessageBox, QWidget, QMenu, QAction
 from abc import ABC, abstractmethod
 from typing import List, Dict
 from datehelper import *
 from mdichildcontroller import MdiChildController
-from checkview import CheckView
+from checkview import CheckView, CheckTableView
 from checktablemodel import CheckTableModel
 from business import BusinessLogic
 from constants import einausart
 from mdisubwindow import MdiSubWindow
+from mietverhaeltniscontroller import MietverhaeltnisController
 from sumfieldsprovider import SumFieldsProvider
 from tablecellactionhandler import TableCellActionHandler
 
@@ -19,6 +21,7 @@ class CheckController( MdiChildController, ABC ):
         curr = getCurrentYearAndMonth()
         self._currentYear:int = curr["year"]
         self._currentCheckMonth:int = curr["month"]
+        self._view:CheckView = None
 
     def getSelectedJahr( self ) -> int:
         return self._currentYear
@@ -76,7 +79,13 @@ class CheckController( MdiChildController, ABC ):
         tv.setColumnHidden( 1, True )
         tv.setColumnHidden( 2, True )
         tv.setColumnHidden( 3, True )
+        self._view = checkView
+        self.implementSpecificFeatures( tv )
         return checkView
+
+    @abstractmethod
+    def implementSpecificFeatures( self, tv:CheckTableView ):
+        pass
 
     def onDataChanged( self ):
         # wird vom DictListTableModel gerufen
@@ -154,6 +163,23 @@ class MietenController( CheckController ):
     def addJahr( self, jahr:int ):
         self._subwin.widget().addJahr( jahr )
 
+    def implementSpecificFeatures( self, tv:CheckTableView ):
+        tv.frozenRightClick.connect( self.onFrozenRightClick )
+
+    @Slot()
+    def onFrozenRightClick( self, point:QPoint ):
+        tv = self._view.tableView
+        model = tv.getModel()
+        index = index = tv.indexAt( point )
+        mv_id = model.getId( index.row() )
+        menu = QMenu( tv )
+        action = QAction( "Dieses Mietverhältnis beenden" )
+        menu.addAction( action )
+        action = menu.exec_( tv.viewport().mapToGlobal( point ) )
+        if action:
+            c = MietverhaeltnisController()
+            c.kuendigeMietverhaeltnisUsingMiniDialog( mv_id )
+
 #################### HGVController ########################
 class HGVController( CheckController ):
     def __init__( self ):
@@ -176,3 +202,6 @@ class HGVController( CheckController ):
 
     def addJahr( self, jahr: int ):
         self._subwin.widget().addJahr( jahr )
+
+    def implementSpecificFeatures( self, tv:CheckTableView ):
+        pass
