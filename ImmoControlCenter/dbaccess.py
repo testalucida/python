@@ -1,7 +1,7 @@
 import sqlite3
 from typing import List, Tuple, Dict
 from constants import einausart
-from interfaces import XSonstAus, XZahlung, XSollHausgeld, XSollMiete, XNkAbrechnung, XHgAbrechnung
+from interfaces import XSonstAus, XZahlung, XSollHausgeld, XSollMiete, XNkAbrechnung, XHgAbrechnung, XMietverhaeltnis
 
 mon_dbnames = ("jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dez" )
 
@@ -78,6 +78,32 @@ class DbAccess:
               "order by ma.master_name, mi.mobj_id "
         return self._doReadAllGetDict( sql )
 
+    def getAktivesMietverhaeltnisZuMvId( self, mv_id:str ) -> XMietverhaeltnis:
+        """
+        Liefert das aktuelle Mietverhältnis zur gegebenen mv_id.
+        Es könnten mehrere sein, wenn ein Mieter von einer Wohnung in eine andere umgezogen ist.
+        Dann ist aber auch nur ein Mietverhältnis aktiv.
+        NICHT abgedeckt ist der Fall, dass ein Mieter 2 Wohnungen bewohnt.
+        Dann wird eine Exception geworfen.
+        :param mv_id: Selektionsparameter
+        :return: XMietverhaeltnis
+        """
+        sql = "select id, mv_id, mobj_id, von, coalesce(bis, '') as bis, name, " \
+              "coalesce(telefon, '') as telefon, coalesce(mobil, '') as mobil, coalesce(mailto, '') as mailto," \
+              "anzahl_pers, bemerkung1, bemerkung2, kaution, coalesce(kaution_bezahlt_am, '') as kaution_bezahlt_am " \
+              "from mietverhaeltnis " \
+              "where mv_id = '%s' " \
+              "and ( bis is NULL or bis = '' or bis >= CURRENT_DATE ) " % ( mv_id )
+        listofdicts = self._doReadAllGetDict( sql )
+        if len( listofdicts ) > 1:
+            raise Exception( "dbaccess.getAktivesMietverhaeltnisZuMvId( mv_id ):\n"
+                             "found more than 1 row for mv_id = '%s' " % (mv_id) )
+        elif len( listofdicts ) < 0:
+            raise Exception( "dbaccess.getAktivesMietverhaeltnisZuMvId( mv_id ):\n"
+                             "found 0 rows for mv_id = '%s' " % (mv_id) )
+        x = XMietverhaeltnis( listofdicts[0] )
+        return x
+
     def getMietverhaeltnisseEssentials( self, jahr:int, orderby:str=None ) -> List[Dict]:
         """
         Liefert zu allen Mietverhältnissen, die in <jahr> aktiv sind, die Werte der Spalten mv_id, von, bis
@@ -85,6 +111,7 @@ class DbAccess:
         :return: List[Dict]:
                 [
                     {
+                        "id":   23,
                         "mv_id":  "lander_anke",
                         "mobj_id": "volkerstal",
                         "von":    "2019-01-01"
@@ -93,7 +120,7 @@ class DbAccess:
                     ...
                 ]
         """
-        sql = "select mv_id, mobj_id, von, bis from mietverhaeltnis " \
+        sql = "select id, mv_id, mobj_id, von, bis from mietverhaeltnis " \
               "where substr(von, 0, 5) <= '%s' " \
               "and (bis is NULL or bis = '' or substr(bis, 0, 5) >= '%s') " % (jahr, jahr)
         if orderby:
@@ -198,6 +225,25 @@ class DbAccess:
               "order by mv_id, von;" % ( sjahr, sjahr )
         l = self._doReadAllGetDict( sql )
         return l
+
+    def getAktiveSollmiete( self, mv_id:str ) -> XSollMiete:
+        """
+        Liefert die aktuelle Sollmiete des Mieters mv_id.
+        Achtung: das funktioniert nicht, wenn mv_id mehr als 1 Wohnung gemietet hat.
+        :param mv_id:
+        :return:
+        """
+        sql = "select sm_id, mv_id, von, bis, netto, nkv, bemerkung " \
+              "from sollmiete " \
+              "where mv_id = '%s' " \
+              "and ( von <= CURRENT_DATE and bis is NULL or bis = '' or bis > CURRENT_DATE ) " % (mv_id)
+        listofdicts = self._doReadAllGetDict( sql )
+        if len( listofdicts ) > 1:
+            raise Exception( "DbAccess.getAktiveSollmiete( mv_id ):\n more than 1 row for mv_id = '%s' " % (mv_id) )
+        elif len( listofdicts ) < 1:
+            raise Exception( "DbAccess.getAktiveSollmiete( mv_id ):\n found 0 rows for mv_id = '%s' " % (mv_id) )
+        x:XSollMiete = XSollMiete( listofdicts[0] )
+        return x
 
     def getSollmietenMonat( self, jahr:int, monat:int ) -> List[Dict]:
         datum = str(jahr) + "-" + "%02d" % monat + "-01"
@@ -485,6 +531,18 @@ class DbAccess:
               "where shg_id = %d " % (x.von, bis, x.netto, x.ruezufue, x.bemerkung, x.shg_id )
         return self._doWrite( sql, commit )
 
+    def updateSollMiete( self, x:XSollMiete, commit:bool=True ):
+        bis = "NULL" if not x.bis else "'" + x.bis + "'"
+        sql = "update sollmiete set " \
+              "mv_id = '%s', " \
+              "von = '%s', " \
+              "bis = %s, " \
+              "netto = %.2f, " \
+              "nkv = %.2f, " \
+              "bemerkung = '%s' " \
+              "where sm_id = %d" % ( x.mv_id, x.von, bis, x.netto, x.nkv, x.bemerkung, x.sm_id )
+        return self._doWrite( sql, commit )
+
     def insertKreditorleistung( self, master_id:int, mobj_id:str, kreditor:str, buchungstext:str, umlegbar:int=0, commit:bool=True ):
         if buchungstext is None: buchungstext = ""
         if mobj_id is None: mobj_id = ""
@@ -600,7 +658,7 @@ class DbAccess:
               "where %s = %d " % ( z.master_id, z.mobj_id, z.write_time, z.jahr, z.monat, z.betrag, id_name, id )
         return self._doWrite( sql, commit )
 
-    def updateMtlEinAus( self, meinaus_id:str, monat:int or str, value:float, commit:bool=True ) -> int:
+    def updateMtlEinAus( self, meinaus_id:int, monat:int or str, value:float, commit:bool=True ) -> int:
         """
         Ändert einen Monatswert in der Tabelle mtleinaus
         :param meinaus_id: identifz. den mtleinaus-Satz, damit auch das Jahr, egal ob Miete oder HGV
@@ -611,6 +669,40 @@ class DbAccess:
         dbval = "%.2f" % (value) if value != 0 else "NULL"  # value ist bei Mieten > 0, bei HGV < 0
         sMonat =  mon_dbnames[monat-1] if isinstance( monat, int ) else monat
         sql = "update mtleinaus set '%s' = %s where meinaus_id = %d  " % ( sMonat, dbval, meinaus_id )
+        return self._doWrite( sql, commit )
+
+    def updateMietverhaeltnis( self, x:XMietverhaeltnis, commit:bool=True ) -> int:
+        """
+        macht einen Update mit den in x enthaltenen Daten
+        auf einen durch x.id spezifizierten Satz in der Tabelle mietverhaeltnis.
+        ******* ACHTUNG **********
+        Wenn ein Update auf mv_id gemacht wird, müssen auch die entsprechenden Werte
+        in den Tabellen mtleinaus, nk_abrechnung, sollmiete geändert werden!
+        ******** ACHTUNG ENDE ****
+        :param x:
+        :param commit:
+        :return:
+        """
+        sql = "update mietverhaeltnis set " \
+              "mv_id = '%s', " \
+              "von = '%s', " \
+              "bis = '%s', " \
+              "name = '%s', " \
+              "vorname = '%s', " \
+              "telefon = '%s', " \
+              "mobil = '%s', " \
+              "mailto = '%s', " \
+              "anzahl_pers = %d, " \
+              "bemerkung1 = '%s', " \
+              "bemerkung2 = '%s', " \
+              "kaution = %d, " \
+              "kaution_bezahlt_am = '%s' " \
+              "where id = %d " % ( x.mv_id, x.von, x.bis, x.name, x.vorname, x.telefon, x.mobil, x.mailto,
+                                   x.anzahl_pers, x.bemerkung1, x.bemerkung2, x.kaution, x.kaution_bezahlt_am, x.id )
+        return self._doWrite( sql, commit )
+
+    def updateMietverhaeltnis2( self, id:int, column:str, newVal:str, commit:bool=True ):
+        sql = "update mietverhaeltnis set %s = '%s' where id = %d " % ( column, newVal, id )
         return self._doWrite( sql, commit )
 
     def insertNkAbrechnung( self, x:XNkAbrechnung, commit:bool=True ) -> int:
@@ -723,8 +815,11 @@ def test():
     db = DbAccess( "immo.db" )
     db.open()
 
-    res = db.getHgAbrechnungen( 2020 )
+    res = db.getAktivesMietverhaeltnisZuMvId( "pfeifer_martina" )
     print( res )
+
+    # res = db.getHgAbrechnungen( 2020 )
+    # print( res )
     # res = db.getMasterIdFromMietobjekt( "bueb" )
     # print( res )
 

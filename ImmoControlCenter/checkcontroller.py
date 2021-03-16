@@ -166,8 +166,12 @@ class MietenController( CheckController ):
     def implementSpecificFeatures( self, tv:CheckTableView ):
         tv.frozenRightClick.connect( self.onFrozenRightClick )
 
-    @Slot()
     def onFrozenRightClick( self, point:QPoint ):
+        @Slot( str, str )
+        def onGekuendigt( mv_id:str, datum:str ):
+            print( "onGekuendigt" )
+            #todo: Model aktualisieren
+
         tv = self._view.tableView
         model = tv.getModel()
         index = index = tv.indexAt( point )
@@ -177,7 +181,8 @@ class MietenController( CheckController ):
         menu.addAction( action )
         action = menu.exec_( tv.viewport().mapToGlobal( point ) )
         if action:
-            c = MietverhaeltnisController()
+            c = MietverhaeltnisController( self._view )
+            c.mietverhaeltnisGekuendigt.connect( onGekuendigt )
             c.kuendigeMietverhaeltnisUsingMiniDialog( mv_id )
 
 #################### HGVController ########################

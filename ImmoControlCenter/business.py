@@ -10,7 +10,7 @@ from dbaccess import DbAccess
 from typing import List, Dict, Tuple
 from constants import einausart
 from interfaces import XSonstAus, XSonstAusSummen, XZahlung, XSollHausgeld, XSollMiete, XBuchungstextMatch, \
-    XNkAbrechnung, XAbrechnung, XHgAbrechnung
+    XNkAbrechnung, XAbrechnung, XHgAbrechnung, XMietverhaeltnis
 #from monthlist import monthList, monatsletzter
 #from datehelper import monthList, monatsletzter, getLastMonth
 from datehelper import *
@@ -365,6 +365,31 @@ class BusinessLogic:
         self._db.deleteSonstAus( x.saus_id, False )
         self._deleteZahlung( x.saus_id, Zahlart.SONSTAUS )
         self._db.commit()
+
+    def kuendigeMietverhaeltnis( self, mv_id:str, kuenddatum:str ) -> None:
+        """
+        - Kündigung in Tabelle mietverhaeltnis eintragen
+        - Kündigung in Tabelle sollmiete eintragen
+        """
+        # aktives Mietverhältnis lesen
+        mv:XMietverhaeltnis = self._db.getAktivesMietverhaeltnisZuMvId( mv_id )
+        if mv.von > kuenddatum:
+            raise Exception( "BusinessLogic.kuendigeMietverhaeltnis( '%s', '%s' ): "
+                             "Mietverhältnis-von ('%s') > Mietverhältnis-bis nicht erlaubt" %
+                             (mv_id, mv.von, kuenddatum ) )
+
+        # aktive Sollmiete lesen
+        sm:XSollMiete = self._db.getAktiveSollmiete( mv_id )
+        if sm.von > kuenddatum:
+            raise Exception( "BusinessLogic.kuendigeMietverhaeltnis( '%s', '%s' ): "
+                             "Sollmiete-von ('%s') > Sollmiete-bis nicht erlaubt" %
+                             (mv_id, sm.von, kuenddatum ) )
+
+        # Mietverhältnis beenden
+        self._db.updateMietverhaeltnis2( mv.id, "bis", kuenddatum, commit=False )
+        # Sollmiete beenden
+        sm.bis = kuenddatum
+        self._db.updateSollMiete( sm, commit=True )
 
     def getSollmietenMonat( self, jahr:int, monat:int ) -> List[Dict]:
         return self._db.getSollmietenMonat( jahr, monat )

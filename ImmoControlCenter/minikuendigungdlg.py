@@ -7,7 +7,7 @@ from qtderivates import SmartDateEdit
 
 
 class MiniKuendigungDlg( QDialog ):
-    kuendigeMietverhaeltnis = Signal( str )
+    kuendigeMietverhaeltnis = Signal( ( str, str) )
     def __init__( self, parent=None ):
         QDialog.__init__( self, parent )
         self.setModal( True )
@@ -53,7 +53,7 @@ class MiniKuendigungDlg( QDialog ):
         self._sdKuenddatum.setDate( yyyy, mm, dd )
 
     def _onKuendige( self ):
-        self.kuendigeMietverhaeltnis.emit( self._sdKuenddatum.getDate() )
+        self.kuendigeMietverhaeltnis.emit( self._lblName.text(), self._sdKuenddatum.getDate() )
         self._onClose()
 
     def _onClose( self ):

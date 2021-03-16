@@ -10,6 +10,36 @@ class XBase:
         for k, v in d.items():
             _d[k] = v
 
+#################################################################
+def setFromDict( object, valuedict:Dict ):
+    d = object.__dict__
+    for k, v in valuedict.items():
+        d[k] = v
+
+#######################  Mietverhältnis  ########################
+class XMietverhaeltnis:
+    def __init__( self, valuedict:Dict=None ):
+        self.id = 0
+        self.mv_id = ""
+        self.mobj_id = ""
+        self.von = ""
+        self.bis = ""
+        self.name = ""
+        self.vorname = ""
+        self.telefon = ""
+        self.mobil = ""
+        self.mailto = ""
+        self.anzahl_pers = 1
+        self.bemerkung1 = ""
+        self.bemerkung2 = ""
+        self.kaution = 0
+        self.kaution_bezahlt_am = ""
+        if valuedict:
+            setFromDict( self, valuedict )
+
+
+
+####################### Zahlung #################################1
 class XZahlung:
     z_id:int = 0
     master_id:int = 0 # ID des Master-Objekts (Tabelle masterobjekt)
@@ -134,13 +164,17 @@ class XSollHausgeld( XSollzahlung ):
     weg_name = ""
     ruezufue:float = 0.0
 
-class XSollMiete( XSollzahlung ):
+class XSollMiete:
     def __init__( self, valuedict:Dict=None ):
-        XSollzahlung.__init__( self, valuedict )
-
-    sm_id = 0
-    mv_id = ""
-    nkv:float = 0.0
+        self.sm_id = 0
+        self.mv_id = ""
+        self.von = ""
+        self.bis = ""
+        self.netto = 0.0
+        self.nkv:float = 0.0
+        self.bemerkung = ""
+        if( valuedict ):
+            setFromDict( self, valuedict )
 
 class XKontoEintrag:
     mobj_id = ""         # Name des Objekts, z.B. ww224, ist Name des Kontos (der Tabelle)
