@@ -96,6 +96,9 @@ class BusinessLogic:
         # sollwerte versorgen:
         return self.provideSollmieten( mieten, jahr, monat )
 
+    def getNettomieteUndNkv( self, mv_id:str, jahr:int, monat:int ) -> (float, float):
+        return self._db.getMieteBestandteile( mv_id, jahr, monat )
+
     def provideSollmieten( self, mieten:List[Dict], jahr:int, monat:int ) -> List[Dict]:
         sollwerte: List[Dict] = self.getSollmietenMonat( jahr, monat )
         # <sollwerte> enthält je Mietverhältnis genau 1 Satz mit den Werten netto, nkv und brutto.

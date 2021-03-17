@@ -174,15 +174,28 @@ class MietenController( CheckController ):
         tv = self._view.tableView
         model = tv.getModel()
         index = tv.indexAt( point )
+        if not index.column() in (model.nameColumnIdx, model.sollColumnIdx ):
+            return
         mv_id = model.getId( index.row() )
         menu = QMenu( tv )
-        action = QAction( "Dieses Mietverhältnis beenden" )
+        if index.column() == model.nameColumnIdx:
+            action = QAction( "Dieses Mietverhältnis beenden" )
+        else:
+            action = QAction( "Nettomiete und NKV anzeigen" )
         menu.addAction( action )
         action = menu.exec_( tv.viewport().mapToGlobal( point ) )
-        if action:
+        if action and index.column() == model.nameColumnIdx:
             c = MietverhaeltnisController( self._view )
             c.mietverhaeltnisGekuendigt.connect( onGekuendigt )
             c.kuendigeMietverhaeltnisUsingMiniDialog( mv_id )
+        elif action and index.column() == model.sollColumnIdx:
+            netto, nkv = BusinessLogic.inst().getNettomieteUndNkv( mv_id, self._currentYear, self._currentCheckMonth )
+            box = QMessageBox()
+            box.setWindowTitle( "Teile der Bruttomiete" )
+            box.setIcon( QMessageBox.Information )
+            box.setText( "Nettomiete:\t%.2f €\n\n"
+                         "Nebenkosten:\t%.2f €" % ( netto, nkv ) )
+            box.exec_()
 
 #################### HGVController ########################
 class HGVController( CheckController ):

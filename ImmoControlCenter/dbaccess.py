@@ -1,6 +1,7 @@
 import sqlite3
 from typing import List, Tuple, Dict
 from constants import einausart
+from datehelper import getNumberOfDays
 from interfaces import XSonstAus, XZahlung, XSollHausgeld, XSollMiete, XNkAbrechnung, XHgAbrechnung, XMietverhaeltnis
 
 mon_dbnames = ("jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dez" )
@@ -126,6 +127,18 @@ class DbAccess:
         if orderby:
             sql += "order by %s " % (orderby)
         return self._doReadAllGetDict( sql )
+
+    def getMieteBestandteile( self, mv_id:str, jahr:int, monat:int ) -> (float, float):
+        von = "%d-%02d-01" % ( jahr, monat )
+        letzter = getNumberOfDays( monat )
+        bis = "%d-%02d-%d" % ( jahr, monat, letzter )
+        sql = "select netto, nkv " \
+              "from sollmiete " \
+              "where mv_id = '%s' " \
+              "and von < '%s' " \
+              "and (bis is NULL or bis = '' or bis > '%s' ) " % ( mv_id, bis, von )
+        li = self._doRead( sql )
+        return li[0]
 
     def getMietzahlungenMitSummen( self, jahr:int ) -> List[Dict]:
         # Achtung: das TableModel verlässt sich auf die Reihenfolge der Spalten.
@@ -815,13 +828,14 @@ def test():
     db = DbAccess( "immo.db" )
     db.open()
 
-    res = db.getAktivesMietverhaeltnisZuMvId( "pfeifer_martina" )
-    print( res )
+    netto, nkv = db.getMieteBestandteile( "abazid_fuad", 2021, 3 )
+    print( netto, nkv )
+    # res = db.getAktivesMietverhaeltnisZuMvId( "pfeifer_martina" )
 
     # res = db.getHgAbrechnungen( 2020 )
-    # print( res )
+
     # res = db.getMasterIdFromMietobjekt( "bueb" )
-    # print( res )
+    #print( res )
 
     # d = db.getZahlung( 61, "saus_id" )
     # print( d )

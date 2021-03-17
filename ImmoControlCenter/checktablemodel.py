@@ -33,8 +33,8 @@ class CheckTableModel( DictListTableModel ):
         self._meinausidIdx = 0 # in Spalte 0 steht die meinaus_id
         self._idColumnIdx = 1 # mv_id oder vwg_id
         self.bisColumnIdx = 3
-        self._nameColumnIdx = 5
-        self._sollColumnIdx = 6  # die Spalte mit den Soll-Werten
+        self.nameColumnIdx = 5
+        self.sollColumnIdx = 6  # die Spalte mit den Soll-Werten
         self._okColumnIdx = 7  # Spalte des OK-Buttons
         self._nokColumnIdx = 8  # Spalte des NOK-Buttons
         self._summeColumnIdx = 21  # Summe aller Monatszahlungen - Spalte
@@ -179,8 +179,8 @@ class CheckTableModel( DictListTableModel ):
         self._changes[meinaus_id][header] = value
 
     def emitSollValuesChanged( self ):
-        idxvon = self.index( 0, self._sollColumnIdx )
-        idxbis = self.index( self.rowCount()-1, self._sollColumnIdx )
+        idxvon = self.index( 0, self.sollColumnIdx )
+        idxbis = self.index( self.rowCount() - 1, self.sollColumnIdx )
         self.dataChanged.emit( idxvon, idxbis )
 
     def getCheckMonatIst(self, index ):
@@ -189,7 +189,7 @@ class CheckTableModel( DictListTableModel ):
         return ist
 
     def getSoll( self, index ):
-        sollidx = self.index(index.row(), self._sollColumnIdx)
+        sollidx = self.index( index.row(), self.sollColumnIdx )
         soll = self.data(sollidx, Qt.DisplayRole)
         return soll
 
@@ -219,19 +219,19 @@ class CheckTableModel( DictListTableModel ):
             # wir sind immer noch hier - also handelt es sich um eine Zelle mit aktivem MV
             if indexcolumn == self._checkMonatColumnIdx:
                 return self._yellowBrush
-        elif indexcolumn == self._nameColumnIdx:
+        elif indexcolumn == self.nameColumnIdx:
             return self.headerBrush
         elif indexcolumn == self._summeColumnIdx:
             return QBrush( Qt.lightGray )
         return None
 
     def getForegroundBrush(self, indexrow:int, indexcolumn:int ) -> QBrush or None:
-        if indexcolumn < self._nameColumnIdx:
+        if indexcolumn < self.nameColumnIdx:
             return self._greyBrush
         else:
             return super().getForegroundBrush( indexrow, indexcolumn )
 
     def getFont( self, indexrow:int, indexcolumn:int ) -> QFont or None:
-        if indexcolumn in (self._nameColumnIdx, self._summeColumnIdx):
+        if indexcolumn in (self.nameColumnIdx, self._summeColumnIdx):
             return self._boldFont
 
