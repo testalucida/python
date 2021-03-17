@@ -373,14 +373,14 @@ class BusinessLogic:
         """
         # aktives Mietverhältnis lesen
         mv:XMietverhaeltnis = self._db.getAktivesMietverhaeltnisZuMvId( mv_id )
-        if mv.von > kuenddatum:
+        if kuenddatum and mv.von > kuenddatum:
             raise Exception( "BusinessLogic.kuendigeMietverhaeltnis( '%s', '%s' ): "
                              "Mietverhältnis-von ('%s') > Mietverhältnis-bis nicht erlaubt" %
                              (mv_id, mv.von, kuenddatum ) )
 
         # aktive Sollmiete lesen
         sm:XSollMiete = self._db.getAktiveSollmiete( mv_id )
-        if sm.von > kuenddatum:
+        if kuenddatum and sm.von > kuenddatum:
             raise Exception( "BusinessLogic.kuendigeMietverhaeltnis( '%s', '%s' ): "
                              "Sollmiete-von ('%s') > Sollmiete-bis nicht erlaubt" %
                              (mv_id, sm.von, kuenddatum ) )
@@ -498,6 +498,16 @@ class BusinessLogic:
 
     def getKreditoren( self, master_name:str ) -> List[str]:
         return self._db.getKreditoren( master_name )
+
+    def getKuendigungsdatum( self, mv_id:str ) -> str:
+        x:XMietverhaeltnis = self._db.getAktivesMietverhaeltnisZuMvId( mv_id )
+        return x.bis
+
+    def getKuendigungsdatum2( self, mv_id:str ) -> (int, int, int) or None:
+        bis = self.getKuendigungsdatum( mv_id )
+        if not bis: return None
+        return getDateParts( bis )
+
 
     def getAlleKreditoren( self ) -> List[str]:
         return self._db.getAlleKreditoren()

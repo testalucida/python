@@ -169,12 +169,11 @@ class MietenController( CheckController ):
     def onFrozenRightClick( self, point:QPoint ):
         @Slot( str, str )
         def onGekuendigt( mv_id:str, datum:str ):
-            print( "onGekuendigt" )
-            #todo: Model aktualisieren
-
+            #Model aktualisieren
+            model.setBis( index.row(), datum )
         tv = self._view.tableView
         model = tv.getModel()
-        index = index = tv.indexAt( point )
+        index = tv.indexAt( point )
         mv_id = model.getId( index.row() )
         menu = QMenu( tv )
         action = QAction( "Dieses Mietverhältnis beenden" )

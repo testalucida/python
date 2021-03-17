@@ -31,20 +31,21 @@ class DictListTableModel( IccTableModel ):
         return len( self.rowlist )
 
     def columnCount( self, parent:QModelIndex=None ) -> int:
-        if len( self.rowlist ) == 0: return 0
+        if len( self.rowlist ) == 0: return 0   #     rowdict = self.rowlist[row]
+    #     key = self._headers[col]
+    #     rowdict[key] = value
+    #     index = self.createIndex( row, col )
+    #     self.dataChanged.emit(index, index)
         return len( self.rowlist[0] )
 
-    def updateValue( self, index:QModelIndex, value:Any ):
-        self.updateValue2( index.row(), index.column(), value )
-        return True
+    # def updateValue( self, index:QModelIndex, value:Any ):
+    #     self.updateValue2( index.row(), index.column(), value )
+    #     return True
+    #
+    # def updateValue2(self, row:int, col:int, value:Any ):
 
-    def updateValue2(self, row:int, col:int, value:Any ):
-        rowdict = self.rowlist[row]
-        key = self._headers[col]
-        rowdict[key] = value
-        index = self.createIndex( row, col )
-        self.dataChanged.emit(index, index)
-        return True
+    #     self.layoutChanged.emit()
+    #     return True
 
     def setHeaderColor(self, color:QColor ) -> None:
         self.headerBrush = QBrush( color )

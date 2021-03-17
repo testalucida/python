@@ -32,6 +32,7 @@ class CheckTableModel( DictListTableModel ):
         self._checkMonat = 0
         self._meinausidIdx = 0 # in Spalte 0 steht die meinaus_id
         self._idColumnIdx = 1 # mv_id oder vwg_id
+        self.bisColumnIdx = 3
         self._nameColumnIdx = 5
         self._sollColumnIdx = 6  # die Spalte mit den Soll-Werten
         self._okColumnIdx = 7  # Spalte des OK-Buttons
@@ -125,28 +126,41 @@ class CheckTableModel( DictListTableModel ):
             else:
                 row["brutto"] = 0
 
+    def setBis( self, row:int, datum:str ) -> None:
+        """
+        Setzt datum in die Spalte bis des Datensatzes in Zeile indexrow.
+        Bewirkt lediglich eine geänderte Darstellung der Monatsabwerte nach datum.
+        (Die bis-Spalte wird nicht in der Tabelle angezeigt.)
+        Es wird kein Changelog geschrieben.
+        :param indexrow:
+        :param datum:
+        :return:
+        """
+        rowdict = self.rowlist[row]
+        key = self._headers[self.bisColumnIdx]
+        rowdict[key] = datum
+        self.layoutChanged.emit()
+
     def setData( self, index, value ):
         rowdict = self.rowlist[index.row()]
         key = self._headers[index.column()]
         oldval = rowdict[key]
         oldval = 0 if not oldval else oldval
         if oldval == value: return
+        # change value:
+        rowdict[key] = value
 
+        # calculate sum if the data changed is not a kuendigung
         summe = rowdict["summe"]
         summe -= oldval
-        rowdict[key] = value
         rowdict["summe"] = summe + value
-        self.dataChanged.emit( index, index )
         sumindex = self.index( index.row(), self._summeColumnIdx )
         self.dataChanged.emit( sumindex, sumindex )
         self._writeChangeLog( index, value )
-        # if self._changedCallback:
-        #     self._changedCallback()
+
+        self.dataChanged.emit( index, index )
         self.doChangedCallback()  #implementiert im DictListTableModel
         return True
-
-    # def setChangedCallback( self, callbackFnc ):
-    #     self._changedCallback = callbackFnc
 
     def _writeChangeLog( self, index, value:float ) -> None:
         """

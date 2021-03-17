@@ -136,7 +136,6 @@ class CheckTableView( TableView ):
 
     def onRightClickFrozen( self, point: QPoint ):
         # overrides TableViewExt.onRightClickFrozen
-        print( "CheckTableView:onRightClick: ", point )
         self.frozenRightClick.emit( point )
 
     def onRightClick( self, point: QPoint ):

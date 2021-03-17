@@ -17,7 +17,6 @@ class MietverhaeltnisController( QObject ):
     def kuendigeMietverhaeltnisUsingMiniDialog( self, mv_id:str ) -> None:
         @Slot()
         def onKuendigeSlot( mv_id, kuendDatum ):
-            print( "onKuendigeSlot: kündige zum ", kuendDatum, " für ", mv_id )
             self.kuendigeMietverhaeltnis( mv_id, kuendDatum )
         """
         Öffnet einen MiniKuendigungDlg und lässt den Anwender die Kündigungsdaten für mv_id erfassen.
@@ -28,12 +27,18 @@ class MietverhaeltnisController( QObject ):
         """
         dlg = MiniKuendigungDlg( self._parent )
         dlg.setName( mv_id )
-        d = getCurrentYearAndMonth()
-        dlg.setDatum( d["year"], d["month"]+3, getNumberOfDays( d["month"]+3 ) )
-        #dlg.kuendigeMietverhaeltnis.connect( self.onKuendigeMietverhaeltnis )
+        kuenddatTuple = self.getKuendigungsdatum( mv_id )
+        if kuenddatTuple:
+            dlg.setDatum( kuenddatTuple[0], kuenddatTuple[1], kuenddatTuple[2] )
+        else:
+            d = getCurrentYearAndMonth()
+            dlg.setDatum( d["year"], d["month"]+3, getNumberOfDays( d["month"]+3 ) )
         dlg.kuendigeMietverhaeltnis.connect( onKuendigeSlot )
         self._miniDlg = dlg
         dlg.show()
+
+    def getKuendigungsdatum( self, mv_id:str ) -> (int, int, int) or None:
+        return BusinessLogic.inst().getKuendigungsdatum2( mv_id )
 
     def kuendigeMietverhaeltnis( self, mv_id:str, kuendDatum:str ) -> None:
         # Kündigung in der Datenbank durchführen
