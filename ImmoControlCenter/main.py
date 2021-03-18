@@ -1,3 +1,4 @@
+import os
 import sys
 # sys.path.append( "/home/martin/Projects/python/common" )
 from typing import Tuple, Dict, List
@@ -5,7 +6,7 @@ from typing import Tuple, Dict, List
 from PySide2.QtGui import QIcon
 
 sys.path.append( "../common" )
-from PySide2.QtWidgets import QApplication
+from PySide2.QtWidgets import QApplication, QMessageBox
 from PySide2 import QtCore
 from PySide2.QtWidgets import QWidget, QMdiSubWindow
 from immocentermainwindow import ImmoCenterMainWindow, MainWindowAction
@@ -50,14 +51,39 @@ def writeGeometryOnShutdown( x, y, w, h ) -> None:
     s = str( x ) + "," + str( y ) + "," + str( w ) + "," + str( h )
     f.write( s )
 
+def createControlFile():
+    try:
+       f = open( "already_running", "x" )
+    except:
+        box = QMessageBox()
+        box.setWindowTitle( "Anwendung kann nicht gestartet werden" )
+        box.setIcon( QMessageBox.Critical )
+        box.setText( "Das ImmoControlCenter kann nicht gestartet werden:\n"
+                     "Die Kontrolldatei kann nicht angelegt werden." )
+        box.exec_()
+        sys.exit( 1 )
+
+def deleteControlFile():
+    os.remove( "already_running" )
+
+def terminate_if_running():
+    exists = os.path.exists( "already_running" )
+    if exists:
+        box = QMessageBox()
+        box.setWindowTitle( "Anwendung läuft schon" )
+        box.setIcon( QMessageBox.Critical )
+        box.setText( "Das ImmoControlCenter läuft bereits.\nEs kann nicht mehrfach ausgeführt werden." )
+        box.exec_()
+        sys.exit( 1 )
+
 def main():
     app = QApplication()
-
+    terminate_if_running()
+    createControlFile()
     win = ImmoCenterMainWindow()
     # see: https://stackoverflow.com/questions/53097415/pyside2-connect-close-by-window-x-to-custom-exit-method
     shutDownFilter = ShutDownFilter(win, app)
     win.installEventFilter(shutDownFilter)
-
     win.show()
     try:
         pos_size = getGeometryOnLastShutdown()
@@ -68,12 +94,12 @@ def main():
 
     ctrl = MainController( win )
     ctrl.showStartViews()
-    #win.resize( 1901, 1000 )
 
     icon = QIcon( "./images/houses.png" )
     app.setWindowIcon( icon )
 
     app.exec_()
+    deleteControlFile()
 
 if __name__ == '__main__':
     main()

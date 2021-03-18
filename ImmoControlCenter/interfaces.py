@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from typing import Dict
 
 class XBase:
@@ -143,29 +144,43 @@ class XBuchungstextMatch( XBase ):
     buchungstext:str = ""
     umlegbar:int = 0
 
-class XSollzahlung( XBase ):
-    def __init__( self, valuedict:Dict=None ):
-        XBase.__init__( self, valuedict )
+class XSollzahlung:
+    def __init__( self ):
+        self.mobj_id:str = ""
+        self.von:str = ""
+        self.bis:str = ""
+        self.netto:float = 0.0  # Nettomiete bei Soll-Miete, Netto-HG (ohne rüzufü) bei HGV
+        self.brutto:float = 0.0  # Summe aus netto und zusatz
+        self.bemerkung:str = ""
 
-    mobj_id:str = ""
-    von:str = ""
-    bis:str = ""
-    netto:float = 0.0  # Nettomiete bei Soll-Miete, Netto-HG (ohne rüzufü) bei HGV
-    brutto:float = 0.0  # Summe aus netto und zusatz
-    bemerkung:str = ""
+    @abstractmethod
+    def getId( self ) -> int:
+        pass
+
+    @abstractmethod
+    def setId( self, value:int ) -> None:
+        pass
 
 class XSollHausgeld( XSollzahlung ):
     def __init__( self, valuedict:Dict=None ):
-        XSollzahlung.__init__( self, valuedict )
+        XSollzahlung.__init__( self )
+        self.shg_id = 0
+        self.vw_id = ""
+        self.vwg_id = 0
+        self.weg_name = ""
+        self.ruezufue:float = 0.0
+        if ( valuedict ):
+            setFromDict( self, valuedict )
 
-    shg_id = 0
-    vw_id = ""
-    vwg_id = 0
-    weg_name = ""
-    ruezufue:float = 0.0
+    def getId( self ) -> int:
+        return self.shg_id
 
-class XSollMiete:
+    def setId( self, value: int ) -> None:
+        self.shg_id = value
+
+class XSollMiete( XSollzahlung ):
     def __init__( self, valuedict:Dict=None ):
+        XSollzahlung.__init__( self )
         self.sm_id = 0
         self.mv_id = ""
         self.von = ""
@@ -175,6 +190,12 @@ class XSollMiete:
         self.bemerkung = ""
         if( valuedict ):
             setFromDict( self, valuedict )
+
+    def getId( self ) -> int:
+        return self.sm_id
+
+    def setId( self, value: int ) -> None:
+        self.sm_id = value
 
 class XKontoEintrag:
     mobj_id = ""         # Name des Objekts, z.B. ww224, ist Name des Kontos (der Tabelle)

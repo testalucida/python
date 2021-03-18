@@ -1,3 +1,4 @@
+from abc import abstractmethod, ABC
 from typing import List
 
 from PySide2 import QtCore
@@ -13,16 +14,17 @@ from sollzahlungentablemodel import SollzahlungenTableModel
 from tableviewext import TableViewExt
 from qtderivates import CalendarDialog, SmartDateEdit, FloatEdit
 
-class SollzahlungenView( QWidget ):
+class SollViewMeta( type(QWidget), type(ABC) ):
+    pass
+
+class SollzahlungenView( QWidget, ABC, metaclass=SollViewMeta ):
     """
     Ein View, der zweifach verwendet wird:
-    - um die Soll-Mieten anzuzeigen
-    - um die Soll-HGV anzuzeigen
+    - um die Soll-Mieten anzuzeigen (SollmietenView)
+    - um die Soll-HGV anzuzeigen (SollHgvView)
     """
-    def __init__( self, soll_type:SollType, parent=None ):
+    def __init__( self, parent=None ):
         QWidget.__init__( self, parent )
-        self._sollType = soll_type
-        #self.setWindowTitle( "Sonstige Ausgaben: Rechnungen, Abgaben, Gebühren etc." )
         self._mainLayout = QGridLayout( self )
         self._toolbarLayout = QHBoxLayout()
         self._btnFilter = QPushButton( self )
@@ -98,7 +100,7 @@ class SollzahlungenView( QWidget ):
         self._editFieldsLayout.addWidget( self._sdBis )
         self._feNetto.setPlaceholderText( "Netto" )
         self._editFieldsLayout.addWidget( self._feNetto )
-        self._feZusatz.setPlaceholderText( "RüZuFü" if self._sollType == SollType.HAUSGELD_SOLL else "NKV" )
+        self._feZusatz.setPlaceholderText( self._getZusatzPlaceholderText() )
         self._editFieldsLayout.addWidget( self._feZusatz )
         self._teBemerkung.setPlaceholderText( "Bemerkung" )
         self._teBemerkung.setMaximumSize( QtCore.QSize( 16777215, 50 ) )
@@ -116,7 +118,11 @@ class SollzahlungenView( QWidget ):
         vbox.addWidget( self._btnClear )
         self._editFieldsLayout.addLayout( vbox )
 
-    def provideEditFields( self, x:XSollzahlung ):
+    @abstractmethod
+    def _getZusatzPlaceholderText( self ) -> str:
+        pass
+
+    def provideEditFields( self, x:XSollzahlung, editOnlyBemerkung:bool=False ):
         self._sollEdit = x
         y, m, d = getDateParts( x.von )
         self._sdVon.setDate( y, m, d )
@@ -124,9 +130,16 @@ class SollzahlungenView( QWidget ):
             self._sdBis.setDate( getDateParts( x.bis ) )
         self._feNetto.setText( str( x.netto ) )
         self._teBemerkung.setText( x.bemerkung )
-        if self._sollType == SollType.HAUSGELD_SOLL:
-            x:XSollHausgeld = x
-            self._feZusatz.setText( str( x.ruezufue ) )
+        self._setZusatzValue( x )
+        if editOnlyBemerkung:
+            self._sdVon.setEnabled( False )
+            self._sdBis.setEnabled( False )
+            self._feNetto.setEnabled( False )
+            self._feZusatz.setEnabled( False )
+
+    @abstractmethod
+    def _setZusatzValue( self, x ) -> None:
+        pass
 
     def setSollzahlungenTableModel( self, tm:SollzahlungenTableModel ):
         self._tmSoll = tm
@@ -148,19 +161,9 @@ class SollzahlungenView( QWidget ):
         if self._submitChangesCallback:
             self._submitChangesCallback( self._getEditedSoll() )
 
+    @abstractmethod
     def _getEditedSoll( self ) -> XSollzahlung:
-        x:XSollzahlung = self._sollEdit
-        x.von = self._sdVon.getDate()
-        x.bis = self._sdBis.getDate()
-        x.netto = self._feNetto.getFloatValue()
-        x.bemerkung = self._teBemerkung.toPlainText()
-        if self._sollType == SollType.HAUSGELD_SOLL:
-            x:XSollHausgeld = x
-            x.ruezufue = self._feZusatz.getFloatValue()
-        else:
-            x:XSollMiete = x
-            x.nkv = self._feZusatz.getFloatValue()
-        return x
+        pass
 
     def onClearEditFields( self, arg ):
         self.clearEditFields()
@@ -171,6 +174,10 @@ class SollzahlungenView( QWidget ):
         self._feNetto.clear()
         self._feZusatz.clear()
         self._teBemerkung.clear()
+        self._sdVon.setEnabled( True )
+        self._sdBis.setEnabled( True )
+        self._feNetto.setEnabled( True )
+        self._feZusatz.setEnabled( True )
 
     def onSave( self ):
         if self._saveActionCallback:
@@ -201,10 +208,53 @@ class SollzahlungenView( QWidget ):
         """
         self._submitChangesCallback = cbfnc
 
+#####################  derived classes  ##########################
+
+class SollmietenView( SollzahlungenView ):
+    def __init__( self, parent=None ):
+        SollzahlungenView.__init__( self, parent )
+
+    def _getZusatzPlaceholderText( self ) -> str:
+        return "NK-Voraus"
+
+    def _setZusatzValue( self, x:XSollMiete ) -> None:
+        self._feZusatz.setText( str( x.nkv ) )
+
+    def _getEditedSoll( self ) -> XSollMiete:
+        x: XSollMiete = self._sollEdit
+        x.von = self._sdVon.getDate()
+        x.bis = self._sdBis.getDate()
+        x.netto = self._feNetto.getFloatValue()
+        x.bemerkung = self._teBemerkung.toPlainText()
+        x.nkv = self._feZusatz.getFloatValue()
+        return x
+
+##################################################################
+
+class SollHgvView( SollzahlungenView ):
+    def __init__( self, parent=None ):
+        SollzahlungenView.__init__( self, parent )
+
+    def _getZusatzPlaceholderText( self ) -> str:
+        return "RüZuFü"
+
+    def _setZusatzValue( self, x:XSollHausgeld ) -> None:
+        self._feZusatz.setText( str( x.ruezufue ) )
+
+    def _getEditedSoll( self ) -> XSollHausgeld:
+        x: XSollHausgeld = self._sollEdit
+        x.von = self._sdVon.getDate()
+        x.bis = self._sdBis.getDate()
+        x.netto = self._feNetto.getFloatValue()
+        x.bemerkung = self._teBemerkung.toPlainText()
+        x.ruezufue = self._feZusatz.getFloatValue()
+        return x
+
+######################################################################
 def test():
     import sys
     app = QApplication( sys.argv )
-    v = SollzahlungenView()
+    v = SollHgvView()
 
     #sav.setBuchungsjahrChangedCallback( onChangeBuchungsjahr )
     v.show()

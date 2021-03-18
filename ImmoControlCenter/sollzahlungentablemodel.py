@@ -1,3 +1,4 @@
+import copy
 from abc import ABC, abstractmethod
 from typing import List, Dict, Tuple, Any
 
@@ -27,6 +28,7 @@ class SollzahlungenTableModel( IccTableModel ):
         """
         self._greyBrush = QBrush( Qt.gray )
         self._redBrush = QBrush( Qt.red )
+        self._yellowBrush = QBrush( Qt.yellow )
         self._boldFont = QFont( "Arial", 11, QFont.Bold )
         self._objektColumn = 0
         self._vonbisColumns = (2, 3)
@@ -45,10 +47,6 @@ class SollzahlungenTableModel( IccTableModel ):
     def rowCount( self, parent:QModelIndex=None ) -> int:
         return len( self.sollList )
 
-    @abstractmethod
-    def columnCount( self, parent:QModelIndex=None ) -> int:
-       pass
-
     def getXSollzahlung( self, row:int ) -> XSollzahlung:
         return self.sollList[row]
 
@@ -66,6 +64,35 @@ class SollzahlungenTableModel( IccTableModel ):
     @abstractmethod
     def getHeaders( self ) -> Tuple[str]:
         pass
+
+    def duplicate( self, x: XSollzahlung ) -> XSollzahlung:
+        """
+        duplicates x and returns the duplicate copy
+        Raises an exception if x cannot be found in the list of XSollzahlung
+        :param x:
+        :return:
+        """
+        x2: XSollzahlung = copy.copy( x )
+        x2.setId( 0 )
+        l = self.sollList
+        for i in range( len( l ) ):
+            tmp: XSollzahlung = l[i]
+            if tmp.getId() == x.getId():
+                l.insert( i, x2 )
+                self._writeChangeLog( constants.tableAction.INSERT, x2 )
+                self.layoutChanged.emit()
+                return x2
+        raise Exception( "Auszahlung mit ID = %d nicht in der Auszahlungsliste gefunden." % ( x.getId() ) )
+
+    def _writeChangeLog( self, actionId:constants.tableAction, x:XSollzahlung ) -> None:
+        """
+        Schreibt ein in-memory-Log der eingefügten und geänderten Sollzahlungen.
+        Dieses kann über getChanges() abgerufen werden.
+        """
+        actionstring = constants.actionList[actionId]
+        xlist:List[XSollzahlung] = self._changes[actionstring]
+        if not x in xlist:
+            xlist.append( x )
 
     def getValue( self, indexrow: int, indexcolumn: int ) -> Any:
         x = self.sollList[indexrow]
@@ -94,6 +121,18 @@ class SollzahlungenTableModel( IccTableModel ):
         if indexcolumn == self._bruttoColumn:
             return self._boldFont
 
+    def getBackground( self, indexrow: int, indexcolumn: int ) -> Any:
+        x = self.getXSollzahlung( indexrow )
+        if self.isXSollzahlungInsertedOrUpdated( x ):
+            return self._yellowBrush
+        return None
+
+    def isXSollzahlungInsertedOrUpdated( self, x:XSollzahlung ):
+        dictChanges = self.getChanges()
+        if x in dictChanges["INSERT"]: return True
+        if x in dictChanges["UPDATE"]: return True
+        return False
+
     def data( self, index: QModelIndex, role: int = None ):
         if not index.isValid():
             return None
@@ -105,6 +144,8 @@ class SollzahlungenTableModel( IccTableModel ):
             return self.getForeground( index.row(), index.column() )
         elif role == Qt.FontRole:
             return self.getFont( index.row(), index.column() )
+        elif role == Qt.BackgroundRole:
+            return self.getBackground( index.row(), index.column() )
         return None
 
     def headerData( self, col, orientation, role=None ):
@@ -115,21 +156,31 @@ class SollzahlungenTableModel( IccTableModel ):
             #     pass
         return None
 
-    def update( self, x:XSollzahlung ):
-        row = self.getRow( x )
+    def updateOrInsert( self, x:XSollzahlung ):
+        l = self.sollList
         cols = len( self.getHeaders() )
-        idxfrom = self.index( row, 0 )
-        idxbis = self.index( row, cols - 1 )
-        self.writeChangeLog( constants.tableAction.UPDATE, x )
-        self.dataChanged.emit( idxfrom, idxbis )
+        if x.getId() > 0 or x in self.sollList:  # update of existing auszahlung
+            row = self.getRow( x )
+            cols = len( self.getHeaders() )
+            idxfrom = self.index( row, 0 )
+            idxbis = self.index( row, cols - 1 )
+            self.writeChangeLog( constants.tableAction.UPDATE, x )
+            self.dataChanged.emit( idxfrom, idxbis )
+        else:
+            l.append( x )
+            self._writeChangeLog( constants.tableAction.INSERT, x )
+            self.layoutChanged.emit()
 
     def resetChanges( self ):
         for k in self._changes.keys():
             self._changes[k] = list()
 
-    @abstractmethod
     def getRow( self, x: XSollzahlung ) -> int:
-        pass
+        for r in range( len( self.sollList ) ):
+            e: XSollzahlung = self.sollList[r]
+            if e.getId() == x.getId():
+                return r
+        raise Exception( "SollmietenTableModel.getRow(): can't find id %d" % (x.getId() ) )
 
     #@abstractmethod
     def writeChangeLog( self, actionId:constants.tableAction, x:XSollzahlung ):
@@ -161,15 +212,9 @@ class SollmietenTableModel( SollzahlungenTableModel ):
     def getHeaders( self ) -> Tuple[str]:
         return ( "Objekt", "Mieter", "von", "bis", "netto", "NKV", "Brutto", "Bemerkung" )
 
-    def getRow( self, x:XSollMiete ):
-        for r in range( len( self.sollList ) ):
-            e: XSollMiete = self.sollList[r]
-            if e.sm_id == x.sm_id:
-                return r
-        raise Exception( "SollmietenTableModel.getRow(): can't find sm_id %d" % (x.sm_id) )
 
 #################################################################
-class SollHGVTableModel( SollzahlungenTableModel ):
+class SollHgvTableModel( SollzahlungenTableModel ):
     def __init__( self, sollList: List[XSollzahlung] ):
         SollzahlungenTableModel.__init__( self, sollList )
         self._numColumns:Tuple = (4, 5, 6)
@@ -183,12 +228,7 @@ class SollHGVTableModel( SollzahlungenTableModel ):
     def getHeaders( self ) -> List[str]:
         return ( "Objekt", "WEG", "von", "bis", "netto", "RüZuFü", "Brutto", "Bemerkung" )
 
-    def getRow( self, x:XSollHausgeld ):
-        for r in range( len( self.sollList ) ):
-            e: XSollHausgeld = self.sollList[r]
-            if e.shg_id == x.shg_id:
-                return r
-        raise Exception( "SollHGVTableModel.getRow(): can't find shg_id %d" % (x.shg_id) )
+
 
     # def writeChangeLog( self, actionId:constants.tableAction, x:XSollzahlung ):
     #     x:XSollHausgeld = x
