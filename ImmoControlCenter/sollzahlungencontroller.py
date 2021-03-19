@@ -9,7 +9,7 @@ from PySide2.QtWidgets import QAction, QWidget, QMenu, QMessageBox, QInputDialog
 import constants
 from business import BusinessLogic
 from constants import SollType
-from datehelper import getIsoStringFromQDate, addDaysToIsoString
+from datehelper import getIsoStringFromQDate, addDaysToIsoString, getNumberOfDays, getCurrentYearAndMonth
 from mdichildcontroller import MdiChildController
 from qtderivates import CalendarDialog
 from sollzahlungenview import SollzahlungenView, SollmietenView, SollHgvView
@@ -92,8 +92,10 @@ class SollzahlungenController( MdiChildController, ABC ):
         tm:SollzahlungenTableModel = tv.model()
         x:XSollzahlung = tm.getXSollzahlung( idx.row() )
         xnew = tm.duplicate( x )
-        # todo: xnew.von mit dem Monatsende des aktuellen Monats versorgen
-        xnew.von = "2021-04-01"
+        d = getCurrentYearAndMonth()
+        days = getNumberOfDays( d["month"] )
+        # xnew.von mit dem Monatsende des aktuellen Monats versorgen
+        xnew.von = "%d-%02d-%02d" % ( d["year"], d["month"], days )
         self._view.clearEditFields()
         self._view.provideEditFields( xnew, editOnlyBemerkung=False )
 
@@ -116,7 +118,7 @@ class SollzahlungenController( MdiChildController, ABC ):
         """
         self._view.clearEditFields()
         x:XSollzahlung = self._tm.getXSollzahlung( index.row() )
-        self._view.provideEditFields( x, editOnlyBemerkung=True )
+        self._view.provideEditFields( x, editOnlyBemerkung=(x.getId() > 0) )
 
     def onSubmitChanges( self, soll:XSollzahlung ):
         """
@@ -131,10 +133,7 @@ class SollzahlungenController( MdiChildController, ABC ):
             self._view.setSaveButtonEnabled( True )
             # todo: wenn soll.getId() == 0, dann liegt ein neues Intervall vor.
             #       Wir müssen das Vorgängerintervall suchen, beenden und ins ChangeLog stellen.
-
-    @abstractmethod
-    def _processEditedSollzahlung( self, x:XSollzahlung ):
-        pass
+            #xvor:XSollzahlung = self._getVorgaenger( soll )
 
     @abstractmethod
     def getViewTitle( self ) -> str:
@@ -188,17 +187,6 @@ class SollzahlungenController( MdiChildController, ABC ):
                     self._view.setSaveButtonEnabled( True )
                     self._nChanges += 1
 
-    # def _askForTerminationDate( self ) -> str:
-    #     isodate = ""
-    #     def onOk( date:QDate ):
-    #         isodate = getIsoStringFromQDate( date )
-    #     dlg = CalendarDialog( self._view )
-    #     dlg.setTitle( "Beendigungsdatum des ausgewählten Intervalls" )
-    #     dlg.setCallback( onOk )
-    #     dlg.setModal( True )
-    #     dlg.show()
-    #     return isodate
-
     def _askForTerminationDate( self ) -> str:
         d = QInputDialog()
         d.show()
@@ -232,9 +220,6 @@ class SollmietenController( SollzahlungenController ):
     def getViewTitle( self ) -> str:
         return "Soll-Mieten"
 
-    def _processEditedSollzahlung( self, x:XSollzahlung ):
-        pass
-
     def _insertSollZahlung( self, xlist:List[XSollzahlung] ):
         BusinessLogic.inst().insertSollmieten( xlist )
 
@@ -260,9 +245,6 @@ class SollHgvController( SollzahlungenController ):
 
     def _validateEditFields( self, soll: XSollzahlung ) -> str:
         return ""
-
-    def _processEditedSollzahlung( self, x:XSollzahlung ):
-        pass
 
     def _insertSollZahlung( self, xlist:List[XSollzahlung] ):
         BusinessLogic.inst().insertSollHausgelder( xlist )

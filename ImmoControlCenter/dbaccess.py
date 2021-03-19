@@ -276,19 +276,44 @@ class DbAccess:
               "order by vwg_id" % (datum, datum)
         return self._doReadAllGetDict( sql )
 
-    def getAlleSollHausgelder( self ) -> List[XSollHausgeld]:
+    # def getSollhausgeldHistorie( self, mobj_id:str, nurAktuelleUndZukuenftige:bool=True ) -> List[XSollHausgeld]:
+    #     """
+    #     liefert für das OBjekt mobj_id alle Sollhausgeld-Sätze
+    #     :param mobj_id:
+    #     :return:
+    #     """
+    #     sql = "select shg.shg_id, vwg.vwg_id, vwg.vw_id, shg.von, coalesce(shg.bis, '') as bis, shg.netto, shg.ruezufue, " \
+    #           "(s.netto + s.ruezufue) as brutto, " \
+    #           "from sollhausgeld shg " \
+    #           "inner join verwaltung vwg on vwg.vwg_id = shg.vwg_id " \
+    #           "where vwg.mobj_id = '%s' "
+    #     if nurAktuelleUndZukuenftige:
+    #           sql += "and (shg.bis is NULL or shg.bis = '' or shg.bis >= CURRENT_DATE) "
+    #     sql += "order by shg_id ASC" % ( mobj_id )
+    #     l:List[Dict] = self._doReadAllGetDict( sql )
+    #     ...
+
+
+    def getSollHausgelder( self, mobj_id:str=None, ohneInaktive:bool=True ) -> List[XSollHausgeld]:
         """
-        Liefert alle aktiven und inaktiven Soll-Hausgelder.
-        # Todo: Besonders testen: sowohl in verwaltung wie auch in sollhausgeld gibt es von und bis.
-        # Was passiert, wenn eine Verwaltung bei gleich bleibenden Hausgeldern wechselt?
-        :return:
+        Liefert Soll-Hausgelder.
+        Wenn mobj_id gesetzt ist, werden nur die Hausgelder für mobj_id geliefert.
+        Wenn ohneInaktive == True, dann werden nur aktive und zukünftige Hausgeld-Sätze geliefert.
+        :return: eine Liste von XHausgeld-Objekten
         """
         sql = "select s.shg_id, v.vw_id, s.vwg_id, s.von, coalesce(s.bis, '') as bis, s.netto, s.ruezufue, " \
               "(s.netto + s.ruezufue) as brutto, " \
               "v.mobj_id, v.weg_name,  s.bemerkung " \
               "from sollhausgeld s " \
-              "inner join verwaltung v on v.vwg_id = s.vwg_id " \
-              "order by v.weg_name, s.von"
+              "inner join verwaltung v on v.vwg_id = s.vwg_id "
+        nextKeyword = "where "
+        if mobj_id:
+            sql += ( "where v.mobj_id = '%s' " % ( mobj_id ) )
+            nextKeyword = "and "
+        if ohneInaktive:
+            sql += nextKeyword
+            sql += "(s.bis is NULL or s.bis = '' or s.bis >= CURRENT_DATE) "
+        sql += "order by v.weg_name, s.von"
         l:List[Dict] = self._doReadAllGetDict( sql )
         sollList:List[XSollHausgeld] = list()
         for d in l:
@@ -512,11 +537,11 @@ class DbAccess:
 
     def insertMietverhaeltnis( self, d:Dict, commit:bool=True ) -> int:
         sql = "insert into mietverhaeltnis " \
-              "(mv_id, mobj_id, von, bis, name, vorname, telefon, mobil, mailto, anzahl_pers, mietkonto, bemerkung1, bemerkung2) " \
+              "(mv_id, mobj_id, von, bis, name, vorname, telefon, mobil, mailto, anzahl_pers, IBAN, bemerkung1, bemerkung2) " \
               "values " \
               "('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s') " % \
               (d["mv_id"], d["mobj_id"], d["von"], d["bis"], d["name"], d["vorname"], "", d["mobil"], d["mailto"], d["anzahl_pers"],
-               d["mietkonto"], d["bemerkung1"], d["bemerkung2"])
+               d["IBAN"], d["bemerkung1"], d["bemerkung2"])
         return self._doWrite( sql, commit )
 
     def insertSollmiete(self, d:Dict, commit:bool=True ) -> int:

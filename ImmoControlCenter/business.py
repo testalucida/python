@@ -454,7 +454,7 @@ class BusinessLogic:
         self._db.commit()
 
     def getAlleSollHausgelder( self ) -> List[XSollHausgeld]:
-        return self._db.getAlleSollHausgelder()
+        return self._db.getSollHausgelder()
 
     def getLetztenMonat( self ) -> Tuple[int, str]:
         return getLastMonth()

@@ -127,7 +127,8 @@ class SollzahlungenView( QWidget, ABC, metaclass=SollViewMeta ):
         y, m, d = getDateParts( x.von )
         self._sdVon.setDate( y, m, d )
         if x.bis:
-            self._sdBis.setDate( getDateParts( x.bis ) )
+            y, m, d = getDateParts( x.bis )
+            self._sdBis.setDate( y, m, d )
         self._feNetto.setText( str( x.netto ) )
         self._teBemerkung.setText( x.bemerkung )
         self._setZusatzValue( x )
