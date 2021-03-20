@@ -456,6 +456,26 @@ class BusinessLogic:
     def getAlleSollHausgelder( self ) -> List[XSollHausgeld]:
         return self._db.getSollHausgelder()
 
+    def getSollHausgelder( self, mobj_id:str ) -> List[XSollHausgeld]:
+        return
+
+    def canCreateFolgeIntervallHausgeld( self, x:XSollHausgeld ) -> bool:
+        # prüfen, ob x das zeitlich neueste Intervall für x.mobj_id ist.
+        # Nur für dieses kann ein Folge-Intervall angelegt werden, und auch  nur dann, wenn es nicht terminiert ist.
+        if x.bis > " ":
+            return False
+        shglist:List[XSollHausgeld] = self._db.getSollHausgelder( x.mobj_id, ohneInaktive=True )
+        for shg in shglist:
+            if shg.von > x.von:
+                return False
+        return True
+
+    def getStartOfNextSollzahlungInterval( self, oldIsoDate:str ) -> str:
+        if oldIsoDate > getTodayAsIsoString():
+            return getFirstOfFollowingMonth( oldIsoDate )
+        else:
+            return getFirstOfNextMonth()
+
     def getLetztenMonat( self ) -> Tuple[int, str]:
         return getLastMonth()
 

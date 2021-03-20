@@ -62,7 +62,7 @@ class SollzahlungenTableModel( IccTableModel ):
         pass
 
     @abstractmethod
-    def getHeaders( self ) -> Tuple[str]:
+    def getHeaders( self ) -> List[str]:
         pass
 
     def duplicate( self, x: XSollzahlung ) -> XSollzahlung:
@@ -206,11 +206,11 @@ class SollmietenTableModel( SollzahlungenTableModel ):
     def isNumColumn( self, col:int ) -> bool:
         return col in self._numColumns
 
-    def getKeyList( self ) -> Tuple[str]:
-        return ( "mobj_id", "mv_id", "von", "bis", "netto", "nkv", "brutto", "bemerkung" )
+    def getKeyList( self ) -> List[str]:
+        return [ "mobj_id", "mv_id", "von", "bis", "netto", "nkv", "brutto", "bemerkung" ]
 
-    def getHeaders( self ) -> Tuple[str]:
-        return ( "Objekt", "Mieter", "von", "bis", "netto", "NKV", "Brutto", "Bemerkung" )
+    def getHeaders( self ) -> List[str]:
+        return [ "Objekt", "Mieter", "von", "bis", "netto", "NKV", "Brutto", "Bemerkung" ]
 
 
 #################################################################
@@ -223,10 +223,10 @@ class SollHgvTableModel( SollzahlungenTableModel ):
         return col in self._numColumns
 
     def getKeyList( self ) -> List[str]:
-        return ( "mobj_id", "weg_name", "von", "bis", "netto", "ruezufue", "brutto", "bemerkung" )
+        return [ "mobj_id", "weg_name", "von", "bis", "netto", "ruezufue", "brutto", "bemerkung" ]
 
     def getHeaders( self ) -> List[str]:
-        return ( "Objekt", "WEG", "von", "bis", "netto", "RüZuFü", "Brutto", "Bemerkung" )
+        return [ "Objekt", "WEG", "von", "bis", "netto", "RüZuFü", "Brutto", "Bemerkung" ]
 
 
 

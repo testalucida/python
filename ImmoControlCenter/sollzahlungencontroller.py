@@ -9,7 +9,8 @@ from PySide2.QtWidgets import QAction, QWidget, QMenu, QMessageBox, QInputDialog
 import constants
 from business import BusinessLogic
 from constants import SollType
-from datehelper import getIsoStringFromQDate, addDaysToIsoString, getNumberOfDays, getCurrentYearAndMonth
+from datehelper import getIsoStringFromQDate, addDaysToIsoString, getNumberOfDays, getCurrentYearAndMonth, \
+    getFirstOfNextMonth
 from mdichildcontroller import MdiChildController
 from qtderivates import CalendarDialog
 from sollzahlungenview import SollzahlungenView, SollmietenView, SollHgvView
@@ -87,17 +88,20 @@ class SollzahlungenController( MdiChildController, ABC ):
         pass
 
     def onNewIntervalAction( self ):
+        # callback für Kontext-Menü "Dieses Soll-Intervall beenden..."
         tv = self._view.getTableView()
         idx = tv.selectedIndexes()[0]
         tm:SollzahlungenTableModel = tv.model()
         x:XSollzahlung = tm.getXSollzahlung( idx.row() )
-        xnew = tm.duplicate( x )
-        d = getCurrentYearAndMonth()
-        days = getNumberOfDays( d["month"] )
-        # xnew.von mit dem Monatsende des aktuellen Monats versorgen
-        xnew.von = "%d-%02d-%02d" % ( d["year"], d["month"], days )
+        xnew:XSollzahlung = self._getFolgeIntervall( x )
+        if not xnew:
+            return
         self._view.clearEditFields()
         self._view.provideEditFields( xnew, editOnlyBemerkung=False )
+
+    @abstractmethod
+    def _getFolgeIntervall( self, xAlt:XSollzahlung ) -> XSollzahlung or None:
+        pass
 
     @abstractmethod
     def _createTableModel( self ) -> SollzahlungenTableModel:
@@ -126,6 +130,8 @@ class SollzahlungenController( MdiChildController, ABC ):
         :param soll: das editierte Intervall
         :return:
         """
+        if soll.getId() == 0:
+            self._terminateVorgaengerIntervall( soll )
         msg = self._validateEditFields( soll )
         if not msg:
             self._tm.updateOrInsert( soll )
@@ -142,6 +148,16 @@ class SollzahlungenController( MdiChildController, ABC ):
     @abstractmethod
     def _validateEditFields( self, soll:XSollzahlung ) -> str:
         pass
+
+    def _terminateVorgaengerIntervall( self, x:XSollzahlung ) -> str:
+        von = x.von
+        if x.getId() == 0:
+            # neues Intervall eingefügt. Vorgänger finden und passendes Ende eintragen.
+            for soll in self._tm.sollList:
+                if soll.mobj_id == x.mobj_id and soll != x and ( soll.bis is None or soll.bis == "" ):
+                    soll.bis  = addDaysToIsoString( von, -1 )
+                    self._tm.updateOrInsert( soll )
+                    return
 
     def onSollTableViewRightClick( self, point: QPoint ):
         """
@@ -220,6 +236,9 @@ class SollmietenController( SollzahlungenController ):
     def getViewTitle( self ) -> str:
         return "Soll-Mieten"
 
+    def _getFolgeIntervall( self, xAlt:XSollzahlung ) -> XSollzahlung or None:
+        pass
+
     def _insertSollZahlung( self, xlist:List[XSollzahlung] ):
         BusinessLogic.inst().insertSollmieten( xlist )
 
@@ -242,6 +261,16 @@ class SollHgvController( SollzahlungenController ):
 
     def getViewTitle( self ) -> str:
         return "Soll-Hausgelder"
+
+    def _getFolgeIntervall( self, x:XSollzahlung ) -> XSollzahlung or None:
+        if BusinessLogic.inst().canCreateFolgeIntervallHausgeld( x ):
+            xnew:XSollzahlung = self._tm.duplicate( x )
+            # xnew.von mit dem Monatsende des aktuellen Monats versorgen
+            xnew.von = BusinessLogic.inst().getStartOfNextSollzahlungInterval( x.von )
+            return xnew
+        else:
+            self._view.showException( "Falsche Auswahl", "Folge-Intervall nicht möglich" )
+            return None
 
     def _validateEditFields( self, soll: XSollzahlung ) -> str:
         return ""

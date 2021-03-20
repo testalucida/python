@@ -1,11 +1,11 @@
 from abc import abstractmethod, ABC
 from typing import List
 
-from PySide2 import QtCore
+from PySide2 import QtCore, QtWidgets
 from PySide2.QtCore import QSize
 from PySide2.QtGui import QIcon, Qt
 from PySide2.QtWidgets import QWidget, QGridLayout, QApplication, QHBoxLayout, QPushButton, QComboBox, \
-    QAbstractItemView, QTextEdit, QVBoxLayout
+    QAbstractItemView, QTextEdit, QVBoxLayout, QMessageBox
 
 from constants import SollType
 from datehelper import getDateParts
@@ -160,7 +160,9 @@ class SollzahlungenView( QWidget, ABC, metaclass=SollViewMeta ):
         :return:
         """
         if self._submitChangesCallback:
-            self._submitChangesCallback( self._getEditedSoll() )
+            if self._sollEdit:
+                soll = self._getEditedSoll()
+                self._submitChangesCallback( self._getEditedSoll() )
 
     @abstractmethod
     def _getEditedSoll( self ) -> XSollzahlung:
@@ -179,6 +181,7 @@ class SollzahlungenView( QWidget, ABC, metaclass=SollViewMeta ):
         self._sdBis.setEnabled( True )
         self._feNetto.setEnabled( True )
         self._feZusatz.setEnabled( True )
+        self._sollEdit = None
 
     def onSave( self ):
         if self._saveActionCallback:
@@ -194,6 +197,16 @@ class SollzahlungenView( QWidget, ABC, metaclass=SollViewMeta ):
 
     def setSaveButtonEnabled( self, enable:bool=True ):
         self._btnSave.setEnabled( enable )
+
+    def showException( self, title: str, exception: str, moretext: str = None ):
+        # todo: show Qt-Errordialog
+        msgbox = QtWidgets.QMessageBox()
+        msgbox.setWindowTitle( title )
+        msgbox.setIcon( QMessageBox.Critical )
+        msgbox.setText( exception )
+        if moretext:
+            msgbox.setInformativeText( moretext )
+        msgbox.exec_()
 
     ################ SET CALLBACKS  ########################
 

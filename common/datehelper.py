@@ -32,6 +32,27 @@ def getCurrentYearAndMonth() -> Dict:
     d["year"] = datetime.now().year
     return d
 
+def getFirstOfNextMonth() -> str:
+    """
+    returns start of next month in ISO format: "2021-04-01"
+    :return:
+    """
+    d = getCurrentYearAndMonth()
+    last = getNumberOfDays( d["month"] )
+    dt = "%d-%02d-%02d" % ( d["year"], d["month"], last )
+    dt = addDaysToIsoString( dt, 1 )
+    return dt
+
+def getFirstOfFollowingMonth( isodate:str ) -> str:
+    y, m, d = getDateParts( isodate )
+    if m < 12:
+        m += 1
+    else:
+        m = 1
+        y += 1
+    first = "%d-%02d-%02d" % ( y, m, 1 )
+    return first
+
 def getMonthIndex( month:str ) -> int:
     """
     returns index of month given as (german) string, e.g.: return 1 if month == "Januar"
@@ -245,6 +266,8 @@ def addDaysToIsoString( isostring:str, cntDays:int ) -> str:
     return getIsoStringFromDate( d )
 
 def test():
+    dt = getFirstOfNextMonth()
+
     d = QDate( 2020, 12, 3 )
     print( d )
     iso = getIsoStringFromQDate( d )
