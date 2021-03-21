@@ -17,7 +17,8 @@ class TableView( TableViewExt ):
         self.setSortingEnabled( True )
 
     def onLeftClick(self, index:QModelIndex):
-        print( "cell %d/%d clicked." % ( index.row(), index.column() ) )
+        #print( "cell %d/%d clicked." % ( index.row(), index.column() ) )
+        pass
 
     def setModel(self, model: DictListTableModel) -> None:
         super().setModel( model )

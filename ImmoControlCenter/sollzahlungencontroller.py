@@ -133,7 +133,9 @@ class SollzahlungenController( MdiChildController, ABC ):
         if soll.getId() == 0:
             self._terminateVorgaengerIntervall( soll )
         msg = self._validateEditFields( soll )
-        if not msg:
+        if msg:
+            self._view.showException( "Ungültige Änderung", msg )
+        else:
             self._tm.updateOrInsert( soll )
             self._view.clearEditFields()
             self._view.setSaveButtonEnabled( True )
@@ -273,6 +275,9 @@ class SollHgvController( SollzahlungenController ):
             return None
 
     def _validateEditFields( self, soll: XSollzahlung ) -> str:
+        if soll.von == "": return "Der Beginn des Zeitraums muss angegeben sein."
+        if soll.bis != None and soll.bis > "" and soll.bis < soll.von: return "Das Zeitraumende darf nicht vor dem Beginn liegen."
+        if soll.netto == 0: return "Das Netto-Hausgeld darf nicht 0 sein."
         return ""
 
     def _insertSollZahlung( self, xlist:List[XSollzahlung] ):

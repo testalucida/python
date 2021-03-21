@@ -129,7 +129,7 @@ class SollzahlungenView( QWidget, ABC, metaclass=SollViewMeta ):
         if x.bis:
             y, m, d = getDateParts( x.bis )
             self._sdBis.setDate( y, m, d )
-        self._feNetto.setText( str( x.netto ) )
+        self._feNetto.setText( str( x.netto * -1 ) )
         self._teBemerkung.setText( x.bemerkung )
         self._setZusatzValue( x )
         if editOnlyBemerkung:
@@ -159,6 +159,7 @@ class SollzahlungenView( QWidget, ABC, metaclass=SollViewMeta ):
         :param arg:
         :return:
         """
+        self._tvSoll.clearSelection()
         if self._submitChangesCallback:
             if self._sollEdit:
                 soll = self._getEditedSoll()
@@ -253,15 +254,15 @@ class SollHgvView( SollzahlungenView ):
         return "RüZuFü"
 
     def _setZusatzValue( self, x:XSollHausgeld ) -> None:
-        self._feZusatz.setText( str( x.ruezufue ) )
+        self._feZusatz.setText( str( x.ruezufue * -1 ) )
 
     def _getEditedSoll( self ) -> XSollHausgeld:
         x: XSollHausgeld = self._sollEdit
         x.von = self._sdVon.getDate()
         x.bis = self._sdBis.getDate()
-        x.netto = self._feNetto.getFloatValue()
+        x.netto = self._feNetto.getFloatValue() * -1
         x.bemerkung = self._teBemerkung.toPlainText()
-        x.ruezufue = self._feZusatz.getFloatValue()
+        x.ruezufue = self._feZusatz.getFloatValue() * -1
         return x
 
 ######################################################################

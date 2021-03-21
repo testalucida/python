@@ -114,8 +114,9 @@ class TableViewExt( QTableView ):
         #     self.setStyleSheet( "QTableView::item:selected:active { background: #ff0000;}" )
         # else:
         #     self.setStyleSheet( "" )
-        val = self.model().data( index, Qt.DisplayRole )
-        print( "index %d/%d clicked. Value=%s" % (index.row(), index.column(), str( val )) )
+        #val = self.model().data( index, Qt.DisplayRole )
+        #print( "index %d/%d clicked. Value=%s" % (index.row(), index.column(), str( val )) )
+        pass
 
     def onRightClick( self, point: QPoint ):
         print( "TableViewExt: onRightClick" )

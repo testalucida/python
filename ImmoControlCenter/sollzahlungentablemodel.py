@@ -159,7 +159,7 @@ class SollzahlungenTableModel( IccTableModel ):
     def updateOrInsert( self, x:XSollzahlung ):
         l = self.sollList
         cols = len( self.getHeaders() )
-        if x.getId() > 0 or x in self.sollList:  # update of existing auszahlung
+        if x.getId() > 0:  # update of existing auszahlung
             row = self.getRow( x )
             cols = len( self.getHeaders() )
             idxfrom = self.index( row, 0 )

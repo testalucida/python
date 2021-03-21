@@ -8,7 +8,7 @@ from datehelper import getCurrentYear
 from mdisubwindow import MdiSubWindow
 from immocentermainwindow import ImmoCenterMainWindow, MainWindowAction
 from checkcontroller import MdiChildController, MietenController, HGVController
-from sollzahlungencontroller import SollzahlungenController, SollType
+from sollzahlungencontroller import SollzahlungenController, SollType, SollmietenController, SollHgvController
 from sonstauscontroller import SonstAusController
 from sumfieldsprovider import SumFieldsProvider
 from abrechnungencontroller import AbrechnungenController, NkAbrechnungenController, HgAbrechnungenController
@@ -34,8 +34,8 @@ class MainController:
         self._sonstAusCtrl.changedCallback = self.onViewChanged
         self._sonstAusCtrl.savedCallback = self.onViewSaved
 
-        self._sollMietenCtrl = SollzahlungenController( SollType.MIETE_SOLL )
-        self._sollHausgelderCtrl = SollzahlungenController( SollType.HAUSGELD_SOLL )
+        self._sollMietenCtrl = SollmietenController()
+        self._sollHausgelderCtrl = SollHgvController()
 
         self._nkaCtrl = NkAbrechnungenController()
         self._hgaCtrl = HgAbrechnungenController()
@@ -216,7 +216,7 @@ class MainController:
     def createSollHausgelderViewAndShow( self ):
         subwin = self._sollHausgelderCtrl.createSubwindow()
         self._installView( subwin, self._sollHausgelderCtrl )
-        subwin.setGeometry( 20, 20, 1000, 400 )
+        subwin.setGeometry( 20, 20, 1000, 900 )
         subwin.show()
 
     def createNkaViewAndShow( self ):

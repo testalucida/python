@@ -303,7 +303,7 @@ class DbAccess:
         """
         sql = "select s.shg_id, v.vw_id, s.vwg_id, s.von, coalesce(s.bis, '') as bis, s.netto, s.ruezufue, " \
               "(s.netto + s.ruezufue) as brutto, " \
-              "v.mobj_id, v.weg_name,  s.bemerkung " \
+              "v.mobj_id, v.weg_name,  coalesce(s.bemerkung, '') as bemerkung " \
               "from sollhausgeld s " \
               "inner join verwaltung v on v.vwg_id = s.vwg_id "
         nextKeyword = "where "
@@ -313,7 +313,7 @@ class DbAccess:
         if ohneInaktive:
             sql += nextKeyword
             sql += "(s.bis is NULL or s.bis = '' or s.bis >= CURRENT_DATE) "
-        sql += "order by v.weg_name, s.von"
+        sql += "order by v.weg_name, s.von desc"
         l:List[Dict] = self._doReadAllGetDict( sql )
         sollList:List[XSollHausgeld] = list()
         for d in l:
@@ -550,11 +550,11 @@ class DbAccess:
               "values( '%s', '%s', '%s', %f, %f ) " % ( d["mv_id"], d["von"], d["bis"], d["netto"], d["nkv"] )
         return self._doWrite( sql, commit )
 
-    def insertSollHausgeld( self, d:Dict, commit:bool=True ) -> int:
-        bis = "NULL" if not d["bis"] else "'" + d["bis"] + "'"
+    def insertSollHausgeld( self, x:XSollHausgeld, commit:bool=True ) -> int:
+        bis = "NULL" if not x.bis else "'" + x.bis + "'"
         sql = "insert into sollhausgeld " \
-              "(vwg_id, von, bis, netto, ruezufue) " \
-              "values( '%s', '%s', %s, %f, %f ) " % ( d["vwg_id"], d["von"], bis, d["netto"], d["ruezufue"] )
+              "(vwg_id, von, bis, netto, ruezufue, bemerkung) " \
+              "values( '%s', '%s', %s, %f, %f, '%s' ) " % ( x.vwg_id, x.von, bis, x.netto, x.ruezufue, x.bemerkung )
         return self._doWrite( sql, commit )
 
     def updateSollHausgeld( self, x:XSollHausgeld, commit:bool=True ) -> int:
