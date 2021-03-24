@@ -82,6 +82,7 @@ class SollzahlungenController( MdiChildController, ABC ):
         #tv.customContextMenuRequested.connect( self.onSollTableViewRightClick )
         self._tm = self._createTableModel()
         view.setSollzahlungenTableModel( self._tm )
+        self._tm.setSortable( True )
         return view
 
     def onEditIntervalAction( self ):
@@ -228,8 +229,9 @@ class SollmietenController( SollzahlungenController ):
         return SollmietenView()
 
     def _createTableModel( self ) -> SollzahlungenTableModel:
-        # todo: alle Sollmieten holen
-        tm = SollmietenTableModel()
+        # alle aktiven und zukünftigen Sollmieten holen
+        smlist = BusinessLogic.inst().getSollmieten()
+        tm = SollmietenTableModel( smlist )
         return tm
 
     def _validateEditFields( self, soll: XSollzahlung ) -> str:
@@ -257,7 +259,7 @@ class SollHgvController( SollzahlungenController ):
         return SollHgvView()
 
     def _createTableModel( self ) -> SollzahlungenTableModel:
-        sollHG = BusinessLogic.inst().getAlleSollHausgelder()
+        sollHG = BusinessLogic.inst().getSollHausgelder()
         tm = SollHgvTableModel( sollHG )
         return tm
 

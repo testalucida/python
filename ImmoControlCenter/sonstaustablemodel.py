@@ -42,13 +42,13 @@ class SonstAusTableModel( IccTableModel ):
         self._columnUmlegbar = 1
         self._columnBuchungsdatum = 7
         self._columnBetrag = 8
-        self._sortable = False
+        # self._sortable = False
 
     def getBetragColumnIndex( self ) -> int:
         return self._keylist.index( "betrag" )
 
-    def setSortable( self, sortable:bool=True ):
-        self._sortable = sortable
+    # def setSortable( self, sortable:bool=True ):
+    #     self._sortable = sortable
 
     def rowCount( self, parent:QModelIndex=None ) -> int:
         return len( self._sonstauslist )
@@ -193,27 +193,44 @@ class SonstAusTableModel( IccTableModel ):
         if not x in xlist:
             xlist.append( x )
 
-    sort_col = -1
-    sort_reverse = False
-    def sort( self, col:int, order: Qt.SortOrder ) -> None:
-        if not self._sortable: return
-        """sort table by given column number col"""
-        self.emit(SIGNAL("layoutAboutToBeChanged()"))
-        global sort_col
-        sort_col = col
-        global sort_reverse
-        sort_reverse = True if order == Qt.SortOrder.AscendingOrder else False
-        self._sonstauslist = sorted( self._sonstauslist, key=cmp_to_key( self.cmpXSonstAus ) )
-        self.emit(SIGNAL("layoutChanged()"))
+    # sort_col = -1
+    # sort_reverse = False
+    # def sort( self, col:int, order: Qt.SortOrder ) -> None:
+    #     if not self._sortable: return
+    #     """sort table by given column number col"""
+    #     self.emit(SIGNAL("layoutAboutToBeChanged()"))
+    #     global sort_col
+    #     sort_col = col
+    #     global sort_reverse
+    #     sort_reverse = True if order == Qt.SortOrder.AscendingOrder else False
+    #     self._sonstauslist = sorted( self._sonstauslist, key=cmp_to_key( self.cmpXSonstAus ) )
+    #     self.emit(SIGNAL("layoutChanged()"))
 
-    def cmpXSonstAus( self, x1:XSonstAus, x2:XSonstAus ) -> int:
-        global sort_col, sort_reverse
-        key = self._keylist[sort_col]
+    # def cmpXSonstAus( self, x1:XSonstAus, x2:XSonstAus ) -> int:
+    #     global sort_col, sort_reverse
+    #     key = self._keylist[sort_col]
+    #     v1 = x1.__dict__[key]
+    #     v2 = x2.__dict__[key]
+    #     if isinstance( v1, str ):
+    #         v1 = v1.lower()
+    #         v2 = v2.lower()
+    #     if v1 < v2: return -1 if sort_reverse else 1
+    #     if v1 > v2: return 1 if sort_reverse else -1
+    #     if v1 == v2: return 0
+
+    def getListToSort( self ) -> List:
+        return self._sonstauslist
+
+    def receiveSortedList( self, li:List ) -> None:
+        self._sonstauslist = li
+
+    def compare( self, x1:XSonstAus, x2:XSonstAus ) -> int:
+        key = self._keylist[self.sort_col]
         v1 = x1.__dict__[key]
         v2 = x2.__dict__[key]
         if isinstance( v1, str ):
             v1 = v1.lower()
             v2 = v2.lower()
-        if v1 < v2: return -1 if sort_reverse else 1
-        if v1 > v2: return 1 if sort_reverse else -1
+        if v1 < v2: return -1 if self.sort_reverse else 1
+        if v1 > v2: return 1 if self.sort_reverse else -1
         if v1 == v2: return 0

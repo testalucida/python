@@ -270,3 +270,22 @@ class MainController:
     def _exit( self ):
         pass
 
+
+def test():
+    import sys
+    from PySide2 import QtWidgets
+    app = QtWidgets.QApplication( sys.argv )
+    win = ImmoCenterMainWindow()
+    mc = MainController( win )
+    mc.showSollMietenView()
+
+    # c = SollHgvController()
+    # v = c.createView()
+    win.setGeometry( 2000, 100, 1000, 800 )
+    win.show()
+
+    sys.exit( app.exec_() )
+
+
+if __name__ == "__main__":
+    test()

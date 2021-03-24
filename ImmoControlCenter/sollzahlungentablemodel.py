@@ -34,15 +34,15 @@ class SollzahlungenTableModel( IccTableModel ):
         self._vonbisColumns = (2, 3)
         self._betragColumns = (4, 5, 6)
         self._bruttoColumn = 6
-        self._sortable = False
+        # self._sortable = False
 
     def isChanged( self ) -> bool:
         for k, v in self._changes.items():
             if len( v ) > 0: return True
         return False
 
-    def setSortable( self, sortable:bool=True ):
-        self._sortable = sortable
+    # def setSortable( self, sortable:bool=True ):
+    #     self._sortable = sortable
 
     def rowCount( self, parent:QModelIndex=None ) -> int:
         return len( self.sollList )
@@ -195,6 +195,23 @@ class SollzahlungenTableModel( IccTableModel ):
 
     def getChanges( self ) -> Dict[str, List[XSollzahlung]]:
         return self._changes
+
+    def getListToSort( self ) -> List:
+        return self.sollList
+
+    def receiveSortedList( self, li:List ) -> None:
+        self.sollList = li
+
+    def compare( self, x1:XSollzahlung, x2:XSollzahlung ) -> int:
+        key = self.getKeyList()[self.sort_col]
+        v1 = x1.__dict__[key]
+        v2 = x2.__dict__[key]
+        if isinstance( v1, str ):
+            v1 = v1.lower()
+            v2 = v2.lower()
+        if v1 < v2: return -1 if self.sort_reverse else 1
+        if v1 > v2: return 1 if self.sort_reverse else -1
+        if v1 == v2: return 0
 
 
 ################################################################

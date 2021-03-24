@@ -229,15 +229,15 @@ class DbAccess:
         diclist: List[Dict] = self._doReadAllGetDict( sql )
         return diclist
 
-    def getSollmieten( self, jahr:int ) -> List[Dict]:
-        sjahr = str( jahr )
-        sql = "select mv_id, von, bis, netto, nkv, netto+nkv as brutto " \
-              "from sollmiete " \
-              "where substr(von, 0, 5)  <= '%s' " \
-              "and ( bis is null or bis = '' or substr(bis, 0, 5) >= '%s' ) " \
-              "order by mv_id, von;" % ( sjahr, sjahr )
-        l = self._doReadAllGetDict( sql )
-        return l
+    # def getSollmieten( self, jahr:int ) -> List[Dict]:
+    #     sjahr = str( jahr )
+    #     sql = "select mv_id, von, bis, netto, nkv, netto+nkv as brutto " \
+    #           "from sollmiete " \
+    #           "where substr(von, 0, 5)  <= '%s' " \
+    #           "and ( bis is null or bis = '' or substr(bis, 0, 5) >= '%s' ) " \
+    #           "order by mv_id, von;" % ( sjahr, sjahr )
+    #     l = self._doReadAllGetDict( sql )
+    #     return l
 
     def getAktiveSollmiete( self, mv_id:str ) -> XSollMiete:
         """
@@ -294,7 +294,7 @@ class DbAccess:
     #     ...
 
 
-    def getSollHausgelder( self, mobj_id:str=None, ohneInaktive:bool=True ) -> List[XSollHausgeld]:
+    def getSollHausgelder( self, mobj_id:str=None, nurAktive:bool=True ) -> List[XSollHausgeld]:
         """
         Liefert Soll-Hausgelder.
         Wenn mobj_id gesetzt ist, werden nur die Hausgelder für mobj_id geliefert.
@@ -310,7 +310,7 @@ class DbAccess:
         if mobj_id:
             sql += ( "where v.mobj_id = '%s' " % ( mobj_id ) )
             nextKeyword = "and "
-        if ohneInaktive:
+        if nurAktive:
             sql += nextKeyword
             sql += "(s.bis is NULL or s.bis = '' or s.bis >= CURRENT_DATE) "
         sql += "order by v.weg_name, s.von desc"
@@ -318,6 +318,61 @@ class DbAccess:
         sollList:List[XSollHausgeld] = list()
         for d in l:
             x = XSollHausgeld( d )
+            sollList.append( x )
+        return sollList
+
+    def getSollHausgelder2( self, startjahr:int ) -> List[XSollHausgeld]:
+        """
+        Liefert Soll-Hausgelder, die ab startjahr gültig waren/sind.
+        :return: eine Liste von XHausgeld-Objekten
+        """
+        minbis = "%d-%02d-%02d" % ( startjahr, 1, 1 )
+        sql = "select s.shg_id, v.vw_id, s.vwg_id, s.von, coalesce(s.bis, '') as bis, s.netto, s.ruezufue, " \
+              "(s.netto + s.ruezufue) as brutto, " \
+              "v.mobj_id, v.weg_name,  coalesce(s.bemerkung, '') as bemerkung " \
+              "from sollhausgeld s " \
+              "inner join verwaltung v on v.vwg_id = s.vwg_id " \
+              "where (s.bis is NULL or s.bis = '' or s.bis >= '%s') " \
+              "order by v.weg_name, s.von desc" % ( minbis )
+        l:List[Dict] = self._doReadAllGetDict( sql )
+        sollList:List[XSollHausgeld] = list()
+        for d in l:
+            x = XSollHausgeld( d )
+            sollList.append( x )
+        return sollList
+
+    def getSollmieten( self, mobj_id: str = None, nurAktive: bool = True ) -> List[XSollMiete]:
+        sql = "select sm.sm_id, sm.mv_id, sm.von, coalesce(sm.bis, '') as bis, sm.netto, sm.nkv, (sm.netto + sm.nkv) as brutto, " \
+              "sm.bemerkung, mv.mobj_id " \
+              "from sollmiete sm " \
+              "inner join mietverhaeltnis mv on mv.mv_id = sm.mv_id "
+        nextKeyword = "where "
+        if mobj_id:
+            sql += ("where sm.mobj_id = '%s' " % (mobj_id))
+            nextKeyword = "and "
+        if nurAktive:
+            sql += nextKeyword
+            sql += "(sm.bis is NULL or sm.bis = '' or sm.bis >= CURRENT_DATE) "
+        sql += "order by sm.mv_id, sm.von desc"
+        l: List[Dict] = self._doReadAllGetDict( sql )
+        sollList: List[XSollMiete] = list()
+        for d in l:
+            x = XSollMiete( d )
+            sollList.append( x )
+        return sollList
+
+    def getSollmieten2( self, startjahr:int ) -> List[XSollMiete]:
+        minbis = "%d-%02d-%02d" % (startjahr, 1, 1)
+        sql = "select sm.sm_id, sm.mv_id, sm.von, coalesce(sm.bis, '') as bis, sm.netto, sm.nkv, (sm.netto + sm.nkv) as brutto, " \
+              "sm.bemerkung, mv.mobj_id " \
+              "from sollmiete sm " \
+              "inner join mietverhaeltnis mv on mv.mv_id = sm.mv_id " \
+              "where (sm.bis is NULL or sm.bis = '' or sm.bis >= '%s') " \
+              "order by sm.mv_id, sm.von desc" % ( minbis )
+        l: List[Dict] = self._doReadAllGetDict( sql )
+        sollList: List[XSollMiete] = list()
+        for d in l:
+            x = XSollMiete( d )
             sollList.append( x )
         return sollList
 
@@ -853,8 +908,11 @@ def test():
     db = DbAccess( "immo.db" )
     db.open()
 
-    netto, nkv = db.getMieteBestandteile( "abazid_fuad", 2021, 3 )
-    print( netto, nkv )
+    l = db.getSollmieten()
+    print( l )
+
+    # netto, nkv = db.getMieteBestandteile( "abazid_fuad", 2021, 3 )
+    # print( netto, nkv )
     # res = db.getAktivesMietverhaeltnisZuMvId( "pfeifer_martina" )
 
     # res = db.getHgAbrechnungen( 2020 )

@@ -56,6 +56,7 @@ class SollzahlungenView( QWidget, ABC, metaclass=SollViewMeta ):
         self._mainLayout.addLayout( self._toolbarLayout, 0, 0, alignment=Qt.AlignLeft )
         ### tableView
         tv = self._tvSoll
+        tv.setSortingEnabled( True )
         tv.setSelectionBehavior( QAbstractItemView.SelectRows )
         tv.setAlternatingRowColors( True )
         tv.verticalHeader().setVisible( False )

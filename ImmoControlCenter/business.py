@@ -398,39 +398,12 @@ class BusinessLogic:
     def getSollmietenMonat( self, jahr:int, monat:int ) -> List[Dict]:
         return self._db.getSollmietenMonat( jahr, monat )
 
-    def getSollmieten(self, jahr:int ) -> Dict:
+    def getSollmieten(self ) -> List[XSollMiete]:
         """liefert alle im jahr aktiven Mietverhältnisse mit den in diesem Jahr gültigen Sollmieten.
            Je Mietverhältnis werden soviele Sollmieten geliefert, wie in diesem Jahr gültig waren.
-           Die Daten werden in Form eines Dictionary geliefert:
-           {
-               "charlotte": (
-                               {
-                                   "von": "2019-03-01"
-                                   "bis": "2019-12-31"
-                                   "netto": 300
-                                   "nkv": 150
-                               },
-                               {
-                                   "von": "2020-02-01"  ##beachte: Zeitenräume können Lücken enthalten (Leerstand)
-                                   "bis": ""
-                                   "netto": 350
-                                   "nkv": 150
-                               }
-                            )
-           }
         """
-        dictlist = self._db.getSollmieten( jahr )
-        dod = {}
-        key = ""
-        soll_list = []
-        for d in dictlist:
-            if key != d["mv_id"]:
-                key = d["mv_id"]
-                soll_list = []
-                dod[key] = soll_list
-            solldict = {k: v for (k, v) in d.items() if k != 'mv_id'}
-            soll_list.append(solldict)
-        return dod
+        y = getCurrentYear()
+        return self._db.getSollmieten2( y - 1 )
 
     def initSollhausgeld( self, von:str, bis:str=None ):
         """
@@ -453,18 +426,20 @@ class BusinessLogic:
             self._db.insertSollHausgeld( d, False )
         self._db.commit()
 
-    def getAlleSollHausgelder( self ) -> List[XSollHausgeld]:
-        return self._db.getSollHausgelder()
+    def getSollHausgelder( self ) -> List[XSollHausgeld]:
+        # wir holen die Soll-Hausgelder, die im letzten und aktuellen Jahr gültig waren/sind
+        y = getCurrentYear()
+        return self._db.getSollHausgelder2( y-1 )
 
-    def getSollHausgelder( self, mobj_id:str ) -> List[XSollHausgeld]:
-        return
+    # def getSollHausgelder( self, mobj_id:str ) -> List[XSollHausgeld]:
+    #     return
 
     def canCreateFolgeIntervallHausgeld( self, x:XSollHausgeld ) -> bool:
         # prüfen, ob x das zeitlich neueste Intervall für x.mobj_id ist.
         # Nur für dieses kann ein Folge-Intervall angelegt werden, und auch  nur dann, wenn es nicht terminiert ist.
         if x.bis > " ":
             return False
-        shglist:List[XSollHausgeld] = self._db.getSollHausgelder( x.mobj_id, ohneInaktive=True )
+        shglist:List[XSollHausgeld] = self._db.getSollHausgelder( mobj_id=x.mobj_id )
         for shg in shglist:
             if shg.von > x.von:
                 return False
