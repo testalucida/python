@@ -394,7 +394,7 @@ class BusinessLogic:
         self._db.updateMietverhaeltnis2( mv.id, "bis", kuenddatum, commit=False )
         # Sollmiete beenden
         sm.bis = kuenddatum
-        self._db.updateSollMiete( sm, commit=True )
+        self._db.updateSollmiete( sm, commit=True )
 
     def getSollmietenMonat( self, jahr:int, monat:int ) -> List[Dict]:
         return self._db.getSollmietenMonat( jahr, monat )

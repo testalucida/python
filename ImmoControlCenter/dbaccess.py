@@ -361,20 +361,6 @@ class DbAccess:
             sollList.append( x )
         return sollList
 
-    # def getSollmieten( self ) -> List[XSollMiete]:
-    #     sql = "select sm.sm_id, sm.mv_id, sm.von, coalesce(sm.bis, '') as bis, sm.netto, sm.nkv, (sm.netto + sm.nkv) as brutto, " \
-    #           "sm.bemerkung, mv.mobj_id " \
-    #           "from sollmiete sm " \
-    #           "inner join mietverhaeltnis mv on mv.mv_id = sm.mv_id " \
-    #           "where (sm.bis is NULL or sm.bis = '' or sm.bis >= CURRENT_DATE) " \
-    #           "order by sm.mv_id, sm.von desc"
-    #     l: List[Dict] = self._doReadAllGetDict( sql )
-    #     sollList: List[XSollMiete] = list()
-    #     for d in l:
-    #         x = XSollMiete( d )
-    #         sollList.append( x )
-    #     return sollList
-
     def getSollmieten2( self, startjahr:int ) -> List[XSollMiete]:
         minbis = "%d-%02d-%02d" % (startjahr, 1, 1)
         sql = "select sm.sm_id, sm.mv_id, sm.von, coalesce(sm.bis, '') as bis, sm.netto, sm.nkv, (sm.netto + sm.nkv) as brutto, " \
