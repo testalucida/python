@@ -53,6 +53,7 @@ class BusinessLogic:
 
     def _prepare(self):
         dbname = "immo.db"
+        #dbname = "/home/martin/Vermietung/ImmoControlCenter/immo.db"
         # try:
         #     f = open( "use_test_db" )
         #     dbname = "immo.db"
@@ -451,6 +452,17 @@ class BusinessLogic:
         else:
             return getFirstOfNextMonth()
 
+    def canCreateFolgeIntervallMiete( self, x:XSollMiete ) -> bool:
+        # prüfen, ob x das zeitlich neueste Intervall für x.mv_id ist.
+        # Nur für dieses kann ein Folge-Intervall angelegt werden, und auch  nur dann, wenn es nicht terminiert ist.
+        if x.bis > " ":
+            return False
+        smlist:List[XSollMiete] = self._db.getSollmieten( mv_id=x.mv_id )
+        for sm in smlist:
+            if sm.von > x.von:
+                return False
+        return True
+
     def getLetztenMonat( self ) -> Tuple[int, str]:
         return getLastMonth()
 
@@ -593,7 +605,7 @@ class BusinessLogic:
         model = NkAbrechnungenTableModel( abrechlist )
         return model
 
-    def getHgAbrechnungenTableModel( self, ab_jahr:int ) -> NkAbrechnungenTableModel:
+    def getHgAbrechnungenTableModel( self, ab_jahr:int ) -> HgAbrechnungenTableModel:
         """
         Gets ALL Verwaltungen (WEG).
         Creates a XHgAbrechnung object for each verwaltung.
@@ -646,18 +658,22 @@ class BusinessLogic:
         model = HgAbrechnungenTableModel( abrechlist )
         return model
 
-    def insertSollmieten( xlist:List[XSollMiete] ):
-        pass
+    def insertSollmieten( self, xlist:List[XSollMiete] ):
+        for x in xlist:
+            self._db.insertSollmiete( x, False )
+        self._db.commit()
 
-    def updateSollmieten( xlist:List[XSollMiete] ) -> int:
-        pass
+    def updateSollmieten( self, xlist:List[XSollMiete] ):
+        for x in xlist:
+            self._db.updateSollmiete( x, False )
+        self._db.commit()
 
-    def insertSollHausgelder( self, xlist:List[XSollHausgeld] ) -> int:
+    def insertSollHausgelder( self, xlist:List[XSollHausgeld] ):
         for x in xlist:
             self._db.insertSollHausgeld( x, False )
         self._db.commit()
 
-    def updateSollHausgelder( self, xlist:List[XSollHausgeld] ) -> int:
+    def updateSollHausgelder( self, xlist:List[XSollHausgeld] ):
         for x in xlist:
             self._db.updateSollHausgeld( x, False )
         self._db.commit()

@@ -176,7 +176,7 @@ class MainController:
         subwin = self._sollMietenCtrl.createSubwindow()
         self._installView( subwin, self._sollMietenCtrl )
         # w, h = self.getMainWindowSize()
-        subwin.setGeometry( 10, 10, 400, 400 )
+        subwin.setGeometry( 20, 20, 1000, 900 )
         subwin.show()
 
     def showSollHausgelderView( self ):

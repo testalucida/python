@@ -130,7 +130,7 @@ class SollzahlungenView( QWidget, ABC, metaclass=SollViewMeta ):
         if x.bis:
             y, m, d = getDateParts( x.bis )
             self._sdBis.setDate( y, m, d )
-        self._feNetto.setText( str( x.netto * -1 ) )
+        self._setNettoValue( x )
         self._teBemerkung.setText( x.bemerkung )
         self._setZusatzValue( x )
         if editOnlyBemerkung:
@@ -138,6 +138,10 @@ class SollzahlungenView( QWidget, ABC, metaclass=SollViewMeta ):
             self._sdBis.setEnabled( False )
             self._feNetto.setEnabled( False )
             self._feZusatz.setEnabled( False )
+
+    @abstractmethod
+    def _setNettoValue( self, x ) -> None:
+        pass
 
     @abstractmethod
     def _setZusatzValue( self, x ) -> None:
@@ -233,6 +237,9 @@ class SollmietenView( SollzahlungenView ):
     def _getZusatzPlaceholderText( self ) -> str:
         return "NK-Voraus"
 
+    def _setNettoValue( self, x ) -> None:
+        self._feNetto.setText( str( x.netto ) )
+
     def _setZusatzValue( self, x:XSollMiete ) -> None:
         self._feZusatz.setText( str( x.nkv ) )
 
@@ -253,6 +260,9 @@ class SollHgvView( SollzahlungenView ):
 
     def _getZusatzPlaceholderText( self ) -> str:
         return "RüZuFü"
+
+    def _setNettoValue( self, x ) -> None:
+        self._feNetto.setText( str( x.netto * -1 ) )
 
     def _setZusatzValue( self, x:XSollHausgeld ) -> None:
         self._feZusatz.setText( str( x.ruezufue * -1 ) )

@@ -132,6 +132,10 @@ class SollzahlungenController( MdiChildController, ABC ):
         :return:
         """
         if soll.getId() == 0:
+            # ein neues Zahlungsintervall wurde bearbeitet.
+            # Die Summe aus Netto und Zusatz berechnen und in der Schnittstelle berichtigen.
+            self._computeBrutto( soll )
+            # Dann das Vorgänger-Intervall stillegen
             self._terminateVorgaengerIntervall( soll )
         msg = self._validateEditFields( soll )
         if msg:
@@ -145,12 +149,18 @@ class SollzahlungenController( MdiChildController, ABC ):
             #xvor:XSollzahlung = self._getVorgaenger( soll )
 
     @abstractmethod
-    def getViewTitle( self ) -> str:
+    def _computeBrutto( self, x:XSollzahlung ) -> None:
         pass
 
     @abstractmethod
-    def _validateEditFields( self, soll:XSollzahlung ) -> str:
+    def getViewTitle( self ) -> str:
         pass
+
+    def _validateEditFields( self, soll: XSollzahlung ) -> str:
+        if soll.von == "": return "Der Beginn des Zeitraums muss angegeben sein."
+        if soll.bis != None and soll.bis > "" and soll.bis < soll.von: return "Das Zeitraumende darf nicht vor dem Beginn liegen."
+        if soll.netto == 0: return "Das Netto-Hausgeld bzw. die Nettomiete darf nicht 0 sein."
+        return ""
 
     def _terminateVorgaengerIntervall( self, x:XSollzahlung ) -> str:
         von = x.von
@@ -234,14 +244,22 @@ class SollmietenController( SollzahlungenController ):
         tm = SollmietenTableModel( smlist )
         return tm
 
-    def _validateEditFields( self, soll: XSollzahlung ) -> str:
-        return ""
+    def _computeBrutto( self, x:XSollzahlung ) -> None:
+        x:XSollMiete = x
+        x.brutto = x.netto + x.nkv
 
     def getViewTitle( self ) -> str:
         return "Soll-Mieten"
 
-    def _getFolgeIntervall( self, xAlt:XSollzahlung ) -> XSollzahlung or None:
-        pass
+    def _getFolgeIntervall( self, x:XSollzahlung ) -> XSollzahlung or None:
+        if BusinessLogic.inst().canCreateFolgeIntervallMiete( x ):
+            xnew: XSollzahlung = self._tm.duplicate( x )
+            # xnew.von mit dem Monatsende des aktuellen Monats versorgen
+            xnew.von = BusinessLogic.inst().getStartOfNextSollzahlungInterval( x.von )
+            return xnew
+        else:
+            self._view.showException( "Falsche Auswahl", "Folge-Intervall nicht möglich" )
+            return None
 
     def _insertSollZahlung( self, xlist:List[XSollzahlung] ):
         BusinessLogic.inst().insertSollmieten( xlist )
@@ -263,6 +281,10 @@ class SollHgvController( SollzahlungenController ):
         tm = SollHgvTableModel( sollHG )
         return tm
 
+    def _computeBrutto( self, x:XSollzahlung ) -> None:
+        x:XSollHausgeld = x
+        x.brutto = x.netto + x.ruezufue
+
     def getViewTitle( self ) -> str:
         return "Soll-Hausgelder"
 
@@ -276,11 +298,11 @@ class SollHgvController( SollzahlungenController ):
             self._view.showException( "Falsche Auswahl", "Folge-Intervall nicht möglich" )
             return None
 
-    def _validateEditFields( self, soll: XSollzahlung ) -> str:
-        if soll.von == "": return "Der Beginn des Zeitraums muss angegeben sein."
-        if soll.bis != None and soll.bis > "" and soll.bis < soll.von: return "Das Zeitraumende darf nicht vor dem Beginn liegen."
-        if soll.netto == 0: return "Das Netto-Hausgeld darf nicht 0 sein."
-        return ""
+    # def _validateEditFields( self, soll: XSollzahlung ) -> str:
+    #     if soll.von == "": return "Der Beginn des Zeitraums muss angegeben sein."
+    #     if soll.bis != None and soll.bis > "" and soll.bis < soll.von: return "Das Zeitraumende darf nicht vor dem Beginn liegen."
+    #     if soll.netto == 0: return "Das Netto-Hausgeld darf nicht 0 sein."
+    #     return ""
 
     def _insertSollZahlung( self, xlist:List[XSollzahlung] ):
         BusinessLogic.inst().insertSollHausgelder( xlist )
@@ -293,7 +315,8 @@ def test():
     import sys
     from PySide2 import QtWidgets
     app = QtWidgets.QApplication( sys.argv )
-    c = SollHgvController()
+    c = SollmietenController()
+    #c = SollHgvController()
     v = c.createView()
     v.setGeometry( 2000, 100, 1000, 800 )
     v.show()

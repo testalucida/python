@@ -246,7 +246,7 @@ class DbAccess:
         :param mv_id:
         :return:
         """
-        sql = "select sm_id, mv_id, von, bis, netto, nkv, bemerkung " \
+        sql = "select sm_id, mv_id, von, coalesce(bis, '') as bis, netto, nkv, coalesce(bemerkung, '') as bemerkung " \
               "from sollmiete " \
               "where mv_id = '%s' " \
               "and ( von <= CURRENT_DATE and bis is NULL or bis = '' or bis > CURRENT_DATE ) " % (mv_id)
@@ -260,7 +260,7 @@ class DbAccess:
 
     def getSollmietenMonat( self, jahr:int, monat:int ) -> List[Dict]:
         datum = str(jahr) + "-" + "%02d" % monat + "-01"
-        sql = "select mv_id, von, bis, netto, nkv, netto+nkv as brutto " \
+        sql = "select mv_id, von, coalesce(bis, ''), netto, nkv, netto+nkv as brutto " \
               "from sollmiete " \
               "where von <= '%s' " \
               "and (bis is NULL or bis = '' or bis > '%s') " \
@@ -341,14 +341,14 @@ class DbAccess:
             sollList.append( x )
         return sollList
 
-    def getSollmieten( self, mobj_id: str = None, nurAktive: bool = True ) -> List[XSollMiete]:
+    def getSollmieten( self, mv_id: str = None, nurAktive: bool = True ) -> List[XSollMiete]:
         sql = "select sm.sm_id, sm.mv_id, sm.von, coalesce(sm.bis, '') as bis, sm.netto, sm.nkv, (sm.netto + sm.nkv) as brutto, " \
-              "sm.bemerkung, mv.mobj_id " \
+              "coalesce(sm.bemerkung, '') as bemerkung, mv.mobj_id " \
               "from sollmiete sm " \
               "inner join mietverhaeltnis mv on mv.mv_id = sm.mv_id "
         nextKeyword = "where "
-        if mobj_id:
-            sql += ("where sm.mobj_id = '%s' " % (mobj_id))
+        if mv_id:
+            sql += ("where sm.mv_id = '%s' " % (mv_id))
             nextKeyword = "and "
         if nurAktive:
             sql += nextKeyword
@@ -361,10 +361,24 @@ class DbAccess:
             sollList.append( x )
         return sollList
 
+    # def getSollmieten( self ) -> List[XSollMiete]:
+    #     sql = "select sm.sm_id, sm.mv_id, sm.von, coalesce(sm.bis, '') as bis, sm.netto, sm.nkv, (sm.netto + sm.nkv) as brutto, " \
+    #           "sm.bemerkung, mv.mobj_id " \
+    #           "from sollmiete sm " \
+    #           "inner join mietverhaeltnis mv on mv.mv_id = sm.mv_id " \
+    #           "where (sm.bis is NULL or sm.bis = '' or sm.bis >= CURRENT_DATE) " \
+    #           "order by sm.mv_id, sm.von desc"
+    #     l: List[Dict] = self._doReadAllGetDict( sql )
+    #     sollList: List[XSollMiete] = list()
+    #     for d in l:
+    #         x = XSollMiete( d )
+    #         sollList.append( x )
+    #     return sollList
+
     def getSollmieten2( self, startjahr:int ) -> List[XSollMiete]:
         minbis = "%d-%02d-%02d" % (startjahr, 1, 1)
         sql = "select sm.sm_id, sm.mv_id, sm.von, coalesce(sm.bis, '') as bis, sm.netto, sm.nkv, (sm.netto + sm.nkv) as brutto, " \
-              "sm.bemerkung, mv.mobj_id " \
+              "coalesce(sm.bemerkung, '') as bemerkung, mv.mobj_id " \
               "from sollmiete sm " \
               "inner join mietverhaeltnis mv on mv.mv_id = sm.mv_id " \
               "where (sm.bis is NULL or sm.bis = '' or sm.bis >= '%s') " \
@@ -599,17 +613,18 @@ class DbAccess:
                d["IBAN"], d["bemerkung1"], d["bemerkung2"])
         return self._doWrite( sql, commit )
 
-    def insertSollmiete(self, d:Dict, commit:bool=True ) -> int:
+    def insertSollmiete(self, x:XSollMiete, commit:bool=True ) -> int:
+        bis = "NULL" if not x.bis else "'" + x.bis + "'"
         sql = "insert into sollmiete " \
-              "(mv_id, von, bis, netto, nkv ) " \
-              "values( '%s', '%s', '%s', %f, %f ) " % ( d["mv_id"], d["von"], d["bis"], d["netto"], d["nkv"] )
+              "(mv_id, von, bis, netto, nkv, bemerkung ) " \
+              "values( '%s', '%s', %s, %.2f, %.2f, '%s' ) " % ( x.mv_id, x.von, bis, x.netto, x.nkv, x.bemerkung )
         return self._doWrite( sql, commit )
 
     def insertSollHausgeld( self, x:XSollHausgeld, commit:bool=True ) -> int:
         bis = "NULL" if not x.bis else "'" + x.bis + "'"
         sql = "insert into sollhausgeld " \
               "(vwg_id, von, bis, netto, ruezufue, bemerkung) " \
-              "values( '%s', '%s', %s, %f, %f, '%s' ) " % ( x.vwg_id, x.von, bis, x.netto, x.ruezufue, x.bemerkung )
+              "values( '%s', '%s', %s, %.2f, %.2f, '%s' ) " % ( x.vwg_id, x.von, bis, x.netto, x.ruezufue, x.bemerkung )
         return self._doWrite( sql, commit )
 
     def updateSollHausgeld( self, x:XSollHausgeld, commit:bool=True ) -> int:
@@ -624,7 +639,7 @@ class DbAccess:
               "where shg_id = %d " % (x.von, bis, x.netto, x.ruezufue, x.bemerkung, x.shg_id )
         return self._doWrite( sql, commit )
 
-    def updateSollMiete( self, x:XSollMiete, commit:bool=True ):
+    def updateSollmiete( self, x:XSollMiete, commit:bool=True ):
         bis = "NULL" if not x.bis else "'" + x.bis + "'"
         sql = "update sollmiete set " \
               "mv_id = '%s', " \

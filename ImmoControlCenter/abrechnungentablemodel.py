@@ -238,7 +238,7 @@ class NkAbrechnungenTableModel( AbrechnungenTableModel ):
 
 #########################################################################################
 class HgAbrechnungenTableModel( AbrechnungenTableModel ):
-    def __init__( self, abrechList: List[XNkAbrechnung] ):
+    def __init__( self, abrechList: List[XHgAbrechnung] ):
         AbrechnungenTableModel.__init__( self, abrechList )
 
     def getNameColumnHeader( self ) -> str:
