@@ -10,6 +10,37 @@ einaus20path = "/home/martin/Projects/python/ImmoControlCenter/Ein_Aus_2020_TEST
 db = DbAccess( "immo.db")
 db.open()
 
+def compareZahlungen2020():
+    sheetname = "Zahlungen_2020"
+    path1 = "/home/martin/Projects/python/ImmoControlCenter/Ein_Aus_2020_local.ods"
+    path2 = "/home/martin/Projects/python/ImmoControlCenter/Ein_Aus_2020_web.ods"
+    df_loc = read_ods( path1, sheetname )
+    df_web = read_ods( path2, sheetname )
+    BETRAG:int = 3
+    # row_web = df_web.iloc[0]
+    # betrag = df_web.iloc[0, 3]
+    # print( row_web )
+    rweb:int = 0
+    rloc:int = -1
+    betrag_web:int = -999999
+    for index, row in df_loc.iterrows():
+        rloc += 1
+        d1 = row.to_dict()
+        betrag_loc = d1["Betrag"]
+
+        while betrag_web < betrag_loc:
+            betrag_web = df_web.iloc[rweb, BETRAG]
+            if betrag_web < betrag_loc:
+                print( "Zeile fehlt in lokaler Liste: Zeile_web = %d, betrag_web = %.2f" % (rweb+2, betrag_web))
+                rweb += 1
+
+        if betrag_web == betrag_loc:
+            rweb += 1
+        else:  # betrag_web > betrag_loc
+            print( "Zeile fehlt in web-Liste: Zeile_loc = %d, Wert_loc = %.2f" % (rloc+2, betrag_loc) )
+
+
+
 def provideMietobjekte():
     sheetname = "Wohnung"
     df = read_ods( stammdatenpath, sheetname )
@@ -168,7 +199,8 @@ def insertIntoServiceleistung( servicelist:List[Dict] ) -> None:
 ############################## provideServiceleistungen2020 E N D E #############################
 
 if __name__ == "__main__":
-    provideSollmiete()
+    compareZahlungen2020()
+    #provideSollmiete()
     pass
     #provideVerwaltung()
     #provideServiceleistungen2020()

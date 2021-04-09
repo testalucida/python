@@ -51,6 +51,39 @@ def writeGeometryOnShutdown( x, y, w, h ) -> None:
     s = str( x ) + "," + str( y ) + "," + str( w ) + "," + str( h )
     f.write( s )
 
+def saveDatabase() -> None:
+    from shutil import copyfile
+    scriptdir = os.path.dirname( os.path.realpath( __file__ ) )
+    src = "./immo.db"
+    dest = "/media/martin/Elements/kannweg/immo.db"
+    if "python" in scriptdir:
+        print( "Running in DEV" )
+        dest = "/media/martin/Elements/kannweg/immo.db"
+    else:
+        if "Vermietung" in scriptdir:
+            print( "Running in REL; try to copy immo.db" )
+            dest = "/media/martin/Elements/Vermietung/ImmoControlCenter/immo.db"
+    if os.path.isfile( src ):
+        print( "OK, file immo.db exists" )
+        box = QMessageBox()
+        box.setIcon( QMessageBox.Question )
+        box.setWindowTitle( "Sicherung der Datenbank" )
+        box.setText( "Datenbank\n\n   '%s'\nsichern in\n\n   '%s'?" % (scriptdir+"/immo.db", dest) )
+        box.setStandardButtons( QMessageBox.Save | QMessageBox.Cancel )
+        r = box.exec_()
+        if r == QMessageBox.Save:
+            try:
+                copyfile( src, dest )
+            except Exception as ex:
+                box.setIcon( QMessageBox.Critical )
+                box.setWindowTitle( "Sicherung nicht möglich" )
+                box.setText( str( ex ) )
+                box.setInformativeText( "Ist das Speichermedium eingehängt?")
+                box.setStandardButtons( QMessageBox.Ok )
+                box.exec_()
+    else:
+        print( "NOPE, there's no file named immo.db" )
+
 def createControlFile():
     try:
        f = open( "already_running", "x" )
@@ -101,7 +134,13 @@ def main():
     app.exec_()
     deleteControlFile()
 
+def testSaveDatabase():
+    app = QApplication()
+    saveDatabase()
+    app.exec_()
+
 if __name__ == '__main__':
-    main()
+    testSaveDatabase()
+    #main()
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
