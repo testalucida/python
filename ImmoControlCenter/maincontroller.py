@@ -131,7 +131,8 @@ class MainController:
         self._installView( subwin, self._mietenCtrl )
         w, h = self.getMainWindowSize()
         w2 = w/2
-        subwin.setGeometry( 0, 0, w2, h ) #h-22 )
+        subwin.setGeometry( 0, 0, w2, h )  # h-22 )
+        #subwin.setGeometry( 0, 0, 700, h )
         subwin.show()
 
     def showHGVView( self ):

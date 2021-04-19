@@ -259,13 +259,22 @@ class CheckView( QWidget ):
     def _yearChanged(self, newindex):
         self.doJahrChangedCallback()
 
-    def _monthChanged(self, newindex):
+    def _monthChanged(self, newmonth):
         if( self._tm ):
-            self._tm.setCheckmonat( newindex + 1 )
+            tv = self.tableView
+            self._tm.setCheckmonat( newmonth + 1 )
             top_cell = self._tm.index( 0, 0 )
             bottom_cell = self._tm.index( 0, 2 )
-            self.tableView.dataChanged( top_cell, bottom_cell, [Qt.BackgroundRole, ] )
-            self.tableView.repaint()
+            tv.dataChanged( top_cell, bottom_cell, [Qt.BackgroundRole, ] )
+            index = self._tm.getCheckmonatColumnIndex()
+            # scrollposX = tv.horizontalScrollBar().value()
+            # print( "scrollposX: ", scrollposX )
+            # colidx = index.column()
+            # print( "newmonth: ", newmonth, "; checkmonthcolumnindex: ", str( index ),
+            #        "; colidx: ", colidx )
+            tv.scrollTo( index )
+            #self.tableView.scroll( dx, dy )
+            tv.repaint()
             self.repaint()
         self.doCheckMonatChangedCallback()
 

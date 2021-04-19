@@ -1,3 +1,6 @@
+import numbers
+from typing import Any
+
 from PySide2 import QtWidgets, QtCore
 from PySide2.QtCore import QDate, Qt, QAbstractTableModel
 from PySide2.QtGui import QDoubleValidator, QIntValidator, QFont, QGuiApplication
@@ -166,6 +169,23 @@ class IntDisplay( QLineEdit ):
         val = self.text()
         if not val: val = "0"
         return int( val )
+
+################ LineEdit #########################
+class LineEdit( QLineEdit ):
+    def __init__( self, parent=None ):
+        QLineEdit.__init__( self, parent )
+        intval = QIntValidator()
+
+    def setValue( self, value:Any ) -> None:
+        self.setText( value )
+        if value is None or value == "": return
+        if isinstance( value, numbers.Number ):
+            self.setAlignment( Qt.AlignRight )
+        else:
+            self.setAlignment( Qt.AlignLeft )
+
+    def getValue( self ) -> Any:
+        return self.text()
 
 ################ TableViewDialog ##################
 class TableViewDialog( QDialog ):

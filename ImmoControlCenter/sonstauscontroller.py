@@ -256,13 +256,13 @@ class SonstAusController( MdiChildController ):
         self._view.provideEditFields( xcopy )
 
     def _updateViewAfterDuplicateAndDelete( self, delta:int, isWerterhaltend:bool, isUmlegbar:bool ):
-        summen: XSonstAusSummen = self._view.getSummen()
-        summen.summe_aus += delta
-        if isWerterhaltend:
-            summen.summe_werterhaltend += delta
-        if isUmlegbar:
-            summen.summe_umlegbar += delta
-        self._view.setSummen( summen )
+        # summen: XSonstAusSummen = self._view.getSummen()
+        # summen.summe_aus += delta
+        # if isWerterhaltend:
+        #     summen.summe_werterhaltend += delta
+        # if isUmlegbar:
+        #     summen.summe_umlegbar += delta
+        # self._view.setSummen( summen )
         self._view.setSaveButtonEnabled( True )
         self._setChangedFlag( True )
         self._view.clearEditFields()
