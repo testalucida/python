@@ -54,12 +54,6 @@ class BusinessLogic:
     def _prepare(self):
         dbname = "immo.db"
         #dbname = "/home/martin/Vermietung/ImmoControlCenter/immo.db"
-        # try:
-        #     f = open( "use_test_db" )
-        #     dbname = "immo.db"
-        #     f.close()
-        # except:
-        #     dbname = "/home/martin/Vermietung/ImmoControlCenter/immo.db"
 
         self._db = DbAccess( dbname )
         self._db.open()

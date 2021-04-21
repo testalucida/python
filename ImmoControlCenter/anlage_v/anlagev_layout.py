@@ -30,7 +30,7 @@ class NumberLabel( QLabel ):
         self.setFixedSize( 20, h )
 
 ################### AnlageV_Zeile ############################
-class AnlageV_Zeile( QWidget ):
+class AnlageV_ZeileView( QWidget ):
     def __init__( self, data:XAnlageV_Zeile_Data, parent=None ):
         QWidget.__init__( self, parent )
         self._data:XAnlageV_Zeile_Data = data
@@ -62,11 +62,11 @@ class AnlageV_Zeile( QWidget ):
 class AnlageV( QWidget ):
     def __init__( self, parent=None ):
         QWidget.__init__( self, parent )
-        self._zeilen:List[Dict[Any, AnlageV_Zeile]] = list()
+        self._zeilen:List[Dict[Any, AnlageV_ZeileView]] = list()
         self._layout = QVBoxLayout()
 
     def addZeile( self, id:Any, data:XAnlageV_Zeile_Data ) -> None:
-        zeile = AnlageV_Zeile( data )
+        zeile = AnlageV_ZeileView( data )
         d = { id, zeile }
         self._zeilen.append( d )
         self._layout.addWidget( zeile )
@@ -76,7 +76,7 @@ class AnlageV( QWidget ):
 def test():
     app = QApplication()
     data = XAnlageV_Zeile_Data( 1, "Name", "Kendel", "Name des Steuerpflichtigen" )
-    z = AnlageV_Zeile( data )
+    z = AnlageV_ZeileView( data )
     z.show()
     app.exec_()
 
