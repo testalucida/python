@@ -56,6 +56,7 @@ class BusinessLogic:
         #dbname = "/home/martin/Vermietung/ImmoControlCenter/immo.db"
 
         self._db = DbAccess( dbname )
+        #self._db = DbAccess()
         self._db.open()
         #self._kreditorleistungen = self._db.getKreditorleistungen()
 
