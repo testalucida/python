@@ -1,6 +1,6 @@
 from typing import List, Dict
 
-from anlage_v.anlagev_interfaces import XObjektStammdaten
+from anlage_v.anlagev_interfaces import XObjektStammdaten, XZeilendefinition
 from dbaccess import DbAccess
 from interfaces import XSollMiete
 
@@ -8,6 +8,33 @@ from interfaces import XSollMiete
 class AnlageV_DataAccess( DbAccess ):
     def __init__( self, dbname:str ):
         DbAccess.__init__( self, dbname )
+
+    def getAnlageV_Zeilendefinitionen( self ) -> List[XZeilendefinition]:
+        sql = "select feld_nr, feld_id, zeile, printX, printY from anlagev_layout order by feld_nr "
+        dictlist = self._doReadAllGetDict( sql )
+        li:List[XZeilendefinition] = list()
+        for dic in dictlist:
+            x = XZeilendefinition( dic )
+            li.append( x )
+        return li
+
+    def getSteuerpflichtige( self ) -> List[Dict]:
+        """
+        liefert alle Steuerpflichtigen aus Tabelle steuerpflichtiger
+        in einem Dictionary mit den Keys name, vorname, steuernummer
+        :return: List[Dict]
+        """
+        sql = "select name, vorname, steuernummer from steuerpflichtiger order by name "
+        ld = self._doReadAllGetDict( sql )
+        return ld
+
+    def getObjektNamen( self ) -> List[str]:
+        sql = "select master_name from masterobjekt " \
+              "where master_name not like '*%' " \
+              "order by master_name "
+        tuplelist = self._doRead( sql )
+        names = [e[0] for e in tuplelist]
+        return names
 
     def getObjektStammdaten( self ) -> List[XObjektStammdaten]:
         sql = "select master_id, master_name, strasse_hnr, plz, ort, angeschafft_am, veraeussert_am, gesamt_wfl, einhwert_az " \
@@ -71,6 +98,9 @@ class AnlageV_DataAccess( DbAccess ):
 def test():
     av = AnlageV_DataAccess( "../immo.db")
     av.open()
+
+    names = av.getObjektNamen()
+    print( names )
 
     #li = db.getSollmieten2( 2020 )
 
