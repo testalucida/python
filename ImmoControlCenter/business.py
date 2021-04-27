@@ -8,7 +8,7 @@ from abrechnungentablemodel import NkAbrechnungenTableModel, HgAbrechnungenTable
 from buchungstextmatchmodel import BuchungstextMatchModel
 from dbaccess import DbAccess
 from typing import List, Dict, Tuple
-from constants import einausart
+from constants import einausart, Zahlart, zahlartstrings
 from interfaces import XSonstAus, XSonstAusSummen, XZahlung, XSollHausgeld, XSollMiete, XBuchungstextMatch, \
     XNkAbrechnung, XAbrechnung, XHgAbrechnung, XMietverhaeltnis
 #from monthlist import monthList, monatsletzter
@@ -17,14 +17,14 @@ from datehelper import *
 from datetime import datetime
 
 #---------------------------------------------------------------------
-class Zahlart( IntEnum ):
-    BRUTTOMIETE = 0,
-    NKA = 1,
-    HGV = 2,
-    HGA = 3,
-    SONSTAUS = 4
-
-zahlartstrings = ("bruttomiete", "nka", "hgv", "hga", "sonstaus")
+# class Zahlart( IntEnum ):
+#     BRUTTOMIETE = 0,
+#     NKA = 1,
+#     HGV = 2,
+#     HGA = 3,
+#     SONSTAUS = 4
+#
+# zahlartstrings = ("bruttomiete", "nka", "hgv", "hga", "sonstaus")
 id_names = ( "meinaus_id", "nka_id", "meinaus_id", "hga_id", "saus_id" )
 #---------------------------------------------------------------------
 class InsertOrUpdate( IntEnum ):

@@ -1,6 +1,7 @@
 from typing import List, Dict
 
 from anlage_v.anlagev_interfaces import XObjektStammdaten, XZeilendefinition
+from constants import Zahlart, zahlartstrings
 from dbaccess import DbAccess
 from interfaces import XSollMiete
 
@@ -10,7 +11,7 @@ class AnlageV_DataAccess( DbAccess ):
         DbAccess.__init__( self, dbname )
 
     def getAnlageV_Zeilendefinitionen( self ) -> List[XZeilendefinition]:
-        sql = "select feld_nr, feld_id, zeile, printX, printY from anlagev_layout order by feld_nr "
+        sql = "select feld_nr, feld_id, zeile, printX, printY, new_page_after from anlagev_layout order by feld_nr "
         dictlist = self._doReadAllGetDict( sql )
         li:List[XZeilendefinition] = list()
         for dic in dictlist:
@@ -94,6 +95,55 @@ class AnlageV_DataAccess( DbAccess ):
             x = XSollMiete( d )
             sollList.append( x )
         return sollList
+
+    def getSollmietenFuerMasterobjekt( self, master_name: str, jahr: int ) -> List[XSollMiete]:
+        # liefert die Sollmieten für Mieter mv_id im Jahr jahr
+        minbis = "%d-%02d-%02d" % (jahr, 1, 1)
+        maxvon = "%d-%02d-%02d" % (jahr + 1, 1, 1)
+        sql = "select sm.sm_id, sm.mv_id, sm.von, coalesce(sm.bis, '') as bis, sm.netto, sm.nkv, (sm.netto + sm.nkv) as brutto, " \
+              "coalesce(sm.bemerkung, '') as bemerkung, mv.mobj_id " \
+              "from masterobjekt master " \
+              "inner join mietobjekt mobj on mobj.master_id = master.master_id " \
+              "inner join mietverhaeltnis mv on mv.mobj_id = mobj.mobj_id " \
+              "inner join sollmiete sm on sm.mv_id = mv.mv_id " \
+              "where master.master_name = '%s' " \
+              "and sm.von < '%s' " \
+              "and (sm.bis is NULL or sm.bis = '' or sm.bis >= '%s') " \
+              "order by sm.von " % (master_name, maxvon, minbis)
+        l: List[Dict] = self._doReadAllGetDict( sql )
+        sollList: List[XSollMiete] = list()
+        for d in l:
+            x = XSollMiete( d )
+            sollList.append( x )
+        return sollList
+
+    def getMietzahlungenMitSummen( self, master_name:str, jahr: int ) -> List[Dict]:
+        sql = "select ea.meinaus_id, mv.mv_id, " \
+              "mv.von, coalesce( mv.bis, '') as bis, mv.mobj_id as objekt, mv.name || ', ' || mv.vorname as name, " \
+              "0 as soll, " \
+              "'ok' as ok, 'nok' as nok, " \
+              "jan, feb, mrz, apr, mai, jun, jul, aug, sep, okt, nov, dez, " \
+              "(coalesce(jan,0)+coalesce(feb,0)+coalesce(mrz,0)+coalesce(apr,0)+coalesce(mai,0)+coalesce(jun,0)+" \
+              "coalesce(jul,0)+coalesce(aug,0)+coalesce(sep,0)+coalesce(okt,0)+coalesce(nov, 0) + coalesce(dez, 0)) as summe " \
+              "from mietverhaeltnis mv " \
+              "inner join mtleinaus ea on ea.mv_id = mv.mv_id " \
+              "where ea.jahr = %s " \
+              "and ea.mv_id > '' " \
+              "and (mv.bis = '' or mv.bis is NULL or substr(mv.bis, 0, 5) >= '%s') " \
+              "order by mv.mv_id" % (jahr, jahr)
+        diclist: List[Dict] = self._doReadAllGetDict( sql )
+        return diclist
+
+    def getZahlungssumme( self, master_name:str, jahr:int, art:Zahlart ) -> float:
+        artstr = zahlartstrings[art]
+        sql = "select sum(betrag) " \
+              "from zahlung z " \
+              "inner join masterobjekt master on master.master_id = z.master_id " \
+              "where master.master_name = '%s' " \
+              "and zahl_art = '%s' " \
+              "and jahr = %d " % ( master_name, artstr, jahr )
+        l = self._doRead( sql )
+        return l[0][0]
 
 def test():
     av = AnlageV_DataAccess( "../immo.db")

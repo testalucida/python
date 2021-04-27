@@ -18,3 +18,12 @@ actionList = ( "INSERT", "UPDATE", "DELETE" )
 class SollType( IntEnum ):
     MIETE_SOLL = 0,
     HAUSGELD_SOLL = 1
+
+class Zahlart( IntEnum ):
+    BRUTTOMIETE = 0,
+    NKA = 1,
+    HGV = 2,
+    HGA = 3,
+    SONSTAUS = 4
+
+zahlartstrings = ("bruttomiete", "nka", "hgv", "hga", "sonstaus")
