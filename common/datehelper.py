@@ -207,10 +207,11 @@ def getNumberOfMonths(d1: str, d2: str, year: int) -> int:
           If year is 2019 and d1 is '2019-01-31' january '19 will be counted.
           If year is 2019 and d2 is '2019-12-01' december '19 will be counted.
     :param d1: date the period is beginning. Must be given as iso string 'YYYY-MM-DD'
-    :param d2: date the period is ending. Must be given as iso string 'YYYY-MM-DD'
+    :param d2: date the period is ending. Must be given as iso string 'YYYY-MM-DD' OR None OR ''.
     :param year: a four digit integer like 2019
     :return: number of months
     """
+    if d2 is None or d2 == '': d2 = "2999-12-31"
     start:datetime = dateutil.parser.parse(d1)
     dt:datetime = start
     end:datetime = dateutil.parser.parse(d2)

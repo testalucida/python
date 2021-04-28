@@ -16,7 +16,7 @@ class AnlageV_Printer:
         self._preparePrint()
         for zeile in self._zeilen:
             if zeile.printFlag == True:
-                print( "printing '%s'" % (zeile.value) )
+                # print( "printing '%s'" % (zeile.value) )
                 self.painter.drawText( zeile.printX, zeile.printY, zeile.value )
             if zeile.new_page_after:
                 self.printer.newPage()

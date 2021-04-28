@@ -7,7 +7,10 @@ from anlage_v.anlagev_interfaces import XObjektStammdaten, XAnlageV_Zeile, XZeil
 from anlage_v.anlagev_printer import AnlageV_Printer
 import numbers
 
+from anlage_v.anlagev_tablemodel import AnlageVTableModel
+from anlage_v.anlagev_view import AnlageVView
 from constants import Zahlart
+from datehelper import getNumberOfMonths
 from interfaces import XSollMiete
 
 
@@ -67,7 +70,7 @@ class AnlageV_Logic:
         x.new_page_after = True if defi.new_page_after == 1 else False
         return x
 
-    def _addFirstSteuerpflichtigen( self, anlagev_zeilen:List[XAnlageV_Zeile] ) -> None:
+    def _provideFirstSteuerpflichtigen( self, anlagev_zeilen:List[XAnlageV_Zeile] ) -> None:
         """
         liefert den ersten Eintrag der Tabelle steuerpflichtiger.
         Das bin ich ;-)  Ich mach das nur, um meinen Namen u. meine Steuernummer nicht im Programm verdrahten zu müssen.
@@ -100,18 +103,27 @@ class AnlageV_Logic:
         :return:
         """
         o = self._getObjekt( master_name )
+        x = self._createAnlageV_Zeile( "lfdnr", o.lfdnr )
+        x.previewFlag = False
+        anlagev_zeilen.append( x )
+
         x = self._createAnlageV_Zeile( "obj_str_hnr", o.strasse_hnr )
         anlagev_zeilen.append( x )
+
         x = self._createAnlageV_Zeile( "angeschafft_am", o.angeschafft_am )
         x.previewFlag = False
         anlagev_zeilen.append( x )
+
         x = self._createAnlageV_Zeile( "obj_plz", o.plz )
         anlagev_zeilen.append( x )
+
         x = self._createAnlageV_Zeile( "obj_ort", o.ort )
         anlagev_zeilen.append( x )
+
         x = self._createAnlageV_Zeile( "veraeussert_am", o.veraeussert_am )
         x.previewFlag = False
         anlagev_zeilen.append( x )
+
         # Gesamtwohnfläche
         x = self._createAnlageV_Zeile( "gesamt_wfl", o.gesamt_wfl )
         anlagev_zeilen.append( x )
@@ -122,24 +134,53 @@ class AnlageV_Logic:
         Die Nebenkosten (NK) teilen sich auf in NK-Vorauszahlungen (NKV) und NK-Abrechnungen (NKA).
         Zunächst werden die Brutto-Mieteinnahmen für ein Master-Objekt wie folgt ermittelt:
             a) Summe der Mieteingänge aus der Tabelle zahlungen
-            b) offene Forderunge des Mieters an mich aus der NKA. Es gibt nämlich Spezialisten, die mir
+            b) offene Forderungen des Mieters an mich aus der NKA. Es gibt nämlich Spezialisten, die mir
                kein Bankkonto für die NKA-Rückzahlung mitteilen, sondern einfach die nächste Miete kürzen.
                Wenn man also nur die Mieteinnahmen aus der Tabelle zahlungen berücksichtigen würde,
                ergäbe sich eine offene Forderung von mir an den betreffenden Mieter.
-        NB: Wenn es sich um ein Haus handelt, sind mehrere Mietobjekte betroffen.
-            Für jedes Mietobjekt wird die Aufspaltung in Netto-Mieten und NKV separat vorgenommen;
-            abschließend werden die Werte aller Mietobjekte addiert (Netto-ME und NKV)
-        Dann werden aus der Tabelle sollmiete für alle Mietobjekte des Master-Objekts alle Soll-Nettomieten
-        und Soll-NKV des Jahres jahr ermittelt.
-        Für jedes Mietobjekt wird (für das betreffende Jahr) ein gemitteltes Verhältnis aus Nettomiete und NKV
-        ermittelt. Dieses wird zum Zwecke der Aufteilung auf die Jahres-Brutto-Miete angewandt.
+        Die Summe aus a + b ist Jahres-Bruttosumme.
+        NB: der andere Fall, eine offene Forderung an den Mieter (NK-Nachzahlung), muss nicht betrachtet
+        werden. Das ist einfach eine fehlende Einnahme im Jahr jahr, die nach Begleichung im Folgejahr
+        als Einnahme verbucht wird.
+
+        Dann wird aus Tabelle sollmiete das Soll-Jahresnetto ermittelt.
+        Ist das Soll <= dem Ist-Brutto, wird es in die AnlageV (Feld Mieteinnahmen für Wohnungen, Z. 9)
+        eingetragen.
+        Ist das Ist-Brutto kleiner als das Netto-Soll (ist noch nie vorgekommen), wird das Ist-Brutto in
+        die Anlage V ins Feld "Mieteinnahmen ohne Umlagen", Z.9,  eingetragen. In diesem Fall werden keine NKV
+        in Feld Umlagen, Z. 13, eingetragen.
+        Im Normalfall (Ist-Brutto > Soll-Netto) wird das Soll-Netto ins Feld "Mieteinnahmen ohne Umlagen"
+        eingetragen und die Differenz Ist-Brutto - Soll-Netto abgezogen (ergibt die NKV)
+        ins Feld "Umlagen", Z. 13.
+
+        Aus der Tabelle nk_abrechnung werden nun noch gebuchte Beträge (Rück- oder Nachzahlungen) von Mietern
+        der Mietobjekte des Master-OBjekts mit den NKV saldiert; der sich ergebende Wert wird in Feld Umlagen
+        eingetragen.
         :param master_name:
         :param jahr:
         :param anlagev_zeilen:
         :return:
         """
         bruttoME = self._db.getZahlungssumme( master_name, jahr, Zahlart.BRUTTOMIETE )
-        sollmieten:List[XSollMiete] = self._getSollmieten( master_name, jahr )
+        offErstattg = self._db.getOffeneNKErstattungen( master_name, jahr-1 )
+        bruttoME += offErstattg
+        nettoSoll = self._getJahresNettoSoll( master_name, jahr )
+        nka = self._db.getNKA( master_name, jahr )
+        if bruttoME < nettoSoll: # der unwahrscheinliche Fall
+            self._createAnlageV_Zeile( "mieteinnahmen_netto", bruttoME )
+            self._createAnlageV_Zeile( "umlagen", nka )
+        else:
+            self._createAnlageV_Zeile( "mieteinnahmen_netto", nettoSoll )
+            nkv = bruttoME - nettoSoll # das sind die NKV
+            self._createAnlageV_Zeile( "umlagen", nkv + nka )
+
+    def _getJahresNettoSoll( self, master_name:str, jahr:int ):
+        sollmieten: List[XSollMiete] = self._getSollmieten( master_name, jahr )
+        nettoSoll = 0
+        for sollmiete in sollmieten:
+            nMonate = getNumberOfMonths( sollmiete.von, sollmiete.bis, jahr )
+            nettoSoll += nMonate * sollmiete.netto
+        return nettoSoll
 
     def _getSollmieten( self, master_name, jahr:int ) -> List[XSollMiete]:
         return self._db.getSollmietenFuerMasterobjekt( master_name, jahr )
@@ -167,6 +208,22 @@ class AnlageV_Logic:
         self._provideMieteinnahmenUndUmlagen( master_name, jahr, l )
         return l
 
+# masterobjekte = [ "BUEB_Saargemuend", "HOM_Remigius",
+#                   "ILL_Eich",
+#                   "NK_Kleist", "NK_KuchenbergS", "NK_KuchenbergW", "NK_ThomasMann", "NK_Volkerstal",
+#                   "NK_Ww224", "NK_Zweibrueck", "OTW_Linx", "OTW_Schwalbe", "RI_Lampennester",
+#                   "SB_Charlotte", "SB_Gruelings", "SB_Hohenzoll", "SB_Kaiser" ]
+masterobjekte = [ "ILL_Eich", "SB_Hohenzoll", "SB_Kaiser" ]
+
+def testPreview():
+    app = QApplication()
+    busi = AnlageV_Logic.inst()
+    v = AnlageVView()
+    zeilenlist = busi.getAnlageV_Zeilen( "BUEB_Saargemuend", 2021 )
+    m = AnlageVTableModel( zeilenlist )
+    v.setAnlageVTableModel( m )
+    v.show()
+    app.exec_()
 
 def test():
     busi = AnlageV_Logic.inst()
@@ -179,6 +236,15 @@ def test():
     # print( o )
     busi.terminate()
 
+def printAll():
+    ###### ACHTUNG: Drucker auf EINSEITIG stellen!!!!!!!!!!!!!
+    app = QApplication()
+    busi = AnlageV_Logic.inst()
+    for masterobjekt in masterobjekte:
+        zeilenlist = busi.getAnlageV_Zeilen( masterobjekt, 2020 )
+        avprinter = AnlageV_Printer( zeilenlist )
+        avprinter.print()
+
 def testPrint():
     busi = AnlageV_Logic.inst()
     zeilenlist = busi.getAnlageV_Zeilen( "BUEB_Saargemuend" )
@@ -190,5 +256,7 @@ def testPrint():
 
 
 if __name__ == "__main__":
-    test()
+    #test()
     #testPrint()
+    #printAll()
+    testPreview()

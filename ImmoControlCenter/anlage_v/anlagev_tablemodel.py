@@ -18,7 +18,7 @@ class AnlageVTableModel( QAbstractTableModel ):
             self._headers:List = ["Keine Daten vorhanden"]
         self._negNumberBrush = QBrush( Qt.red )
         self._noneBrush = QBrush( Qt.lightGray )
-        self._fonts:List[QFont] = None
+        self._fonts:List[QFont] = list()
         self._makeFonts()
 
         #self._changedCallback = None
@@ -81,7 +81,8 @@ class AnlageVTableModel( QAbstractTableModel ):
             if role == Qt.DisplayRole:
                 return self._headers[col]
             if role == Qt.BackgroundRole:
-                if self.headerBrush:
-                    return self.headerBrush
+                pass
+                # if self.headerBrush:
+                #     return self.headerBrush
         return None
 

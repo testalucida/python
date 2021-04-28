@@ -3,6 +3,9 @@ from PySide2.QtCore import Qt, QSize
 from PySide2.QtGui import QIcon
 from PySide2.QtWidgets import QPushButton, QWidget, QHBoxLayout, QApplication, QTableView
 
+from anlage_v.anlagev_tablemodel import AnlageVTableModel
+
+
 class AnlageVTableView( QTableView ):
     def __init__( self, parent=None ):
         QTableView.__init__( self, parent )
@@ -46,6 +49,8 @@ class AnlageVView( QWidget ):
     def _onPrint( self ):
         print( "AnlageVView._onPrint" )
 
+    def setAnlageVTableModel( self, model:AnlageVTableModel ) -> None:
+        self._tv.setModel( model )
 
 def test():
     app = QApplication()

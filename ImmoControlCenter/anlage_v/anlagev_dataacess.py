@@ -38,7 +38,7 @@ class AnlageV_DataAccess( DbAccess ):
         return names
 
     def getObjektStammdaten( self ) -> List[XObjektStammdaten]:
-        sql = "select master_id, master_name, strasse_hnr, plz, ort, angeschafft_am, veraeussert_am, gesamt_wfl, einhwert_az " \
+        sql = "select lfdnr, master_id, master_name, strasse_hnr, plz, ort, angeschafft_am, veraeussert_am, gesamt_wfl, einhwert_az " \
               "from masterobjekt " \
               "where master_name not like '*%'"
         diclist = self._doReadAllGetDict( sql )
@@ -117,22 +117,22 @@ class AnlageV_DataAccess( DbAccess ):
             sollList.append( x )
         return sollList
 
-    def getMietzahlungenMitSummen( self, master_name:str, jahr: int ) -> List[Dict]:
-        sql = "select ea.meinaus_id, mv.mv_id, " \
-              "mv.von, coalesce( mv.bis, '') as bis, mv.mobj_id as objekt, mv.name || ', ' || mv.vorname as name, " \
-              "0 as soll, " \
-              "'ok' as ok, 'nok' as nok, " \
-              "jan, feb, mrz, apr, mai, jun, jul, aug, sep, okt, nov, dez, " \
-              "(coalesce(jan,0)+coalesce(feb,0)+coalesce(mrz,0)+coalesce(apr,0)+coalesce(mai,0)+coalesce(jun,0)+" \
-              "coalesce(jul,0)+coalesce(aug,0)+coalesce(sep,0)+coalesce(okt,0)+coalesce(nov, 0) + coalesce(dez, 0)) as summe " \
-              "from mietverhaeltnis mv " \
-              "inner join mtleinaus ea on ea.mv_id = mv.mv_id " \
-              "where ea.jahr = %s " \
-              "and ea.mv_id > '' " \
-              "and (mv.bis = '' or mv.bis is NULL or substr(mv.bis, 0, 5) >= '%s') " \
-              "order by mv.mv_id" % (jahr, jahr)
-        diclist: List[Dict] = self._doReadAllGetDict( sql )
-        return diclist
+    # def getMietzahlungenMitSummen( self, master_name:str, jahr: int ) -> List[Dict]:
+    #     sql = "select ea.meinaus_id, mv.mv_id, " \
+    #           "mv.von, coalesce( mv.bis, '') as bis, mv.mobj_id as objekt, mv.name || ', ' || mv.vorname as name, " \
+    #           "0 as soll, " \
+    #           "'ok' as ok, 'nok' as nok, " \
+    #           "jan, feb, mrz, apr, mai, jun, jul, aug, sep, okt, nov, dez, " \
+    #           "(coalesce(jan,0)+coalesce(feb,0)+coalesce(mrz,0)+coalesce(apr,0)+coalesce(mai,0)+coalesce(jun,0)+" \
+    #           "coalesce(jul,0)+coalesce(aug,0)+coalesce(sep,0)+coalesce(okt,0)+coalesce(nov, 0) + coalesce(dez, 0)) as summe " \
+    #           "from mietverhaeltnis mv " \
+    #           "inner join mtleinaus ea on ea.mv_id = mv.mv_id " \
+    #           "where ea.jahr = %s " \
+    #           "and ea.mv_id > '' " \
+    #           "and (mv.bis = '' or mv.bis is NULL or substr(mv.bis, 0, 5) >= '%s') " \
+    #           "order by mv.mv_id" % (jahr, jahr)
+    #     diclist: List[Dict] = self._doReadAllGetDict( sql )
+    #     return diclist
 
     def getZahlungssumme( self, master_name:str, jahr:int, art:Zahlart ) -> float:
         artstr = zahlartstrings[art]
@@ -143,12 +143,42 @@ class AnlageV_DataAccess( DbAccess ):
               "and zahl_art = '%s' " \
               "and jahr = %d " % ( master_name, artstr, jahr )
         l = self._doRead( sql )
-        return l[0][0]
+        sum = l[0][0]
+        return 0.0 if sum is None else sum
+
+    def getOffeneNKErstattungen( self, master_name:str, jahr:int ) -> float:
+        sql = "select sum( betrag ) " \
+              "from masterobjekt master " \
+              "inner join mietobjekt mobj on mobj.master_id = master.master_id " \
+              "inner join mietverhaeltnis mv on mv.mobj_id = mobj.mobj_id " \
+              "inner join nk_abrechnung nka on nka.mv_id = mv.mv_id " \
+              "where master.master_name = '%s' " \
+              "and ab_jahr = %d " \
+              "and betrag < 0 " \
+              "and (buchungsdatum is NULL or buchungsdatum = '') " % ( master_name, jahr )
+        l = self._doRead( sql )
+        sum = l[0][0]
+        return 0.0 if sum is None else sum
+
+    def getNKA( self, master_name:str, jahr:int ) -> float:
+        sql = "select sum( betrag ) " \
+              "from masterobjekt master " \
+              "inner join mietobjekt mobj on mobj.master_id = master.master_id " \
+              "inner join mietverhaeltnis mv on mv.mobj_id = mobj.mobj_id " \
+              "inner join nk_abrechnung nka on nka.mv_id = mv.mv_id " \
+              "where master.master_name = '%s' " \
+              "and ab_jahr = %d " \
+              "and buchungsdatum is not NULL and buchungsdatum > '' " % (master_name, jahr)
+        l = self._doRead( sql )
+        sum = l[0][0]
+        return 0.0 if sum is None else sum
 
 def test():
     av = AnlageV_DataAccess( "../immo.db")
     av.open()
 
+    b = av.getOffeneNKErstattungen( "NK_Zweibrueck", 2020 )
+    b = av.getNKA( "NK_Kleist", 2020 )
     names = av.getObjektNamen()
     print( names )
 

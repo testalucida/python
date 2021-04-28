@@ -22,6 +22,7 @@ class XZeilendefinition( XBase ):
 
 class XObjektStammdaten( XBase ):
     def __init__( self, valuedict:Dict=None ):
+        self.lfdnr = 0 # Anlage V - "lfd. Nr. der Anlage"
         self.master_id = 0
         self.master_name = ""
         self.plz:str = ""
@@ -70,7 +71,7 @@ class XAnlageV_Zeile:
         :return:
         """
         if column == 0: return self.nr
-        if column == 1: return self.text
+        if column == 1: return self.value
         if column == 2: return self.teilbetrag
         if column == 3: return self.betrag
         if column == 4: return self.bemerkung
