@@ -3,11 +3,12 @@ from typing import List, Dict, Any
 from PySide2.QtWidgets import QApplication
 
 from anlage_v.anlagev_dataacess import AnlageV_DataAccess
-from anlage_v.anlagev_interfaces import XObjektStammdaten, XAnlageV_Zeile, XZeilendefinition
+from anlage_v.anlagev_interfaces import XObjektStammdaten, XAnlageV_Zeile, XZeilendefinition, XMieteinnahme
+from anlage_v.anlagev_preview import AnlageV_Preview
 from anlage_v.anlagev_printer import AnlageV_Printer
 import numbers
 
-from anlage_v.anlagev_tablemodel import AnlageVTableModel
+from anlage_v.anlagev_tablemodel import AnlageVTableModel, PreviewRow
 from anlage_v.anlagev_view import AnlageVView
 from constants import Zahlart
 from datehelper import getNumberOfMonths
@@ -35,8 +36,8 @@ class AnlageV_Logic:
         return AnlageV_Logic.__instance
 
     def _prepare(self):
-        dbname = "../immo.db"
-        #dbname = "/home/martin/Vermietung/ImmoControlCenter/immo.db"
+        #dbname = "../immo.db"
+        dbname = "/home/martin/Vermietung/ImmoControlCenter/immo.db"
         self._db = AnlageV_DataAccess( dbname )
         self._db.open()
         self._steuerpflichtiger = self._db.getSteuerpflichtige()[0]
@@ -80,6 +81,9 @@ class AnlageV_Logic:
         ld:List[Dict] = self._db.getSteuerpflichtige()
         d = ld[0] # das bin ich
         x = self._createAnlageV_Zeile( "name", d["name"] )
+        x.previewFlag = False
+        anlagev_zeilen.append( x )
+        x = self._createAnlageV_Zeile( "zur_est", "X" )
         x.previewFlag = False
         anlagev_zeilen.append( x )
         x = self._createAnlageV_Zeile( "vorname", d["vorname"] )
@@ -129,6 +133,26 @@ class AnlageV_Logic:
         anlagev_zeilen.append( x )
 
     def _provideMieteinnahmenUndUmlagen( self, master_name:str, jahr:int, anlagev_zeilen:List[XAnlageV_Zeile] ) -> None:
+        x:XMieteinnahme = self.getMieteinnahmenUndNebenkosten( master_name, jahr )
+        z:XAnlageV_Zeile = self._createAnlageV_Zeile( "mieteinnahmen_netto", x.nettoMiete )
+        anlagev_zeilen.append( z )
+        z:XAnlageV_Zeile = self._createAnlageV_Zeile( "umlagen", x.nkv + x.nka )
+        anlagev_zeilen.append( z )
+
+        # bruttoME = self._db.getZahlungssumme( master_name, jahr, Zahlart.BRUTTOMIETE )
+        # offErstattg = self._db.getOffeneNKErstattungen( master_name, jahr-1 )
+        # bruttoME += offErstattg
+        # nettoSoll = self._getJahresNettoSoll( master_name, jahr )
+        # nka = self._db.getNKA( master_name, jahr )
+        # if bruttoME < nettoSoll: # der unwahrscheinliche Fall
+        #     self._createAnlageV_Zeile( "mieteinnahmen_netto", bruttoME )
+        #     self._createAnlageV_Zeile( "umlagen", nka )
+        # else:
+        #     self._createAnlageV_Zeile( "mieteinnahmen_netto", nettoSoll )
+        #     nkv = bruttoME - nettoSoll # das sind die NKV
+        #     self._createAnlageV_Zeile( "umlagen", nkv + nka )
+
+    def getMieteinnahmenUndNebenkosten( self, master_name:str, jahr:int ) -> XMieteinnahme:
         """
         Hier werden die Zeilen für die Netto-Miete und die Nebenkosten versorgt.
         Die Nebenkosten (NK) teilen sich auf in NK-Vorauszahlungen (NKV) und NK-Abrechnungen (NKA).
@@ -158,23 +182,48 @@ class AnlageV_Logic:
         eingetragen.
         :param master_name:
         :param jahr:
-        :param anlagev_zeilen:
         :return:
         """
-        bruttoME = self._db.getZahlungssumme( master_name, jahr, Zahlart.BRUTTOMIETE )
-        offErstattg = self._db.getOffeneNKErstattungen( master_name, jahr-1 )
-        bruttoME += offErstattg
-        nettoSoll = self._getJahresNettoSoll( master_name, jahr )
-        nka = self._db.getNKA( master_name, jahr )
-        if bruttoME < nettoSoll: # der unwahrscheinliche Fall
-            self._createAnlageV_Zeile( "mieteinnahmen_netto", bruttoME )
-            self._createAnlageV_Zeile( "umlagen", nka )
-        else:
-            self._createAnlageV_Zeile( "mieteinnahmen_netto", nettoSoll )
-            nkv = bruttoME - nettoSoll # das sind die NKV
-            self._createAnlageV_Zeile( "umlagen", nkv + nka )
+        x = XMieteinnahme( master_name )
+        x.bruttoMiete = self._db.getZahlungssumme( master_name, jahr, Zahlart.BRUTTOMIETE )
+        x.offnNkErstattg = self._db.getOffeneNKErstattungen( master_name, jahr-1 )
+        x.nettoSoll = self._getJahresNettoSoll( master_name, jahr )
+        x.nka = self._db.getNKA( master_name, jahr )
+        if ( x.bruttoMiete + x.offnNkErstattg ) < x.nettoSoll: # der unwahrscheinliche Fall
+            x.nettoMiete = x.bruttoMiete
+        else: # Normalfall
+            x.nettoMiete = x.nettoSoll
+            x.nkv = x.bruttoMiete - x.nettoMiete
+        return x
 
-    def _getJahresNettoSoll( self, master_name:str, jahr:int ):
+    def createAnlageVTableModel( self, master_name:str, jahr:int ) -> AnlageVTableModel:
+        tm_rows:List[PreviewRow] = list()
+        x = self._getObjekt( master_name )
+        self._createPreviewRowsFromObjektdaten( master_name, x.gesamt_wfl, tm_rows )
+        x = self.getMieteinnahmenUndNebenkosten( master_name, jahr )
+        self._createPreviewRowsFromXMieteinnahme( x, tm_rows )
+        # todo
+        tm = AnlageVTableModel( tm_rows )
+        return tm
+
+    def _createPreviewRowsFromObjektdaten( self, master_name:str, gesamt_wfl:int, previewRows:List[PreviewRow] ) -> None:
+        """
+        Erzeugt PreviewRow-Objekte für den Master-Namen und die Gesamtwohnfläche
+        :param master_name:
+        :param gesamt_wfl:
+        :param previewRows:
+        :return:
+        """
+
+    def _createPreviewRowsFromXMieteinnahme( self, x:XMieteinnahme, previewRows:List[PreviewRow] ) -> None:
+        """
+        Erzeugt PreviewRow-Objekte für Netto-Miete, NKV, NKA und hängt sie an die übergebene Liste der PreviewRows an.
+        :param x:
+        :param previewRows:
+        :return:
+        """
+
+    def _getJahresNettoSoll( self, master_name:str, jahr:int ) -> int:
         sollmieten: List[XSollMiete] = self._getSollmieten( master_name, jahr )
         nettoSoll = 0
         for sollmiete in sollmieten:
@@ -215,6 +264,12 @@ class AnlageV_Logic:
 #                   "SB_Charlotte", "SB_Gruelings", "SB_Hohenzoll", "SB_Kaiser" ]
 masterobjekte = [ "ILL_Eich", "SB_Hohenzoll", "SB_Kaiser" ]
 
+
+###############
+####################  A C H T u N G !!!!!!!!1  ###########################
+################### TEST GEGEN RELEASE-DATENBA NK !!!!!!!!!!1 ############
+##############
+
 def testPreview():
     app = QApplication()
     busi = AnlageV_Logic.inst()
@@ -235,6 +290,14 @@ def test():
     # o = busi.getObjektStammdaten()
     # print( o )
     busi.terminate()
+
+# def preview():
+#     app = QApplication()
+#     busi = AnlageV_Logic.inst()
+#     zeilenlist = busi.getAnlageV_Zeilen( "BUEB_Saargemuend", 2021 )
+#     busi.terminate()
+#     avpreview = AnlageV_Preview( zeilenlist )
+#     app.exec_()
 
 def printAll():
     ###### ACHTUNG: Drucker auf EINSEITIG stellen!!!!!!!!!!!!!
@@ -260,3 +323,4 @@ if __name__ == "__main__":
     #testPrint()
     #printAll()
     testPreview()
+    #preview()

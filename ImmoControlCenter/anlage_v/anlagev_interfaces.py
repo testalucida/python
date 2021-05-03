@@ -9,6 +9,30 @@ class XSteuerpflichtiger:
         self.vorname = "Martin"
         self.steuernummer = ""
 
+class ZahlungsIntervall:
+    def __init__(self):
+        von:str = ""
+        bis:str = ""
+        anzMonate:int = 0
+        netto:float = 0.0 # Netto-ME bzw. HG-netto
+        zusatz:float = 0.0 # NKV bzw. RüZuFü
+
+class XMieteinnahme:
+    def __init__(self, master_name:str=""):
+        self.master_name:str = master_name
+        self.bruttoMiete:int = 0
+        self.offnNkErstattg:int = 0
+        self.nettoMiete:int = 0
+        self.nkv:int = 0
+        self.nka:int = 0
+        self.nettoSoll:int = 0
+
+class XAnlageV_Daten:
+    def __init__( self ):
+        self.steuerpflichtiger: XSteuerpflichtiger = None
+        self.objektstammdaten: XObjektStammdaten = None
+        self.mieteinnahmen:XMieteinnahme = None
+
 class XZeilendefinition( XBase ):
     def __init__( self, valuedict:Dict=None ):
         self.zeile:int = 0 # Nummer der Zeile auf dem AnlageV-Formular
@@ -59,10 +83,10 @@ class XAnlageV_Zeile:
         self.printFontsize = 5
 
     def getDisplayItemCount( self ) -> int:
-        return 5 # nr, text, teilbetrag, betrag, bemerkung
+        return 6 # nr, feld_id, value, teilbetrag, betrag, bemerkung
 
     def getHeaders( self ) -> List:
-        return ["Zeile", "Text", "Teilbetrag", "Betrag", "Bemerkung"]
+        return ["Zeile", "Feld", "Text", "Teilbetrag", "Betrag", "Bemerkung"]
 
     def getValue( self, column:int ) -> Any:
         """
@@ -71,10 +95,11 @@ class XAnlageV_Zeile:
         :return:
         """
         if column == 0: return self.nr
-        if column == 1: return self.value
-        if column == 2: return self.teilbetrag
-        if column == 3: return self.betrag
-        if column == 4: return self.bemerkung
+        if column == 1: return self.feld_id
+        if column == 2: return self.value
+        if column == 3: return self.teilbetrag
+        if column == 4: return self.betrag
+        if column == 5: return self.bemerkung
 
     def getBetragColumn( self ) -> int:
-        return 3
+        return 4

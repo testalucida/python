@@ -51,6 +51,7 @@ class AnlageVView( QWidget ):
 
     def setAnlageVTableModel( self, model:AnlageVTableModel ) -> None:
         self._tv.setModel( model )
+        self._tv.resizeColumnsToContents()
 
 def test():
     app = QApplication()
