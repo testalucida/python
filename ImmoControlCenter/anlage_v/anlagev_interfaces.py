@@ -1,6 +1,6 @@
 from typing import Any, List, Dict
 
-from interfaces import XBase
+from interfaces import XBase, setFromDict
 
 
 class XSteuerpflichtiger:
@@ -26,6 +26,60 @@ class XMieteinnahme:
         self.nkv:int = 0
         self.nka:int = 0
         self.nettoSoll:int = 0
+        self.bemerkung:str = ""
+
+class XAfA:
+    def __init__(self, master_name:str="" ):
+        self.master_name = master_name
+        self.afa_linear: bool = False
+        self.afa_degressiv: bool = False
+        self.afa_prozent: float = 0.0
+        self.afa_wie_vorjahr: bool = True
+        self.afa: float = 0.0
+
+class XAufwandVerteilt:
+    def __init__(self, master_name:str="" ):
+        self.master_name = master_name
+        self.gesamt_aufwand_vj:int = 0
+        self.aufwand_vj:int = 0
+        self.aufwand_vj_minus_4: int = 0
+        self.aufwand_vj_minus_3: int = 0
+        self.aufwand_vj_minus_2: int = 0
+        self.aufwand_vj_minus_1: int = 0
+
+class XErhaltungsaufwand():
+    def __init__(self, valuedict:Dict=None ):
+        self.master_name:str = ""
+        self.master_id:int = 0
+        self.mobj_id:str = ""
+        self.betrag:float = 0.0
+        self.kreditor:str = ""
+        self.rgdatum:str = ""
+        self.rgtext:str = ""
+        self.verteilen_auf_jahre = 1
+        self.buchungsdatum:str = ""
+        self.buchungsjahr:int = 0
+        self.buchungstext:str = ""
+        if valuedict:
+            setFromDict( self, valuedict )
+
+class XAllgemeineKosten( XErhaltungsaufwand ):
+    def __init__( self, valuedict:Dict=None ):
+        XErhaltungsaufwand.__init__( self, valuedict )
+
+class XSonstigeKosten( XErhaltungsaufwand ):
+    def __init__( self, valuedict:Dict=None ):
+        XErhaltungsaufwand.__init__( self, valuedict )
+
+class XWerbungskosten:
+    def __init__( self, master_name:str, jahr:int ):
+        self.master_name:str = master_name
+        self.jahr:int = jahr
+        self.afa:XAfA = None
+        self.erhalt_aufwand:int = 0 # die Summe der im VJ komplett anzusetzenden Aufwände
+        self.erhalt_aufwand_verteilt:XAufwandVerteilt = None
+        self.allgemeine_kosten = 0
+        self.sonstige_kosten = 0
 
 class XAnlageV_Daten:
     def __init__( self ):

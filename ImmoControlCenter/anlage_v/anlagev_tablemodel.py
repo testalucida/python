@@ -8,55 +8,84 @@ from anlagev_interfaces import XAnlageV_Zeile
 
 class PreviewRow:
     def __init__(self):
-        self.zeile:int = 0
+        self.zeile:Any = None
         self.text:str = ""
-        self.betrag1:float = 0.0
-        self.betrag:int = 0
+        self.wert1:Any = None
+        self.wert2:Any = None
         self.detailLink:str = ""
         self.bemerkung:str = ""
+        self.isSeparator:bool = False
+        self.isSumme:bool = False
 
 class AnlageVTableModel( QAbstractTableModel ):
     def __init__(self, zeilen:List[PreviewRow] ):
         QAbstractTableModel.__init__( self )
         self._rows = zeilen
-        self._headers: List = ["Zeile", "Text", "Betrag", "Betrag Anl.V VJ", "Details", "Bemerkung"]
+        self._headers: List = ["Zeile", "Text", "Wert1", "Wert Anl.V VJ", "Details", "Bemerkung"]
+        self._keys:List = ["zeile", "text", "wert1", "wert2", "detailLink", "bemerkung"]
+        self._wertColumns:List = [2, 3]
         self._negNumberBrush = QBrush( Qt.red )
+        self._separatorForeground = QBrush( Qt.white )
         self._noneBrush = QBrush( Qt.lightGray )
         color = QColor( 197, 217, 227 )
         self._fieldIdBrush = QBrush( color )
-        self._fonts: List[QFont] = list()
-        self._makeFonts()
-
-    def _makeFonts( self ):
-        self._fonts.append( QFont( "Arial", 11, QFont.Normal ) )
-        self._fonts.append( QFont( "Arial", 11, QFont.Bold ) )
-        self._fonts.append( QFont( "Arial", 12, QFont.Bold ) )
-
+        self._separatorBrush = QBrush( Qt.darkGreen )
+        self._normalFont = QFont( "Arial", 11, QFont.Normal )
+        self._boldFont = QFont( "Arial", 11, QFont.Bold )
+        self._boldBigFont = QFont( "Arial", 12, QFont.Bold )
 
     def rowCount( self, parent:QModelIndex=None ) -> int:
-        pass
+        return len( self._rows )
 
     def columnCount( self, parent:QModelIndex=None ) -> int:
-        pass
+        return len( self._headers )
 
     def getValue(self, indexrow:int, indexcolumn:int ) -> Any:
-        pass
+        row = self.getPreviewRow( indexrow )
+        return self.getValue2( row, indexcolumn )
+
+    def getValue2( self, row:PreviewRow, indexcolumn:int ) -> Any:
+        return row.__dict__[self._keys[indexcolumn]]
+
+    def getPreviewRow( self, indexrow:int ) -> PreviewRow:
+        return self._rows[indexrow]
 
     def getBackgroundBrush(self, indexrow:int, indexcolumn:int ) -> QBrush or None:
-        if indexcolumn == 1: return self._fieldIdBrush
-        val = self.getValue( indexrow, indexcolumn )
+        row = self.getPreviewRow( indexrow )
+        if row.isSeparator:
+            if row.text:
+                return self._separatorBrush
+            else:
+                return self._noneBrush
+        if indexcolumn == 1:
+            return self._fieldIdBrush
+        val = self.getValue2( row, indexcolumn )
         if val is None: return self._noneBrush
         else: return None
 
     def getForegroundBrush(self, indexrow:int, indexcolumn:int ) -> QBrush or None:
-        val = self.getValue( indexrow, indexcolumn )
+        row = self.getPreviewRow( indexrow )
+        if row.isSeparator:
+            return self._separatorForeground
+        val = self.getValue2( row, indexcolumn )
         if isinstance(val, numbers.Number) and val < 0:
             return self._negNumberBrush
         else: return None
 
     def getFont(self, indexrow:int, indexcolumn:int ) -> QFont or None:
-        z = self.zeilen[0]
-        return self._fonts[z.fontFlag]
+        row = self.getPreviewRow( indexrow )
+        if row.isSeparator:
+            return self._boldFont
+        if row.zeile:
+            if indexcolumn in ( self._wertColumns ) \
+            and ( row.wert1 or row.wert2 ):
+                if row.isSumme:
+                    return self._boldBigFont
+                else:
+                    return self._boldFont
+            elif row.isSumme:
+                return self._boldFont
+        return self._normalFont
 
     def data(self, index: QModelIndex, role: int = None):
         if not index.isValid():

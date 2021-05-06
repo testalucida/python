@@ -1,6 +1,7 @@
 from typing import List, Dict
 
-from anlage_v.anlagev_interfaces import XObjektStammdaten, XZeilendefinition
+from anlage_v.anlagev_interfaces import XObjektStammdaten, XZeilendefinition, XAfA, XErhaltungsaufwand, \
+    XAllgemeineKosten
 from constants import Zahlart, zahlartstrings
 from dbaccess import DbAccess
 from interfaces import XSollMiete
@@ -117,23 +118,6 @@ class AnlageV_DataAccess( DbAccess ):
             sollList.append( x )
         return sollList
 
-    # def getMietzahlungenMitSummen( self, master_name:str, jahr: int ) -> List[Dict]:
-    #     sql = "select ea.meinaus_id, mv.mv_id, " \
-    #           "mv.von, coalesce( mv.bis, '') as bis, mv.mobj_id as objekt, mv.name || ', ' || mv.vorname as name, " \
-    #           "0 as soll, " \
-    #           "'ok' as ok, 'nok' as nok, " \
-    #           "jan, feb, mrz, apr, mai, jun, jul, aug, sep, okt, nov, dez, " \
-    #           "(coalesce(jan,0)+coalesce(feb,0)+coalesce(mrz,0)+coalesce(apr,0)+coalesce(mai,0)+coalesce(jun,0)+" \
-    #           "coalesce(jul,0)+coalesce(aug,0)+coalesce(sep,0)+coalesce(okt,0)+coalesce(nov, 0) + coalesce(dez, 0)) as summe " \
-    #           "from mietverhaeltnis mv " \
-    #           "inner join mtleinaus ea on ea.mv_id = mv.mv_id " \
-    #           "where ea.jahr = %s " \
-    #           "and ea.mv_id > '' " \
-    #           "and (mv.bis = '' or mv.bis is NULL or substr(mv.bis, 0, 5) >= '%s') " \
-    #           "order by mv.mv_id" % (jahr, jahr)
-    #     diclist: List[Dict] = self._doReadAllGetDict( sql )
-    #     return diclist
-
     def getZahlungssumme( self, master_name:str, jahr:int, art:Zahlart ) -> float:
         artstr = zahlartstrings[art]
         sql = "select sum(betrag) " \
@@ -173,10 +157,131 @@ class AnlageV_DataAccess( DbAccess ):
         sum = l[0][0]
         return 0.0 if sum is None else sum
 
+    def getAfA( self, master_name:str ) -> XAfA or None:
+        sql = "select coalesce(afa, 0) as afa, afa_wie_vj, afa_lin_deg, coalesce(afa_proz, 0) as afa_proz " \
+              "from masterobjekt " \
+              "where master_name = '%s' " % ( master_name )
+        d = self._doReadOneGetDict( sql )
+        if d["afa"] > 0:
+            x = XAfA( master_name )
+            x.afa = d["afa"]
+            if d["afa_lin_deg"] == "linear":
+                x.afa_linear = True
+            elif d["afa_lin_deg"] == "degressiv":
+                x.afa_degressiv = True
+            x.afa_prozent = d["afa_proz"]
+            if d["afa_wie_vj"] > " ":
+                x.afa_wie_vorjahr = True
+            return x
+        return None
+
+    def getNichtVerteiltenErhaltungsaufwandSumme( self, master_name:str, jahr:int ) -> int:
+        sql = "select sum( betrag ) as summe_betrag " \
+              "from sonstaus sa " \
+              "inner join masterobjekt master on master.master_id = sa.master_id " \
+              "where master.master_name = '%s' " \
+              "and buchungsjahr = %d " \
+              "and kostenart = 'r' " \
+              "and sa.verteilen_auf_jahre = 1" % (master_name, jahr)
+        l = self._doRead( sql )
+        sum = l[0][0]
+        return 0 if sum is None else round( sum )
+
+    def getNichtVerteilteErhaltungsaufwendungen( self, master_name:str, jahr:int ) -> List[XErhaltungsaufwand]:
+        sql = "select master.master_name, " \
+                "sa.master_id, mobj_id, kreditor, betrag, rgdatum, rgtext, verteilen_auf_jahre, buchungsjahr," \
+                "buchungsdatum, buchungstext " \
+                "from sonstaus sa " \
+                "inner join masterobjekt master on master.master_id = sa.master_id " \
+                "where master.master_name = '%s' " \
+                "and kostenart = 'r' " \
+                "and verteilen_auf_jahre = 1 " \
+                "and buchungsjahr = %d " % (master_name, jahr)
+        dictlist = self._doReadAllGetDict( sql )
+        l:List[XErhaltungsaufwand] = list()
+        for d in dictlist:
+            x = XErhaltungsaufwand( d )
+            l.append( d )
+        return l
+
+    def getVerteilteErhaltungsaufwendungen( self, master_name:str, jahr:int ) -> List[XErhaltungsaufwand]:
+        sql = "select master.master_name, " \
+                "sa.master_id, mobj_id, kreditor, betrag, rgdatum, rgtext, verteilen_auf_jahre, buchungsjahr," \
+                "buchungsdatum, buchungstext " \
+                "from sonstaus sa " \
+                "inner join masterobjekt master on master.master_id = sa.master_id " \
+                "where master.master_name = '%s' " \
+                "and kostenart = 'r' " \
+                "and verteilen_auf_jahre > 1 " \
+                "and buchungsjahr + verteilen_auf_jahre  > %d " % (master_name, jahr)
+        dictlist = self._doReadAllGetDict( sql )
+        l: List[XErhaltungsaufwand] = list()
+        for d in dictlist:
+            x = XErhaltungsaufwand( d )
+            l.append( x )
+        return l
+
+    def getAllgemeineKosten( self, master_name:str, jahr:int ) -> List[XAllgemeineKosten]:
+        sql = "select master.master_name, " \
+              "sa.master_id, mobj_id, kreditor, betrag, rgdatum, rgtext, verteilen_auf_jahre, buchungsjahr," \
+              "buchungsdatum, buchungstext " \
+              "from sonstaus sa " \
+              "inner join masterobjekt master on master.master_id = sa.master_id " \
+              "where master.master_name = '%s' " \
+              "and kostenart = 'a' " \
+              "and buchungsjahr = %d " % ( master_name, jahr )
+        dictlist = self._doReadAllGetDict( sql )
+        l: List[XAllgemeineKosten] = list()
+        for d in dictlist:
+            x = XAllgemeineKosten( d )
+            l.append( x )
+        return l
+
+    def getAllgemeineKostenSumme( self, master_name:str, jahr:int ) -> int:
+        sql = "select sum(betrag) as summe_betrag " \
+              "from sonstaus sa " \
+              "inner join masterobjekt master on master.master_id = sa.master_id " \
+              "where master.master_name = '%s' " \
+              "and kostenart = 'a' " \
+              "and buchungsjahr = %d " % ( master_name, jahr )
+        l = self._doRead( sql )
+        sum = l[0][0]
+        return 0 if sum is None else round( sum )
+
+    def getSonstigeKosten( self, master_name:str, jahr:int ) -> List[XAllgemeineKosten]:
+        sql = "select master.master_name, " \
+              "sa.master_id, mobj_id, kreditor, betrag, rgdatum, rgtext, verteilen_auf_jahre, buchungsjahr," \
+              "buchungsdatum, buchungstext " \
+              "from sonstaus sa " \
+              "inner join masterobjekt master on master.master_id = sa.master_id " \
+              "where master.master_name = '%s' " \
+              "and kostenart = 's' " \
+              "and buchungsjahr = %d " % ( master_name, jahr )
+        dictlist = self._doReadAllGetDict( sql )
+        l: List[XAllgemeineKosten] = list()
+        for d in dictlist:
+            x = XAllgemeineKosten( d )
+            l.append( x )
+        return l
+
+    def getSonstigeKostenSumme( self, master_name:str, jahr:int ) -> int:
+        sql = "select sum(betrag) as summe_betrag " \
+              "from sonstaus sa " \
+              "inner join masterobjekt master on master.master_id = sa.master_id " \
+              "where master.master_name = '%s' " \
+              "and kostenart = 's' " \
+              "and buchungsjahr = %d " % ( master_name, jahr )
+        l = self._doRead( sql )
+        sum = l[0][0]
+        return 0 if sum is None else round( sum )
+
 def test():
     av = AnlageV_DataAccess( "../immo.db")
     av.open()
-
+    l = av.getNichtVerteilteErhaltungsaufwendungen( "SB_Kaiser", 2021 )
+    l = av.getVerteilteErhaltungsaufwendungen( "SB_Kaiser", 2021 )
+    s = av.getNichtVerteiltenErhaltungsaufwandSumme( "SB_Kaiser", 2021 )
+    x = av.getAfA( "Rülzheim")
     b = av.getOffeneNKErstattungen( "NK_Zweibrueck", 2020 )
     b = av.getNKA( "NK_Kleist", 2020 )
     names = av.getObjektNamen()

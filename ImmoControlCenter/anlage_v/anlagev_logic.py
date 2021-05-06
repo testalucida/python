@@ -3,7 +3,8 @@ from typing import List, Dict, Any
 from PySide2.QtWidgets import QApplication
 
 from anlage_v.anlagev_dataacess import AnlageV_DataAccess
-from anlage_v.anlagev_interfaces import XObjektStammdaten, XAnlageV_Zeile, XZeilendefinition, XMieteinnahme
+from anlage_v.anlagev_interfaces import XObjektStammdaten, XAnlageV_Zeile, XZeilendefinition, XMieteinnahme, \
+    XWerbungskosten, XAfA, XErhaltungsaufwand, XAufwandVerteilt
 from anlage_v.anlagev_preview import AnlageV_Preview
 from anlage_v.anlagev_printer import AnlageV_Printer
 import numbers
@@ -36,8 +37,8 @@ class AnlageV_Logic:
         return AnlageV_Logic.__instance
 
     def _prepare(self):
-        #dbname = "../immo.db"
-        dbname = "/home/martin/Vermietung/ImmoControlCenter/immo.db"
+        dbname = "../immo.db"
+        #dbname = "/home/martin/Vermietung/ImmoControlCenter/immo.db"
         self._db = AnlageV_DataAccess( dbname )
         self._db.open()
         self._steuerpflichtiger = self._db.getSteuerpflichtige()[0]
@@ -188,20 +189,66 @@ class AnlageV_Logic:
         x.bruttoMiete = self._db.getZahlungssumme( master_name, jahr, Zahlart.BRUTTOMIETE )
         x.offnNkErstattg = self._db.getOffeneNKErstattungen( master_name, jahr-1 )
         x.nettoSoll = self._getJahresNettoSoll( master_name, jahr )
-        x.nka = self._db.getNKA( master_name, jahr )
+        x.nka = self._db.getNKA( master_name, jahr-1 )
         if ( x.bruttoMiete + x.offnNkErstattg ) < x.nettoSoll: # der unwahrscheinliche Fall
             x.nettoMiete = x.bruttoMiete
+            x.bemerkung = "Brutto: %d + Offene NK-Erstattung: %d ist in Summe niedriger als die Soll-Nettomiete %d" % \
+                          ( x.bruttoMiete, x.offnNkErstattg, x.nettoSoll )
         else: # Normalfall
             x.nettoMiete = x.nettoSoll
             x.nkv = x.bruttoMiete - x.nettoMiete
         return x
 
+    def getWerbungskosten( self, master_name:str, jahr:int ) -> XWerbungskosten:
+        x:XWerbungskosten = XWerbungskosten( master_name, jahr )
+        x.afa = self._db.getAfA( master_name )
+        x.erhalt_aufwand = self._db.getNichtVerteiltenErhaltungsaufwandSumme( master_name, jahr )
+        x.erhalt_aufwand_verteilt = self._getVerteiltenErhaltungsaufwand( master_name, jahr )
+        x.allgemeine_kosten = self._db.getAllgemeineKostenSumme( master_name, jahr )
+        x.sonstige_kosten = self._db.getSonstigeKostenSumme( master_name, jahr )
+        return x
+
+    def _getVerteiltenErhaltungsaufwand( self, master_name:str, jahr:int ) -> XAufwandVerteilt:
+        """
+        Ermittelt eine Liste mit allen zu verteilenden Aufwänden.
+        Diese einzelnen Aufwände müssen in ein XAufwandVerteilt-OBjekt verdichtet werden.
+        :return: XAufwandVerteilt
+        """
+        awlist:List[XErhaltungsaufwand] = self._db.getVerteilteErhaltungsaufwendungen( master_name, jahr )
+        x = XAufwandVerteilt( master_name )
+        if len( awlist ) > 0:
+            for aw in awlist:
+                awpart = int( round( aw.betrag / aw.verteilen_auf_jahre ) ) # awpart ist der Teilbetrag der Rechnung,
+                                                                            # der im VJ jahr angesetzt werden soll
+                if aw.buchungsjahr + 4 == jahr:
+                    x.aufwand_vj_minus_4 += awpart
+                elif aw.buchungsjahr + 3 == jahr:
+                    x.aufwand_vj_minus_3 += awpart
+                elif aw.buchungsjahr + 2 == jahr:
+                    x.aufwand_vj_minus_2 += awpart
+                elif aw.buchungsjahr + 1 == jahr:
+                    x.aufwand_vj_minus_1 += awpart
+                elif aw.buchungsjahr == jahr:  # neue Großrechnung
+                    x.gesamt_aufwand_vj += int( round( aw.betrag ) )
+                    x.aufwand_vj += awpart
+        return x
+
     def createAnlageVTableModel( self, master_name:str, jahr:int ) -> AnlageVTableModel:
+        """
+        TableModel für die AnlageV-Preview in einer QTableView
+        :param master_name:
+        :param jahr:
+        :return:
+        """
         tm_rows:List[PreviewRow] = list()
         x = self._getObjekt( master_name )
         self._createPreviewRowsFromObjektdaten( master_name, x.gesamt_wfl, tm_rows )
+        self._createPreviewRowSeparator( "EINNAHMEN und NEBENKOSTEN", tm_rows )
         x = self.getMieteinnahmenUndNebenkosten( master_name, jahr )
-        self._createPreviewRowsFromXMieteinnahme( x, tm_rows )
+        self._createPreviewRowsFromMieteinnahme( x, tm_rows )
+        self._createPreviewRowSeparator( "WERBUNGSKOSTEN", tm_rows )
+        xwk = self.getWerbungskosten( master_name,jahr )
+        self._createPreviewRowsFromWerbungskosten( xwk, tm_rows )
         # todo
         tm = AnlageVTableModel( tm_rows )
         return tm
@@ -214,14 +261,169 @@ class AnlageV_Logic:
         :param previewRows:
         :return:
         """
+        r = PreviewRow()
+        r.text = "Objekt"
+        r.wert1 = master_name
+        previewRows.append( r )
 
-    def _createPreviewRowsFromXMieteinnahme( self, x:XMieteinnahme, previewRows:List[PreviewRow] ) -> None:
+        o = self._getObjekt( master_name )
+        zdef = self._getZeilenDef( "obj_str_hnr" )
+        r = PreviewRow()
+        r.zeile = zdef.zeile
+        r.text = "Lage des Objekts"
+        r.wert1 = o.strasse_hnr
+        previewRows.append( r )
+
+        zdef = self._getZeilenDef( "gesamt_wfl" )
+        r = PreviewRow()
+        r.zeile = zdef.zeile
+        r.text = "Gesamtwohnfläche"
+        r.wert1 = o.gesamt_wfl
+        previewRows.append( r )
+
+    def _createPreviewRowsFromMieteinnahme( self, x:XMieteinnahme, previewRows:List[PreviewRow] ) -> None:
         """
         Erzeugt PreviewRow-Objekte für Netto-Miete, NKV, NKA und hängt sie an die übergebene Liste der PreviewRows an.
         :param x:
         :param previewRows:
         :return:
         """
+        r = PreviewRow()
+        r.text = "Netto-Jahresmiete SOLL"
+        r.wert1 = x.nettoSoll
+        self._checkBemerkung( x.bemerkung, r )
+        previewRows.append( r )
+
+        zdef = self._getZeilenDef( "mieteinnahmen_netto" )
+        r = PreviewRow()
+        r.zeile = zdef.zeile
+        r.text = "ME gesamtes Objekt ohne NK-Vorauszahlungen"
+        r.wert2 = x.nettoMiete
+        previewRows.append( r )
+
+        r = PreviewRow()
+        r.text = "NK-Vorauszahlungen"
+        r.wert1 = x.nkv
+        previewRows.append( r )
+
+        r = PreviewRow()
+        r.text = "Offene Erstattungen aus NKA"
+        r.wert1 = x.offnNkErstattg
+        previewRows.append( r )
+
+        r = PreviewRow()
+        r.text = "NK-Abrechnung aus VJ-1 (Rückzahlung: '-')"
+        r.wert1 = x.nka
+        previewRows.append( r )
+
+        zdef = self._getZeilenDef( "umlagen" )
+        r = PreviewRow()
+        r.zeile = zdef.zeile
+        r.text = "NKV saldiert mit NKA aus VJ-1"
+        r.wert2 = self._getSaldoNebenkostenAusXMieteinnahme( x )
+        previewRows.append( r )
+
+        zdef = self._getZeilenDef( "summe_einnahmen" )
+        r = PreviewRow()
+        r.zeile = zdef.zeile
+        r.text = "Summe der Einnahmen"
+        r.wert2 = self._getSummeEinnahmenAusXMieteinnahme( x )
+        r.isSumme = True
+        previewRows.append( r )
+
+    def _createPreviewRowsFromWerbungskosten( self, x:XWerbungskosten, previewRows:List[PreviewRow] ) -> None:
+        self._createPreviewRowsFromAfA( x.afa, previewRows )
+        self._createPreviewRowSeparator( "", previewRows  )
+        self._createPreviewRowsFromAufwandNichtVerteilt( x.erhalt_aufwand, x.jahr, previewRows )
+        self._createPreviewRowSeparator( "", previewRows )
+        self._createPreviewRowsFromAufwandVerteilt( x.erhalt_aufwand_verteilt, x.jahr, previewRows )
+
+    def _createPreviewRowsFromAfA( self, afa:XAfA, previewRows:List[PreviewRow] ) -> None:
+        zdef = self._getZeilenDef( "afa_linear" )
+        r = PreviewRow()
+        r.zeile = zdef.zeile
+        r.text = "AfA linear"
+        r.wert1 = "X" if afa.afa_linear else ""
+        previewRows.append( r )
+
+        zdef = self._getZeilenDef( "afa_prozent" )
+        r = PreviewRow()
+        r.zeile = zdef.zeile
+        r.text = "AfA Prozent"
+        r.wert1 = afa.afa_prozent
+        previewRows.append( r )
+
+        zdef = self._getZeilenDef( "afa_wievorjahr" )
+        r = PreviewRow()
+        r.zeile = zdef.zeile
+        r.text = "AfA wie Vorjahr"
+        r.wert1 = "X" if afa.afa_wie_vorjahr else ""
+        previewRows.append( r )
+
+        zdef = self._getZeilenDef( "afa_betrag" )
+        r = PreviewRow()
+        r.zeile = zdef.zeile
+        r.text = "AfA Betrag"
+        r.wert2 = afa.afa
+        previewRows.append( r )
+
+    def _createPreviewRowsFromAufwandNichtVerteilt( self, aufwand:int, jahr:int, previewRows: List[PreviewRow] ) -> None:
+        zdef = self._getZeilenDef( "kosten_voll_abziehbar" )
+        r = PreviewRow()
+        r.zeile = zdef.zeile
+        r.text = "In %d voll abzuziehende Erhalt.Aufwendg." % (jahr)
+        r.wert2 = aufwand
+        r.isSumme = False
+        previewRows.append( r )
+
+    def _createPreviewRowsFromAufwandVerteilt( self, x:XAufwandVerteilt, jahr:int, previewRows: List[PreviewRow] ) -> None:
+        zdef = self._getZeilenDef( "kosten_zu_verteilen" )
+        r = PreviewRow()
+        r.zeile = zdef.zeile
+        r.text = "Zu verteilender Gesamtaufwand in %d" % (jahr)
+        r.wert1 = x.gesamt_aufwand_vj
+        r.isSumme = False
+        previewRows.append( r )
+
+        # Zeile bleibt gleich
+        r = PreviewRow()
+        r.zeile = zdef.zeile
+        r.text = "   davon in %d abzuziehen" % (jahr)
+        r.wert2 = x.aufwand_vj
+        r.isSumme = False
+        previewRows.append( r )
+
+        zdef = self._getZeilenDef( "anteil_aus_vj_minus_4" )
+        teilaufwaende = [x.aufwand_vj_minus_1, x.aufwand_vj_minus_2, x.aufwand_vj_minus_3, x.aufwand_vj_minus_4]
+        z = zdef.zeile
+        for i in range( 4, 0, -1 ):
+            r = PreviewRow()
+            r.zeile = z
+            z += 1
+            r.text = "      zu berücksichtigen aus %d" % ( jahr - i )
+            r.wert2 = teilaufwaende[i-1]
+            r.isSumme = False
+            previewRows.append( r )
+
+    def _getSummeEinnahmenAusXMieteinnahme( self, x:XMieteinnahme ) -> int:
+        return x.nettoMiete + self._getSaldoNebenkostenAusXMieteinnahme( x )
+
+    def _getSaldoNebenkostenAusXMieteinnahme( self, x:XMieteinnahme ) -> int:
+        return round( x.nkv + x.nka )
+
+    def _checkBemerkung( self, bemerkung:str, row:PreviewRow ):
+        if bemerkung:
+            bem = row.bemerkung
+            if bem:
+                bem += " / "
+            bem += bemerkung
+            row.bemerkung = bem
+
+    def _createPreviewRowSeparator( self, text:str, previewRows:List[PreviewRow] ):
+        r = PreviewRow()
+        r.text = text
+        r.isSeparator = True
+        previewRows.append( r )
 
     def _getJahresNettoSoll( self, master_name:str, jahr:int ) -> int:
         sollmieten: List[XSollMiete] = self._getSollmieten( master_name, jahr )
@@ -247,7 +449,7 @@ class AnlageV_Logic:
 
     def getAnlageV_Zeilen( self, master_name:str, jahr:int ) -> List[XAnlageV_Zeile]:
         """
-        liefert alle Zeilen für die AnlageV des Objekts master_name (N_Stadtpark etc.)
+        liefert alle Zeilen für den Druck der AnlageV des Objekts master_name (N_Stadtpark etc.)
         :param master_name:
         :return:
         """
@@ -267,16 +469,16 @@ masterobjekte = [ "ILL_Eich", "SB_Hohenzoll", "SB_Kaiser" ]
 
 ###############
 ####################  A C H T u N G !!!!!!!!1  ###########################
-################### TEST GEGEN RELEASE-DATENBA NK !!!!!!!!!!1 ############
+################### TEST GEGEN TEST-DATENBANK !!!!!!!!!!1 ############
 ##############
 
 def testPreview():
     app = QApplication()
     busi = AnlageV_Logic.inst()
     v = AnlageVView()
-    zeilenlist = busi.getAnlageV_Zeilen( "BUEB_Saargemuend", 2021 )
-    m = AnlageVTableModel( zeilenlist )
-    v.setAnlageVTableModel( m )
+    v.setMinimumSize( 800, 1000 )
+    tm = busi.createAnlageVTableModel( "SB_Kaiser", 2021 )
+    v.setAnlageVTableModel( tm )
     v.show()
     app.exec_()
 
