@@ -81,6 +81,13 @@ class XWerbungskosten:
         self.allgemeine_kosten = 0
         self.sonstige_kosten = 0
 
+    def getSummeWerbungskosten( self ):
+        av = self.erhalt_aufwand_verteilt
+        return self.afa.afa + self.erhalt_aufwand + \
+               av.aufwand_vj + av.aufwand_vj_minus_1 + av.aufwand_vj_minus_2 + \
+               av.aufwand_vj_minus_3 + av.aufwand_vj_minus_4 + \
+               self.allgemeine_kosten + self.sonstige_kosten
+
 class XAnlageV_Daten:
     def __init__( self ):
         self.steuerpflichtiger: XSteuerpflichtiger = None

@@ -162,7 +162,7 @@ class AnlageV_DataAccess( DbAccess ):
               "from masterobjekt " \
               "where master_name = '%s' " % ( master_name )
         d = self._doReadOneGetDict( sql )
-        if d["afa"] > 0:
+        if d["afa"] != 0:
             x = XAfA( master_name )
             x.afa = d["afa"]
             if d["afa_lin_deg"] == "linear":
