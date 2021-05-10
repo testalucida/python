@@ -101,21 +101,14 @@ class BusinessLogic:
         # <sollwerte> enthält je Mietverhältnis genau 1 Satz mit den Werten netto, nkv und brutto.
         # Diese müssen je MV in <mieten> in die Spalte <soll> eingearbeitet werden.
         # Beide Listen müssen nach mv_id sortiert sein.
-        n = 0
         for m in mieten:
-            solldict = sollwerte[n]
-            if solldict["mv_id"] == m["mv_id"]:
-                if solldict["mv_id"] == m["mv_id"]:
-                    if solldict["brutto"] != m["soll"]:
-                        m["soll"] = solldict["brutto"]
-                    n += 1
-            else: # Mietverh. besteht in diesem Monat noch nicht oder nicht mehr
-                # TODO
-                #  das ist wahrscheinlich falsch. Beispiel fehlende Murasov am Jahresanfang: alle im Alphabet
-                # nach Murasov waren auf 0 gestanden.
-                # Wahrscheinlich ist es besser, es so zu programmieren, dass man sich nicht auf die Konsistenz
-                # von mieten und sollwerte verlässt.
+            solldict = next( ( d for d in sollwerte if d["mv_id"] == m["mv_id"] ), None )
+            #solldict = next( filter( lambda x: x["mv_id"] == m["mv_id"], sollwerte ), None )
+            if not solldict:
                 m["soll"] = 0
+            else:
+                if solldict["brutto"] != m["soll"]:
+                    m["soll"] = solldict["brutto"]
         return mieten
 
     def getHausgeldVorauszahlungenMitSollUndSummen( self, jahr:int, monat:int ) -> List[Dict]:
