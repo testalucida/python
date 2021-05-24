@@ -27,3 +27,11 @@ class Zahlart( IntEnum ):
     SONSTAUS = 4
 
 zahlartstrings = ("bruttomiete", "nka", "hgv", "hga", "sonstaus")
+
+class Sonstaus_Kostenart( Enum ):
+    ALLGEMEIN = "a",
+    GRUNDSTEUER = "g",
+    REPARATUR = "r",
+    SAMMEL = "sam",
+    SONSTIGE = "s",
+    VERSICHERUNG = "v"

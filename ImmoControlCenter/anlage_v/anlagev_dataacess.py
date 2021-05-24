@@ -1,8 +1,8 @@
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 from anlage_v.anlagev_interfaces import XObjektStammdaten, XZeilendefinition, XAfA, XErhaltungsaufwand, \
-    XAllgemeineKosten
-from constants import Zahlart, zahlartstrings
+    XAllgemeineKosten, XSammelAbgabeDetail, XAusgabeKurz
+from constants import Zahlart, zahlartstrings, Sonstaus_Kostenart
 from dbaccess import DbAccess
 from interfaces import XSollMiete
 
@@ -12,11 +12,14 @@ class AnlageV_DataAccess( DbAccess ):
         DbAccess.__init__( self, dbname )
 
     def getAnlageV_Zeilendefinitionen( self ) -> List[XZeilendefinition]:
-        sql = "select feld_nr, feld_id, zeile, printX, printY, new_page_after from anlagev_layout order by feld_nr "
+        sql = "select feld_nr, feld_id, zeile, printX, printY, new_page_after, rtl " \
+              "from anlagev_layout order by feld_nr "
         dictlist = self._doReadAllGetDict( sql )
         li:List[XZeilendefinition] = list()
         for dic in dictlist:
             x = XZeilendefinition( dic )
+            x.new_page_after = False if x.new_page_after is None or x.new_page_after == 0 else True
+            x.rtl = True if x.rtl == 1 else False
             li.append( x )
         return li
 
@@ -29,6 +32,18 @@ class AnlageV_DataAccess( DbAccess ):
         sql = "select name, vorname, steuernummer from steuerpflichtiger order by name "
         ld = self._doReadAllGetDict( sql )
         return ld
+
+    def getSteuerpflichtiger( self, master_name:str ) -> Dict:
+        """
+        liefert den Steuerpflichtigen zu einem Masterobjekt.
+        :param master_name:
+        :return: Dict mit keys name, vorname, steuernummer
+        """
+        sql = "select name, vorname, steuernummer " \
+              "from steuerpflichtiger s " \
+              "inner join masterobjekt mo on mo.stpfl_id = s.stpfl_id " \
+              "where mo.master_name = '%s' " % ( master_name )
+        return self._doReadOneGetDict( sql )
 
     def getObjektNamen( self ) -> List[str]:
         sql = "select master_name from masterobjekt " \
@@ -222,6 +237,12 @@ class AnlageV_DataAccess( DbAccess ):
         return l
 
     def getAllgemeineKosten( self, master_name:str, jahr:int ) -> List[XAllgemeineKosten]:
+        """
+        Ermittelt allgemeine Kosten (Kostenart a)
+        :param master_name:
+        :param jahr:
+        :return:
+        """
         sql = "select master.master_name, " \
               "sa.master_id, mobj_id, kreditor, betrag, rgdatum, rgtext, verteilen_auf_jahre, buchungsjahr," \
               "buchungsdatum, buchungstext " \
@@ -237,18 +258,7 @@ class AnlageV_DataAccess( DbAccess ):
             l.append( x )
         return l
 
-    def getAllgemeineKostenSumme( self, master_name:str, jahr:int ) -> int:
-        sql = "select sum(betrag) as summe_betrag " \
-              "from sonstaus sa " \
-              "inner join masterobjekt master on master.master_id = sa.master_id " \
-              "where master.master_name = '%s' " \
-              "and kostenart = 'a' " \
-              "and buchungsjahr = %d " % ( master_name, jahr )
-        l = self._doRead( sql )
-        sum = l[0][0]
-        return 0 if sum is None else round( sum )
-
-    def getSonstigeKosten( self, master_name:str, jahr:int ) -> List[XAllgemeineKosten]:
+    def getSonstigeKosten( self, master_name: str, jahr: int ) -> List[XAllgemeineKosten]:
         sql = "select master.master_name, " \
               "sa.master_id, mobj_id, kreditor, betrag, rgdatum, rgtext, verteilen_auf_jahre, buchungsjahr," \
               "buchungsdatum, buchungstext " \
@@ -256,7 +266,7 @@ class AnlageV_DataAccess( DbAccess ):
               "inner join masterobjekt master on master.master_id = sa.master_id " \
               "where master.master_name = '%s' " \
               "and kostenart = 's' " \
-              "and buchungsjahr = %d " % ( master_name, jahr )
+              "and buchungsjahr = %d " % (master_name, jahr)
         dictlist = self._doReadAllGetDict( sql )
         l: List[XAllgemeineKosten] = list()
         for d in dictlist:
@@ -264,20 +274,130 @@ class AnlageV_DataAccess( DbAccess ):
             l.append( x )
         return l
 
-    def getSonstigeKostenSumme( self, master_name:str, jahr:int ) -> int:
+    def getAusgabenSumme( self, master_name:str, jahr:int, kostenart:Sonstaus_Kostenart ) -> int:
+        """
+        Ermittelt die Summe der Ausgaben einer Kostenart
+        :param master_name:
+        :param jahr:
+        :param kostenart: Kostenart, deren Ausgaben in einer Summe ermittelt werden sollen
+        :return: Summe der Ausgaben
+        """
         sql = "select sum(betrag) as summe_betrag " \
               "from sonstaus sa " \
               "inner join masterobjekt master on master.master_id = sa.master_id " \
               "where master.master_name = '%s' " \
-              "and kostenart = 's' " \
-              "and buchungsjahr = %d " % ( master_name, jahr )
+              "and kostenart = '%s' " \
+              "and buchungsjahr = %d " % ( master_name, kostenart.value[0], jahr )
         l = self._doRead( sql )
         sum = l[0][0]
         return 0 if sum is None else round( sum )
+
+    def getAusgaben( self, master_name:str, jahr:int, kostenarten:List[Sonstaus_Kostenart] ) -> List[XAusgabeKurz]:
+        k_arten = ""
+        for art in kostenarten:
+            k_arten += "'"
+            k_arten += art.value[0]
+            k_arten += "'"
+            k_arten += ","
+        k_arten = k_arten[:-1]
+        sql = "select  master.master_name, master.master_id, kostenart, kreditor, betrag " \
+              "from sonstaus sa " \
+              "inner join masterobjekt master on master.master_id = sa.master_id " \
+              "where master.master_name = '%s' " \
+              "and buchungsjahr = %d " \
+              "and kostenart in (%s) " \
+              "order by kostenart, kreditor, betrag " % ( master_name, jahr, k_arten )
+        dictlist = self._doReadAllGetDict( sql )
+        l: List[XAusgabeKurz] = list()
+        for d in dictlist:
+            x = XAusgabeKurz( d )
+            l.append( x )
+        return l
+
+    # def getGrundsteuer( self, master_name:str, jahr:int ) -> float:
+    #     """
+    #     Ermittelt die Grundsteuer aus der Tabelle sonstaus (Kostenart g)
+    #     :param master_name:
+    #     :param jahr:
+    #     :return:
+    #     """
+    #     sql = "select sum(betrag) as summe_betrag " \
+    #           "from sonstaus sa " \
+    #           "inner join masterobjekt master on master.master_id = sa.master_id " \
+    #           "where master.master_name = '%s' " \
+    #           "and kostenart = 'g' " \
+    #           "and buchungsjahr = %d " % ( master_name, jahr )
+    #     l:List[Tuple] = self._doRead( sql )
+    #     gs = 0.0
+    #     for t in l:
+    #         gs += t[0]
+    #     return gs
+
+    # def getAllgemeineKostenSumme( self, master_name:str, jahr:int ) -> int:
+    #     """
+    #     Ermittelt die Summe der allgemeinen Kosten (Kostenart a)
+    #     :param master_name:
+    #     :param jahr:
+    #     :return:
+    #     """
+    #     sql = "select sum(betrag) as summe_betrag " \
+    #           "from sonstaus sa " \
+    #           "inner join masterobjekt master on master.master_id = sa.master_id " \
+    #           "where master.master_name = '%s' " \
+    #           "and kostenart = 'a' " \
+    #           "and buchungsjahr = %d " % ( master_name, jahr )
+    #     l = self._doRead( sql )
+    #     sum = l[0][0]
+    #     return 0 if sum is None else round( sum )
+
+    # def getVersicherungenSumme( self, master_name:str, jahr:int ) -> int:
+    #     """
+    #     Ermittelt die Summe der Versicherungskosten (Kostenart v)
+    #     :param master_name:
+    #     :param jahr:
+    #     :return:
+    #     """
+    #     sql = "select sum(betrag) as summe_betrag " \
+    #           "from sonstaus sa " \
+    #           "inner join masterobjekt master on master.master_id = sa.master_id " \
+    #           "where master.master_name = '%s' " \
+    #           "and kostenart = 'v' " \
+    #           "and buchungsjahr = %d " % ( master_name, jahr )
+    #     l = self._doRead( sql )
+    #     sum = l[0][0]
+    #     return 0 if sum is None else round( sum )
+
+
+    # def getSonstigeKostenSumme( self, master_name:str, jahr:int ) -> int:
+    #     sql = "select sum(betrag) as summe_betrag " \
+    #           "from sonstaus sa " \
+    #           "inner join masterobjekt master on master.master_id = sa.master_id " \
+    #           "where master.master_name = '%s' " \
+    #           "and kostenart = 's' " \
+    #           "and buchungsjahr = %d " % ( master_name, jahr )
+    #     l = self._doRead( sql )
+    #     sum = l[0][0]
+    #     return 0 if sum is None else round( sum )
+
+    def getDetailFromSammelabgabe( self, master_name:str, jahr:int ) -> XSammelAbgabeDetail or None:
+        sql = "select master.master_name, " \
+              "sd.master_id, sd.grundsteuer, sd.abwasser, sd.strassenreinigung " \
+              "from sammelabgabe_detail sd " \
+              "inner join masterobjekt master on master.master_id = sd.master_id " \
+              "where master.master_name = '%s' " \
+              "and jahr = %d " % (master_name, jahr)
+        d = self._doReadOneGetDict( sql )
+        if d:
+            x = XSammelAbgabeDetail( d )
+            return x
+        return None
 
 def test():
     av = AnlageV_DataAccess( "../immo.db")
     av.open()
+    l = av.getAusgaben( "SB_Kaiser", 2021, [Sonstaus_Kostenart.ALLGEMEIN,
+                                            Sonstaus_Kostenart.VERSICHERUNG, Sonstaus_Kostenart.GRUNDSTEUER] )
+    d = av.getSteuerpflichtiger( "ER_Heuschlag" )
     l = av.getNichtVerteilteErhaltungsaufwendungen( "SB_Kaiser", 2021 )
     l = av.getVerteilteErhaltungsaufwendungen( "SB_Kaiser", 2021 )
     s = av.getNichtVerteiltenErhaltungsaufwandSumme( "SB_Kaiser", 2021 )

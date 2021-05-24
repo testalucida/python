@@ -37,6 +37,16 @@ class XAfA:
         self.afa_wie_vorjahr: bool = True
         self.afa: float = 0.0
 
+class XAusgabeKurz:
+    def __init__(self, valuedict:Dict=None):
+        self.master_name = ""
+        self.master_id = 0
+        self.kostenart = ""
+        self.kreditor = ""
+        self.betrag = 0.0
+        if valuedict:
+            setFromDict( self, valuedict )
+
 class XAufwandVerteilt:
     def __init__(self, master_name:str="" ):
         self.master_name = master_name
@@ -47,7 +57,7 @@ class XAufwandVerteilt:
         self.aufwand_vj_minus_2: int = 0
         self.aufwand_vj_minus_1: int = 0
 
-class XErhaltungsaufwand():
+class XErhaltungsaufwand:
     def __init__(self, valuedict:Dict=None ):
         self.master_name:str = ""
         self.master_id:int = 0
@@ -71,6 +81,24 @@ class XSonstigeKosten( XErhaltungsaufwand ):
     def __init__( self, valuedict:Dict=None ):
         XErhaltungsaufwand.__init__( self, valuedict )
 
+class XSammelAbgabeDetail:
+    """
+    Für die Whgen in NK und OTW werden die Abgaben in einer Summe erhoben.
+    In der Tabelle sonstaus findet sich bei Abbuchung nur ein Eintrag der Art:
+        master_id=29 ("*NK_Alle*), betrag=-700, kostenart='sam', buchungstext='PK:00.01365.2'.
+    Diesen Eintrag kann man keinem Masterobjekt zuordnen. Deshalb ist dieser Sammelbetrag
+    aufgesplittet in Detail-Beträge der Masterobjekte in der Tabelle sammelabgabe_detail.
+    Für jedes Objekt muss in dieser Tabelle nachgeschaut werden, ob Einträge vorhanden sind.
+    """
+    def __init__(self, valuedict:Dict=None ):
+        self.master_name:str = ""
+        self.master_id = 0
+        self.grundsteuer:float = 0.0
+        self.abwasser:float = 0.0
+        self.strassenreinigung:float = 0.0
+        if valuedict:
+            setFromDict( self, valuedict )
+
 class XWerbungskosten:
     def __init__( self, master_name:str, jahr:int ):
         self.master_name:str = master_name
@@ -78,15 +106,25 @@ class XWerbungskosten:
         self.afa:XAfA = None
         self.erhalt_aufwand:int = 0 # die Summe der im VJ komplett anzusetzenden Aufwände
         self.erhalt_aufwand_verteilt:XAufwandVerteilt = None
-        self.allgemeine_kosten = 0
+        self.kostenart_a = 0  # ohne Versicherungen und Grundsteuer und bei NK- und OTW-Wohnungen ohne komm. Abgaben
+        self.grundsteuer = 0
+        self.strassenreinigung = 0
+        self.abwasser = 0
+        self.versicherungen = 0
+        self.allgemeine_kosten_summe = 0
+        self.allgemeine_kosten_gruppiert:List[XAusgabeKurz] = list()
         self.sonstige_kosten = 0
+
+    def getSummeAllgemeineKosten( self ):
+        return self.kostenart_a + self.versicherungen + self.grundsteuer + self.abwasser + self.strassenreinigung
 
     def getSummeWerbungskosten( self ):
         av = self.erhalt_aufwand_verteilt
         return self.afa.afa + self.erhalt_aufwand + \
                av.aufwand_vj + av.aufwand_vj_minus_1 + av.aufwand_vj_minus_2 + \
                av.aufwand_vj_minus_3 + av.aufwand_vj_minus_4 + \
-               self.allgemeine_kosten + self.sonstige_kosten
+               self.getSummeAllgemeineKosten() + \
+               self.sonstige_kosten
 
 class XAnlageV_Daten:
     def __init__( self ):
@@ -94,7 +132,7 @@ class XAnlageV_Daten:
         self.objektstammdaten: XObjektStammdaten = None
         self.mieteinnahmen:XMieteinnahme = None
 
-class XZeilendefinition( XBase ):
+class XZeilendefinition:
     def __init__( self, valuedict:Dict=None ):
         self.zeile:int = 0 # Nummer der Zeile auf dem AnlageV-Formular
         self.feld_id:str = "" # z.B. "vorname"
@@ -102,10 +140,12 @@ class XZeilendefinition( XBase ):
         self.print_flag:bool = True
         self.printX:int = 0
         self.printY:int = 0
-        self.new_page_after:int = 0
-        if valuedict: self.setFromDict( valuedict )
+        self.new_page_after:bool = False
+        self.rtl:bool = False
+        if valuedict:
+            setFromDict( self, valuedict )
 
-class XObjektStammdaten( XBase ):
+class XObjektStammdaten:
     def __init__( self, valuedict:Dict=None ):
         self.lfdnr = 0 # Anlage V - "lfd. Nr. der Anlage"
         self.master_id = 0
@@ -117,7 +157,8 @@ class XObjektStammdaten( XBase ):
         self.veraeussert_am = ""
         self.gesamt_wfl = 0
         self.einhwert_az = ""
-        if valuedict: self.setFromDict( valuedict )
+        if valuedict:
+            setFromDict( self, valuedict )
 
 class XAnlageV_Zeile:
     """
@@ -137,11 +178,12 @@ class XAnlageV_Zeile:
         self.bemerkung = bemerkung
         self.fontFlag = fontFlag  # 0:normal, 1:bold, 2:big bold
         self.previewFlag:bool = True # diese Zeile in der Preview-Tabelle anzeigen
-        self.printFlag:bool = True # diese Zeile drucken
+        #self.printFlag:bool = True # diese Zeile drucken
         self.printX = 0 # when printing: x-position of value in mm
         self.printY = 0 # when printing: y-position of value in mm
         self.new_page_after:bool = False
         self.printFontsize = 5
+        self.rtl:bool = False # True: Druck rechtsbündig
 
     def getDisplayItemCount( self ) -> int:
         return 6 # nr, feld_id, value, teilbetrag, betrag, bemerkung

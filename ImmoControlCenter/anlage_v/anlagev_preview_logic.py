@@ -5,7 +5,7 @@ from PySide2.QtWidgets import QApplication
 from anlage_v.anlagev_base_logic import AnlageV_Base_Logic
 
 from anlage_v.anlagev_interfaces import XObjektStammdaten, XAnlageV_Zeile, XZeilendefinition, XMieteinnahme, \
-    XWerbungskosten, XAfA, XErhaltungsaufwand, XAufwandVerteilt, XAllgemeineKosten
+    XWerbungskosten, XAfA, XErhaltungsaufwand, XAufwandVerteilt, XAllgemeineKosten, XAusgabeKurz
 # from anlage_v.anlagev_preview import AnlageV_Preview
 # import numbers
 
@@ -41,8 +41,8 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         self._createPreviewRowFromSummeWk( summeWk, tm_rows )
         self._createPreviewRowSeparator( "ÜBERSCHUSS", tm_rows )
         # ueber = self._getSummeEinnahmenAusXMieteinnahme( einn ) + summeWk
-        ueber = self._getUeberschuss( einn, xwk )
-        self._createPreviewRowFromUeberschuss( self._getSummeEinnahmenAusXMieteinnahme( einn ), summeWk, ueber,
+        ueber = self.getUeberschuss( einn, xwk )
+        self._createPreviewRowFromUeberschuss( self.getSummeEinnahmenAusXMieteinnahme( einn ), summeWk, ueber,
                                                tm_rows )
         tm = AnlageVTableModel( tm_rows )
         return tm
@@ -114,14 +114,14 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         r = PreviewRow()
         r.zeile = zdef.zeile
         r.text = "NKV saldiert mit NKA aus VJ-1"
-        r.wert2 = self._getSaldoNebenkostenAusXMieteinnahme( x )
+        r.wert2 = self.getSaldoNebenkostenAusXMieteinnahme( x )
         previewRows.append( r )
 
         zdef = self._getZeilenDef( "summe_einnahmen" )
         r = PreviewRow()
         r.zeile = zdef.zeile
         r.text = "Summe der Einnahmen"
-        r.wert2 = self._getSummeEinnahmenAusXMieteinnahme( x )
+        r.wert2 = self.getSummeEinnahmenAusXMieteinnahme( x )
         r.isSumme = True
         previewRows.append( r )
 
@@ -132,7 +132,9 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         self._createPreviewRowSeparator( "", previewRows )
         self._createPreviewRowsFromAufwandVerteilt( x.erhalt_aufwand_verteilt, x.jahr, previewRows )
         self._createPreviewRowSeparator( "", previewRows )
-        self._createPreviewRowFromAllgemeineKosten( x.allgemeine_kosten, previewRows )
+        self._createPreviewRowsFromAllgemeineKostenDetailliert( x.allgemeine_kosten_gruppiert, previewRows )
+        self._createPreviewRowSeparator( "", previewRows )
+        self._createPreviewRowFromAllgemeineKosten( x.getSummeAllgemeineKosten(), previewRows )
         self._createPreviewRowSeparator( "", previewRows )
         self._createPreviewRowFromSonstigeKosten( x.sonstige_kosten, previewRows )
 
@@ -151,7 +153,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         r.wert1 = afa.afa_prozent
         previewRows.append( r )
 
-        zdef = self._getZeilenDef( "afa_wievorjahr" )
+        zdef = self._getZeilenDef( "afa_wie_vorjahr" )
         r = PreviewRow()
         r.zeile = zdef.zeile
         r.text = "AfA wie Vorjahr"
@@ -202,6 +204,24 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
             r.wert2 = teilaufwaende[i-1]
             r.isSumme = False
             previewRows.append( r )
+
+    def _createPreviewRowsFromAllgemeineKostenDetailliert( self, ausgaben:List[XAusgabeKurz], previewRows: List[PreviewRow] ) -> None:
+        r = PreviewRow()
+        r.text = "Auflistung allg. Kosten: Grundsteuer, Vers., Müll, Abwasser, Str.reinigg. - summiert auf Kreditoren"
+        previewRows.append( r )
+        summe = 0
+        for aus in ausgaben:
+            r = PreviewRow()
+            r.text = "   " + aus.kreditor + " (" + aus.kostenart + ")"
+            r.wert1 = aus.betrag
+            summe += aus.betrag
+            r.isSumme = False
+            previewRows.append( r )
+        r = PreviewRow()
+        zdef = self._getZeilenDef( "hauskosten_allg" )
+        r.text = "       SUMME dieser Posten: " + str( int( round( summe ) ) ) + " Euro >> zu übertragen in Zeile " + \
+                 str( zdef.zeile )
+        previewRows.append( r )
 
     def _createPreviewRowFromAllgemeineKosten( self, allgKosten:int, previewRows: List[PreviewRow] ) -> None:
         zdef = self._getZeilenDef( "hauskosten_allg" )
@@ -273,7 +293,7 @@ def testPreview():
     busi = AnlageV_Preview_Logic()
     v = AnlageVView()
     v.setMinimumSize( 1000, 1100 )
-    tm = busi.getAnlageVTableModel( "OTW_Linx", 2021 )
+    tm = busi.getAnlageVTableModel( "SB_Kaiser", 2021 )
     v.setAnlageVTableModel( tm )
     v.show()
     app.exec_()
