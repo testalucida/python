@@ -1,11 +1,11 @@
 import numbers
-from typing import Any
+from typing import Any, List
 
 from PySide2 import QtWidgets, QtCore
-from PySide2.QtCore import QDate, Qt, QAbstractTableModel
-from PySide2.QtGui import QDoubleValidator, QIntValidator, QFont, QGuiApplication
+from PySide2.QtCore import QDate, Qt, QAbstractTableModel, QRect, Signal
+from PySide2.QtGui import QDoubleValidator, QIntValidator, QFont, QGuiApplication, QStandardItemModel, QStandardItem
 from PySide2.QtWidgets import QDialog, QCalendarWidget, QVBoxLayout, QBoxLayout, QLineEdit, QGridLayout, QPushButton, \
-    QHBoxLayout
+    QHBoxLayout, QApplication, QListView, QComboBox
 
 from datehelper import isValidIsoDatestring, isValidEurDatestring, getRelativeQDate, getQDateFromIsoString
 
@@ -270,3 +270,100 @@ class SumDialog( QDialog ):
 
     def setSum( self, sum:int or float ) -> None:
         self._sumLabel.setText( str( sum ) )
+
+####################################################################
+
+class MasterObjektAuswahlDialog( QDialog ):
+    def __init__( self, masterobjektlist:List[str], jahre:List[int], checked=False, icon=None, parent=None ):
+        QDialog.__init__( self, parent )
+        self.icon = icon
+        self._jahre = jahre
+        self.cboJahr = QComboBox()
+        self.listView = QListView()
+        self.okButton = QPushButton( "OK" )
+        self.cancelButton = QPushButton( "Abbrechen" )
+        self.selectButton = QPushButton( "Alle auswählen" )
+        self.unselectButton = QPushButton( "Auswahl aufheben" )
+        self.font = QFont( "Arial", 14 )
+        self.model = QStandardItemModel()
+        self.choices:List[str] = list()
+        self._createGui()
+        self._setJahrItems()
+        self._createModel( masterobjektlist, checked )
+
+    def _createGui( self ):
+        hbox = QHBoxLayout()
+        hbox.addStretch(1)
+        hbox.addWidget(self.okButton)
+        hbox.addWidget(self.cancelButton)
+
+        h2box = QHBoxLayout()
+        h2box.addStretch( 1 )
+        h2box.addWidget(self.selectButton)
+        h2box.addWidget(self.unselectButton)
+
+        vbox = QVBoxLayout(self)
+        self.cboJahr.setMaximumWidth( 100 )
+        vbox.addWidget( self.cboJahr )
+        vbox.addLayout( h2box )
+        vbox.addWidget(self.listView, stretch=1)
+        #vbox.addStretch(1)
+        vbox.addLayout(hbox)
+
+        self.okButton.setDefault( True )
+
+        self.setWindowTitle( "Auswahl von Objekten" )
+        if self.icon:
+            self.setWindowIcon(self.icon)
+
+        self.okButton.clicked.connect(self.onAccepted)
+        self.cancelButton.clicked.connect(self.reject)
+        self.selectButton.clicked.connect(self.select)
+        self.unselectButton.clicked.connect(self.unselect)
+
+    def _setJahrItems( self ):
+        jahre = [str( x ) for x in self._jahre]
+        if len( jahre ) > 0:
+            self.cboJahr.addItems( self._jahre )
+            self.cboJahr.setCurrentText( jahre[0] )
+
+    def _createModel( self, masterobjektList:List[str], checked:bool ):
+        for obj in masterobjektList:
+            item = QStandardItem( obj )
+            item.setCheckable(True)
+            item.setFont( self.font )
+            check = (QtCore.Qt.Checked if checked else QtCore.Qt.Unchecked)
+            item.setCheckState(check)
+            self.model.appendRow(item)
+        self.listView.setModel( self.model )
+
+
+    def onAccepted(self):
+        self.choices = [self.model.item(i).text() for i in  range(self.model.rowCount() )
+                        if self.model.item(i).checkState() == QtCore.Qt.Checked]
+        self.accept()
+
+    def select(self):
+        for i in range(self.model.rowCount()):
+            item = self.model.item(i)
+            item.setCheckState(QtCore.Qt.Checked)
+
+    def unselect(self):
+        for i in range(self.model.rowCount()):
+            item = self.model.item(i)
+            item.setCheckState(QtCore.Qt.Unchecked)
+
+
+
+def onClick( l:List[str] ):
+    print( l )
+
+def test():
+    app = QApplication()
+    dlg = MasterObjektAuswahlDialog( ["SB_Kaiser", "ILL_Eich", "NK_Kleist"], [2020, 2021], checked=True )
+    if dlg.exec_() == QDialog.Accepted:
+        print( '\n'.join( [str( s ) for s in dlg.choices] ) )
+    #app.exec_()
+
+if __name__ == "__main__":
+    test()

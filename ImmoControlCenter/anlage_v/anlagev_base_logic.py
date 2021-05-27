@@ -42,7 +42,7 @@ class AnlageV_Base_Logic:
     def getObjekt( self, master_name:str ) -> XObjektStammdaten:
         for o in self._objektStammdatenList:
             if o.master_name == master_name: return o
-        raise Exception( "AnlageV_Logic._getObjekt(): "
+        raise Exception( "AnlageV_Logic.getObjekt(): "
                          "Objekt '%s' nicht in der Objektliste gefunden." % (master_name) )
 
     def getMieteinnahmenUndNebenkosten( self, master_name:str, jahr:int ) -> XMieteinnahme:

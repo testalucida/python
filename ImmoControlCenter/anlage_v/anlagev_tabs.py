@@ -2,7 +2,7 @@ from PySide2 import QtWidgets
 from PySide2.QtCore import QSize, Qt
 from PySide2.QtWidgets import QApplication, QTabWidget, QHBoxLayout
 
-from anlage_v.anlagev_view import AnlageVView, ToolbarButton
+from anlage_v.anlagev_gui import AnlageVView, ToolbarButton
 
 
 class AnlageVTabs( QTabWidget ):

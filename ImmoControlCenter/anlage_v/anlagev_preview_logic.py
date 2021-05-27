@@ -1,23 +1,12 @@
 from typing import List, Dict, Any
-
 from PySide2.QtWidgets import QApplication
-
 from anlage_v.anlagev_base_logic import AnlageV_Base_Logic
-
 from anlage_v.anlagev_interfaces import XObjektStammdaten, XAnlageV_Zeile, XZeilendefinition, XMieteinnahme, \
     XWerbungskosten, XAfA, XErhaltungsaufwand, XAufwandVerteilt, XAllgemeineKosten, XAusgabeKurz
-# from anlage_v.anlagev_preview import AnlageV_Preview
-# import numbers
-
 from anlage_v.anlagev_tablemodel import AnlageVTableModel, PreviewRow
-from anlage_v.anlagev_view import AnlageVView
-# from constants import Zahlart
-# from datehelper import getNumberOfMonths
-# from interfaces import XSollMiete, XSonstAus
-
+from anlage_v.anlagev_gui import AnlageVView
 
 class AnlageV_Preview_Logic( AnlageV_Base_Logic):
-
     def __init__(self):
         AnlageV_Base_Logic.__init__( self )
 
@@ -44,7 +33,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         ueber = self.getUeberschuss( einn, xwk )
         self._createPreviewRowFromUeberschuss( self.getSummeEinnahmenAusXMieteinnahme( einn ), summeWk, ueber,
                                                tm_rows )
-        tm = AnlageVTableModel( tm_rows )
+        tm = AnlageVTableModel( master_name, jahr, tm_rows )
         return tm
 
     def _createPreviewRowsFromObjektdaten( self, master_name:str, gesamt_wfl:int, previewRows:List[PreviewRow] ) -> None:
@@ -291,10 +280,10 @@ masterobjekte = [ "ILL_Eich", "SB_Hohenzoll", "SB_Kaiser" ]
 def testPreview():
     app = QApplication()
     busi = AnlageV_Preview_Logic()
-    v = AnlageVView()
-    v.setMinimumSize( 1000, 1100 )
-    tm = busi.getAnlageVTableModel( "SB_Kaiser", 2021 )
-    v.setAnlageVTableModel( tm )
+    # v = AnlageVView()
+    # v.setMinimumSize( 1000, 1100 )
+    # tm = busi.getAnlageVTableModel( "SB_Kaiser", 2021 )
+    # v.setAnlageVTableModel( tm )
     v.show()
     app.exec_()
 

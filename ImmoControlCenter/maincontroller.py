@@ -63,6 +63,11 @@ class MainController:
         self.showSonstAusView()
 
     def onMainWindowAction( self, action:MainWindowAction ):
+        """
+        Hier laufen alle Menü-Auswahlen ein, die der User trifft (klickt)
+        :param action:
+        :return:
+        """
         switcher = {
             MainWindowAction.NEW_WINDOW: self._newWindow,
             MainWindowAction.SAVE_ACTIVE_VIEW: self._saveActiveView,

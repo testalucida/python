@@ -81,6 +81,7 @@ class ImmoCenterMainWindow( QMainWindow ):
         self._createMietobjektMenu()
         self._createZahlungenMenu()
         self._createAbrechnungenMenu()
+        self._createAnlageVMenu()
         self._createExtrasMenu()
         self._createSqlMenu()
 
@@ -213,6 +214,17 @@ class ImmoCenterMainWindow( QMainWindow ):
 
     def _createAbrechnungenMenu( self ):
         menu = QtWidgets.QMenu( self._menubar, title="Abrechnungen" )
+        self._menubar.addMenu( menu )
+        action = QAction( self, text="Nebenkostenabrechnung..." )
+        action.triggered.connect( self.onViewNebenkostenabrechnung )
+        menu.addAction( action )
+
+        action = QAction( self, text="Hausgeldabrechnung..." )
+        action.triggered.connect( self.onViewHausgeldabrechnung )
+        menu.addAction( action )
+
+    def _createAnlageVMenu( self ):
+        menu = QtWidgets.QMenu( self._menubar, title="AnlageV" )
         self._menubar.addMenu( menu )
         action = QAction( self, text="Nebenkostenabrechnung..." )
         action.triggered.connect( self.onViewNebenkostenabrechnung )

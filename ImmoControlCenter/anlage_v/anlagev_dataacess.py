@@ -56,7 +56,8 @@ class AnlageV_DataAccess( DbAccess ):
     def getObjektStammdaten( self ) -> List[XObjektStammdaten]:
         sql = "select lfdnr, master_id, master_name, strasse_hnr, plz, ort, angeschafft_am, veraeussert_am, gesamt_wfl, einhwert_az " \
               "from masterobjekt " \
-              "where master_name not like '*%'"
+              "where master_name not like '*%' " \
+              "order by master_name"
         diclist = self._doReadAllGetDict( sql )
         li:List[XObjektStammdaten] = list()
         for dic in diclist:

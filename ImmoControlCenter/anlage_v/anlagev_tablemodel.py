@@ -18,8 +18,10 @@ class PreviewRow:
         self.isSumme:bool = False
 
 class AnlageVTableModel( QAbstractTableModel ):
-    def __init__(self, zeilen:List[PreviewRow] ):
+    def __init__(self, master_name:str, jahr:int, zeilen:List[PreviewRow] ):
         QAbstractTableModel.__init__( self )
+        self._master_name = master_name
+        self._jahr = jahr
         self._rows = zeilen
         self._headers: List = ["Zeile", "Text", "Wert1", "Wert Anl.V VJ", "Details", "Bemerkung"]
         self._keys:List = ["zeile", "text", "wert1", "wert2", "detailLink", "bemerkung"]
@@ -33,6 +35,12 @@ class AnlageVTableModel( QAbstractTableModel ):
         self._normalFont = QFont( "Arial", 11, QFont.Normal )
         self._boldFont = QFont( "Arial", 11, QFont.Bold )
         self._boldBigFont = QFont( "Arial", 12, QFont.Bold )
+
+    def getMasterName( self ) -> str:
+        return self._master_name
+
+    def getJahr( self ) -> int:
+        return self._jahr
 
     def rowCount( self, parent:QModelIndex=None ) -> int:
         return len( self._rows )
