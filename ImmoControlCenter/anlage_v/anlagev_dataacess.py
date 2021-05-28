@@ -315,6 +315,16 @@ class AnlageV_DataAccess( DbAccess ):
             l.append( x )
         return l
 
+    def getJahre( self ) -> List[int]:
+        """
+        Liefert die Jahre, für die Daten erfasst wurden.
+        :return:
+        """
+        sql = "select distinct jahr from zahlung order by jahr asc;"
+        tuplelist = self._doRead( sql )
+        li = [ x[0] for x in tuplelist ]
+        return li
+
     # def getGrundsteuer( self, master_name:str, jahr:int ) -> float:
     #     """
     #     Ermittelt die Grundsteuer aus der Tabelle sonstaus (Kostenart g)

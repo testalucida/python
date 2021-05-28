@@ -29,10 +29,8 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         summeWk = xwk.getSummeWerbungskosten()
         self._createPreviewRowFromSummeWk( summeWk, tm_rows )
         self._createPreviewRowSeparator( "ÜBERSCHUSS", tm_rows )
-        # ueber = self._getSummeEinnahmenAusXMieteinnahme( einn ) + summeWk
         ueber = self.getUeberschuss( einn, xwk )
-        self._createPreviewRowFromUeberschuss( self.getSummeEinnahmenAusXMieteinnahme( einn ), summeWk, ueber,
-                                               tm_rows )
+        self._createPreviewRowFromUeberschuss( self.getSummeEinnahmenAusXMieteinnahme( einn ), summeWk, ueber, tm_rows )
         tm = AnlageVTableModel( master_name, jahr, tm_rows )
         return tm
 
@@ -81,7 +79,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         r = PreviewRow()
         r.zeile = zdef.zeile
         r.text = "ME gesamtes Objekt ohne NK-Vorauszahlungen"
-        r.wert2 = x.nettoMiete
+        r.wert2 = int( round( x.nettoMiete ) )
         previewRows.append( r )
 
         r = PreviewRow()
@@ -103,14 +101,14 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         r = PreviewRow()
         r.zeile = zdef.zeile
         r.text = "NKV saldiert mit NKA aus VJ-1"
-        r.wert2 = self.getSaldoNebenkostenAusXMieteinnahme( x )
+        r.wert2 = int( round( self.getSaldoNebenkostenAusXMieteinnahme( x ) ) )
         previewRows.append( r )
 
         zdef = self._getZeilenDef( "summe_einnahmen" )
         r = PreviewRow()
         r.zeile = zdef.zeile
         r.text = "Summe der Einnahmen"
-        r.wert2 = self.getSummeEinnahmenAusXMieteinnahme( x )
+        r.wert2 = int( round( self.getSummeEinnahmenAusXMieteinnahme( x ) ) )
         r.isSumme = True
         previewRows.append( r )
 
@@ -121,11 +119,12 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         self._createPreviewRowSeparator( "", previewRows )
         self._createPreviewRowsFromAufwandVerteilt( x.erhalt_aufwand_verteilt, x.jahr, previewRows )
         self._createPreviewRowSeparator( "", previewRows )
-        self._createPreviewRowsFromAllgemeineKostenDetailliert( x.allgemeine_kosten_gruppiert, previewRows )
+        self._createPreviewRowsFromAllgemeineKostenDetailliert(
+            x.grundsteuer, x.abwasser, x.strassenreinigung, x.allgemeine_kosten_gruppiert, previewRows )
         self._createPreviewRowSeparator( "", previewRows )
-        self._createPreviewRowFromAllgemeineKosten( x.getSummeAllgemeineKosten(), previewRows )
+        self._createPreviewRowFromAllgemeineKosten( int( round( x.getSummeAllgemeineKosten() ) ), previewRows )
         self._createPreviewRowSeparator( "", previewRows )
-        self._createPreviewRowFromSonstigeKosten( x.sonstige_kosten, previewRows )
+        self._createPreviewRowFromSonstigeKosten( int( round( x.sonstige_kosten ) ), previewRows )
 
     def _createPreviewRowsFromAfA( self, afa:XAfA, previewRows:List[PreviewRow] ) -> None:
         zdef = self._getZeilenDef( "afa_linear" )
@@ -194,14 +193,39 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
             r.isSumme = False
             previewRows.append( r )
 
-    def _createPreviewRowsFromAllgemeineKostenDetailliert( self, ausgaben:List[XAusgabeKurz], previewRows: List[PreviewRow] ) -> None:
+    def _createPreviewRowsFromAllgemeineKostenDetailliert( self, grundsteuer:int, abwasser:int, strassenreinigung:int,
+                                                           ausgaben:List[XAusgabeKurz], previewRows: List[PreviewRow] ) -> None:
         r = PreviewRow()
         r.text = "Auflistung allg. Kosten: Grundsteuer, Vers., Müll, Abwasser, Str.reinigg. - summiert auf Kreditoren"
         previewRows.append( r )
+        indent = "   "
         summe = 0
+
+        if grundsteuer != 0:
+            summe += grundsteuer
+            r = PreviewRow()
+            r.text = indent + "Grundsteuer " + "(g)"
+            r.wert1 = grundsteuer
+            r.isSumme = False
+            previewRows.append( r )
+        if abwasser != 0:
+            summe += abwasser
+            r = PreviewRow()
+            r.text = indent + "Abwasser " + "(a)"
+            r.wert1 = abwasser
+            r.isSumme = False
+            previewRows.append( r )
+        if strassenreinigung != 0:
+            summe += strassenreinigung
+            r = PreviewRow()
+            r.text = indent + "Straßenreinigung " + "(a)"
+            r.wert1 = strassenreinigung
+            r.isSumme = False
+            previewRows.append( r )
+
         for aus in ausgaben:
             r = PreviewRow()
-            r.text = "   " + aus.kreditor + " (" + aus.kostenart + ")"
+            r.text = indent + aus.kreditor + " (" + aus.kostenart + ")"
             r.wert1 = aus.betrag
             summe += aus.betrag
             r.isSumme = False
@@ -284,7 +308,7 @@ def testPreview():
     # v.setMinimumSize( 1000, 1100 )
     # tm = busi.getAnlageVTableModel( "SB_Kaiser", 2021 )
     # v.setAnlageVTableModel( tm )
-    v.show()
+    #v.show()
     app.exec_()
 
 if __name__ == "__main__":

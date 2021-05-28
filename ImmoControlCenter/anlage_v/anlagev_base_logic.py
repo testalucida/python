@@ -39,6 +39,9 @@ class AnlageV_Base_Logic:
                 return defi
         raise Exception( "AnlageV_Logic._getZeilenDef(): kann Feld_Id '%s' nicht finden." % (feld_id) )
 
+    def getJahre( self ) -> List[int]:
+        return self._db.getJahre()
+
     def getObjekt( self, master_name:str ) -> XObjektStammdaten:
         for o in self._objektStammdatenList:
             if o.master_name == master_name: return o
@@ -165,10 +168,10 @@ class AnlageV_Base_Logic:
     def getUeberschuss( self, einn: XMieteinnahme, wk: XWerbungskosten ) -> int:
         summeEin = self.getSummeEinnahmenAusXMieteinnahme( einn )
         summeWk = wk.getSummeWerbungskosten()
-        return summeEin + summeWk  # "+", weil summeWk Ausgaben sind, also mit neg. Vorz. versehen.
+        return int( round( summeEin + summeWk ) )  # "+", weil summeWk Ausgaben sind, also mit neg. Vorz. versehen.
 
     def getSummeEinnahmenAusXMieteinnahme( self, x:XMieteinnahme ) -> int:
-        return x.nettoMiete + self.getSaldoNebenkostenAusXMieteinnahme( x )
+        return int( round( x.nettoMiete + self.getSaldoNebenkostenAusXMieteinnahme( x ) ) )
 
     def getSaldoNebenkostenAusXMieteinnahme( self, x:XMieteinnahme ) -> int:
         return round( x.nkv + x.nka )

@@ -853,66 +853,6 @@ class DbAccess:
               "where hga_id = %d" % ( hga_id )
         return self._doWrite( sql, commit )
 
-############################   A N L A G E   V   ########################################
-    # def getObjektStammdaten( self ) -> List[XObjektStammdaten]:
-    #     sql = "select master_id, master_name, strasse_hnr, plz, ort, angeschafft_am, veraeussert_am, gesamt_wfl, einhwert_az " \
-    #           "from masterobjekt " \
-    #           "where master_name not like '*%'"
-    #     diclist = self._doReadAllGetDict( sql )
-    #     li:List[XObjektStammdaten] = list()
-    #     for dic in diclist:
-    #         x = XObjektStammdaten( dic )
-    #         li.append( x )
-    #     return li
-    #
-    # def getMasterobjektJahresBruttomieteSumme( self, master_id:int, jahr:int ) -> float:
-    #     # liefert die Jahresbruttomieeinnahmen eines Masterobjekts in *einer* Summe
-    #     sql = "select sum( coalesce(jan,0) +  coalesce(feb, 0) + coalesce(mrz, 0) + coalesce(apr, 0) + coalesce(mai, 0) + coalesce(jun, 0) + " \
-    #           "coalesce(jul, 0) + coalesce(aug, 0) + coalesce(sep, 0) + coalesce(okt, 0) + coalesce(nov, 0) + coalesce(dez, 0) ) as masterobjekt_jahressumme " \
-    #           "from mietobjekt mobj " \
-    #           "inner join mietverhaeltnis mv on mv.mobj_id = mobj.mobj_id " \
-    #           "inner join mtleinaus mea on mea.mv_id = mv.mv_id " \
-    #           "where mobj.master_id = %d " \
-    #           "and mea.jahr = %d " % (master_id, jahr)
-    #     listoftuples = self._doRead( sql )
-    #     return listoftuples[0][0]
-    #
-    # def getMasterobjektButtomieten( self, master_id:int, jahr:int ) -> List[Dict]:
-    #     # liefert die Jahresbruttomieteinnahmen je Mieter als Liste von Dictionaries.
-    #     # Jeder Dictionary hat den Aufbau
-    #     # {
-    #     #    'mv_id': 'bucher_lothar'
-    #     #    'brutto_me:': 780.0
-    #     # }
-    #     sql = "select mv.mv_id, coalesce(jan,0) +  coalesce(feb, 0) + coalesce(mrz, 0) + coalesce(apr, 0) + coalesce(mai, 0) + coalesce(jun, 0) + " \
-    #           "coalesce(jul, 0) + coalesce(aug, 0) + coalesce(sep, 0) + coalesce(okt, 0) + coalesce(nov, 0) + coalesce(dez, 0) as brutto_me " \
-    #           "from mietobjekt mobj " \
-    #           "inner join mietverhaeltnis mv on mv.mobj_id = mobj.mobj_id " \
-    #           "inner join mtleinaus mea on mea.mv_id = mv.mv_id " \
-    #           "where mobj.master_id = %d " \
-    #           "and mea.jahr = %d " % (master_id, jahr)
-    #     dictlist = self._doReadAllGetDict( sql )
-    #     return dictlist
-    #
-    # def getSollmieten3( self, mv_id:str, jahr:int ) -> List[XSollMiete]:
-    #     # liefert die Sollmieten für Mieter mv_id im Jahr jahr
-    #     minbis = "%d-%02d-%02d" % (jahr, 1, 1)
-    #     maxvon = "%d-%02d-%02d" % (jahr+1, 1, 1)
-    #     sql = "select sm.sm_id, sm.mv_id, sm.von, coalesce(sm.bis, '') as bis, sm.netto, sm.nkv, (sm.netto + sm.nkv) as brutto, " \
-    #           "coalesce(sm.bemerkung, '') as bemerkung, mv.mobj_id " \
-    #           "from sollmiete sm " \
-    #           "inner join mietverhaeltnis mv on mv.mv_id = sm.mv_id " \
-    #           "where sm.von < '%s' " \
-    #           "and (sm.bis is NULL or sm.bis = '' or sm.bis >= '%s') " \
-    #           "and sm.mv_id = '%s' " \
-    #           "order by sm.mv_id, sm.von desc" % ( maxvon, minbis, mv_id )
-    #     l: List[Dict] = self._doReadAllGetDict( sql )
-    #     sollList: List[XSollMiete] = list()
-    #     for d in l:
-    #         x = XSollMiete( d )
-    #         sollList.append( x )
-    #     return sollList
-
 #########################################################################################
 
     def createObjektKonto( self, konto_name:str, commit:bool=True ) -> None:

@@ -273,12 +273,11 @@ class SumDialog( QDialog ):
 
 ####################################################################
 
-class MasterObjektAuswahlDialog( QDialog ):
-    def __init__( self, masterobjektlist:List[str], jahre:List[int], checked=False, icon=None, parent=None ):
+class AuswahlDialog( QDialog ):
+    def __init__( self, stringlist:List[str], checked=False, title=None, icon=None, parent=None ):
         QDialog.__init__( self, parent )
+        self.title = title
         self.icon = icon
-        self._jahre = jahre
-        self.cboJahr = QComboBox()
         self.listView = QListView()
         self.okButton = QPushButton( "OK" )
         self.cancelButton = QPushButton( "Abbrechen" )
@@ -288,8 +287,7 @@ class MasterObjektAuswahlDialog( QDialog ):
         self.model = QStandardItemModel()
         self.choices:List[str] = list()
         self._createGui()
-        self._setJahrItems()
-        self._createModel( masterobjektlist, checked )
+        self._createModel( stringlist, checked )
 
     def _createGui( self ):
         hbox = QHBoxLayout()
@@ -303,8 +301,6 @@ class MasterObjektAuswahlDialog( QDialog ):
         h2box.addWidget(self.unselectButton)
 
         vbox = QVBoxLayout(self)
-        self.cboJahr.setMaximumWidth( 100 )
-        vbox.addWidget( self.cboJahr )
         vbox.addLayout( h2box )
         vbox.addWidget(self.listView, stretch=1)
         #vbox.addStretch(1)
@@ -312,7 +308,11 @@ class MasterObjektAuswahlDialog( QDialog ):
 
         self.okButton.setDefault( True )
 
-        self.setWindowTitle( "Auswahl von Objekten" )
+        if self.title:
+            self.setWindowTitle( self.title )
+        else:
+            self.setWindowTitle( "Auswahl" )
+
         if self.icon:
             self.setWindowIcon(self.icon)
 
@@ -320,12 +320,6 @@ class MasterObjektAuswahlDialog( QDialog ):
         self.cancelButton.clicked.connect(self.reject)
         self.selectButton.clicked.connect(self.select)
         self.unselectButton.clicked.connect(self.unselect)
-
-    def _setJahrItems( self ):
-        jahre = [str( x ) for x in self._jahre]
-        if len( jahre ) > 0:
-            self.cboJahr.addItems( self._jahre )
-            self.cboJahr.setCurrentText( jahre[0] )
 
     def _createModel( self, masterobjektList:List[str], checked:bool ):
         for obj in masterobjektList:
@@ -360,7 +354,7 @@ def onClick( l:List[str] ):
 
 def test():
     app = QApplication()
-    dlg = MasterObjektAuswahlDialog( ["SB_Kaiser", "ILL_Eich", "NK_Kleist"], [2020, 2021], checked=True )
+    dlg = AuswahlDialog( ["SB_Kaiser", "ILL_Eich", "NK_Kleist"], title="Freie Auswahl!", checked=True )
     if dlg.exec_() == QDialog.Accepted:
         print( '\n'.join( [str( s ) for s in dlg.choices] ) )
     #app.exec_()

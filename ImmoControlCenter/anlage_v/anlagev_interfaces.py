@@ -115,16 +115,18 @@ class XWerbungskosten:
         self.allgemeine_kosten_gruppiert:List[XAusgabeKurz] = list()
         self.sonstige_kosten = 0
 
-    def getSummeAllgemeineKosten( self ):
+    def getSummeAllgemeineKosten( self ) -> float:
+        #print( self.master_name )
         return self.kostenart_a + self.versicherungen + self.grundsteuer + self.abwasser + self.strassenreinigung
 
-    def getSummeWerbungskosten( self ):
+    def getSummeWerbungskosten( self ) -> int:
         av = self.erhalt_aufwand_verteilt
-        return self.afa.afa + self.erhalt_aufwand + \
+        sum = self.afa.afa + self.erhalt_aufwand + \
                av.aufwand_vj + av.aufwand_vj_minus_1 + av.aufwand_vj_minus_2 + \
                av.aufwand_vj_minus_3 + av.aufwand_vj_minus_4 + \
                self.getSummeAllgemeineKosten() + \
                self.sonstige_kosten
+        return int( round( sum ) )
 
 class XAnlageV_Daten:
     def __init__( self ):
