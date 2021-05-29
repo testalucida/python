@@ -301,7 +301,8 @@ class AnlageV_DataAccess( DbAccess ):
             k_arten += "'"
             k_arten += ","
         k_arten = k_arten[:-1]
-        sql = "select  master.master_name, master.master_id, kostenart, kreditor, betrag " \
+        sql = "select  master.master_name, master.master_id, " \
+              "mobj_id, kostenart, kreditor, buchungstext, buchungsdatum, betrag " \
               "from sonstaus sa " \
               "inner join masterobjekt master on master.master_id = sa.master_id " \
               "where master.master_name = '%s' " \

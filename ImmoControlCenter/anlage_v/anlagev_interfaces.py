@@ -41,9 +41,12 @@ class XAusgabeKurz:
     def __init__(self, valuedict:Dict=None):
         self.master_name = ""
         self.master_id = 0
+        self.mobj_id = ""
         self.kostenart = ""
         self.kreditor = ""
         self.betrag = 0.0
+        self.buchungstext = ""
+        self.buchungsdatum = ""
         if valuedict:
             setFromDict( self, valuedict )
 

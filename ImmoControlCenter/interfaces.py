@@ -58,24 +58,46 @@ class XZahlung:
     zahl_art:str = ""  # {'brutto_miete', 'nka', 'hgv', 'hga', 'rechng'}
 
 #################### SonstAus  ###################################
-class XSonstAus( XBase ):
-    def __init__( self, valuedict:Dict=None ):
-        XBase.__init__( self, valuedict )
 
-    saus_id:int = 0
-    master_id:int = 0
-    master_name:str = ""
-    mobj_id:str = ""
-    kreditor:str = ""
-    rgnr:str = ""
-    rgdatum:str = ""
-    rgtext:str = ""  # der Text auf der Rechnung
-    betrag:float = 0.0
-    umlegbar:bool = False
-    werterhaltend:bool = False
-    buchungsdatum:str = ""
-    buchungsjahr:int = 0
-    buchungstext:str = "" # der Text auf dem Buchungsbeleg, der bei öfftl. Providern identifizierend ist. (Kundennummer, Vertragsnummer etc.)
+class XSonstAus:
+    def __init__( self, valuedict: Dict = None ):
+        self.saus_id: int = 0
+        self.master_id: int = 0
+        self.master_name: str = ""
+        self.mobj_id: str = ""
+        self.kostenart:str = ""
+        self.kreditor: str = ""
+        self.rgnr: str = ""
+        self.rgdatum: str = ""
+        self.rgtext: str = ""  # der Text auf der Rechnung
+        self.betrag: float = 0.0
+        self.umlegbar: bool = False
+        self.werterhaltend: bool = False
+        self.buchungsdatum: str = ""
+        self.buchungsjahr: int = 0
+        self.buchungstext: str = ""  # der Text auf dem Buchungsbeleg, der bei öfftl. Providern identifizierend ist. (Kundennummer, Vertragsnummer etc.)
+        if valuedict:
+            setFromDict( self, valuedict )
+
+# class XSonstAus( XBase ):
+#     def __init__( self, valuedict:Dict=None ):
+#         XBase.__init__( self, valuedict )
+#
+#     saus_id:int = 0
+#     master_id:int = 0
+#     master_name:str = ""
+#     mobj_id:str = ""
+#     kreditor:str = ""
+#     rgnr:str = ""
+#     rgdatum:str = ""
+#     rgtext:str = ""  # der Text auf der Rechnung
+#     betrag:float = 0.0
+#     umlegbar:bool = False
+#     werterhaltend:bool = False
+#     buchungsdatum:str = ""
+#     buchungsjahr:int = 0
+#     buchungstext:str = "" # der Text auf dem Buchungsbeleg, der bei öfftl. Providern identifizierend ist. (Kundennummer, Vertragsnummer etc.)
+#
 
 #################### Abrechnung ##################################
 class XAbrechnung:

@@ -35,3 +35,8 @@ class Sonstaus_Kostenart( Enum ):
     SAMMEL = "sam",
     SONSTIGE = "s",
     VERSICHERUNG = "v"
+
+class DetailLink( Enum ):
+    ERHALTUNGSKOSTEN = "REP Detail",
+    ALLGEMEINE_KOSTEN = "AK Detail",
+    SONSTIGE_KOSTEN = "SK Detail"

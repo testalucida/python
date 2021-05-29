@@ -380,8 +380,13 @@ class DbAccess:
             sollList.append( x )
         return sollList
 
-    def getSonstigeAusgaben( self, jahr:int ):
-        sql = "select saus_id, m.master_id, m.master_name, mobj_id, " \
+    def getSonstigeAusgaben( self, jahr:int ) -> List[XSonstAus]:
+        """
+        Liest alle Einträge der Tabelle sonstaus für buchungsjahr <jahr>
+        :param jahr: gewünschtes Buchungsjahr
+        :return:
+        """
+        sql = "select saus_id, m.master_id, m.master_name, mobj_id, kostenart " \
               "kreditor, rgnr, betrag, rgdatum, rgtext, buchungsdatum, buchungsjahr, umlegbar, werterhaltend, buchungstext " \
               "from sonstaus s " \
               "inner join masterobjekt m on m.master_id = s.master_id " \
@@ -393,6 +398,27 @@ class DbAccess:
             sonstalist.append( x )
 
         return sonstalist
+
+    # def getSonstigeAusgabenFuerMasterObjekt( self, master_name:str, jahr:int ) -> List[XSonstAus]:
+    #     """
+    #     Liest alle Einträge der Tabelle sonstaus für Masterobjekt <master_name> und buchungsjahr <jahr>
+    #     :param master_name: Sel.-Kriterium master_name
+    #     :param jahr: Sel.-Kriterium Buchungsjahr
+    #     :return:
+    #     """
+    #     sql = "select saus_id, m.master_id, m.master_name, mobj_id, kostenart " \
+    #           "kreditor, rgnr, betrag, rgdatum, rgtext, buchungsdatum, buchungsjahr, umlegbar, werterhaltend, buchungstext " \
+    #           "from sonstaus s " \
+    #           "inner join masterobjekt m on m.master_id = s.master_id " \
+    #           "where buchungsjahr = %d " \
+    #           "and m.master_name = '%s' " % (jahr, master_name)
+    #     dictlist = self._doReadAllGetDict( sql )
+    #     sonstalist = []
+    #     for d in dictlist:
+    #         x = XSonstAus( d )
+    #         sonstalist.append( x )
+    #
+    #     return sonstalist
 
     def getSummeZahlungen( self, zahl_art:str ) -> float:
         sql = "select sum( betrag ) from zahlung where zahl_art = '%s'" % ( zahl_art )

@@ -1,10 +1,13 @@
-from typing import List, Dict, Any
+from typing import List
 from PySide2.QtWidgets import QApplication
+
+from anlage_v.ausgabenmodel import AusgabenModel
 from anlage_v.anlagev_base_logic import AnlageV_Base_Logic
-from anlage_v.anlagev_interfaces import XObjektStammdaten, XAnlageV_Zeile, XZeilendefinition, XMieteinnahme, \
-    XWerbungskosten, XAfA, XErhaltungsaufwand, XAufwandVerteilt, XAllgemeineKosten, XAusgabeKurz
+from anlage_v.anlagev_interfaces import XMieteinnahme, \
+    XWerbungskosten, XAfA, XAufwandVerteilt, XAusgabeKurz
 from anlage_v.anlagev_tablemodel import AnlageVTableModel, PreviewRow
-from anlage_v.anlagev_gui import AnlageVView
+from constants import Sonstaus_Kostenart, DetailLink
+
 
 class AnlageV_Preview_Logic( AnlageV_Base_Logic):
     def __init__(self):
@@ -197,6 +200,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
                                                            ausgaben:List[XAusgabeKurz], previewRows: List[PreviewRow] ) -> None:
         r = PreviewRow()
         r.text = "Auflistung allg. Kosten: Grundsteuer, Vers., Müll, Abwasser, Str.reinigg. - summiert auf Kreditoren"
+        r.detailLink = DetailLink.ALLGEMEINE_KOSTEN.value[0]
         previewRows.append( r )
         indent = "   "
         summe = 0
@@ -286,7 +290,12 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         r.isSeparator = True
         previewRows.append( r )
 
-
+    def getAusgabenModel( self, master_name:str, jahr:int ) -> AusgabenModel:
+        l:List[XAusgabeKurz] = self._db.getAusgaben( master_name, jahr, [Sonstaus_Kostenart.GRUNDSTEUER,
+                                                                          Sonstaus_Kostenart.ALLGEMEIN,
+                                                                          Sonstaus_Kostenart.VERSICHERUNG] )
+        tm:AusgabenModel = AusgabenModel( master_name, jahr, l )
+        return tm
 
 # masterobjekte = [ "BUEB_Saargemuend", "HOM_Remigius",
 #                   "ILL_Eich",

@@ -139,7 +139,7 @@ class AnlageVView( QWidget ):
         self._toolbarLayout = QHBoxLayout()
         #self._btnSave = ToolbarButton( self, QSize(30,30), "../images/save_30.png", "Änderungen speichern" )
         self._btnPrint = ToolbarButton( self, QSize(30,30), "../images/print_30.png", "Anlagen V drucken" )
-        self._tabs:QTabWidget() = QTabWidget()
+        self._tabs:AnlageVTabs() = AnlageVTabs()
         self._tvList:List[AnlageVTableView] = list()
         self._createGui()
 
