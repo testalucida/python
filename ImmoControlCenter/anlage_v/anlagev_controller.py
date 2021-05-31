@@ -81,6 +81,8 @@ class AnlageVController:
 def testPreview():
     app = QApplication()
     ctrl = AnlageVController( )
+    # tm:AusgabenModel = ctrl._busi.getAusgabenModel( "ILL_Eich", 2021 )
+    # ctrl._showAusgabenDialog( tm )
     ctrl.startWork()
     # win = ctrl.createSubwindow()
     # win.show()
