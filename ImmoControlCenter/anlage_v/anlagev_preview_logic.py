@@ -4,7 +4,7 @@ from PySide2.QtWidgets import QApplication
 from anlage_v.ausgabenmodel import AusgabenModel
 from anlage_v.anlagev_base_logic import AnlageV_Base_Logic
 from anlage_v.anlagev_interfaces import XMieteinnahme, \
-    XWerbungskosten, XAfA, XAufwandVerteilt, XAusgabeKurz
+    XWerbungskosten, XAfA, XAufwandVerteilt, XAusgabeKurz, XVerteilterAufwand, XErhaltungsaufwand
 from anlage_v.anlagev_tablemodel import AnlageVTableModel, PreviewRow
 from constants import Sonstaus_Kostenart, DetailLink
 
@@ -163,6 +163,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         r = PreviewRow()
         r.zeile = zdef.zeile
         r.text = "In %d voll abzuziehende Erhalt.Aufwendg." % (jahr)
+        r.detailLink = DetailLink.ERHALTUNGSKOSTEN.value[0]
         r.wert2 = aufwand
         r.isSumme = False
         previewRows.append( r )
@@ -172,6 +173,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         r = PreviewRow()
         r.zeile = zdef.zeile
         r.text = "Zu verteilender Gesamtaufwand in %d" % (jahr)
+        r.detailLink = DetailLink.ZU_VERTEIL_GESAMTKOSTEN_VJ.value[0]
         r.wert1 = x.gesamt_aufwand_vj
         r.isSumme = False
         previewRows.append( r )
@@ -180,6 +182,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         r = PreviewRow()
         r.zeile = zdef.zeile
         r.text = "   davon in %d abzuziehen" % (jahr)
+        r.detailLink = DetailLink.ERHALTUNGSKOSTEN_VERTEILT.value[0]
         r.wert2 = x.aufwand_vj
         r.isSumme = False
         previewRows.append( r )
@@ -290,12 +293,84 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         r.isSeparator = True
         previewRows.append( r )
 
-    def getAusgabenModel( self, master_name:str, jahr:int ) -> AusgabenModel:
+    def getAllgemeineAusgabenModel( self, master_name:str, jahr:int ) -> AusgabenModel:
         l:List[XAusgabeKurz] = self._db.getAusgaben( master_name, jahr, [Sonstaus_Kostenart.GRUNDSTEUER,
                                                                           Sonstaus_Kostenart.ALLGEMEIN,
                                                                           Sonstaus_Kostenart.VERSICHERUNG] )
         tm:AusgabenModel = AusgabenModel( master_name, jahr, l )
+        tm.setHeaders( ["Kreditor", "Wohng", "Buchungstext", "Buch.datum", "Kostenart", "Betrag", "Summe"] )
+        tm.setKeys( ["kreditor", "mobj_id", "buchungstext", "buchungsdatum", "kostenart", "betrag", ""] )
+        tm.addColumnFunction( 6, self.getKreditorSumme )
         return tm
+
+    def getReparaturausgabenNichtVerteilt( self, master_name:str, jahr:int ) -> AusgabenModel:
+        l: List[XAusgabeKurz] = self._db.getAusgaben( master_name, jahr, [Sonstaus_Kostenart.REPARATUR,] )
+        tm:AusgabenModel = AusgabenModel( master_name, jahr, l )
+        tm.setHeaders( ["Kreditor", "Wohng", "Buchungstext", "Buch.datum", "Kostenart", "Betrag", "Summe"] )
+        tm.setKeys( ["kreditor", "mobj_id", "buchungstext", "buchungsdatum", "kostenart", "betrag", ""] )
+        tm.addColumnFunction( 6, self.getKreditorSumme )
+        return tm
+
+    def getReparaturausgabenVerteilt( self, master_name:str, jahr:int ) -> AusgabenModel:
+        l: List[XErhaltungsaufwand] = self._db.getVerteilteErhaltungsaufwendungen( master_name, jahr )
+        for x in l:
+            x.betrag = int( round( x.betrag / x.verteilen_auf_jahre ) )
+        tm:AusgabenModel = AusgabenModel( master_name, jahr, l )
+        tm.setHeaders( ["Jahr", "Kreditor", "Whg", "Buch.Text", "Betrag", "Summe"] )
+        tm.setKeys( ["buchungsjahr", "kreditor", "mobj_id", "buchungstext", "betrag", ""] )
+        tm.addColumnFunction( 5, self.getJahressumme )
+        return tm
+
+    def getZuVerteilendeAufwaende( self, master_name:str, jahr:int ) -> AusgabenModel:
+        """
+        Liefert die Aufwände, die in <jahr> neu hinzugekommen und zu verteilen sind.
+        :param master_name:
+        :param jahr:
+        :return:
+        """
+        awlist: List[XErhaltungsaufwand] = self._db.getZuVerteilendeAufwaendeVJ( master_name, jahr )
+        tm:AusgabenModel = AusgabenModel( master_name, jahr, awlist )
+        tm.setHeaders( ["Jahr", "Kreditor", "Whg", "Buch.Text", "Betrag", "Summe"] )
+        tm.setKeys( ["buchungsjahr", "kreditor", "mobj_id", "buchungstext", "betrag", ""] )
+        tm.addColumnFunction( 5, self.getJahressumme )
+        return tm
+
+    def getJahressumme( self, tm:AusgabenModel, row:int, col:int ) -> int:
+        """
+        Callback function für AusgabenModel
+        :param tm:
+        :param row:
+        :param col:
+        :return:
+        """
+        j = tm.getValue( row, 0 )
+        nextj = tm.getValue( row + 1, 0 )
+        if nextj is None or nextj != j:
+            sum = 0
+            startrow = tm.getStartRow( j, row, 0 )
+            for r in range( startrow, row + 1 ):
+                sum += tm.getValue( r, 4 )
+            return sum
+        return None
+
+    def getKreditorSumme( self, tm:AusgabenModel, indexrow: int, indexcolumn:int ) -> float or None:
+        """
+        Callback function für AusgabenModel
+        Prüfen, ob ein Gruppenwechsel bezüglich Kreditor bevorsteht.
+        Wenn ja, Summe des vorausgehenden Kreditors berechnen.
+        Wenn nein, nichts zurückgeben.
+        :param indexrow:
+        :return:
+        """
+        thisKreditor = tm.getValue( indexrow, 0 )
+        nextKreditor = tm.getValue( indexrow + 1, 0 )
+        if nextKreditor is None or nextKreditor != thisKreditor:
+            sum = 0
+            startrow = tm.getStartRow( thisKreditor, indexrow, 0 )
+            for r in range( startrow, indexrow + 1 ):
+                sum += tm.getValue( r, 5 )
+            return sum
+        return None
 
 # masterobjekte = [ "BUEB_Saargemuend", "HOM_Remigius",
 #                   "ILL_Eich",

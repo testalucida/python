@@ -1,7 +1,7 @@
 from typing import List, Dict, Tuple
 
 from anlage_v.anlagev_interfaces import XObjektStammdaten, XZeilendefinition, XAfA, XErhaltungsaufwand, \
-    XAllgemeineKosten, XSammelAbgabeDetail, XAusgabeKurz
+    XAllgemeineKosten, XSammelAbgabeDetail, XAusgabeKurz, XVerteilterAufwand
 from constants import Zahlart, zahlartstrings, Sonstaus_Kostenart
 from dbaccess import DbAccess
 from interfaces import XSollMiete
@@ -221,6 +221,14 @@ class AnlageV_DataAccess( DbAccess ):
         return l
 
     def getVerteilteErhaltungsaufwendungen( self, master_name:str, jahr:int ) -> List[XErhaltungsaufwand]:
+        """
+        Liefert alle Aufwände, wo buchungsjahr + verteilen_auf_jahre > <jahr>.
+        Am Beispiel jahr = 2021: Es werden Aufwände aus den Jahren 2021 bis 2017 geliefert. (Aufwände können auf
+        max. 5 Jahre verteilt werden.)
+        :param master_name:
+        :param jahr:
+        :return:
+        """
         sql = "select master.master_name, " \
                 "sa.master_id, mobj_id, kreditor, betrag, rgdatum, rgtext, verteilen_auf_jahre, buchungsjahr," \
                 "buchungsdatum, buchungstext " \
@@ -229,7 +237,31 @@ class AnlageV_DataAccess( DbAccess ):
                 "where master.master_name = '%s' " \
                 "and kostenart = 'r' " \
                 "and verteilen_auf_jahre > 1 " \
-                "and buchungsjahr + verteilen_auf_jahre  > %d " % (master_name, jahr)
+                "and buchungsjahr + verteilen_auf_jahre  > %d " \
+                "order by buchungsjahr " % (master_name, jahr)
+        dictlist = self._doReadAllGetDict( sql )
+        l: List[XErhaltungsaufwand] = list()
+        for d in dictlist:
+            x = XErhaltungsaufwand( d )
+            l.append( x )
+        return l
+
+    def getZuVerteilendeAufwaendeVJ( self, master_name:str, jahr:int ) -> List[XErhaltungsaufwand]:
+        """
+        Liefert die Aufwände aus <jahr>, die zu verteilen sind (verteilen_auf_jahre > 1)
+        :param master_name:
+        :param jahr:
+        :return:
+        """
+        sql = "select master.master_name, " \
+              "sa.master_id, mobj_id, kreditor, betrag, rgdatum, rgtext, verteilen_auf_jahre, buchungsjahr," \
+              "buchungsdatum, buchungstext " \
+              "from sonstaus sa " \
+              "inner join masterobjekt master on master.master_id = sa.master_id " \
+              "where master.master_name = '%s' " \
+              "and kostenart = 'r' " \
+              "and verteilen_auf_jahre > 1 " \
+              "and buchungsjahr = %d " % (master_name, jahr)
         dictlist = self._doReadAllGetDict( sql )
         l: List[XErhaltungsaufwand] = list()
         for d in dictlist:
@@ -294,6 +326,16 @@ class AnlageV_DataAccess( DbAccess ):
         return 0 if sum is None else round( sum )
 
     def getAusgaben( self, master_name:str, jahr:int, kostenarten:List[Sonstaus_Kostenart] ) -> List[XAusgabeKurz]:
+        """
+        Liefert die Ausgaben der gewünschten Kostenarten.
+        ACHTUNG: Es werden nur solche Sätze geliefert, wo verteilen_auf_jahre == 1.
+        Auf mehrere Jahre verteilte Aufwendungen müssen mit Methode getVerteilteRepAufwendungen() selektiert werden.
+        Das betrifft nur Kostenart 'r'. Bei allen anderen steht verteilen_auf_jahre immer auf 1.
+        :param master_name:
+        :param jahr:
+        :param kostenarten:
+        :return:
+        """
         k_arten = ""
         for art in kostenarten:
             k_arten += "'"
@@ -308,6 +350,7 @@ class AnlageV_DataAccess( DbAccess ):
               "where master.master_name = '%s' " \
               "and buchungsjahr = %d " \
               "and kostenart in (%s) " \
+              "and verteilen_auf_jahre = 1 " \
               "order by kostenart, kreditor, betrag " % ( master_name, jahr, k_arten )
         dictlist = self._doReadAllGetDict( sql )
         l: List[XAusgabeKurz] = list()
@@ -315,6 +358,24 @@ class AnlageV_DataAccess( DbAccess ):
             x = XAusgabeKurz( d )
             l.append( x )
         return l
+
+    # def getVerteilteRepAufwendungen( self, master_name:str, vonjahr:int, bisjahr:int ) -> List[XVerteilterAufwand]:
+    #     sql = "select  master.master_name, master.master_id, " \
+    #           "mobj_id, kostenart, kreditor, buchungstext, buchungsdatum, buchungsjahr, verteilen_auf_jahre, betrag " \
+    #           "from sonstaus sa " \
+    #           "inner join masterobjekt master on master.master_id = sa.master_id " \
+    #           "where master.master_name = '%s' " \
+    #           "and buchungsjahr >= %d " \
+    #           "and buchungsjahr <= %d " \
+    #           "and verteilen_auf_jahre > 1 " \
+    #           "and kostenart = 'r' " \
+    #           "order by buchungsjahr, kreditor, betrag " % (master_name, vonjahr, bisjahr)
+    #     dictlist = self._doReadAllGetDict( sql )
+    #     l: List[XAusgabeKurz] = list()
+    #     for d in dictlist:
+    #         x = XAusgabeKurz( d )
+    #         l.append( x )
+    #     return l
 
     def getJahre( self ) -> List[int]:
         """
@@ -325,71 +386,6 @@ class AnlageV_DataAccess( DbAccess ):
         tuplelist = self._doRead( sql )
         li = [ x[0] for x in tuplelist ]
         return li
-
-    # def getGrundsteuer( self, master_name:str, jahr:int ) -> float:
-    #     """
-    #     Ermittelt die Grundsteuer aus der Tabelle sonstaus (Kostenart g)
-    #     :param master_name:
-    #     :param jahr:
-    #     :return:
-    #     """
-    #     sql = "select sum(betrag) as summe_betrag " \
-    #           "from sonstaus sa " \
-    #           "inner join masterobjekt master on master.master_id = sa.master_id " \
-    #           "where master.master_name = '%s' " \
-    #           "and kostenart = 'g' " \
-    #           "and buchungsjahr = %d " % ( master_name, jahr )
-    #     l:List[Tuple] = self._doRead( sql )
-    #     gs = 0.0
-    #     for t in l:
-    #         gs += t[0]
-    #     return gs
-
-    # def getAllgemeineKostenSumme( self, master_name:str, jahr:int ) -> int:
-    #     """
-    #     Ermittelt die Summe der allgemeinen Kosten (Kostenart a)
-    #     :param master_name:
-    #     :param jahr:
-    #     :return:
-    #     """
-    #     sql = "select sum(betrag) as summe_betrag " \
-    #           "from sonstaus sa " \
-    #           "inner join masterobjekt master on master.master_id = sa.master_id " \
-    #           "where master.master_name = '%s' " \
-    #           "and kostenart = 'a' " \
-    #           "and buchungsjahr = %d " % ( master_name, jahr )
-    #     l = self._doRead( sql )
-    #     sum = l[0][0]
-    #     return 0 if sum is None else round( sum )
-
-    # def getVersicherungenSumme( self, master_name:str, jahr:int ) -> int:
-    #     """
-    #     Ermittelt die Summe der Versicherungskosten (Kostenart v)
-    #     :param master_name:
-    #     :param jahr:
-    #     :return:
-    #     """
-    #     sql = "select sum(betrag) as summe_betrag " \
-    #           "from sonstaus sa " \
-    #           "inner join masterobjekt master on master.master_id = sa.master_id " \
-    #           "where master.master_name = '%s' " \
-    #           "and kostenart = 'v' " \
-    #           "and buchungsjahr = %d " % ( master_name, jahr )
-    #     l = self._doRead( sql )
-    #     sum = l[0][0]
-    #     return 0 if sum is None else round( sum )
-
-
-    # def getSonstigeKostenSumme( self, master_name:str, jahr:int ) -> int:
-    #     sql = "select sum(betrag) as summe_betrag " \
-    #           "from sonstaus sa " \
-    #           "inner join masterobjekt master on master.master_id = sa.master_id " \
-    #           "where master.master_name = '%s' " \
-    #           "and kostenart = 's' " \
-    #           "and buchungsjahr = %d " % ( master_name, jahr )
-    #     l = self._doRead( sql )
-    #     sum = l[0][0]
-    #     return 0 if sum is None else round( sum )
 
     def getDetailFromSammelabgabe( self, master_name:str, jahr:int ) -> XSammelAbgabeDetail or None:
         sql = "select master.master_name, " \
@@ -407,6 +403,7 @@ class AnlageV_DataAccess( DbAccess ):
 def test():
     av = AnlageV_DataAccess( "../immo.db")
     av.open()
+    #l = av.getVerteilteRepAufwendungen( "ILL_Eich", 2017, 2021 )
     l = av.getAusgaben( "SB_Kaiser", 2021, [Sonstaus_Kostenart.ALLGEMEIN,
                                             Sonstaus_Kostenart.VERSICHERUNG, Sonstaus_Kostenart.GRUNDSTEUER] )
     d = av.getSteuerpflichtiger( "ER_Heuschlag" )

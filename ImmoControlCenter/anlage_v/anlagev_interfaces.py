@@ -50,6 +50,12 @@ class XAusgabeKurz:
         if valuedict:
             setFromDict( self, valuedict )
 
+class XVerteilterAufwand( XAusgabeKurz ):
+    def __init__( self, valuedict:Dict ):
+        XAusgabeKurz.__init__( self, valuedict )
+        self.verteilen_auf_jahre = 0
+        self.buchungsjahr = 0
+
 class XAufwandVerteilt:
     def __init__(self, master_name:str="" ):
         self.master_name = master_name
