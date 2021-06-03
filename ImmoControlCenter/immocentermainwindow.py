@@ -26,6 +26,7 @@ class MainWindowAction( Enum ):
     OPEN_HGA_VIEW = 12,
     RESIZE_MAIN_WINDOW = 13,
     EXPORT_CSV = 14,
+    OPEN_ANLAGEV_VIEW = 15,
     EXIT=99
 
 class DummySignal(QObject):
@@ -226,11 +227,11 @@ class ImmoCenterMainWindow( QMainWindow ):
     def _createAnlageVMenu( self ):
         menu = QtWidgets.QMenu( self._menubar, title="AnlageV" )
         self._menubar.addMenu( menu )
-        action = QAction( self, text="Nebenkostenabrechnung..." )
-        action.triggered.connect( self.onViewNebenkostenabrechnung )
+        action = QAction( self, text="Anlagen V erstellen (Vorschau, kein Druck)..." )
+        action.triggered.connect( self.onViewAnlageV )
         menu.addAction( action )
 
-        action = QAction( self, text="Hausgeldabrechnung..." )
+        action = QAction( self, text="Anlagen V drucken..." )
         action.triggered.connect( self.onViewHausgeldabrechnung )
         menu.addAction( action )
 
@@ -415,6 +416,9 @@ class ImmoCenterMainWindow( QMainWindow ):
 
     def onViewHausgeldabrechnung( self ):
         self.doCallback( MainWindowAction.OPEN_HGA_VIEW )
+
+    def onViewAnlageV( self ):
+        self.doCallback( MainWindowAction.OPEN_ANLAGEV_VIEW )
 
     def onExportActiveTableView( self ):
         self.doCallback( MainWindowAction.EXPORT_CSV )

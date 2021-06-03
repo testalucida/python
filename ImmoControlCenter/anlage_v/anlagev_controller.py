@@ -24,7 +24,10 @@ class AnlageVController:
         self._subwin:MdiSubWindow = MdiSubWindow()
         self._view:AnlageVView = AnlageVView()
         self._tmlist:List[AnlageVTableModel] = list()
-        self._busi:AnlageV_Preview_Logic = AnlageV_Preview_Logic()
+        try:
+            self._busi:AnlageV_Preview_Logic = AnlageV_Preview_Logic()
+        except Exception as ex:
+            print( str(ex) )
 
     def startWork( self ):
         self._master_objekte = self._busi.getObjektNamen()

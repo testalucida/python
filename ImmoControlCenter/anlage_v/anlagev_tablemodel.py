@@ -4,8 +4,6 @@ from PySide2.QtGui import QFont, QBrush, QColor
 import numbers
 from typing import List, Dict, Any
 
-from anlagev_interfaces import XAnlageV_Zeile
-
 class PreviewRow:
     def __init__(self):
         self.zeile:Any = None

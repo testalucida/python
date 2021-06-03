@@ -4,7 +4,7 @@ from PySide2.QtWidgets import QApplication
 from anlage_v.ausgabenmodel import AusgabenModel
 from anlage_v.anlagev_base_logic import AnlageV_Base_Logic
 from anlage_v.anlagev_interfaces import XMieteinnahme, \
-    XWerbungskosten, XAfA, XAufwandVerteilt, XAusgabeKurz, XVerteilterAufwand, XErhaltungsaufwand
+    XWerbungskosten, XAfA, XAufwandVerteilt, XAusgabeKurz, XVerteilterAufwand, XErhaltungsaufwand, XSammelAbgabeDetail
 from anlage_v.anlagev_tablemodel import AnlageVTableModel, PreviewRow
 from constants import Sonstaus_Kostenart, DetailLink
 
@@ -297,11 +297,35 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         l:List[XAusgabeKurz] = self._db.getAusgaben( master_name, jahr, [Sonstaus_Kostenart.GRUNDSTEUER,
                                                                           Sonstaus_Kostenart.ALLGEMEIN,
                                                                           Sonstaus_Kostenart.VERSICHERUNG] )
+        xsam:XSammelAbgabeDetail = self._db.getDetailFromSammelabgabe( master_name, jahr )
+        if xsam:
+            xauslist = self._mapXSammelAbgabeDetail2XAusgabeKurz( xsam )
+            l.extend( xauslist )
         tm:AusgabenModel = AusgabenModel( master_name, jahr, l )
         tm.setHeaders( ["Kreditor", "Wohng", "Buchungstext", "Buch.datum", "Kostenart", "Betrag", "Summe"] )
         tm.setKeys( ["kreditor", "mobj_id", "buchungstext", "buchungsdatum", "kostenart", "betrag", ""] )
         tm.addColumnFunction( 6, self.getKreditorSumme )
         return tm
+
+    def _mapXSammelAbgabeDetail2XAusgabeKurz( self, xsam:XSammelAbgabeDetail ) -> List[XAusgabeKurz]:
+        l:List[XAusgabeKurz] = list()
+        for i in range( 0, 3 ):
+            xaus = XAusgabeKurz()
+            xaus.master_name = xsam.master_name
+            xaus.master_id = xsam.master_id
+            xaus.kreditor = "Gemeinde (Sammelabgabe)"
+            xaus.kostenart = Sonstaus_Kostenart.ALLGEMEIN.value[0]
+            if i == 0:
+                xaus.buchungstext = "Grundsteuer"
+                xaus.betrag = xsam.grundsteuer
+            elif i == 1:
+                xaus.buchungstext = "Abwasser"
+                xaus.betrag = xsam.abwasser
+            elif i == 2:
+                xaus.buchungstext = "Straßenreinigung"
+                xaus.betrag = xsam.strassenreinigung
+            l.append( xaus )
+        return l
 
     def getReparaturausgabenNichtVerteilt( self, master_name:str, jahr:int ) -> AusgabenModel:
         l: List[XAusgabeKurz] = self._db.getAusgaben( master_name, jahr, [Sonstaus_Kostenart.REPARATUR,] )

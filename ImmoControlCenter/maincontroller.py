@@ -2,6 +2,7 @@ from typing import List, Dict, Tuple
 
 from PySide2.QtCore import QAbstractItemModel
 
+from anlage_v.anlagev_controller import AnlageVController
 from business import BusinessLogic
 from constants import einausart
 from datehelper import getCurrentYear
@@ -80,6 +81,7 @@ class MainController:
             MainWindowAction.OPEN_SOLL_HG_VIEW: self.showSollHausgelderView,
             MainWindowAction.OPEN_NKA_VIEW: self.showNKAbrechnungenView,
             MainWindowAction.OPEN_HGA_VIEW: self.showHGAbrechnungenView,
+            MainWindowAction.OPEN_ANLAGEV_VIEW: self.showAnlageVView,
             MainWindowAction.RESIZE_MAIN_WINDOW: self.resizeAllViews,
             MainWindowAction.EXPORT_CSV: self.exportToCsv
         }
@@ -88,6 +90,15 @@ class MainController:
             fnc()
         except:
            self._mainwin.showException( "function call failed", "MainController.onMainWindowAction():\nconcerned action: '%s'." % (str( action ) ) )
+
+
+    def showAnlageVView( self ):
+        ctrl = AnlageVController()
+        ctrl.startWork()
+
+
+    def test( self ):
+        print( "test")
 
     def anyViewChanged( self ) -> bool:
         return self._someViewChanged

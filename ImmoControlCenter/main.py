@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 # sys.path.append( "/home/martin/Projects/python/common" )
 from typing import Tuple, Dict, List
@@ -58,7 +59,7 @@ def saveDatabase() -> None:
     src = "./immo.db"
     if "Vermietung" in scriptdir:
         print( "Running in REL; try to copy immo.db" )
-        dest = "/media/martin/Elements/Vermietung/ImmoControlCenter/immo.db"
+        dest = "/media/martin/Elements1/Vermietung/ImmoControlCenter/immo.db"
         if os.path.isfile( src ):
             box = QMessageBox()
             box.setIcon( QMessageBox.Question )
@@ -140,7 +141,20 @@ def testSaveDatabase():
     saveDatabase()
     app.exec_()
 
+def testSaveDatabasePermission() -> None:
+    #from shutil import copyfile
+    src = "/home/martin/Projects/python/ImmoControlCenter/immo.db"
+    dest = "/media/martin/Elements1/immoTEST.db"
+    #dest = "/home/martin/kannweg/immo.db"
+    if os.path.isfile( src ):
+        try:
+            shutil.copy2( src, dest )
+        except Exception as ex:
+            print( str( ex ) )
+
+
 if __name__ == '__main__':
+    #testSaveDatabasePermission()
     #testSaveDatabase()
     main()
 

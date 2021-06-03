@@ -1,3 +1,4 @@
+import os
 from typing import List, Dict, Any
 
 from anlage_v.anlagev_dataacess import AnlageV_DataAccess
@@ -17,7 +18,11 @@ class AnlageV_Base_Logic:
         self._prepare()
 
     def _prepare(self):
-        dbname = "../immo.db"
+        path = os.getcwd()
+        if "anlage_v" in path: # test des AnlageVControllers
+            dbname = "../immo.db"
+        else:
+            dbname = "./immo.db" # Normaler Anwendungsstart
         #dbname = "/home/martin/Vermietung/ImmoControlCenter/immo.db"
         self._db = AnlageV_DataAccess( dbname )
         self._db.open()
