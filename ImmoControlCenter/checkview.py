@@ -10,35 +10,36 @@ import datetime
 from typing import List, Dict, Any
 
 #from models import KontrollModel
+from imagefactory import ImageFactory
 from tableview import TableView
 from checktablemodel import CheckTableModel
 from monthlist import monthList
 
-class ImageFactory:
-    __instance = None
-    _okIcon:QIcon = None
-    _nokIcon:QIcon = None
-
-    @staticmethod
-    def instance():
-        if ImageFactory.__instance == None:
-            ImageFactory()
-        return ImageFactory.__instance
-
-    def __init__(self):
-        if ImageFactory.__instance != None:
-            raise  Exception( "ImageFactory is a singleton!" )
-        ImageFactory.__instance = self
-
-    def getOkIcon(self) -> QIcon:
-        if self._okIcon == None:
-            self._okIcon = QIcon("./images/greensquare20x20.png")
-        return self._okIcon
-
-    def getNokIcon(self) -> QIcon:
-        if self._nokIcon == None:
-            self._nokIcon = QIcon("./images/redsquare20x20.png")
-        return self._nokIcon
+# class ImageFactory:
+#     __instance = None
+#     _okIcon:QIcon = None
+#     _nokIcon:QIcon = None
+#
+#     @staticmethod
+#     def instance():
+#         if ImageFactory.__instance == None:
+#             ImageFactory()
+#         return ImageFactory.__instance
+#
+#     def __init__(self):
+#         if ImageFactory.__instance != None:
+#             raise  Exception( "ImageFactory is a singleton!" )
+#         ImageFactory.__instance = self
+#
+#     def getOkIcon(self) -> QIcon:
+#         if self._okIcon == None:
+#             self._okIcon = QIcon("./images/greensquare20x20.png")
+#         return self._okIcon
+#
+#     def getNokIcon(self) -> QIcon:
+#         if self._nokIcon == None:
+#             self._nokIcon = QIcon("./images/redsquare20x20.png")
+#         return self._nokIcon
 
 
 
@@ -113,9 +114,9 @@ class ControlButton( QPushButton ):
         self.clicked.connect( callbackFnc )
         fnc = self.clicked
         if isOkButton:
-            self.setIcon( ImageFactory.instance().getOkIcon() )
+            self.setIcon( ImageFactory.inst().getOkIcon() )
         else:
-            self.setIcon( ImageFactory.instance().getNokIcon() )
+            self.setIcon( ImageFactory.inst().getNokIcon() )
 
     def isOkButton(self) -> bool:
         return self._isOkButton

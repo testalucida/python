@@ -8,6 +8,7 @@ from PySide2.QtGui import QKeySequence, QFont
 from enum import Enum
 
 from datehelper import getDateParts
+from imagefactory import ImageFactory
 from qtderivates import SmartDateEdit, IntDisplay
 from sumfieldsprovider import SumFieldsProvider
 
@@ -122,7 +123,8 @@ class ImmoCenterMainWindow( QMainWindow ):
         # Menüpunkt "Änderungen an der aktiven Sicht speichern"
         action = QAction( self, text="Alle Änderungen speichern" )
         action.setShortcut( QKeySequence( "Ctrl+Shift+s" ) )
-        icon = QtGui.QIcon( "./images/save_30.png" )
+        #icon = QtGui.QIcon( "./images/save_30.png" )
+        icon = ImageFactory.inst().getSaveIcon()
         action.setIcon( icon )
         action.triggered.connect( self.onSaveAll )
         menu.addAction( action )

@@ -7,6 +7,8 @@ from PySide2.QtWidgets import QPushButton, QWidget, QHBoxLayout, QApplication, Q
     QComboBox, QListView, QVBoxLayout
 
 from anlage_v.anlagev_tablemodel import AnlageVTableModel
+from imagefactory import ImageFactory
+
 
 class AnlageVAuswahlDialog( QDialog ):
     def __init__( self, masterobjektlist:List[str], jahre:List[int], checked=False, icon=None, parent=None ):
@@ -120,11 +122,13 @@ class AnlageVTableView( QTableView ):
 ###################################################################
 
 class ToolbarButton( QPushButton ):
-    def __init__( self, parent, size:QSize, pathToIcon:str, tooltip:str ):
+    # def __init__( self, parent, size:QSize, pathToIcon:str, tooltip:str ):
+    def __init__( self, parent, size: QSize, icon: QIcon, tooltip: str ):
         QPushButton.__init__( self, parent )
+        self._icon = icon
         self.setFlat( True )
         self.setFixedSize( size )
-        icon = QIcon( pathToIcon )
+        #icon = QIcon( pathToIcon )
         self.setIcon( icon )
         self.setIconSize( size )
         self.setToolTip( tooltip )
@@ -132,28 +136,42 @@ class ToolbarButton( QPushButton ):
 ###################################################################
 
 class AnlageVView( QWidget ):
+    openAnlageV = Signal()
+    printAnlageV = Signal()
+    printAllAnlageV = Signal()
     def __init__( self, parent=None ):
         QWidget.__init__( self, parent )
         self.setWindowTitle( "Anlage V" )
         self._mainLayout = QtWidgets.QGridLayout( self )
         self._toolbarLayout = QHBoxLayout()
-        #self._btnSave = ToolbarButton( self, QSize(30,30), "../images/save_30.png", "Änderungen speichern" )
-        self._btnPrint = ToolbarButton( self, QSize(30,30), "../images/print_30.png", "Anlagen V drucken" )
+        self._btnOpenAnlageV = ToolbarButton( self, QSize( 30, 30 ),
+                                        ImageFactory.inst().getOpenIcon(), "Anlage V öffnen" )
+        self._btnPrint = ToolbarButton( self, QSize( 30, 30 ),
+                                        ImageFactory.inst().getPrintIcon(), "Aktive Anlage V drucken" )
+        self._btnPrintAll = ToolbarButton( self, QSize( 30, 30 ),
+                                           ImageFactory.inst().getPrintAllIcon(), "Alle geöffneten Anlagen V drucken" )
+        self._btnClose = QPushButton( text="Schließen" )
         self._tabs:AnlageVTabs() = AnlageVTabs()
         self._tvList:List[AnlageVTableView] = list()
         self._createGui()
 
     def _createGui( self ):
         self._createToolbar()
+        self._toolbarLayout.setStretch( 2, 1 )
         self._mainLayout.addLayout( self._toolbarLayout, 0, 0, alignment=Qt.AlignLeft )
         self._mainLayout.addWidget( self._tabs, 1, 0 )
         self.setLayout( self._mainLayout )
 
     def _createToolbar( self ):
-        #self._btnSave.clicked.connect( self._onSave )
-        #self._toolbarLayout.addWidget( self._btnSave, alignment=Qt.AlignLeft )
+        self._btnOpenAnlageV.clicked.connect( self._onOpen )
+        self._toolbarLayout.addWidget( self._btnOpenAnlageV, alignment=Qt.AlignLeft )
         self._btnPrint.clicked.connect( self._onPrint )
         self._toolbarLayout.addWidget( self._btnPrint, alignment=Qt.AlignLeft )
+        self._btnPrintAll.clicked.connect( self._onPrintAll )
+        self._toolbarLayout.addWidget( self._btnPrintAll, alignment=Qt.AlignLeft )
+        self._btnClose.clicked.connect( self._onClose )
+        self._toolbarLayout.addWidget( self._btnClose, alignment=Qt.AlignRight )
+
 
     def addAnlageV( self, tm:AnlageVTableModel ) -> AnlageVTableView:
         tv = AnlageVTableView()
@@ -163,23 +181,49 @@ class AnlageVView( QWidget ):
         self._tvList.append( tv )
         return tv
 
-    def _onSave( self ):
-        print( "AnlageVView._onSave")
+    def _onOpen( self ):
+        #print( "AnlageVView._onOpen")
+        self.openAnlageV.emit()
 
     def _onPrint( self ):
         print( "AnlageVView._onPrint" )
 
+    def _onPrintAll( self ):
+        print( "AnlageVView._onPrintAll" )
+
+    def _onClose( self ):
+        self.close()
+
+
+# class AnlageVDialog( QDialog ):
+#     def __init__( self, parent=None ):
+#         QDialog.__init__( self, parent )
+#         self._layout = QVBoxLayout()
+#         #self._btnPrint = ToolbarButton( self, QSize( 30, 30 ), "../images/print_30.png", "Anlagen V drucken" )
+#         #self._btnDummy = QPushButton( text="PUSH")
+#         self._view = AnlageVView()
+#         self._createGui()
+#
+#     def _createGui( self ):
+#         self.setWindowTitle( "Anlagen V ausgewählter Objekte" )
+#         #self._layout.addWidget( self._btnDummy )
+#         self._layout.addWidget( self._view, stretch=1 )
+#         self.setLayout( self._layout )
 
 def test():
     app = QApplication()
-    dlg = AnlageVAuswahlDialog( ["SB_Kaiser", "ILL_Eich", "NK_Kleist"], [2020, 2021], checked=True )
-    dlg.setCurrentJahr( 2021 )
-    if dlg.exec_() == QDialog.Accepted:
-        print( '\n'.join( [str( s ) for s in dlg.getAuswahl()] ) )
+    # dlg = AnlageVAuswahlDialog( ["SB_Kaiser", "ILL_Eich", "NK_Kleist"], [2020, 2021], checked=True )
+    # dlg.setCurrentJahr( 2021 )
+    # if dlg.exec_() == QDialog.Accepted:
+    #     print( '\n'.join( [str( s ) for s in dlg.getAuswahl()] ) )
 
-    # v = AnlageVView()
-    # v.show()
-    # app.exec_()
+    v = AnlageVView()
+    v.show()
+
+    #d = AnlageVDialog()
+    #d.exec_()
+
+    app.exec_()
 
 if __name__ == "__main__":
     test()

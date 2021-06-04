@@ -23,37 +23,62 @@ class AnlageVController:
         self._jahr:int = 0
         self._subwin:MdiSubWindow = MdiSubWindow()
         self._view:AnlageVView = AnlageVView()
+        self._view.openAnlageV.connect( self.onOpenAnlageV )
         self._tmlist:List[AnlageVTableModel] = list()
         try:
             self._busi:AnlageV_Preview_Logic = AnlageV_Preview_Logic()
         except Exception as ex:
             print( str(ex) )
 
-    def startWork( self ):
-        self._master_objekte = self._busi.getObjektNamen()
+    def createView( self ) -> AnlageVView:
+        master_objekte = self._busi.getObjektNamen()
         jahre = self._busi.getJahre()
-        dlg = AnlageVAuswahlDialog( self._master_objekte, jahre, checked=False )
+        accepted, jahr, objlist = self.showAnlageVAuswahlDialog( jahre, master_objekte )
+        if accepted:
+            self._jahr = jahr
+            self._master_objekte = objlist
+            self._provideTabs( objlist )
+            return self._view
+        else:
+            self._jahr = 0
+            self._master_objekte.clear()
+            return None
+
+    def showAnlageVAuswahlDialog( self, jahre:List[int], master_objekte:List[str] ) -> [bool, int, List]:
+        """
+        zeigt den Objekt-Auswahldialog und liefert die ausgewählten Objekte und das ausgewählte Jahr zurück
+        :return: accepted: True/False, jahr, Liste der ausgewählten Masterobjekte
+        """
+        dlg = AnlageVAuswahlDialog( master_objekte, jahre, checked=False )
         if len( jahre ) > 1:
-            dlg.setCurrentJahr( jahre[len(jahre)-2])
-        dlg.setMinimumHeight( len( self._master_objekte * 30 ) )
+            dlg.setCurrentJahr( jahre[len( jahre ) - 2] )
+        dlg.setMinimumHeight( len( master_objekte * 30 ) )
         if dlg.exec_() == QDialog.Accepted:
             ausw = dlg.getAuswahl()
-            self._jahr = ausw[0]
-            self._master_objekte = ausw[1]
-            #print( '\n'.join( [str( s ) for s in dlg.choices] ) )
-            self._createSubwindow()
+            return True, ausw[0], ausw[1]
+        else:
+            return False, 0, None
 
-    def _createSubwindow( self ):
-        for obj in self._master_objekte:
+    def _provideTabs( self, master_objekte:List[str] ):
+        for obj in master_objekte:
             tm = self._busi.getAnlageVTableModel( obj, self._jahr )
             self._tmlist.append( tm )
             tv:AnlageVTableView = self._view.addAnlageV( tm )
             tv.cell_clicked.connect( self.onAnlageVLeftClick )
-        self._subwin.setWidget( self._view )
-        self._subwin.setWindowTitle( "Anlagen V ausgewählter Objekte" )
-        #self._subwin.addQuitCallback( self.onCloseSubWindow )
-        self._subwin.setMinimumSize( 1300, 1300 )
-        self._subwin.show()
+
+    def onOpenAnlageV( self ):
+        master_objekte = self._busi.getObjektNamen()  # alle Objekte holen
+        # nur die zur Auswahl geben, die noch nicht geöffnet sind:
+        rem = [x for x in master_objekte if x not in self._master_objekte]
+        if self._jahr == 0:
+            jahre = self._busi.getJahre()
+        else:
+            jahre = [self._jahr,]
+        accepted, jahr, objlist = self.showAnlageVAuswahlDialog( jahre, rem )
+        if accepted:
+            self._jahr = jahr
+            self._master_objekte.extend( objlist )
+            self._provideTabs( objlist )
 
     def onAnlageVLeftClick( self, master_objekt:str, jahr:int, row:int, column:int ) -> None:
         #print( "AnlageV clicked: %s, %d, %d, %d" % (master_objekt, jahr, row, column ) )
@@ -99,9 +124,9 @@ def testPreview():
     ctrl = AnlageVController( )
     # tm:AusgabenModel = ctrl._busi.getAusgabenModel( "ILL_Eich", 2021 )
     # ctrl._showAusgabenDialog( tm )
-    ctrl.startWork()
-    # win = ctrl.createSubwindow()
-    # win.show()
+    win = ctrl.createView()
+    win.show()
+
     app.exec_()
 
 if __name__ == "__main__":

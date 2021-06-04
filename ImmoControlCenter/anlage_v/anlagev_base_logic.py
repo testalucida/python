@@ -23,7 +23,7 @@ class AnlageV_Base_Logic:
             dbname = "../immo.db"
         else:
             dbname = "./immo.db" # Normaler Anwendungsstart
-        #dbname = "/home/martin/Vermietung/ImmoControlCenter/immo.db"
+        #dbname = "/home/martin/Vermietung/ImmoControlCenter/immo.db"  # wenn im Test die Rel.-DB verwendet werden soll.
         self._db = AnlageV_DataAccess( dbname )
         self._db.open()
         self._steuerpflichtiger = self._db.getSteuerpflichtige()[0]

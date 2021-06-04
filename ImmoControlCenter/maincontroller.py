@@ -41,6 +41,8 @@ class MainController:
         self._nkaCtrl = NkAbrechnungenController()
         self._hgaCtrl = HgAbrechnungenController()
 
+        self._anlageVCtrl:AnlageVController = None
+
         self._nChanges = 0  # zählt die Änderungen, damit nach Speichern-Vorgängen das Sternchen nicht zu früh entfernt wird.
 
         #TODO: _viewsandcontroller bereinigen, wenn ein View geschlossen wird
@@ -91,11 +93,17 @@ class MainController:
         except:
            self._mainwin.showException( "function call failed", "MainController.onMainWindowAction():\nconcerned action: '%s'." % (str( action ) ) )
 
-
     def showAnlageVView( self ):
-        ctrl = AnlageVController()
-        ctrl.startWork()
+        self._anlageVCtrl = AnlageVController()
+        view = self._anlageVCtrl.createView()
+        if view:
+            view.setGeometry( self._mainwin.x()+50, self._mainwin.y()+10, 1300, 1300 )
+            view.show()
 
+        #subwin:MdiSubWindow = self._anlageVCtrl.startWork()
+        #self._installView( subwin, self._anlageVCtrl )
+        # subwin.setMinimumSize( 1300, 1300 )
+        #subwin.show()
 
     def test( self ):
         print( "test")
