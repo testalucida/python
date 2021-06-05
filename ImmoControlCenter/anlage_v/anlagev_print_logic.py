@@ -1,7 +1,8 @@
 import numbers
 from typing import List, Dict, Any
 
-from PySide2.QtWidgets import QApplication
+from PySide2.QtPrintSupport import QPrintDialog
+from PySide2.QtWidgets import QApplication, QDialog
 
 from anlage_v.anlagev_base_logic import AnlageV_Base_Logic, masterobjekte
 from anlage_v.anlagev_interfaces import XAnlageV_Zeile, XMieteinnahme, XWerbungskosten, XAfA, XAufwandVerteilt
@@ -18,10 +19,12 @@ class AnlageV_Print_Logic( AnlageV_Base_Logic):
         self.printAnlagenV( master_names, nurKopfdaten )
 
     def printAnlagenV( self, master_names:List[str], jahr:int, nurKopfdaten:bool=False ):
-        for master_name in master_names:
-            zeilenlist = self._getAnlageV_Zeilen( master_name, jahr, nurKopfdaten )
-            avprinter = AnlageV_Printer( zeilenlist )
-            avprinter.print()
+        avprinter = AnlageV_Printer()
+        if avprinter.showPrintDialog():
+            for master_name in master_names:
+                zeilenlist = self._getAnlageV_Zeilen( master_name, jahr, nurKopfdaten )
+                avprinter.print( zeilenlist )
+            avprinter.end()
         self.terminate()
 
     def testPrint( self, feld_id:str, value:Any ) -> None:
@@ -68,15 +71,17 @@ class AnlageV_Print_Logic( AnlageV_Base_Logic):
         self._provideMieteinnahmenUndUmlagen( xme, l )
         self._provideSummeEinnahmen( xme, l )
         xwk:XWerbungskosten = self.getWerbungskosten( master_name, jahr )
-        self._provideSummeWerbungskosten( xwk, l )
+        summeWk = xwk.getSummeWerbungskosten()
+        self._provideSummeWerbungskosten( summeWk, l )
         ueberschuss = self._provideUeberschuss( xme, xwk, l )
         self._provideZurechnungBetrag( ueberschuss, l )
-        self._provideGrundsteuerUndAllgemeineKosten( l )
         ################### Seite 2
         self._provideAfA( xwk.afa, l )
         self._provideAufwandVollAbziehbar( xwk.erhalt_aufwand, l )
         self._provideAufwandVerteilt( xwk.erhalt_aufwand_verteilt, l )
-
+        self._provideAllgemeineKosten( xwk.getSummeAllgemeineKosten(), l )
+        self._provideSonstigeKosten( xwk.sonstige_kosten, l )
+        self._provideSummeWerbungskostenUebertrag( summeWk, l )
         return l
 
     def _provideSteuerpflichtigen( self, stpfldic:Dict, anlagev_zeilen: List[XAnlageV_Zeile] ) -> None:
@@ -146,8 +151,7 @@ class AnlageV_Print_Logic( AnlageV_Base_Logic):
         z: XAnlageV_Zeile = self._createAnlageV_Zeile( "summe_einnahmen", summeEin )
         anlagev_zeilen.append( z )
 
-    def _provideSummeWerbungskosten( self, xwk:XWerbungskosten, anlagev_zeilen: List[XAnlageV_Zeile] ):
-        summeWk = xwk.getSummeWerbungskosten()
+    def _provideSummeWerbungskosten( self, summeWk:int, anlagev_zeilen: List[XAnlageV_Zeile] ):
         z: XAnlageV_Zeile = self._createAnlageV_Zeile( "summe_werbungskosten_uebertrag", summeWk )
         anlagev_zeilen.append( z )
 
@@ -192,6 +196,26 @@ class AnlageV_Print_Logic( AnlageV_Base_Logic):
         anlagev_zeilen.append( z )
         z: XAnlageV_Zeile = self._createAnlageV_Zeile( "anteil_aus_vj_minus_1", aufwand.aufwand_vj_minus_1 )
         anlagev_zeilen.append( z )
+
+    def _provideAllgemeineKosten( self, allgemeinkosten: int, anlagev_zeilen: List[XAnlageV_Zeile] ) -> None:
+        """
+        :param allgemeinkosten: Summe aus Kostenart 'a', Versicherungen, Grundsteuer, Abwasser, Straßenreinigung.
+        :param anlagev_zeilen:
+        :return:
+        """
+        x = self._createAnlageV_Zeile( "hauskosten_allg", allgemeinkosten )
+        x.previewFlag = False
+        anlagev_zeilen.append( x )
+
+    def _provideSonstigeKosten( self, sonstigeKosten: int, anlagev_zeilen: List[XAnlageV_Zeile] ) -> None:
+        x = self._createAnlageV_Zeile( "sonstige_kosten", sonstigeKosten )
+        x.previewFlag = False
+        anlagev_zeilen.append( x )
+
+    def _provideSummeWerbungskostenUebertrag( self, summeWk: int, anlagev_zeilen: List[XAnlageV_Zeile] ) -> None:
+        x = self._createAnlageV_Zeile( "summe_werbungskosten", summeWk )
+        x.previewFlag = False
+        anlagev_zeilen.append( x )
 
     def _createAnlageV_Zeile( self, feld_id: str, val: Any, page:int=1 ) -> XAnlageV_Zeile:
         defi = self._getZeilenDef( feld_id )

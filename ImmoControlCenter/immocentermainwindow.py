@@ -229,13 +229,13 @@ class ImmoCenterMainWindow( QMainWindow ):
     def _createAnlageVMenu( self ):
         menu = QtWidgets.QMenu( self._menubar, title="AnlageV" )
         self._menubar.addMenu( menu )
-        action = QAction( self, text="Anlagen V erstellen (Vorschau, kein Druck)..." )
+        action = QAction( self, text="Anlagen V: Objektauswahl, Vorschau, Druck..." )
         action.triggered.connect( self.onViewAnlageV )
         menu.addAction( action )
 
-        action = QAction( self, text="Anlagen V drucken..." )
-        action.triggered.connect( self.onViewHausgeldabrechnung )
-        menu.addAction( action )
+        # action = QAction( self, text="Anlagen V drucken..." )
+        # action.triggered.connect( self.onViewHausgeldabrechnung )
+        # menu.addAction( action )
 
     def _createExtrasMenu( self ):
         menu = QtWidgets.QMenu( self._menubar, title="Extras" )

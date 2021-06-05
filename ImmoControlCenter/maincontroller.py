@@ -1,6 +1,7 @@
 from typing import List, Dict, Tuple
 
 from PySide2.QtCore import QAbstractItemModel
+from PySide2.QtWidgets import QDialog, QVBoxLayout
 
 from anlage_v.anlagev_controller import AnlageVController
 from business import BusinessLogic
@@ -95,10 +96,20 @@ class MainController:
 
     def showAnlageVView( self ):
         self._anlageVCtrl = AnlageVController()
-        view = self._anlageVCtrl.createView()
-        if view:
-            view.setGeometry( self._mainwin.x()+50, self._mainwin.y()+10, 1300, 1300 )
-            view.show()
+        dlg = self._anlageVCtrl.createDialog( self._mainwin )
+        dlg.setGeometry( self._mainwin.x() + 50, self._mainwin.y() + 10, 1300, 1300 )
+        dlg.show()
+        # view = self._anlageVCtrl.createView()
+        # dlg = QDialog( self._mainwin )
+        # dlg.setModal( False )
+        # lay = QVBoxLayout()
+        # lay.addWidget( view )
+        # dlg.setLayout( lay )
+        # dlg.setGeometry( self._mainwin.x()+50, self._mainwin.y()+10, 1300, 1300 )
+        # dlg.show()
+        # if view:
+        #     view.setGeometry( self._mainwin.x()+50, self._mainwin.y()+10, 1300, 1300 )
+        #     view.show()
 
         #subwin:MdiSubWindow = self._anlageVCtrl.startWork()
         #self._installView( subwin, self._anlageVCtrl )

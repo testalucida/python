@@ -1,10 +1,11 @@
 from typing import List
 
-from PySide2.QtCore import QModelIndex
-from PySide2.QtWidgets import QTabWidget, QApplication, QDialog
+from PySide2.QtCore import QModelIndex, Signal, Slot, QObject
+from PySide2.QtWidgets import QTabWidget, QApplication, QDialog, QMessageBox
 
 from anlage_v.anlagev_preview_logic import AnlageV_Preview_Logic
-from anlage_v.anlagev_gui import AnlageVView, AnlageVTableView, AnlageVAuswahlDialog
+from anlage_v.anlagev_gui import AnlageVView, AnlageVTableView, AnlageVAuswahlDialog, AnlageVDialog
+from anlage_v.anlagev_print_logic import AnlageV_Print_Logic
 from anlage_v.anlagev_tablemodel import AnlageVTableModel
 from anlage_v.ausgabenmodel import AusgabenModel
 from constants import DetailLink
@@ -12,18 +13,20 @@ from generictableviewdialog import GenericTableViewDialog
 from mdisubwindow import MdiSubWindow
 
 
-class AnlageVController:
+class AnlageVController( QObject ):
     """
     Controller für AnlageVView.
     Lässt den Anwender beim Aufruf von startWork() eine Liste von Master-Objekten bestimmen,
     die dann in der AnlageVView angezeigt werden.
+    Dieser Controller hat nichts mit der Druckfunktion zu tun.
+    Er sendet nur ein Signal, wenn der Anwender einen der Drucken-Buttons gedrückt hat.
     """
     def __init__( self ):
+        QObject.__init__( self )
         self._master_objekte:List[str] = list()
         self._jahr:int = 0
         self._subwin:MdiSubWindow = MdiSubWindow()
         self._view:AnlageVView = AnlageVView()
-        self._view.openAnlageV.connect( self.onOpenAnlageV )
         self._tmlist:List[AnlageVTableModel] = list()
         try:
             self._busi:AnlageV_Preview_Logic = AnlageV_Preview_Logic()
@@ -31,6 +34,9 @@ class AnlageVController:
             print( str(ex) )
 
     def createView( self ) -> AnlageVView:
+        self._view.openAnlageV.connect( self.onOpenAnlageV )
+        self._view.printAnlageV.connect( self.onPrintAnlageV )
+        self._view.printAllAnlageV.connect( self.onPrintAllAnlageV )
         master_objekte = self._busi.getObjektNamen()
         jahre = self._busi.getJahre()
         accepted, jahr, objlist = self.showAnlageVAuswahlDialog( jahre, master_objekte )
@@ -43,6 +49,16 @@ class AnlageVController:
             self._jahr = 0
             self._master_objekte.clear()
             return None
+
+    def createDialog( self, parent ) -> AnlageVDialog:
+        """
+        instead of only creating a view (and getting returned that view)
+        a dialog containing this view may be created.
+        A parent must be given so that the dialog can be non-modal.
+        """
+        view = self.createView()
+        dlg = AnlageVDialog( view, parent )
+        return dlg
 
     def showAnlageVAuswahlDialog( self, jahre:List[int], master_objekte:List[str] ) -> [bool, int, List]:
         """
@@ -66,6 +82,7 @@ class AnlageVController:
             tv:AnlageVTableView = self._view.addAnlageV( tm )
             tv.cell_clicked.connect( self.onAnlageVLeftClick )
 
+    @Slot()
     def onOpenAnlageV( self ):
         master_objekte = self._busi.getObjektNamen()  # alle Objekte holen
         # nur die zur Auswahl geben, die noch nicht geöffnet sind:
@@ -79,6 +96,24 @@ class AnlageVController:
             self._jahr = jahr
             self._master_objekte.extend( objlist )
             self._provideTabs( objlist )
+
+    @Slot()
+    def onPrintAnlageV( self ):
+        master_name:str = self._view.getActiveAnlageV()
+        self._doPrinting( [master_name,] )
+
+    @Slot()
+    def onPrintAllAnlageV( self ):
+        self._doPrinting( self._master_objekte )
+
+    def _doPrinting( self, master_names:List[str] ):
+        mb = QMessageBox()
+        ret = mb.question( self._view, "", "Nur Kopfdaten drucken?", mb.Yes | mb.No )
+        onlyKopfdaten = False
+        if ret == mb.Yes:
+            onlyKopfdaten = True
+        printCtrl = AnlageV_Print_Logic()
+        printCtrl.printAnlagenV( master_names, self._jahr, onlyKopfdaten )
 
     def onAnlageVLeftClick( self, master_objekt:str, jahr:int, row:int, column:int ) -> None:
         #print( "AnlageV clicked: %s, %d, %d, %d" % (master_objekt, jahr, row, column ) )

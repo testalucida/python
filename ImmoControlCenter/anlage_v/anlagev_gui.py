@@ -139,6 +139,7 @@ class AnlageVView( QWidget ):
     openAnlageV = Signal()
     printAnlageV = Signal()
     printAllAnlageV = Signal()
+    closeView = Signal()
     def __init__( self, parent=None ):
         QWidget.__init__( self, parent )
         self.setWindowTitle( "Anlage V" )
@@ -181,34 +182,39 @@ class AnlageVView( QWidget ):
         self._tvList.append( tv )
         return tv
 
+    def getActiveAnlageV( self ) -> str:
+        """
+        liefert die aktive Anlage V, das ist die, deren Tab gerade Fokus hat.
+        :return: den Master-Name der aktiven Anlage V
+        """
+        return self._tabs.tabText( self._tabs.currentIndex() )
+
     def _onOpen( self ):
-        #print( "AnlageVView._onOpen")
         self.openAnlageV.emit()
 
     def _onPrint( self ):
-        print( "AnlageVView._onPrint" )
+        self.printAnlageV.emit()
 
     def _onPrintAll( self ):
-        print( "AnlageVView._onPrintAll" )
+        self.printAllAnlageV.emit()
 
     def _onClose( self ):
         self.close()
+        self.closeView.emit()
 
 
-# class AnlageVDialog( QDialog ):
-#     def __init__( self, parent=None ):
-#         QDialog.__init__( self, parent )
-#         self._layout = QVBoxLayout()
-#         #self._btnPrint = ToolbarButton( self, QSize( 30, 30 ), "../images/print_30.png", "Anlagen V drucken" )
-#         #self._btnDummy = QPushButton( text="PUSH")
-#         self._view = AnlageVView()
-#         self._createGui()
-#
-#     def _createGui( self ):
-#         self.setWindowTitle( "Anlagen V ausgewählter Objekte" )
-#         #self._layout.addWidget( self._btnDummy )
-#         self._layout.addWidget( self._view, stretch=1 )
-#         self.setLayout( self._layout )
+class AnlageVDialog( QDialog ):
+    def __init__( self, view:AnlageVView, parent ):
+        QDialog.__init__( self, parent )
+        self._view = view
+        self._view.closeView.connect( self.onCloseView )
+        self._layout = QVBoxLayout()
+        self._layout.addWidget( view )
+        self.setWindowTitle( "Anlagen V ausgewählter Objekte" )
+        self.setLayout( self._layout )
+
+    def onCloseView( self ):
+        self.close()
 
 def test():
     app = QApplication()
