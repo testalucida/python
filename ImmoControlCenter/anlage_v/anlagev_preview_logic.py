@@ -116,7 +116,8 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         previewRows.append( r )
 
     def _createPreviewRowsFromWerbungskosten( self, x:XWerbungskosten, previewRows:List[PreviewRow] ) -> None:
-        self._createPreviewRowsFromAfA( x.afa, previewRows )
+        if x.afa: # bei den Rülzheimer Äckern gibt's keine AfA
+            self._createPreviewRowsFromAfA( x.afa, previewRows )
         self._createPreviewRowSeparator( "", previewRows  )
         self._createPreviewRowsFromAufwandNichtVerteilt( x.erhalt_aufwand, x.jahr, previewRows )
         self._createPreviewRowSeparator( "", previewRows )

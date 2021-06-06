@@ -3,7 +3,7 @@ from typing import List
 from PySide2.QtCore import QRect, QRectF
 from PySide2.QtGui import QPainter, Qt
 from PySide2.QtPrintSupport import QPrinter, QPrintDialog
-from PySide2.QtWidgets import QDialog
+from PySide2.QtWidgets import QDialog, QApplication
 
 from anlage_v.anlagev_interfaces import XAnlageV_Zeile
 
@@ -25,9 +25,11 @@ class AnlageV_Printer:
                 self.painter.drawText( rect, Qt.AlignRight, zeile.value )
                 #y += 10
             else:
-                self.painter.drawText( zeile.printX, zeile.printY, zeile.value )
-            if zeile.new_page_after:
-                self.printer.newPage()
+                if zeile is not None:
+                    if zeile.printX >= 0 and zeile.printY >= 0 and zeile.value is not None:
+                        self.painter.drawText( zeile.printX, zeile.printY, zeile.value )
+                    if zeile.new_page_after:
+                        self.printer.newPage()
         self._nCall += 1
 
     def showPrintDialog( self ) -> bool:
@@ -49,3 +51,18 @@ class AnlageV_Printer:
 
     def end( self ):
         self.painter.end()
+
+def test():
+    app = QApplication()
+    z = XAnlageV_Zeile()
+    z.printX = 166
+    z.printY = 110
+    z.value = "8765"
+    z.rtl = True
+    pr = AnlageV_Printer()
+    if pr.showPrintDialog():
+        pr.print( [z,] )
+        pr.end()
+
+if __name__ == "__main__":
+    test()

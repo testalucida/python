@@ -106,6 +106,10 @@ class AnlageVController( QObject ):
     def onPrintAllAnlageV( self ):
         self._doPrinting( self._master_objekte )
 
+    def testPrinting( self, master_name:str, jahr:int ):
+        self._jahr = jahr
+        self._doPrinting( [master_name,] )
+
     def _doPrinting( self, master_names:List[str] ):
         mb = QMessageBox()
         ret = mb.question( self._view, "", "Nur Kopfdaten drucken?", mb.Yes | mb.No )
@@ -157,12 +161,13 @@ class AnlageVController( QObject ):
 def testPreview():
     app = QApplication()
     ctrl = AnlageVController( )
+    ctrl.testPrinting( "ILL_Eich", 2021 )
     # tm:AusgabenModel = ctrl._busi.getAusgabenModel( "ILL_Eich", 2021 )
     # ctrl._showAusgabenDialog( tm )
-    win = ctrl.createView()
-    win.show()
+    #win = ctrl.createView()
+    #win.show()
 
-    app.exec_()
+    #app.exec_()
 
 if __name__ == "__main__":
     testPreview()

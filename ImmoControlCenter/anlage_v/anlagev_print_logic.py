@@ -31,8 +31,10 @@ class AnlageV_Print_Logic( AnlageV_Base_Logic):
         z: XAnlageV_Zeile = self._createAnlageV_Zeile( feld_id, value )
         l = list()
         l.append( z )
-        avprinter = AnlageV_Printer( l )
-        avprinter.print()
+        avprinter = AnlageV_Printer()
+        if avprinter.showPrintDialog():
+            avprinter.print( l )
+            avprinter.end()
         self.terminate()
 
     def testPrintSomeLines( self, fields:List[Dict] ) -> None:
@@ -49,8 +51,10 @@ class AnlageV_Print_Logic( AnlageV_Base_Logic):
         for f in fields:
             z: XAnlageV_Zeile = self._createAnlageV_Zeile( f["id"], f["value"] )
             l.append( z )
-        avprinter = AnlageV_Printer( l )
-        avprinter.print()
+        avprinter = AnlageV_Printer()
+        if avprinter.showPrintDialog():
+            avprinter.print( l )
+            avprinter.end()
         self.terminate()
 
     def _getAnlageV_Zeilen( self, master_name: str, jahr: int, nurKopfdaten:bool=False ) -> List[XAnlageV_Zeile]:
@@ -152,7 +156,7 @@ class AnlageV_Print_Logic( AnlageV_Base_Logic):
         anlagev_zeilen.append( z )
 
     def _provideSummeWerbungskosten( self, summeWk:int, anlagev_zeilen: List[XAnlageV_Zeile] ):
-        z: XAnlageV_Zeile = self._createAnlageV_Zeile( "summe_werbungskosten_uebertrag", summeWk )
+        z: XAnlageV_Zeile = self._createAnlageV_Zeile( "summe_werbungskosten_uebertrag", abs( summeWk ) )
         anlagev_zeilen.append( z )
 
     def _provideUeberschuss( self, xme:XMieteinnahme, xwk:XWerbungskosten, anlagev_zeilen: List[XAnlageV_Zeile] ) -> int:
@@ -175,26 +179,26 @@ class AnlageV_Print_Logic( AnlageV_Base_Logic):
         if xafa.afa_wie_vorjahr:
             z: XAnlageV_Zeile = self._createAnlageV_Zeile( "afa_wie_vorjahr", "X" )
             anlagev_zeilen.append( z )
-        if xafa.afa > 0:
-            z: XAnlageV_Zeile = self._createAnlageV_Zeile( "afa_betrag", xafa.afa )
+        if xafa.afa < 0:
+            z: XAnlageV_Zeile = self._createAnlageV_Zeile( "afa_betrag", abs( xafa.afa ) )
             anlagev_zeilen.append( z )
 
     def _provideAufwandVollAbziehbar( self, aufwand:int, anlagev_zeilen: List[XAnlageV_Zeile] ):
-        z: XAnlageV_Zeile = self._createAnlageV_Zeile( "kosten_voll_abziehbar", aufwand )
+        z: XAnlageV_Zeile = self._createAnlageV_Zeile( "kosten_voll_abziehbar", abs( aufwand ) )
         anlagev_zeilen.append( z )
 
     def _provideAufwandVerteilt( self, aufwand:XAufwandVerteilt, anlagev_zeilen: List[XAnlageV_Zeile] ):
-        z: XAnlageV_Zeile = self._createAnlageV_Zeile( "kosten_zu_verteilen", aufwand.gesamt_aufwand_vj )
+        z: XAnlageV_Zeile = self._createAnlageV_Zeile( "kosten_zu_verteilen", abs( aufwand.gesamt_aufwand_vj ) )
         anlagev_zeilen.append( z )
-        z: XAnlageV_Zeile = self._createAnlageV_Zeile( "davon_im_vj", aufwand.aufwand_vj )
+        z: XAnlageV_Zeile = self._createAnlageV_Zeile( "davon_im_vj", abs( aufwand.aufwand_vj ) )
         anlagev_zeilen.append( z )
-        z: XAnlageV_Zeile = self._createAnlageV_Zeile( "anteil_aus_vj_minus_4", aufwand.aufwand_vj_minus_4 )
+        z: XAnlageV_Zeile = self._createAnlageV_Zeile( "anteil_aus_vj_minus_4", abs( aufwand.aufwand_vj_minus_4 ) )
         anlagev_zeilen.append( z )
-        z: XAnlageV_Zeile = self._createAnlageV_Zeile( "anteil_aus_vj_minus_3", aufwand.aufwand_vj_minus_3 )
+        z: XAnlageV_Zeile = self._createAnlageV_Zeile( "anteil_aus_vj_minus_3", abs( aufwand.aufwand_vj_minus_3 ) )
         anlagev_zeilen.append( z )
-        z: XAnlageV_Zeile = self._createAnlageV_Zeile( "anteil_aus_vj_minus_2", aufwand.aufwand_vj_minus_2 )
+        z: XAnlageV_Zeile = self._createAnlageV_Zeile( "anteil_aus_vj_minus_2", abs( aufwand.aufwand_vj_minus_2 ) )
         anlagev_zeilen.append( z )
-        z: XAnlageV_Zeile = self._createAnlageV_Zeile( "anteil_aus_vj_minus_1", aufwand.aufwand_vj_minus_1 )
+        z: XAnlageV_Zeile = self._createAnlageV_Zeile( "anteil_aus_vj_minus_1", abs( aufwand.aufwand_vj_minus_1 ) )
         anlagev_zeilen.append( z )
 
     def _provideAllgemeineKosten( self, allgemeinkosten: int, anlagev_zeilen: List[XAnlageV_Zeile] ) -> None:
@@ -203,17 +207,17 @@ class AnlageV_Print_Logic( AnlageV_Base_Logic):
         :param anlagev_zeilen:
         :return:
         """
-        x = self._createAnlageV_Zeile( "hauskosten_allg", allgemeinkosten )
+        x = self._createAnlageV_Zeile( "hauskosten_allg", abs( allgemeinkosten ) )
         x.previewFlag = False
         anlagev_zeilen.append( x )
 
     def _provideSonstigeKosten( self, sonstigeKosten: int, anlagev_zeilen: List[XAnlageV_Zeile] ) -> None:
-        x = self._createAnlageV_Zeile( "sonstige_kosten", sonstigeKosten )
+        x = self._createAnlageV_Zeile( "sonstige_kosten", abs( sonstigeKosten ) )
         x.previewFlag = False
         anlagev_zeilen.append( x )
 
     def _provideSummeWerbungskostenUebertrag( self, summeWk: int, anlagev_zeilen: List[XAnlageV_Zeile] ) -> None:
-        x = self._createAnlageV_Zeile( "summe_werbungskosten", summeWk )
+        x = self._createAnlageV_Zeile( "summe_werbungskosten", abs( summeWk ) )
         x.previewFlag = False
         anlagev_zeilen.append( x )
 
@@ -225,9 +229,10 @@ class AnlageV_Print_Logic( AnlageV_Base_Logic):
         x.rtl = defi.rtl
 
         if defi.rtl: # print right to left
-            maxX = 194 if self._page == 1 else 186  # letzte Ziffer in letzter Spalte
-            w = 30 # width of printing rectangle
-            x.printX = maxX - w # left top x value
+            # maxX = 194 if self._page == 1 else 186  # letzte Ziffer in letzter Spalte
+            # w = 30 # width of printing rectangle
+            # x.printX = maxX - w # left top x value
+            x.printX = 166 if self._page == 1 else 156
             x.printY = defi.printY - 3 # top y value
         else:
             x.printX = defi.printX
@@ -246,7 +251,8 @@ class AnlageV_Print_Logic( AnlageV_Base_Logic):
             val = str( int( round( val ) ) )
         x.value = val
         x.new_page_after = defi.new_page_after
-        self._page = 2
+        if defi.new_page_after:
+            self._page = 2
         return x
 
 ##################################################################################
@@ -263,17 +269,34 @@ def testPrintOneLineOnly():
     busi._page = 2
     busi.testPrint( "kosten_voll_abziehbar", 12985 )
 
+def testPrintAllgemeineUndSonstigeKosten():
+    app = QApplication()
+    busi = AnlageV_Print_Logic()
+    busi._page = 2
+    l = list()
+    d = { "id": "hauskosten_allg",
+          "value": 3210 }
+    l.append( d )
+    d = { "id": "sonstige_kosten",
+          "value": 543 }
+    l.append( d )
+    d = { "id": "summe_werbungskosten",
+          "value": 6543 }
+    l.append( d )
+
+    busi.testPrintSomeLines( l )
+
 def testPrintKosten():
     app = QApplication()
     busi = AnlageV_Print_Logic()
     busi._page = 2
     l = list()
-    d = { "id": "kosten_voll_abziehbar",
-          "value": 14000 }
-    l.append( d )
-    d = { "id": "kosten_zu_verteilen",
-          "value": 20000 }
-    l.append( d )
+    # d = { "id": "kosten_voll_abziehbar",
+    #       "value": 14000 }
+    # l.append( d )
+    # d = { "id": "kosten_zu_verteilen",
+    #       "value": 20000 }
+    # l.append( d )
     d = { "id": "davon_im_vj",
           "value": 4000 }
     l.append( d )
@@ -326,4 +349,5 @@ if __name__ == "__main__":
     #testPrintOneLineOnly()
     #testPrintSomeLines()
     #testPrintAfA()
-    testPrintKosten()
+    #testPrintKosten()
+    testPrintAllgemeineUndSonstigeKosten()

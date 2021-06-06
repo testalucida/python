@@ -131,7 +131,8 @@ class XWerbungskosten:
 
     def getSummeWerbungskosten( self ) -> int:
         av = self.erhalt_aufwand_verteilt
-        sum = self.afa.afa + self.erhalt_aufwand + \
+        afa = 0 if self.afa is None else self.afa.afa # Sonderlösung wg Rülzheim
+        sum =  afa + self.erhalt_aufwand + \
                av.aufwand_vj + av.aufwand_vj_minus_1 + av.aufwand_vj_minus_2 + \
                av.aufwand_vj_minus_3 + av.aufwand_vj_minus_4 + \
                self.getSummeAllgemeineKosten() + \
