@@ -386,7 +386,7 @@ class DbAccess:
         :param jahr: gewünschtes Buchungsjahr
         :return:
         """
-        sql = "select saus_id, m.master_id, m.master_name, mobj_id, kostenart " \
+        sql = "select saus_id, m.master_id, m.master_name, mobj_id, kostenart, " \
               "kreditor, rgnr, betrag, rgdatum, rgtext, buchungsdatum, buchungsjahr, umlegbar, werterhaltend, buchungstext " \
               "from sonstaus s " \
               "inner join masterobjekt m on m.master_id = s.master_id " \
