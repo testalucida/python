@@ -1,13 +1,11 @@
 from PySide2 import Qt
 from PySide2.QtCore import *
 #from PySide2.QtCore import QAbstractTableModel, SIGNAL
-from PySide2.QtGui import QFont, QIcon, QDoubleValidator, QGuiApplication
-from PySide2.QtWidgets import QApplication, QWidget, QComboBox, QAction, \
-    QHBoxLayout, QGridLayout, QPushButton, \
-    QDialog, QMessageBox, QMenu
+from PySide2.QtGui import QFont, QIcon, QDoubleValidator
+from PySide2.QtWidgets import QApplication, QWidget, QComboBox, QHBoxLayout, QGridLayout, QPushButton, \
+    QDialog, QMessageBox
 from PySide2 import QtWidgets
-import datetime
-from typing import List, Dict, Any
+from typing import List, Any
 
 #from models import KontrollModel
 from imagefactory import ImageFactory

@@ -28,6 +28,7 @@ class MainWindowAction( Enum ):
     RESIZE_MAIN_WINDOW = 13,
     EXPORT_CSV = 14,
     OPEN_ANLAGEV_VIEW = 15,
+    OPEN_OFFENE_POSTEN_VIEW = 16,
     EXIT=99
 
 class DummySignal(QObject):
@@ -199,6 +200,13 @@ class ImmoCenterMainWindow( QMainWindow ):
         # Menüpunkt "Rechnungen, Abgaben, Gebühren..."
         action = QAction( self, text="Rechnungen, Abgaben, Gebühren..." )
         action.triggered.connect( self.onViewRechnungen )
+        menu.addAction( action )
+
+        menu.addSeparator()
+
+        # Menüpunkt "Offene Posten"
+        action = QAction( self, text="Geforderte, aber noch nicht beglichene Ein- und Auszahlungen" )
+        action.triggered.connect( self.onViewOffenePosten )
         menu.addAction( action )
 
         menu.addSeparator()
@@ -428,8 +436,11 @@ class ImmoCenterMainWindow( QMainWindow ):
     def onViewRechnungen( self ):
         pass
 
-    def onViewWhgStammdaten( self ):
+    def onViewOffenePosten( self ):
         pass
+
+    def onViewWhgStammdaten( self ):
+        self.doCallback( MainWindowAction.OPEN_OFFENE_POSTEN_VIEW )
 
     def onViewMietverhaeltnisse( self ):
         pass

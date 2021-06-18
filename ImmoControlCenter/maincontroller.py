@@ -86,7 +86,8 @@ class MainController:
             MainWindowAction.OPEN_HGA_VIEW: self.showHGAbrechnungenView,
             MainWindowAction.OPEN_ANLAGEV_VIEW: self.showAnlageVView,
             MainWindowAction.RESIZE_MAIN_WINDOW: self.resizeAllViews,
-            MainWindowAction.EXPORT_CSV: self.exportToCsv
+            MainWindowAction.EXPORT_CSV: self.exportToCsv,
+            MainWindowAction.OPEN_OFFENE_POSTEN_VIEW: self.showOffenePostenView
         }
         fnc = switcher.get( action )
         try:
@@ -115,6 +116,9 @@ class MainController:
         #self._installView( subwin, self._anlageVCtrl )
         # subwin.setMinimumSize( 1300, 1300 )
         #subwin.show()
+
+    def showOffenePostenView( self ):
+        pass
 
     def test( self ):
         print( "test")

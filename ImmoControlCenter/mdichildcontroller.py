@@ -21,6 +21,7 @@ class MdiChildController( ABC ):
     def createSubwindow( self ) -> MdiSubWindow:
         view = self.createView()
         self._subwin = MdiSubWindow()
+        view.setParent( self._subwin )
         self._subwin.addQuitCallback( self.onCloseSubWindow )
         self._subwin.setWidget( view )
         title = self.getViewTitle()

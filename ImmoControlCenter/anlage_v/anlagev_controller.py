@@ -1,7 +1,7 @@
 from typing import List
 
-from PySide2.QtCore import QModelIndex, Signal, Slot, QObject
-from PySide2.QtWidgets import QTabWidget, QApplication, QDialog, QMessageBox
+from PySide2.QtCore import Slot, QObject
+from PySide2.QtWidgets import QApplication, QDialog, QMessageBox
 
 from anlage_v.anlagev_preview_logic import AnlageV_Preview_Logic
 from anlage_v.anlagev_gui import AnlageVView, AnlageVTableView, AnlageVAuswahlDialog, AnlageVDialog
@@ -9,7 +9,7 @@ from anlage_v.anlagev_print_logic import AnlageV_Print_Logic
 from anlage_v.anlagev_tablemodel import AnlageVTableModel
 from anlage_v.ausgabenmodel import AusgabenModel
 from constants import DetailLink
-from generictableviewdialog import GenericTableViewDialog
+from generictable_stuff.generictableviewdialog import GenericTableViewDialog
 from mdisubwindow import MdiSubWindow
 
 
