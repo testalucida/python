@@ -219,6 +219,32 @@ class XSollMiete( XSollzahlung ):
     def setId( self, value: int ) -> None:
         self.sm_id = value
 
+class XOffenerPosten:
+    def __init__( self, valuedict:Dict=None ):
+        self.opos_id = 0
+        self.mv_id = ""  # Offener Posten bezieht sich entweder auf Mieter...
+        self.vwg_id = 0  # ...oder auf Verwalter...
+        self.firma = "" # ...oder auf Firma. Diese wird Freitext erfasst
+        self.debi_kredi = "" # Kreditor oder Debitor, der sich hinter der gefüllten o.a. ID verbirgt
+        self.erfasst_am = ""
+        self.betrag = 0.0 # kleiner 0: ich schulde ; > 0: mir steht zu
+        self.betrag_beglichen = 0.0 # Teilbetrag von Betrag, der bereits beglichen ist
+        self.letzte_buchung_am = "" # wann die letzte (Teil-) Buchung auf den offenen Betrag entrichtet wurde
+        self.bemerkung = ""
+        if valuedict:
+            setFromDict( self, valuedict )
+
+    def getId( self ) -> int or str:
+        if len( self.mv_id ) > 0: return self.mv_id
+        if len( self.firma ) > 0: return self.firma
+        if self.vwg_id > 0: return self.vwg_id
+        raise Exception( "XOffenerPosten.getId(): keine Id gesetzt" )
+
+    def getIdArt( self ) -> str:
+        if len( self.mv_id ) > 0: return "mv_id"
+        if len( self.firma ) > 0: return "firma"
+        if self.vwg_id > 0: return "vwg_id"
+
 class XKontoEintrag:
     mobj_id = ""         # Name des Objekts, z.B. ww224, ist Name des Kontos (der Tabelle)
     name = ""            # Name des Mieters oder des Verwalters

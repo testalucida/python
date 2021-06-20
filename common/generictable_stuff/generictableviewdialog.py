@@ -2,7 +2,7 @@ import os
 from typing import List
 
 from PySide2 import QtWidgets
-from PySide2.QtCore import QAbstractTableModel, Qt, Signal, QModelIndex, QSize
+from PySide2.QtCore import QAbstractTableModel, Qt, Signal, QModelIndex, QPoint
 from PySide2.QtWidgets import QDialog, QPushButton, QTableView, QGridLayout, QApplication, QHBoxLayout, \
     QAbstractItemView
 
@@ -10,8 +10,25 @@ from imagefactory import ImageFactory
 
 
 class GenericTableView(QTableView):
+    leftClicked = Signal( QModelIndex )
+    rightClicked = Signal( [QModelIndex] )
     def __init__( self, parent=None ):
         QTableView.__init__( self, parent )
+        # left mouse click
+        self.clicked.connect( self.onLeftClick )
+        # right mouse click
+        self.setContextMenuPolicy( Qt.CustomContextMenu )
+        self.customContextMenuRequested.connect( self.onRightClick )
+
+    def onRightClick( self, point:QPoint ):
+        selected_indexes = self.selectedIndexes()
+        print( "GenericTableView.onRightClick:", selected_indexes )
+        self.rightClicked.emit( selected_indexes )
+
+    def onLeftClick( self, index:QModelIndex ):
+        print( index.row(), index.column() )
+        print( "GenericTableView.onLeftClick: %d,%d" % ( index.row(), index.column() ) )
+
 ########################################################
 
 class GenericTableViewDialog( QDialog ):
@@ -57,6 +74,7 @@ class GenericTableViewDialog( QDialog ):
         hbox.addWidget( self._okButton )
         hbox.addWidget( self._cancelButton )
 
+        self._tv.horizontalHeader().setStretchLastSection( True )
         self._layout.addWidget( self._tv, 1, 0)
         self._layout.addLayout( hbox, 3, 0, alignment=Qt.AlignLeft )
         self.setLayout( self._layout )
@@ -102,6 +120,9 @@ class GenericTableViewDialog( QDialog ):
         if len( indexlist ) == 0:
             raise Exception( "GenericTableViewDialog: no item selected to delete" )
         self.deleteItem.emit( indexlist[0] )
+
+    def getTableView( self ) -> GenericTableView:
+        return self._tv
 
     def getSelectedIndexes( self ) -> List[QModelIndex]:
         """

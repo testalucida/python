@@ -437,7 +437,7 @@ class ImmoCenterMainWindow( QMainWindow ):
         pass
 
     def onViewOffenePosten( self ):
-        pass
+        self.doCallback( MainWindowAction.OPEN_OFFENE_POSTEN_VIEW )
 
     def onViewWhgStammdaten( self ):
         self.doCallback( MainWindowAction.OPEN_OFFENE_POSTEN_VIEW )

@@ -10,6 +10,7 @@ from datehelper import getCurrentYear
 from mdisubwindow import MdiSubWindow
 from immocentermainwindow import ImmoCenterMainWindow, MainWindowAction
 from checkcontroller import MdiChildController, MietenController, HGVController
+from offene_posten.OffenePostenController import OffenePostenController
 from sollzahlungencontroller import SollzahlungenController, SollType, SollmietenController, SollHgvController
 from sonstauscontroller import SonstAusController
 from sumfieldsprovider import SumFieldsProvider
@@ -43,6 +44,7 @@ class MainController:
         self._hgaCtrl = HgAbrechnungenController()
 
         self._anlageVCtrl:AnlageVController = None
+        self._oposCtrl:OffenePostenController = None
 
         self._nChanges = 0  # zählt die Änderungen, damit nach Speichern-Vorgängen das Sternchen nicht zu früh entfernt wird.
 
@@ -118,7 +120,10 @@ class MainController:
         #subwin.show()
 
     def showOffenePostenView( self ):
-        pass
+        self._oposCtrl = OffenePostenController()
+        dlg = self._oposCtrl.createDialog( self._mainwin )
+        #dlg.setGeometry( self._mainwin.x() + 50, self._mainwin.y() + 10, 1300, 1300 )
+        dlg.show()
 
     def test( self ):
         print( "test")

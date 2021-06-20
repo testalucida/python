@@ -7,7 +7,7 @@ from PySide2.QtCore import QAbstractTableModel, QModelIndex, Qt
 from PySide2.QtGui import QBrush, QFont
 
 import constants
-from offene_posten.interface import XOffenerPosten
+from interfaces import XOffenerPosten
 
 
 class OffenePostenTableModel( QAbstractTableModel ):
@@ -16,9 +16,10 @@ class OffenePostenTableModel( QAbstractTableModel ):
         self._oposList:List[XOffenerPosten] = oposList
         self._keyHeaderMapper = {
             "erfasst am": "erfasst_am",
-            "Debitor/Kreditor": "dummy",
+            "Debitor/Kreditor": "debi_kredi",
             "Betrag": "betrag",
-            "gebucht am": "gebucht_am",
+            "davon beglichen": "betrag_beglichen",
+            "letzte Buchung": "letzte_buchung_am",
             "Bemerkung": "bemerkung"
         }
         self._headers = list( self._keyHeaderMapper.keys() )  # [ "erfasst am", "Debitor/Kreditor", "Betrag", "gebucht am", "bemerkung" ]
@@ -98,10 +99,6 @@ class OffenePostenTableModel( QAbstractTableModel ):
         x = self._oposList[indexrow]
         header = self._headers[indexcolumn]
         key = self._keyHeaderMapper.get( header )
-        if key == "dummy":
-            if len( x.mv_id ) > 0: return x.mv_id
-            if len( x.firma ) > 0 : return x.firma
-            if len( x.vwg_id ) > 0: return x.vwg_id
         val = x.__dict__[key]
         if indexcolumn in self._betragColumns:
             val = float( val )

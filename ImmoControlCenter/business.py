@@ -25,6 +25,8 @@ from datetime import datetime
 #     SONSTAUS = 4
 #
 # zahlartstrings = ("bruttomiete", "nka", "hgv", "hga", "sonstaus")
+from offene_posten.offenepostentablemodel import OffenePostenTableModel
+
 id_names = ( "meinaus_id", "nka_id", "meinaus_id", "hga_id", "saus_id" )
 #---------------------------------------------------------------------
 class InsertOrUpdate( IntEnum ):
@@ -704,6 +706,9 @@ class BusinessLogic:
 
         if sys.platform.startswith( "linux" ):
             os.system( "xdg-open " +  csv )
+
+    def getOposModel( self ) -> OffenePostenTableModel:
+        pass
 
     def _isIntOrFloatFormat( self, val:str ) -> bool:
         points = 0
