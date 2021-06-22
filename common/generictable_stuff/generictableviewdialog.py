@@ -1,13 +1,15 @@
 import os
 from typing import List
 
+from PyQt5.QtWidgets import QWidget
 from PySide2 import QtWidgets
 from PySide2.QtCore import QAbstractTableModel, Qt, Signal, QModelIndex, QPoint
 from PySide2.QtWidgets import QDialog, QPushButton, QTableView, QGridLayout, QApplication, QHBoxLayout, \
-    QAbstractItemView
+    QAbstractItemView, QVBoxLayout, QLabel
 
 from imagefactory import ImageFactory
 
+##########################################################
 
 class GenericTableView(QTableView):
     leftClicked = Signal( QModelIndex )
@@ -35,6 +37,8 @@ class GenericTableViewDialog( QDialog ):
     createItem = Signal()
     editItem = Signal( QModelIndex )
     deleteItem = Signal( QModelIndex )
+    okPressed = Signal()
+    cancelled = Signal()
 
     def __init__( self, model:QAbstractTableModel=None, isEditable:bool=False, parent=None ):
         QDialog.__init__( self, parent )
@@ -68,8 +72,8 @@ class GenericTableViewDialog( QDialog ):
     def _createGui( self ):
         if self._isEditable:
             self._createEditButtons()
-        self._okButton.clicked.connect( self.accept )
-        self._cancelButton.clicked.connect( self.reject )
+        self._okButton.clicked.connect( self._onOk )
+        self._cancelButton.clicked.connect( self._onCancel )
         hbox = QHBoxLayout()
         hbox.addWidget( self._okButton )
         hbox.addWidget( self._cancelButton )
@@ -120,6 +124,14 @@ class GenericTableViewDialog( QDialog ):
         if len( indexlist ) == 0:
             raise Exception( "GenericTableViewDialog: no item selected to delete" )
         self.deleteItem.emit( indexlist[0] )
+
+    def _onOk( self ):
+        self.okPressed.emit()
+        self.accept()
+
+    def _onCancel( self ):
+        self.cancelled.emit()
+        self.reject()
 
     def getTableView( self ) -> GenericTableView:
         return self._tv
@@ -190,6 +202,7 @@ def test():
     dlg.setOkButtonText( "Speichern" )
     dlg.show()
     app.exec_()
+
 
 if __name__ == "__main__":
     test()
