@@ -1,5 +1,5 @@
 import numbers
-from typing import Any, List
+from typing import Any, List, Tuple
 
 from PySide2 import QtWidgets, QtCore
 from PySide2.QtCore import QDate, Qt, QAbstractTableModel, QRect, Signal
@@ -99,6 +99,9 @@ class SmartDateEdit( QLineEdit ):
         ds = dt.toString( format )
         self.setText( ds )
 
+    def setDateFromIsoString( self, isostring:str ):
+        self.setText( isostring )
+
     def getDate( self ) -> str:
         """
         liefert das eingestellte Datum in dem Format, wie es im Feld zu sehen ist.
@@ -138,6 +141,7 @@ class FloatEdit( QLineEdit ):
         QLineEdit.__init__( self, parent )
         floatval = QDoubleValidator()
         self.setValidator( floatval )
+        self.setAlignment( Qt.AlignRight )
 
     def getFloatValue( self ) -> float:
         val = self.text()
@@ -146,6 +150,20 @@ class FloatEdit( QLineEdit ):
         else:
             val = val.replace( ",", "." )
         return float( val )
+
+    def setFloatValue( self, val:float ):
+        self.setText( str( val ) )
+        if val < 0:
+            self.setStyleSheet( "color: red;" )
+        else:
+            self.setStyleSheet( "color: green;" )
+
+    def setFloatStringValue( self, val:str ):
+        try:
+            floatval = float( val )
+            self.setFloatValue( floatval )
+        except:
+            self.setText( "" )
 
 ######################## Int Display  #############################
 class IntDisplay( QLineEdit ):
@@ -273,7 +291,76 @@ class SumDialog( QDialog ):
 
 ####################################################################
 
+class CustomItem( QStandardItem ):
+    def __init__( self, text:str, userdata:Any=None ):
+        QStandardItem.__init__( self, text )
+        self.userdata = userdata
+
+#####################################################################
+
 class AuswahlDialog( QDialog ):
+    def __init__( self, title=None,  parent=None ):
+        QDialog.__init__( self, parent )
+        self.title = title
+        self.listView = QListView()
+        self.font = QFont( "Arial", 14 )
+        self.okButton = QPushButton( "OK" )
+        self.cancelButton = QPushButton( "Abbrechen" )
+        self.model = QStandardItemModel()
+        self.listView.setModel( self.model )
+        self._selectedIndexes = ""
+        self._createGui()
+
+    def _createGui( self ):
+        hbox = QHBoxLayout()
+        hbox.addStretch( 1 )
+        hbox.addWidget( self.okButton )
+        hbox.addWidget( self.cancelButton )
+
+        vbox = QVBoxLayout( self )
+        vbox.addWidget( self.listView, stretch=1 )
+        # vbox.addStretch(1)
+        vbox.addLayout( hbox )
+
+        self.okButton.setDefault( True )
+
+        if self.title:
+            self.setWindowTitle( self.title )
+        else:
+            self.setWindowTitle( "Auswahl" )
+
+        self.okButton.clicked.connect( self.onAccepted )
+        self.cancelButton.clicked.connect( self.reject )
+
+    def appendItem( self, text:str, userdata:Any=None ):
+        item = CustomItem( text )
+        if userdata:
+            item.userdata = userdata
+        item.setFont( self.font )
+        self.model.appendRow( item )
+        if self.model.rowCount() == 1:
+            self.listView.setCurrentIndex( self.model.index( 0, 0 ) )
+
+    def onAccepted(self):
+        self._selectedIndexes = self.listView.selectedIndexes()
+        self.accept()
+
+    def getSelectedIndexes( self ):
+        return self._selectedIndexes
+
+    def getSelection( self ) -> List[Tuple]:
+        sel = self.getSelectedIndexes()
+        l = list()
+        for idx in sel:
+            item:CustomItem = self.model.item( idx.row(), idx.column() )
+            t = ( item.text(), item.userdata )
+            l.append( t )
+
+        return l
+
+#####################################################################
+
+class CheckableAuswahlDialog( QDialog ):
     def __init__( self, stringlist:List[str], checked=False, title=None, icon=None, parent=None ):
         QDialog.__init__( self, parent )
         self.title = title
@@ -349,15 +436,30 @@ class AuswahlDialog( QDialog ):
 
 
 
+
+def testAuswahlDialog():
+    app = QApplication()
+    dlg = AuswahlDialog( title="Eine Auswahl" )
+    dlg.appendItem( "dear me", 1 )
+    dlg.appendItem( "dear you", 2 )
+    if dlg.exec_() == QDialog.Accepted:
+        l = dlg.getSelection()
+        for t in l:
+            print( "selected: ", t[0], t[1] )
+        # indexes = dlg.getSelectedIndexes()
+        # for i in indexes:
+        #     print( "Selected: ", i.row() )
+
 def onClick( l:List[str] ):
     print( l )
 
 def test():
     app = QApplication()
-    dlg = AuswahlDialog( ["SB_Kaiser", "ILL_Eich", "NK_Kleist"], title="Freie Auswahl!", checked=True )
+    dlg = CheckableAuswahlDialog( ["SB_Kaiser", "ILL_Eich", "NK_Kleist"], title="Freie Auswahl!", checked=True )
     if dlg.exec_() == QDialog.Accepted:
         print( '\n'.join( [str( s ) for s in dlg.choices] ) )
     #app.exec_()
 
 if __name__ == "__main__":
-    test()
+    #test()
+    testAuswahlDialog()

@@ -1,9 +1,9 @@
 from PySide2 import QtWidgets
-from PySide2.QtCore import QModelIndex, QSize
-from PySide2.QtGui import QFont
+from PySide2.QtCore import QModelIndex, QSize, Signal
+from PySide2.QtGui import QFont, Qt
 from PySide2.QtWidgets import QWidget, QComboBox, QApplication, QGridLayout, QLabel, QLineEdit, QPushButton, \
-    QPlainTextEdit
-from qtderivates import IntDisplay, SmartDateEdit, FloatEdit
+    QPlainTextEdit, QListView, QDialog
+from qtderivates import IntDisplay, SmartDateEdit, FloatEdit, AuswahlDialog
 from generictable_stuff.generictableviewdialog import GenericTableViewDialog
 from generictable_stuff.okcanceldialog import OkCancelDialog
 from interfaces import XOffenerPosten
@@ -11,7 +11,12 @@ from offene_posten.offenepostentablemodel import OffenePostenTableModel
 
 ########################################################
 
+class DebiKrediAuswahlDialog():
+    def __init__(self, parent=None ):
+        pass
+
 class OffenerPostenEditor( QWidget ):
+    debiKrediAuswahlPressed = Signal()
     def __init__( self, parent=None ):
         QWidget.__init__( self, parent )
         self._layout = QGridLayout()
@@ -19,10 +24,12 @@ class OffenerPostenEditor( QWidget ):
         self._erfasstAm = SmartDateEdit()
         self._debiKredi = QLineEdit()
         self._btnAuswahlDebiKredi = QPushButton( text="..." )
+        self._btnAuswahlDebiKredi.clicked.connect( self._onDebiKrediAuswahl )
         self._betrag = FloatEdit()
         self._betragBeglichen = FloatEdit()
         self._letzteBuchungAm = SmartDateEdit()
         self._bemerkung = QPlainTextEdit()
+        self._offenerPosten:XOffenerPosten = None
         self._createGui()
 
     def _createGui( self ):
@@ -51,8 +58,8 @@ class OffenerPostenEditor( QWidget ):
         self._betragBeglichen.setFixedWidth( 80 )
         l.addWidget( self._betragBeglichen, r, c )
         c += 1
-        self._letzteBuchungAm.setPlaceholderText( "erfasst am" )
-        self._letzteBuchungAm.setToolTip( "Wann der letzte Teilbetrag gebucht wurde" )
+        self._letzteBuchungAm.setPlaceholderText( "letzte Buchg" )
+        self._letzteBuchungAm.setToolTip( "Datum der letzten (Teil-)Buchung" )
         self._letzteBuchungAm.setMaximumWidth( 90 )
         l.addWidget( self._letzteBuchungAm, r, c )
         c += 1
@@ -61,6 +68,33 @@ class OffenerPostenEditor( QWidget ):
         self._bemerkung.setMaximumHeight( 60 )
         l.addWidget( self._bemerkung, r, c )
 
+    def _onDebiKrediAuswahl( self ):
+        self.debiKrediAuswahlPressed.emit()
+
+    def setOffenerPosten( self, x:XOffenerPosten ):
+        self._offenerPosten = x
+        if x.erfasst_am > "":
+            self._erfasstAm.setDateFromIsoString( x.erfasst_am )
+        self._debiKredi.setText( x.debi_kredi )
+        self._betrag.setFloatValue( x.betrag )
+        self._betragBeglichen.setFloatValue( x.betrag_beglichen )
+        if x.letzte_buchung_am > "":
+            self._letzteBuchungAm.setDateFromIsoString( x.letzte_buchung_am )
+        self._bemerkung.setPlainText( x.bemerkung )
+
+    def getOffenerPosten( self ) -> XOffenerPosten:
+        x = self._offenerPosten
+        if x is None: return XOffenerPosten()
+        x.erfasst_am = self._erfasstAm.getDate()
+        x.debi_kredi = self._debiKredi.text()
+        x.betrag = self._betrag.getFloatValue()
+        x.betrag_beglichen = self._betragBeglichen.getFloatValue()
+        x.letzte_buchung_am = self._letzteBuchungAm.getDate()
+        x.bemerkung = self._bemerkung.toPlainText()
+        return x
+
+    def setDebiKredi( self, debikredi:str ):
+        self._debiKredi.setText( debikredi )
 
 ########################################################
 
@@ -99,10 +133,33 @@ class OffenePostenDialog( GenericTableViewDialog ):
 def onEdit( index:QModelIndex ):
     print( "onEdit, %d/%d" % (index.row(), index.column() ) )
 
+def onDebiKrediAuswahl():
+    print( "debiKrediAuswahl" )
+    dlg = AuswahlDialog()
+    dlg.appendItem( "AFDSLKJF" )
+    dlg.appendItem( "BVBVBVBVB" )
+    if dlg.exec_() == QDialog.Accepted:
+        l = dlg.getSelection()
+        t = l[0]
+        print( "Auswahl: ", t[0], "/", t[1] )
+
 def testOffenerPostenEditor():
     app = QApplication()
     v = OffenerPostenEditor()
     v.show()
+
+    x = XOffenerPosten()
+    x.opos_id = 1
+    x.mv_id = "mueller_hajo"
+    x.debi_kredi = "Müller, Hajo"
+    x.erfasst_am = "2021-06-03"
+    x.betrag = 123.45
+    x.betrag_beglichen = 33.44
+    x.letzte_buchung_am = "2021-07-01"
+    x.bemerkung = "steht aus"
+
+    v.setOffenerPosten( x )
+    v.debiKrediAuswahlPressed.connect( onDebiKrediAuswahl )
     app.exec_()
 
 def test():

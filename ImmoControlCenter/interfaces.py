@@ -225,7 +225,7 @@ class XOffenerPosten:
         self.mv_id = ""  # Offener Posten bezieht sich entweder auf Mieter...
         self.vwg_id = 0  # ...oder auf Verwalter...
         self.firma = "" # ...oder auf Firma. Diese wird Freitext erfasst
-        self.debi_kredi = "" # Kreditor oder Debitor, der sich hinter der gefüllten o.a. ID verbirgt
+        self.debi_kredi = "" # Kreditor oder Debitor, der sich hinter der gefüllten o.a. ID verbirgt; oder Firma (Freitext)
         self.erfasst_am = ""
         self.betrag = 0.0 # kleiner 0: ich schulde ; > 0: mir steht zu
         self.betrag_beglichen = 0.0 # Teilbetrag von Betrag, der bereits beglichen ist

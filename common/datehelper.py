@@ -142,11 +142,21 @@ def compareEurDates(eurstring1: str, eurstring2: str) -> int:
     return -1
 
 def getDateFromIsoString( isostring:str ) -> date:
+    """
+    Liefert ein datetime.date - Objekt zurück, das aus isostring erzeugt wurde
+    :param isostring: ein Datum im Format "yyyy-mm-dd"
+    :return: datetime.date
+    """
     y, m, d = getDateParts( isostring )
     d = date( y, m, d )
     return d
 
 def getQDateFromIsoString( isostr:str ) -> QDate:
+    """
+    Liefert ein QDate - Objekt zurück, das aus isostring erzeugt wurde
+    :param isostring: ein Datum im Format "yyyy-mm-dd"
+    :return: QDate
+    """
     parts = isostr.split( "-" )
     return QDate( int(parts[0]), int(parts[1]), int(parts[2]) )
 
