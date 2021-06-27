@@ -223,8 +223,8 @@ class XOffenerPosten:
     def __init__( self, valuedict:Dict=None ):
         self.opos_id = 0
         self.mv_id = ""  # Offener Posten bezieht sich entweder auf Mieter...
-        self.vwg_id = 0  # ...oder auf Verwalter...
-        self.firma = "" # ...oder auf Firma. Diese wird Freitext erfasst
+        self.vw_id = 0   # ...oder auf Verwalter... (Achtung: nicht auf Verwaltung!)
+        self.firma = ""  # ...oder auf Firma. Diese wird Freitext erfasst
         self.debi_kredi = "" # Kreditor oder Debitor, der sich hinter der gefüllten o.a. ID verbirgt; oder Firma (Freitext)
         self.erfasst_am = ""
         self.betrag = 0.0 # kleiner 0: ich schulde ; > 0: mir steht zu

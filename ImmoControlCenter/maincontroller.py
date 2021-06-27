@@ -44,7 +44,7 @@ class MainController:
         self._hgaCtrl = HgAbrechnungenController()
 
         self._anlageVCtrl:AnlageVController = None
-        self._oposCtrl:OffenePostenController = None
+        self._oposCtrl:OffenePostenController = OffenePostenController()
 
         self._nChanges = 0  # zählt die Änderungen, damit nach Speichern-Vorgängen das Sternchen nicht zu früh entfernt wird.
 
@@ -120,10 +120,7 @@ class MainController:
         #subwin.show()
 
     def showOffenePostenView( self ):
-        self._oposCtrl = OffenePostenController()
-        dlg = self._oposCtrl.createDialog( self._mainwin )
-        #dlg.setGeometry( self._mainwin.x() + 50, self._mainwin.y() + 10, 1300, 1300 )
-        dlg.show()
+        self.createOposViewAndShow()
 
     def test( self ):
         print( "test")
@@ -211,6 +208,15 @@ class MainController:
         w2 = w / 2
         x = w2
         subwin.setGeometry( x, 0, w2, h / 2 )
+        subwin.show()
+
+    def createOposViewAndShow( self ):
+        subwin = self._oposCtrl.createSubwindow()
+        self._installView( subwin, self._oposCtrl )
+        # w, h = self.getMainWindowSize()
+        # w2 = w/2
+        # subwin.setGeometry( 0, 0, w2, h )  # h-22 )
+        #subwin.setGeometry( 0, 0, 700, h )
         subwin.show()
 
     def showSollMietenView( self ):

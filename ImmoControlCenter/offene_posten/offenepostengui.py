@@ -1,10 +1,12 @@
 from PySide2 import QtWidgets
-from PySide2.QtCore import QModelIndex, QSize, Signal
+from PySide2.QtCore import QModelIndex, QSize, Signal, QAbstractTableModel
 from PySide2.QtGui import QFont, Qt
 from PySide2.QtWidgets import QWidget, QComboBox, QApplication, QGridLayout, QLabel, QLineEdit, QPushButton, \
-    QPlainTextEdit, QListView, QDialog
+    QPlainTextEdit, QListView, QDialog, QVBoxLayout
+
+from imagefactory import ImageFactory
 from qtderivates import IntDisplay, SmartDateEdit, FloatEdit, AuswahlDialog
-from generictable_stuff.generictableviewdialog import GenericTableViewDialog
+from generictable_stuff.generictableviewdialog import GenericTableViewDialog, GenericEditableTableView
 from generictable_stuff.okcanceldialog import OkCancelDialog
 from interfaces import XOffenerPosten
 from offene_posten.offenepostentablemodel import OffenePostenTableModel
@@ -16,15 +18,19 @@ class DebiKrediAuswahlDialog():
         pass
 
 class OffenerPostenEditor( QWidget ):
-    debiKrediAuswahlPressed = Signal()
+    debiKrediAuswahlFirmaPressed = Signal()
+    debiKrediAuswahlVwPressed = Signal()
+
     def __init__( self, parent=None ):
         QWidget.__init__( self, parent )
         self._layout = QGridLayout()
         self.setLayout( self._layout )
         self._erfasstAm = SmartDateEdit()
         self._debiKredi = QLineEdit()
-        self._btnAuswahlDebiKredi = QPushButton( text="..." )
-        self._btnAuswahlDebiKredi.clicked.connect( self._onDebiKrediAuswahl )
+        self._btnAuswahlDebiKredi_Firma = QPushButton( text="..." )
+        self._btnAuswahlDebiKredi_Firma.clicked.connect( self._onDebiKrediAuswahl_Firma )
+        self._btnAuswahlDebiKredi_Vw = QPushButton( text="..." )
+        self._btnAuswahlDebiKredi_Vw.clicked.connect( self._onDebiKrediAuswahl_Vw )
         self._betrag = FloatEdit()
         self._betragBeglichen = FloatEdit()
         self._letzteBuchungAm = SmartDateEdit()
@@ -43,10 +49,20 @@ class OffenerPostenEditor( QWidget ):
         self._debiKredi.setPlaceholderText( "Debitor oder Kreditor" )
         self._debiKredi.setToolTip( "Debitor oder Kreditor eintragen" )
         l.addWidget( self._debiKredi, r, c )
+
         c += 1
-        self._btnAuswahlDebiKredi.setFixedSize( QSize(30,30) )
-        self._btnAuswahlDebiKredi.setToolTip( "Öffnet einen Dialog zur Auswahl des Debitors/Kreditors" )
-        l.addWidget( self._btnAuswahlDebiKredi, r, c )
+        vbox = QVBoxLayout()
+        vbox.addWidget( self._btnAuswahlDebiKredi_Firma )
+        self._btnAuswahlDebiKredi_Firma.setFixedSize( QSize( 30, 30 ) )
+        self._btnAuswahlDebiKredi_Firma.setToolTip( "Öffnet einen Dialog zur Auswahl einer Firma "
+                                              "als Debitor oder Kreditor" )
+        vbox.addWidget( self._btnAuswahlDebiKredi_Vw )
+        self._btnAuswahlDebiKredi_Vw.setFixedSize( QSize( 30, 30 ) )
+        self._btnAuswahlDebiKredi_Vw.setToolTip( "Öffnet einen Dialog zur Auswahl eines Verwalters "
+                                                 "als Debitor oder Kreditor" )
+        l.addLayout( vbox, r, c )
+        #l.addWidget( self._btnAuswahlDebiKredi, r, c )
+
         c += 1
         self._betrag.setPlaceholderText( "Betrag" )
         self._betrag.setToolTip( "Ursprünglicher offener Betrag. '-' = Debit, '+' = Kredit" )
@@ -68,8 +84,11 @@ class OffenerPostenEditor( QWidget ):
         self._bemerkung.setMaximumHeight( 60 )
         l.addWidget( self._bemerkung, r, c )
 
-    def _onDebiKrediAuswahl( self ):
-        self.debiKrediAuswahlPressed.emit()
+    def _onDebiKrediAuswahl_Firma( self ):
+        self.debiKrediAuswahlFirmaPressed.emit()
+
+    def _onDebiKrediAuswahl_Vw( self ):
+        self.debiKrediAuswahlVwPressed.emit()
 
     def setOffenerPosten( self, x:XOffenerPosten ):
         self._offenerPosten = x
@@ -106,42 +125,93 @@ class OffenerPostenEditDialog( OkCancelDialog ):
 
 ########################################################
 
+class OffenePostenView( QWidget ):
+    createOposSignal = Signal()
+    editOposSignal = Signal()
+    deleteOposSignal = Signal()
+
+    def __init__(self, oposmodel:QAbstractTableModel, parent=None ):
+        QWidget.__init__( self, parent )
+        self._layout = QGridLayout()
+        self._btnSave = QPushButton( self )
+        self._etv = GenericEditableTableView( model=oposmodel, isEditable=True, parent=parent )
+        self._etv.createItem.connect( self._onCreateItem )
+        self._etv.editItem.connect( self._onEditItem )
+        self._etv.deleteItem.connect( self._onDeleteItem )
+        self._createGui()
+
+    def _createGui( self ):
+        l = self._layout
+        btn = self._btnSave
+        btn.setFlat( True )
+        btn.setEnabled( False )
+        btn.setToolTip( "Änderungen an den Offenen Posten speichern" )
+        icon = ImageFactory.inst().getSaveIcon()
+        btn.setIcon( icon )
+        size = QSize( 30, 30 )
+        btn.setFixedSize( size )
+        btn.setIconSize( QSize( 30, 30 ) )
+        l.addWidget( btn, 0, 0, alignment=Qt.AlignLeft )
+        l.addWidget( self._etv, 1, 0 )
+        self.setLayout( self._layout )
+
+    def _onCreateItem( self ):
+        self.createOposSignal.emit()
+
+    def _onEditItem( self, item ):
+        self.editOposSignal.emit( item )
+
+    def _onDeleteItem( self, item ):
+        self.editOposSignal.emit( item )
+
+########################################################
+
 class OffenePostenDialog( GenericTableViewDialog ):
     """
     Dialog, der offene Posten in einer Liste enthält.
     Jeder Posten kann editiert oder gelöscht werden.
     Neue Posten können angelegt werden.
     """
-    def __init__(self, model:OffenePostenTableModel ):
-        GenericTableViewDialog.__init__( self, model=model, isEditable=True )
+    def __init__(self, model:OffenePostenTableModel, parent=None ):
+        GenericTableViewDialog.__init__( self, model=model, isEditable=True, parent=parent )
         self.setWindowTitle( "Offene Posten" )
         self.setOkButtonText( "Speichern" )
-        self.createItem.connect( self._onCreateItem )
-        self.okPressed.connect( self._onSave )
+        #self.createItem.connect( self._onCreateItem )
+        #self.okPressed.connect( self._onSave )
 
-    def _onCreateItem( self ):
-        print( "onCreateItem" )
-        dlg = OffenerPostenEditDialog()
-        dlg.setModal( True )
-        dlg.exec_()
+    # def _onCreateItem( self ):
+    #     print( "onCreateItem" )
+    #     dlg = OffenerPostenEditDialog()
+    #     dlg.setModal( True )
+    #     dlg.exec_()
 
-    def _onSave( self ):
-        print( "OffenePostenDialog.onSave" )
+    # def _onSave( self ):
+    #     print( "OffenePostenDialog.onSave" )
 
 ########################################################
 
 def onEdit( index:QModelIndex ):
     print( "onEdit, %d/%d" % (index.row(), index.column() ) )
 
-def onDebiKrediAuswahl():
-    print( "debiKrediAuswahl" )
+def onDebiKrediAuswahlFirma():
+    print( "debiKrediAuswahlFirma" )
     dlg = AuswahlDialog()
     dlg.appendItem( "AFDSLKJF" )
     dlg.appendItem( "BVBVBVBVB" )
     if dlg.exec_() == QDialog.Accepted:
         l = dlg.getSelection()
         t = l[0]
-        print( "Auswahl: ", t[0], "/", t[1] )
+        print( "Auswahl Firma: ", t[0], "/", t[1] )
+
+def onDebiKrediAuswahlVw():
+    print( "debiKrediAuswahlVw" )
+    dlg = AuswahlDialog()
+    dlg.appendItem( "Verwalter Sepp" )
+    dlg.appendItem( "Verwalter Depp" )
+    if dlg.exec_() == QDialog.Accepted:
+        l = dlg.getSelection()
+        t = l[0]
+        print( "Auswahl Verwalter: ", t[0], "/", t[1] )
 
 def testOffenerPostenEditor():
     app = QApplication()
@@ -159,7 +229,8 @@ def testOffenerPostenEditor():
     x.bemerkung = "steht aus"
 
     v.setOffenerPosten( x )
-    v.debiKrediAuswahlPressed.connect( onDebiKrediAuswahl )
+    v.debiKrediAuswahlFirmaPressed.connect( onDebiKrediAuswahlFirma )
+    v.debiKrediAuswahlVwPressed.connect( onDebiKrediAuswahlVw )
     app.exec_()
 
 def test():
@@ -188,12 +259,14 @@ def test():
 
     model = OffenePostenTableModel( l )
 
-    dlg = OffenePostenDialog( model )
-    dlg.editItem.connect( onEdit )
-    dlg.exec_()
+    v = OffenePostenView( model )
+    v.show()
+    # dlg = OffenePostenDialog( model )
+    # dlg.editItem.connect( onEdit )
+    # dlg.exec_()
 
-    #app.exec_()
+    app.exec_()
 
 if __name__ == "__main__":
-    #test()
-    testOffenerPostenEditor()
+    test()
+    #testOffenerPostenEditor()

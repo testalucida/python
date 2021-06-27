@@ -5,7 +5,8 @@ from ConnectionProvider import ConnectionProvider
 from anlage_v.anlagev_interfaces import XObjektStammdaten
 from constants import einausart
 from datehelper import getNumberOfDays
-from interfaces import XSonstAus, XZahlung, XSollHausgeld, XSollMiete, XNkAbrechnung, XHgAbrechnung, XMietverhaeltnis
+from interfaces import XSonstAus, XZahlung, XSollHausgeld, XSollMiete, XNkAbrechnung, XHgAbrechnung, XMietverhaeltnis, \
+    XOffenerPosten
 
 mon_dbnames = ("jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dez" )
 
@@ -612,6 +613,18 @@ class DbAccess:
             xlist.append( x )
         return xlist
 
+    def getOffenePosten( self ) -> List[XOffenerPosten]:
+        sql = "select opos_id, o.mv_id, o.vw_id, firma, erfasst_am, betrag, " \
+              "betrag_beglichen, letzte_buchung_am, o.bemerkung " \
+              "from opos o " \
+              "left outer join verwalter vw on vw.vw_id = o.vw_id "
+        dictlist = self._doReadAllGetDict( sql )
+        xlist:List[XOffenerPosten] = list()
+        for d in dictlist:
+            x = XOffenerPosten( d )
+            xlist.append( x )
+        return xlist
+
     def insertMietobjekt( self, d:Dict, commit:bool=True ) -> int :
         sql = "insert into mietobjekt " \
               "(mobj_id, master_id, whg_bez, qm, container_nr, bemerkung, aktiv) " \
@@ -938,8 +951,10 @@ class DbAccess:
 # =============================================================================
 
 def test():
-    db = DbAccess()
+    db = DbAccess( "immo.db" )
     db.open()
+    xlist = db.getOffenePosten()
+    print( xlist )
 
     #li = db.getSollmieten2( 2020 )
 

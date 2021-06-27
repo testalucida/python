@@ -179,6 +179,7 @@ class CheckView( QWidget ):
         self._cboJahr:QComboBox
         self._cboMonat:QComboBox
         self.tableView:CheckTableView
+        self._btnSave:QPushButton = None
         self._createUI()
         #self._provideYearCombo()
         self._provideMonthCombo()

@@ -7,6 +7,7 @@ from PySide2.QtCore import QAbstractTableModel, QModelIndex, Qt
 from PySide2.QtGui import QBrush, QFont
 
 import constants
+from icctablemodel import IccTableModel
 from interfaces import XOffenerPosten
 
 
@@ -40,13 +41,19 @@ class OffenePostenTableModel( QAbstractTableModel ):
         self._redBrush = QBrush( Qt.red )
         self._yellowBrush = QBrush( Qt.yellow )
         self._boldFont = QFont( "Arial", 11, QFont.Bold )
-        self._betragColumns = (2,)
+        self._betragColumns = (2, 3)
         # self._sortable = False
 
     def isChanged( self ) -> bool:
         for k, v in self._changes.items():
             if len( v ) > 0: return True
         return False
+
+    def getChanges( self ) -> Any:
+        """
+        todo
+        :return:
+        """
 
     # def setSortable( self, sortable:bool=True ):
     #     self._sortable = sortable

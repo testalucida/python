@@ -10,7 +10,7 @@ from dbaccess import DbAccess
 from typing import List, Dict, Tuple
 from constants import einausart, Zahlart, zahlartstrings
 from interfaces import XSonstAus, XSonstAusSummen, XZahlung, XSollHausgeld, XSollMiete, XBuchungstextMatch, \
-    XNkAbrechnung, XAbrechnung, XHgAbrechnung, XMietverhaeltnis
+    XNkAbrechnung, XAbrechnung, XHgAbrechnung, XMietverhaeltnis, XOffenerPosten
 #from monthlist import monthList, monatsletzter
 #from datehelper import monthList, monatsletzter, getLastMonth
 from datehelper import *
@@ -54,7 +54,17 @@ class BusinessLogic:
         return BusinessLogic.__instance
 
     def _prepare(self):
-        dbname = "immo.db"
+        dbname = ""
+        f = open( "./resources.txt", "r" )
+        lines = f.readlines()
+        for l in lines:
+            if l.startswith( "databasepath" ):
+                parts = l.split( "=" )
+                dbname = parts[1][:-1]  # truncate newline
+                f.close()
+        if dbname == "":
+            raise Exception( "BusinessLogic: cant find databasepath in resources.txt" )
+        dbname += "immo.db"
         #dbname = "/home/martin/Vermietung/ImmoControlCenter/immo.db"
 
         self._db = DbAccess( dbname )
@@ -708,7 +718,9 @@ class BusinessLogic:
             os.system( "xdg-open " +  csv )
 
     def getOposModel( self ) -> OffenePostenTableModel:
-        pass
+        xlist:List[XOffenerPosten] = self._db.getOffenePosten()
+        model = OffenePostenTableModel( xlist )
+        return model
 
     def _isIntOrFloatFormat( self, val:str ) -> bool:
         points = 0
