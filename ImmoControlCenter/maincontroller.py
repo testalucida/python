@@ -213,6 +213,7 @@ class MainController:
     def createOposViewAndShow( self ):
         subwin = self._oposCtrl.createSubwindow()
         self._installView( subwin, self._oposCtrl )
+        subwin.setGeometry( 50, 10, 800, 600 )
         # w, h = self.getMainWindowSize()
         # w2 = w/2
         # subwin.setGeometry( 0, 0, w2, h )  # h-22 )

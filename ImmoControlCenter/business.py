@@ -719,6 +719,14 @@ class BusinessLogic:
 
     def getOposModel( self ) -> OffenePostenTableModel:
         xlist:List[XOffenerPosten] = self._db.getOffenePosten()
+        for x in xlist:
+            if x.mv_id:
+                x.debi_kredi = x.mv_id
+            elif x.vw_id:
+                x.debi_kredi = x.vw_id
+            else:
+                x.debi_kredi = x.firma
+
         model = OffenePostenTableModel( xlist )
         return model
 
@@ -737,6 +745,20 @@ class BusinessLogic:
                     return False
         return True
 
+    def getAlleVerwalter( self ) -> List[str]:
+        return self._db.getVerwalter()
+
+    def getAlleFirmen( self ) -> List[str]:
+        return self._db.getAlleKreditoren()
+
+    def validateOffenerPosten( self, x:XOffenerPosten ) -> str:
+        if not x.erfasst_am:
+            return "Datum 'erfasst am' fehlt."
+        if not x.debi_kredi:
+            return "Debitor/Kreditor fehlt."
+        if x.betrag == 0:
+            return "Betrag fehlt."
+        return ""
 
 def test():
     busi = BusinessLogic.inst()

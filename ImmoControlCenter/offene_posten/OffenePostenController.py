@@ -1,12 +1,16 @@
+from typing import List
+
 from PySide2.QtCore import QModelIndex
 from PySide2.QtWidgets import QApplication, QDialog, QWidget
 
 from business import BusinessLogic
+from datehelper import currentDateIso
 from generictable_stuff.generictableviewdialog import GenericEditableTableView
 from interfaces import XOffenerPosten
 from mdichildcontroller import MdiChildController
 from offene_posten.offenepostengui import OffenePostenDialog, OffenerPostenEditDialog, OffenePostenView
 from offene_posten.offenepostentablemodel import OffenePostenTableModel
+from qtderivates import AuswahlDialog
 
 
 class OffenePostenController( MdiChildController ):
@@ -23,53 +27,63 @@ class OffenePostenController( MdiChildController ):
         self._view = v
         return v
 
-    # def createOffenePostenDialog( self, parent=None ) -> OffenePostenDialog:
-    #     self._model = BusinessLogic.inst().getOposModel()
-    #     self._dlg = OffenePostenDialog( self._model, parent )
-    #     d = self._dlg
-    #     d.createItem.connect( self.onCreateOffenerPosten )
-    #     d.editItem.connect( self.onEditOffenerPosten )
-    #     d.deleteItem.connect( self.onDeleteOffenerPosten )
-    #     return self._dlg
-    #
-    # def showOffenePostenDialog( self, modal:bool=False, parent=None ):
-    #     dlg = self.createOffenePostenDialog( parent )
-    #     if modal:
-    #         dlg.setModal( True )
-    #         rc = dlg.exec_()
-    #     else:
-    #         #dlg.setModal( False )
-    #         rc = dlg.open()
-    #
-    #     if rc == QDialog.Accepted:
-    #         # save changes by calling BusinessLogic
-    #         # ... todo
-    #         dlg.accept()
-    #     else:
-    #         dlg.reject()
-
     def onCreateOffenerPosten( self ):
         x = XOffenerPosten()
-        edi = OffenerPostenEditDialog()
+        x.erfasst_am = currentDateIso()
+        if self._editAndValidateOffenerPosten( x ):
+            # save
+            pass
+
+    def onEditOffenerPosten( self, index: QModelIndex ):
+        x = self._getOffenerPosten( index )
+        if self._editAndValidateOffenerPosten( x ):
+            # save
+            pass
+
+    def onDeleteOffenerPosten( self, index: QModelIndex ):
+        x = self._getOffenerPosten( index )
+        # delete
+
+    def _editAndValidateOffenerPosten( self, x:XOffenerPosten ) -> bool:
+        def getAllFirmen():
+            firmenlist = BusinessLogic.inst().getAlleKreditoren()
+            firma = self._chooseDebiKrediFromList( firmenlist )
+            edi.getEditor().setDebiKredi( firma )
+        def getAllVerwalter():
+            vwlist = BusinessLogic.inst().getAlleVerwalter()
+            vw = self._chooseDebiKrediFromList( vwlist )
+            edi.getEditor().setDebiKredi( vw )
+        edi = OffenerPostenEditDialog( x )
+        edi.chooseFirmaSignal.connect( getAllFirmen )
+        edi.chooseVerwalterSignal.connect( getAllVerwalter )
         if edi.exec_() == QDialog.Accepted:
-            # call BusinessLogic to create new OffenerPosten
-            print( "OffenePostenController.onCreateOffenerPosten(): create new Opos" )
-            edi.accept()
+            edi.getEditor().changesToModel()
+            msg = BusinessLogic.inst().validateOffenerPosten( x )
+            if msg:
+                # Validation nicht ok, denn es gibt eine Meldung.
+                # Meldung ausgeben und Dialog offen lassen.
+                pass
+            else:
+                # Validation ok. Zurück zum Aufrufer.
+                edi.accept()
+                return True
         else:
             edi.reject()
+            return False
 
-
+    def _chooseDebiKrediFromList( self, l:List[str] ) -> str:
+        dlg = AuswahlDialog()
+        for i in l:
+            dlg.appendItem( i )
+        if dlg.exec_() == QDialog.Accepted:
+            sel = dlg.getSelection()
+            return sel[0][0]
+        return ""
 
     def getViewTitle( self ) -> str:
         return "Offene Posten"
 
     def save( self ):
-        pass
-
-    def onEditOffenerPosten( self, index:QModelIndex ):
-        pass
-
-    def onDeleteOffenerPosten( self, index:QModelIndex ):
         pass
 
     def _getOffenerPosten( self, index:QModelIndex ) -> XOffenerPosten:
@@ -81,6 +95,7 @@ def test():
     # dlg = c.createOffenePostenDialog()
     # dlg.exec_()
     v = c.createView()
+    v.show()
     app.exec_()
 
 if __name__ == "__main__":

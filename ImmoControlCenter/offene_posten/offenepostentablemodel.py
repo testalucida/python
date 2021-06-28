@@ -11,9 +11,9 @@ from icctablemodel import IccTableModel
 from interfaces import XOffenerPosten
 
 
-class OffenePostenTableModel( QAbstractTableModel ):
+class OffenePostenTableModel( IccTableModel ):
     def __init__( self, oposList:List[XOffenerPosten] ):
-        QAbstractTableModel.__init__( self )
+        IccTableModel.__init__( self )
         self._oposList:List[XOffenerPosten] = oposList
         self._keyHeaderMapper = {
             "erfasst am": "erfasst_am",

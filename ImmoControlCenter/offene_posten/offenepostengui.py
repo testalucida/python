@@ -4,6 +4,7 @@ from PySide2.QtGui import QFont, Qt
 from PySide2.QtWidgets import QWidget, QComboBox, QApplication, QGridLayout, QLabel, QLineEdit, QPushButton, \
     QPlainTextEdit, QListView, QDialog, QVBoxLayout
 
+from icctablemodel import IccTableModel
 from imagefactory import ImageFactory
 from qtderivates import IntDisplay, SmartDateEdit, FloatEdit, AuswahlDialog
 from generictable_stuff.generictableviewdialog import GenericTableViewDialog, GenericEditableTableView
@@ -21,7 +22,7 @@ class OffenerPostenEditor( QWidget ):
     debiKrediAuswahlFirmaPressed = Signal()
     debiKrediAuswahlVwPressed = Signal()
 
-    def __init__( self, parent=None ):
+    def __init__( self, x:XOffenerPosten, parent=None ):
         QWidget.__init__( self, parent )
         self._layout = QGridLayout()
         self.setLayout( self._layout )
@@ -35,8 +36,9 @@ class OffenerPostenEditor( QWidget ):
         self._betragBeglichen = FloatEdit()
         self._letzteBuchungAm = SmartDateEdit()
         self._bemerkung = QPlainTextEdit()
-        self._offenerPosten:XOffenerPosten = None
+        self._offenerPosten:XOffenerPosten = x
         self._createGui()
+        self._modelToGui()
 
     def _createGui( self ):
         r = c = 0
@@ -46,6 +48,7 @@ class OffenerPostenEditor( QWidget ):
         self._erfasstAm.setMaximumWidth( 90 )
         l.addWidget( self._erfasstAm, r, c )
         c += 1
+        self._debiKredi.setMinimumWidth( 250 )
         self._debiKredi.setPlaceholderText( "Debitor oder Kreditor" )
         self._debiKredi.setToolTip( "Debitor oder Kreditor eintragen" )
         l.addWidget( self._debiKredi, r, c )
@@ -84,6 +87,25 @@ class OffenerPostenEditor( QWidget ):
         self._bemerkung.setMaximumHeight( 60 )
         l.addWidget( self._bemerkung, r, c )
 
+    def _modelToGui( self ) -> None:
+        x = self._offenerPosten
+        self._erfasstAm.setDateFromIsoString( x.erfasst_am )
+        self._debiKredi.setText( x.debi_kredi )
+        self._betrag.setFloatValue( x.betrag )
+        self._betragBeglichen.setFloatValue( x.betrag_beglichen )
+        if x.letzte_buchung_am:
+            self._letzteBuchungAm.setDateFromIsoString( x.letzte_buchung_am )
+        self._bemerkung.setPlainText( x.bemerkung )
+
+    def changesToModel( self ) -> None:
+        x = self._offenerPosten
+        x.erfasst_am = self._erfasstAm.getDate()
+        x.debi_kredi = self._debiKredi.text()
+        x.betrag = self._betrag.getFloatValue()
+        x.betrag_beglichen = self._betragBeglichen.getFloatValue()
+        x.letzte_buchung_am = self._letzteBuchungAm.getDate()
+        x.bemerkung = self._bemerkung.toPlainText()
+
     def _onDebiKrediAuswahl_Firma( self ):
         self.debiKrediAuswahlFirmaPressed.emit()
 
@@ -118,19 +140,28 @@ class OffenerPostenEditor( QWidget ):
 ########################################################
 
 class OffenerPostenEditDialog( OkCancelDialog ):
-    def __init__( self, parent=None ):
+    chooseVerwalterSignal = Signal()
+    chooseFirmaSignal = Signal()
+
+    def __init__( self, x:XOffenerPosten, parent=None ):
         OkCancelDialog.__init__( self, parent )
-        self._edi = OffenerPostenEditor()
+        self._edi = OffenerPostenEditor( x )
+        self._edi.debiKrediAuswahlFirmaPressed.connect( self.chooseFirmaSignal.emit )
+        self._edi.debiKrediAuswahlVwPressed.connect( self.chooseVerwalterSignal.emit )
         self.addWidget( self._edi, 0 )
+
+    def getEditor( self ) -> OffenerPostenEditor:
+        return self._edi
+
 
 ########################################################
 
 class OffenePostenView( QWidget ):
     createOposSignal = Signal()
-    editOposSignal = Signal()
-    deleteOposSignal = Signal()
+    editOposSignal = Signal( QModelIndex )
+    deleteOposSignal = Signal( QModelIndex )
 
-    def __init__(self, oposmodel:QAbstractTableModel, parent=None ):
+    def __init__(self, oposmodel:IccTableModel, parent=None ):
         QWidget.__init__( self, parent )
         self._layout = QGridLayout()
         self._btnSave = QPushButton( self )
@@ -162,7 +193,10 @@ class OffenePostenView( QWidget ):
         self.editOposSignal.emit( item )
 
     def _onDeleteItem( self, item ):
-        self.editOposSignal.emit( item )
+        self.deleteOposSignal.emit( item )
+
+    def getModel( self ):
+        return self._etv.getModel()
 
 ########################################################
 
@@ -176,17 +210,6 @@ class OffenePostenDialog( GenericTableViewDialog ):
         GenericTableViewDialog.__init__( self, model=model, isEditable=True, parent=parent )
         self.setWindowTitle( "Offene Posten" )
         self.setOkButtonText( "Speichern" )
-        #self.createItem.connect( self._onCreateItem )
-        #self.okPressed.connect( self._onSave )
-
-    # def _onCreateItem( self ):
-    #     print( "onCreateItem" )
-    #     dlg = OffenerPostenEditDialog()
-    #     dlg.setModal( True )
-    #     dlg.exec_()
-
-    # def _onSave( self ):
-    #     print( "OffenePostenDialog.onSave" )
 
 ########################################################
 

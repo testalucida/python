@@ -205,6 +205,12 @@ class DbAccess:
               "where vwg.vwg_id = " + str( vwg_id )
         return self._doReadOneGetDict( sql )
 
+    def getVerwalter( self ) -> List[str]:
+        sql = "select name from verwalter order by vw_id  "
+        tupellist = self._doRead( sql )
+        stringlist = [x[0] for x in tupellist]
+        return stringlist
+
     def getVerwaltungen( self, jahr:int, orderby:str=None ) -> List[Dict]:
         vgldat = str(jahr) + "-01-01"
         sql = "select vwg_id, mobj_id, vw_id, weg_name, von, coalesce( bis, '' ) as bis " \
@@ -953,8 +959,10 @@ class DbAccess:
 def test():
     db = DbAccess( "immo.db" )
     db.open()
-    xlist = db.getOffenePosten()
-    print( xlist )
+    stringlist = db.getVerwalter()
+    print( "" )
+    # xlist = db.getOffenePosten()
+    # print( xlist )
 
     #li = db.getSollmieten2( 2020 )
 
