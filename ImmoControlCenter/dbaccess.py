@@ -781,6 +781,7 @@ class DbAccess:
               (master_id, z.mobj_id, z.meinaus_id, z.saus_id, z.nka_id, z.hga_id, z.write_time, z.jahr, z.monat, z.betrag, z.zahl_art)
         return self._doWrite( sql, commit )
 
+
     def deleteZahlung( self, id:int, id_name:str, monat:str=None, zahl_art:str=None, commit:bool=True ) -> int:
         sql = "delete from zahlung " \
               "where %s = %d " % ( id_name, id )
@@ -896,6 +897,27 @@ class DbAccess:
     def deleteHgAbrechnung( self, hga_id: int, commit: bool = True ) -> int:
         sql = "delete from hg_abrechnung " \
               "where hga_id = %d" % ( hga_id )
+        return self._doWrite( sql, commit )
+
+    def insertOpos( self, x: XOffenerPosten, commit: bool = True ) -> int:
+        mv_id = "NULL" if x.mv_id in (None, "") else "'" + x.mv_id + "'"
+        vw_id = "NULL" if x.vw_id in (None, 0) else str( x.vw_id )
+        firma = "NULL" if x.firma in (None, "") else "'" + x.firma + "'"
+        if mv_id == "NULL" and vw_id == "NULL" and firma == "NULL":
+            firma = "'" + x.debi_kredi + "'"
+        letzte_buchung = "NULL" if (x.letzte_buchung_am is None or x.letzte_buchung_am == "") else \
+            "'" + x.letzte_buchung_am + "'"
+        bemerkung = "NULL" if x.bemerkung in (None, "") else "'" + x.bemerkung + "'"
+        sql = "insert into opos " \
+              "(mv_id, vw_id, firma, erfasst_am, betrag, betrag_beglichen, letzte_buchung_am, bemerkung) " \
+              "values " \
+              "(%s, %s, %s, '%s', %.2f, %.2f, %s, %s) " % \
+              (mv_id, vw_id, firma, x.erfasst_am, x.betrag, x.betrag_beglichen, letzte_buchung, bemerkung)
+        return self._doWrite( sql, commit )
+
+    def deleteOpos( self, opos_id:int, commit:bool=True ) -> int:
+        sql = "delete from opos " \
+              "where opos_id = %d" % (opos_id)
         return self._doWrite( sql, commit )
 
 #########################################################################################

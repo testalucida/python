@@ -4,9 +4,6 @@ from PySide2.QtWidgets import QDialog, QPushButton, QGridLayout, QApplication, Q
 
 
 class OkCancelDialog( QDialog ):
-    okPressed = Signal()
-    cancelled = Signal()
-
     def __init__( self, title=None, parent=None ):
         QDialog.__init__( self, parent )
         self.title = title
@@ -14,6 +11,8 @@ class OkCancelDialog( QDialog ):
         self._okButton = QPushButton( "OK" )
         self._cancelButton = QPushButton( "Abbrechen" )
         self._createGui()
+        self._validationFnc = None
+        self._cancellationFnc = None
 
     def _createGui( self ):
         self.setLayout( self._layout )
@@ -32,16 +31,22 @@ class OkCancelDialog( QDialog ):
         else:
             self.setWindowTitle( "OkCancelDialog" )
 
-        self._okButton.clicked.connect( self._onAccepted )
-        self._cancelButton.clicked.connect( self._onRejected )
+        self._okButton.clicked.connect( self.onAccepted )
+        self._cancelButton.clicked.connect( self.onRejected )
 
-    def _onAccepted(self):
-        self.okPressed.emit()
-        self.accept()
+    def onAccepted(self):
+        rc = True
+        if self._validationFnc:
+            rc = self._validationFnc()
+        if rc:
+            self.accept()
 
-    def _onRejected( self ):
-        self.cancelled.emit()
-        self.reject()
+    def onRejected( self ):
+        rc = True
+        if self._cancellationFnc:
+            rc = self._cancellationFnc
+        if rc:
+            self.reject()
 
     def setOkButtonText( self, text:str ):
         self._okButton.setText( text )
@@ -50,7 +55,11 @@ class OkCancelDialog( QDialog ):
         if row > 2: raise Exception( "OkCancelDialog.addWidget() -- invalid row index: %d" % ( row ) )
         self._layout.addWidget( w, row, 0 )
 
+    def setValidationFunction( self, fnc ):
+        self._validationFnc = fnc
 
+    def setCancellationFunction( self, fnc ):
+        self._cancellationFnc = fnc
 
 def testOkCancelDialog():
     app = QApplication()

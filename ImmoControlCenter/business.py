@@ -760,6 +760,23 @@ class BusinessLogic:
             return "Betrag fehlt."
         return ""
 
+    def saveOffenePosten( self, model:OffenePostenTableModel ) -> None:
+        changes: Dict[str, List[XOffenerPosten]] = model.getChanges()
+        for key in changes.keys():
+            oposlist = changes[key]
+            if key == "INSERT":
+                for opos in oposlist:
+                    self._db.insertOpos( opos, False )
+            elif key == "UPDATE":
+                print( "UPDATE" )
+            elif key == "DELETE":
+                for opos in oposlist:
+                    self._db.deleteOpos( opos.opos_id, False )
+            else:
+                raise Exception( "OffenePostenController.save(): Unknown key: %s" % (key) )
+        self._db.commit()
+        model.resetChanges()
+
 def test():
     busi = BusinessLogic.inst()
 

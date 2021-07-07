@@ -10,7 +10,7 @@ from datehelper import getCurrentYear
 from mdisubwindow import MdiSubWindow
 from immocentermainwindow import ImmoCenterMainWindow, MainWindowAction
 from checkcontroller import MdiChildController, MietenController, HGVController
-from offene_posten.OffenePostenController import OffenePostenController
+from offene_posten.offenepostencontroller import OffenePostenController
 from sollzahlungencontroller import SollzahlungenController, SollType, SollmietenController, SollHgvController
 from sonstauscontroller import SonstAusController
 from sumfieldsprovider import SumFieldsProvider

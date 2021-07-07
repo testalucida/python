@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 from PySide2.QtCore import QModelIndex
 from PySide2.QtWidgets import QApplication, QDialog, QWidget
@@ -24,6 +24,7 @@ class OffenePostenController( MdiChildController ):
         v.createOposSignal.connect( self.onCreateOffenerPosten )
         v.editOposSignal.connect( self.onEditOffenerPosten )
         v.deleteOposSignal.connect( self.onDeleteOffenerPosten )
+        v.saveChangesSignal.connect( self.onSaveChanges )
         self._view = v
         return v
 
@@ -31,44 +32,62 @@ class OffenePostenController( MdiChildController ):
         x = XOffenerPosten()
         x.erfasst_am = currentDateIso()
         if self._editAndValidateOffenerPosten( x ):
-            # save
-            pass
+            # übernehmen in Tabelle und aktivieren des Save-Buttons
+            self._model.updateOrInsert( x )
+            self._view.setSaveButtonEnabled()
 
     def onEditOffenerPosten( self, index: QModelIndex ):
-        x = self._getOffenerPosten( index )
+        self._oposInProcess = x = self._getOffenerPosten( index )
         if self._editAndValidateOffenerPosten( x ):
-            # save
-            pass
+            # übernehmen in Tabelle und aktivieren des Save-Buttons
+            self._view.setSaveButtonEnabled()
 
     def onDeleteOffenerPosten( self, index: QModelIndex ):
         x = self._getOffenerPosten( index )
-        # delete
+        # aus Tabelle löschen und aktivieren des Save-Buttons
+        self._model.delete( x )
+        self._view.setSaveButtonEnabled()
+
+    def onSaveChanges( self ):
+        self.save()
 
     def _editAndValidateOffenerPosten( self, x:XOffenerPosten ) -> bool:
+        """
+        Öffnet den OffenePostenDialog mit dem übergebenen Offenen Posten.
+        Wird im Dlg OK gedrückt, werden die eingegebenen (geänderten) Daten geprüft.
+        Sind sie in Ordnung, werden die geänderten Daten in den Offenen Posten übernommen
+        und der Dialog wird geschlossen.
+        :param x:
+        :return:
+        """
         def getAllFirmen():
             firmenlist = BusinessLogic.inst().getAlleKreditoren()
             firma = self._chooseDebiKrediFromList( firmenlist )
-            edi.getEditor().setDebiKredi( firma )
+            edidlg.getEditor().setDebiKredi( firma )
         def getAllVerwalter():
             vwlist = BusinessLogic.inst().getAlleVerwalter()
             vw = self._chooseDebiKrediFromList( vwlist )
-            edi.getEditor().setDebiKredi( vw )
-        edi = OffenerPostenEditDialog( x )
-        edi.chooseFirmaSignal.connect( getAllFirmen )
-        edi.chooseVerwalterSignal.connect( getAllVerwalter )
-        if edi.exec_() == QDialog.Accepted:
-            edi.getEditor().changesToModel()
-            msg = BusinessLogic.inst().validateOffenerPosten( x )
+            edidlg.getEditor().setDebiKredi( vw )
+        def validateOpos() -> bool:
+            xcopy:XOffenerPosten = edidlg.getEditor().getOposCopyWithChanges()
+            msg = BusinessLogic.inst().validateOffenerPosten( xcopy )
             if msg:
                 # Validation nicht ok, denn es gibt eine Meldung.
                 # Meldung ausgeben und Dialog offen lassen.
-                pass
+                self._view.showException( "Validierungsfehler", msg )
+                return False
             else:
                 # Validation ok. Zurück zum Aufrufer.
-                edi.accept()
+                edidlg.getEditor().guiToData()
                 return True
+
+        edidlg = OffenerPostenEditDialog( x )
+        edidlg.setValidationFunction( validateOpos )
+        edidlg.chooseFirmaSignal.connect( getAllFirmen )
+        edidlg.chooseVerwalterSignal.connect( getAllVerwalter )
+        if edidlg.exec_() == QDialog.Accepted:
+            return True
         else:
-            edi.reject()
             return False
 
     def _chooseDebiKrediFromList( self, l:List[str] ) -> str:
@@ -84,7 +103,11 @@ class OffenePostenController( MdiChildController ):
         return "Offene Posten"
 
     def save( self ):
-        pass
+        try:
+            BusinessLogic.inst().saveOffenePosten( self._model )
+            self._view.setSaveButtonEnabled( False )
+        except Exception as exc:
+            print( "EXCEPTION" ) #todo
 
     def _getOffenerPosten( self, index:QModelIndex ) -> XOffenerPosten:
         return self._model.getXOffenerPosten( index.row() )

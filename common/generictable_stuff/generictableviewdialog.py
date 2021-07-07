@@ -139,8 +139,8 @@ class GenericTableViewDialog( QDialog ):
     createItem = Signal()
     editItem = Signal( QModelIndex )
     deleteItem = Signal( QModelIndex )
-    okPressed = Signal()
-    cancelled = Signal()
+    # okPressed = Signal()
+    # cancelled = Signal()
 
     def __init__( self, model:QAbstractTableModel=None, isEditable:bool=False, parent=None ):
         QDialog.__init__( self, parent )

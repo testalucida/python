@@ -3,7 +3,8 @@ from typing import Any, List, Tuple
 
 from PySide2 import QtWidgets, QtCore
 from PySide2.QtCore import QDate, Qt, QAbstractTableModel, QRect, Signal
-from PySide2.QtGui import QDoubleValidator, QIntValidator, QFont, QGuiApplication, QStandardItemModel, QStandardItem
+from PySide2.QtGui import QDoubleValidator, QIntValidator, QFont, QGuiApplication, QStandardItemModel, QStandardItem, \
+    QMouseEvent
 from PySide2.QtWidgets import QDialog, QCalendarWidget, QVBoxLayout, QBoxLayout, QLineEdit, QGridLayout, QPushButton, \
     QHBoxLayout, QApplication, QListView, QComboBox
 
@@ -135,10 +136,19 @@ class SmartDateEdit( QLineEdit ):
     def onDatumSelected( self, date:QDate ):
         self.setText( date.toString( "yyyy-MM-dd" ) )
 
-#########################  FloatEdit  ################################
-class FloatEdit( QLineEdit ):
+
+#######################  BaseEdit  ###################################
+class BaseEdit( QLineEdit ):
     def __init__( self, parent=None ):
         QLineEdit.__init__( self, parent )
+
+    def mousePressEvent(self, evt:QMouseEvent):
+        self.setSelection( 0, len( self.text() ) )
+
+#########################  FloatEdit  ################################
+class FloatEdit( BaseEdit ):
+    def __init__( self, parent=None ):
+        BaseEdit.__init__( self, parent )
         floatval = QDoubleValidator()
         self.setValidator( floatval )
         self.setAlignment( Qt.AlignRight )
@@ -166,9 +176,9 @@ class FloatEdit( QLineEdit ):
             self.setText( "" )
 
 ######################## Int Display  #############################
-class IntDisplay( QLineEdit ):
+class IntDisplay( BaseEdit ):
     def __init__( self, parent=None ):
-        QLineEdit.__init__( self, parent )
+        BaseEdit.__init__( self, parent )
         intval = QIntValidator()
         self.setValidator( intval )
         font = QFont( "Times New Roman", 12, QFont.Bold )
@@ -189,9 +199,9 @@ class IntDisplay( QLineEdit ):
         return int( val )
 
 ################ LineEdit #########################
-class LineEdit( QLineEdit ):
+class LineEdit( BaseEdit ):
     def __init__( self, parent=None ):
-        QLineEdit.__init__( self, parent )
+        BaseEdit.__init__( self, parent )
         intval = QIntValidator()
 
     def setValue( self, value:Any ) -> None:

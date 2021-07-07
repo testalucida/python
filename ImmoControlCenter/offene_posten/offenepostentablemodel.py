@@ -49,12 +49,6 @@ class OffenePostenTableModel( IccTableModel ):
             if len( v ) > 0: return True
         return False
 
-    def getChanges( self ) -> Any:
-        """
-        todo
-        :return:
-        """
-
     # def setSortable( self, sortable:bool=True ):
     #     self._sortable = sortable
 
@@ -167,7 +161,7 @@ class OffenePostenTableModel( IccTableModel ):
     def updateOrInsert( self, x:XOffenerPosten ):
         l = self._oposList
         cols = len( self.getHeaders() )
-        if x.id > 0:  # update of existing auszahlung
+        if x.opos_id > 0:  # update of existing auszahlung
             row = self.getRow( x )
             cols = len( self.getHeaders() )
             idxfrom = self.index( row, 0 )
@@ -179,9 +173,15 @@ class OffenePostenTableModel( IccTableModel ):
             self._writeChangeLog( constants.tableAction.INSERT, x )
             self.layoutChanged.emit()
 
+    def delete( self, x:XOffenerPosten ) -> None:
+        self._oposList.remove( x )
+        self._writeChangeLog( constants.tableAction.DELETE, x )
+        self.layoutChanged.emit()
+
     def resetChanges( self ):
         for k in self._changes.keys():
             self._changes[k] = list()
+        self.layoutChanged.emit()
 
     def getRow( self, x: XOffenerPosten ) -> int:
         for r in range( len( self._oposList ) ):
@@ -229,7 +229,7 @@ class OffenePostenTableModel( IccTableModel ):
 if __name__ == "__main__":
     l = list()
     x = XOffenerPosten()
-    x.id = 1
+    x.opos_id = 1
     x.mv_id = "Müller"
     x.erfasst_am = "2021-06-03"
     x.betrag = "123.45"

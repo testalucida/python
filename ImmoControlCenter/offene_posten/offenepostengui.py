@@ -1,8 +1,10 @@
+import copy
+
 from PySide2 import QtWidgets
 from PySide2.QtCore import QModelIndex, QSize, Signal, QAbstractTableModel
 from PySide2.QtGui import QFont, Qt
 from PySide2.QtWidgets import QWidget, QComboBox, QApplication, QGridLayout, QLabel, QLineEdit, QPushButton, \
-    QPlainTextEdit, QListView, QDialog, QVBoxLayout
+    QPlainTextEdit, QListView, QDialog, QVBoxLayout, QMessageBox
 
 from icctablemodel import IccTableModel
 from imagefactory import ImageFactory
@@ -38,7 +40,7 @@ class OffenerPostenEditor( QWidget ):
         self._bemerkung = QPlainTextEdit()
         self._offenerPosten:XOffenerPosten = x
         self._createGui()
-        self._modelToGui()
+        self._dataToGui()
 
     def _createGui( self ):
         r = c = 0
@@ -87,7 +89,7 @@ class OffenerPostenEditor( QWidget ):
         self._bemerkung.setMaximumHeight( 60 )
         l.addWidget( self._bemerkung, r, c )
 
-    def _modelToGui( self ) -> None:
+    def _dataToGui( self ) -> None:
         x = self._offenerPosten
         self._erfasstAm.setDateFromIsoString( x.erfasst_am )
         self._debiKredi.setText( x.debi_kredi )
@@ -97,7 +99,7 @@ class OffenerPostenEditor( QWidget ):
             self._letzteBuchungAm.setDateFromIsoString( x.letzte_buchung_am )
         self._bemerkung.setPlainText( x.bemerkung )
 
-    def changesToModel( self ) -> None:
+    def guiToData( self ) -> None:
         x = self._offenerPosten
         x.erfasst_am = self._erfasstAm.getDate()
         x.debi_kredi = self._debiKredi.text()
@@ -105,6 +107,23 @@ class OffenerPostenEditor( QWidget ):
         x.betrag_beglichen = self._betragBeglichen.getFloatValue()
         x.letzte_buchung_am = self._letzteBuchungAm.getDate()
         x.bemerkung = self._bemerkung.toPlainText()
+
+    def getOposCopyWithChanges( self ) -> XOffenerPosten:
+        """
+        liefert eine Kopie des in ARbeit befindlichen XOffenerPosten-Objekts.
+        Die in der GUI vorgenommenen Änderungen sind darin enthalten.
+        Die Änderungen sind NICHT im Original-OPOS enthalten!
+        Das Einfügen der Änderungen in das Original-OPOS passiert durch Aufruf von guiToData().
+        :return: eine Kopie des Original-OPOS mit Änderungen
+        """
+        xcopy = copy.copy( self._offenerPosten )
+        xcopy.erfasst_am = self._erfasstAm.getDate()
+        xcopy.debi_kredi = self._debiKredi.text()
+        xcopy.betrag = self._betrag.getFloatValue()
+        xcopy.betrag_beglichen = self._betragBeglichen.getFloatValue()
+        xcopy.letzte_buchung_am = self._letzteBuchungAm.getDate()
+        xcopy.bemerkung = self._bemerkung.toPlainText()
+        return xcopy
 
     def _onDebiKrediAuswahl_Firma( self ):
         self.debiKrediAuswahlFirmaPressed.emit()
@@ -150,6 +169,9 @@ class OffenerPostenEditDialog( OkCancelDialog ):
         self._edi.debiKrediAuswahlVwPressed.connect( self.chooseVerwalterSignal.emit )
         self.addWidget( self._edi, 0 )
 
+    def onRejected( self ):
+        self.reject()
+
     def getEditor( self ) -> OffenerPostenEditor:
         return self._edi
 
@@ -160,6 +182,7 @@ class OffenePostenView( QWidget ):
     createOposSignal = Signal()
     editOposSignal = Signal( QModelIndex )
     deleteOposSignal = Signal( QModelIndex )
+    saveChangesSignal = Signal()
 
     def __init__(self, oposmodel:IccTableModel, parent=None ):
         QWidget.__init__( self, parent )
@@ -174,6 +197,7 @@ class OffenePostenView( QWidget ):
     def _createGui( self ):
         l = self._layout
         btn = self._btnSave
+        btn.clicked.connect( self.saveChangesSignal.emit )
         btn.setFlat( True )
         btn.setEnabled( False )
         btn.setToolTip( "Änderungen an den Offenen Posten speichern" )
@@ -195,8 +219,21 @@ class OffenePostenView( QWidget ):
     def _onDeleteItem( self, item ):
         self.deleteOposSignal.emit( item )
 
+    def setSaveButtonEnabled( self, enabled:bool=True ):
+        self._btnSave.setEnabled( enabled )
+
     def getModel( self ):
         return self._etv.getModel()
+
+    def showException( self, title: str, exception: str, moretext: str = None ):
+        # todo: show Qt-Errordialog
+        msgbox = QtWidgets.QMessageBox()
+        msgbox.setWindowTitle( title )
+        msgbox.setIcon( QMessageBox.Critical )
+        msgbox.setText( exception )
+        if moretext:
+            msgbox.setInformativeText( moretext )
+        msgbox.exec_()
 
 ########################################################
 
