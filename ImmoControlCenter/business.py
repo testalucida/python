@@ -719,14 +719,6 @@ class BusinessLogic:
 
     def getOposModel( self ) -> OffenePostenTableModel:
         xlist:List[XOffenerPosten] = self._db.getOffenePosten()
-        for x in xlist:
-            if x.mv_id:
-                x.debi_kredi = x.mv_id
-            elif x.vw_id:
-                x.debi_kredi = x.vw_id
-            else:
-                x.debi_kredi = x.firma
-
         model = OffenePostenTableModel( xlist )
         return model
 
@@ -768,7 +760,8 @@ class BusinessLogic:
                 for opos in oposlist:
                     self._db.insertOpos( opos, False )
             elif key == "UPDATE":
-                print( "UPDATE" )
+                for opos in oposlist:
+                    self._db.updateOpos( opos, False )
             elif key == "DELETE":
                 for opos in oposlist:
                     self._db.deleteOpos( opos.opos_id, False )
@@ -776,6 +769,9 @@ class BusinessLogic:
                 raise Exception( "OffenePostenController.save(): Unknown key: %s" % (key) )
         self._db.commit()
         model.resetChanges()
+
+    def _prepareOpos( self, x:XOffenerPosten ) -> None:
+        pass
 
 def test():
     busi = BusinessLogic.inst()

@@ -620,10 +620,9 @@ class DbAccess:
         return xlist
 
     def getOffenePosten( self ) -> List[XOffenerPosten]:
-        sql = "select opos_id, o.mv_id, o.vw_id, firma, erfasst_am, betrag, " \
-              "betrag_beglichen, letzte_buchung_am, o.bemerkung " \
-              "from opos o " \
-              "left outer join verwalter vw on vw.vw_id = o.vw_id "
+        sql = "select opos_id, debi_kredi, erfasst_am, betrag, " \
+              "betrag_beglichen, letzte_buchung_am, bemerkung " \
+              "from opos "
         dictlist = self._doReadAllGetDict( sql )
         xlist:List[XOffenerPosten] = list()
         for d in dictlist:
@@ -900,19 +899,29 @@ class DbAccess:
         return self._doWrite( sql, commit )
 
     def insertOpos( self, x: XOffenerPosten, commit: bool = True ) -> int:
-        mv_id = "NULL" if x.mv_id in (None, "") else "'" + x.mv_id + "'"
-        vw_id = "NULL" if x.vw_id in (None, 0) else str( x.vw_id )
-        firma = "NULL" if x.firma in (None, "") else "'" + x.firma + "'"
-        if mv_id == "NULL" and vw_id == "NULL" and firma == "NULL":
-            firma = "'" + x.debi_kredi + "'"
         letzte_buchung = "NULL" if (x.letzte_buchung_am is None or x.letzte_buchung_am == "") else \
             "'" + x.letzte_buchung_am + "'"
         bemerkung = "NULL" if x.bemerkung in (None, "") else "'" + x.bemerkung + "'"
         sql = "insert into opos " \
-              "(mv_id, vw_id, firma, erfasst_am, betrag, betrag_beglichen, letzte_buchung_am, bemerkung) " \
+              "(debi_kredi, erfasst_am, betrag, betrag_beglichen, letzte_buchung_am, bemerkung) " \
               "values " \
-              "(%s, %s, %s, '%s', %.2f, %.2f, %s, %s) " % \
-              (mv_id, vw_id, firma, x.erfasst_am, x.betrag, x.betrag_beglichen, letzte_buchung, bemerkung)
+              "('%s', '%s', %.2f, %.2f, %s, %s) " % \
+              (x.debi_kredi, x.erfasst_am, x.betrag, x.betrag_beglichen, letzte_buchung, bemerkung)
+        return self._doWrite( sql, commit )
+
+    def updateOpos( self, x:XOffenerPosten, commit:bool=True ) -> int:
+        letzte_buchung = "NULL" if (x.letzte_buchung_am is None or x.letzte_buchung_am == "") else \
+            "'" + x.letzte_buchung_am + "'"
+        bemerkung = "NULL" if x.bemerkung in (None, "") else "'" + x.bemerkung + "'"
+        sql = "update opos set " \
+              "debi_kredi = '%s', " \
+              "erfasst_am = '%s', " \
+              "betrag = %.2f, " \
+              "betrag_beglichen = %.2f, " \
+              "letzte_buchung_am = %s, " \
+              "bemerkung = %s " \
+              "where opos_id = %d " % \
+              (x.debi_kredi, x.erfasst_am, x.betrag, x.betrag_beglichen, letzte_buchung, bemerkung, x.opos_id)
         return self._doWrite( sql, commit )
 
     def deleteOpos( self, opos_id:int, commit:bool=True ) -> int:

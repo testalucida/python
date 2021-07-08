@@ -33,13 +33,14 @@ class OffenePostenController( MdiChildController ):
         x.erfasst_am = currentDateIso()
         if self._editAndValidateOffenerPosten( x ):
             # übernehmen in Tabelle und aktivieren des Save-Buttons
-            self._model.updateOrInsert( x )
+            self._model.insert( x )
             self._view.setSaveButtonEnabled()
 
     def onEditOffenerPosten( self, index: QModelIndex ):
         self._oposInProcess = x = self._getOffenerPosten( index )
         if self._editAndValidateOffenerPosten( x ):
             # übernehmen in Tabelle und aktivieren des Save-Buttons
+            self._model.update( x )
             self._view.setSaveButtonEnabled()
 
     def onDeleteOffenerPosten( self, index: QModelIndex ):
@@ -107,7 +108,7 @@ class OffenePostenController( MdiChildController ):
             BusinessLogic.inst().saveOffenePosten( self._model )
             self._view.setSaveButtonEnabled( False )
         except Exception as exc:
-            print( "EXCEPTION" ) #todo
+            self._view.showException( "Fehler beim Speichern", str( exc ) )
 
     def _getOffenerPosten( self, index:QModelIndex ) -> XOffenerPosten:
         return self._model.getXOffenerPosten( index.row() )

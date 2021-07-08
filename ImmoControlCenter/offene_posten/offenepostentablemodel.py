@@ -158,20 +158,35 @@ class OffenePostenTableModel( IccTableModel ):
             #     pass
         return None
 
-    def updateOrInsert( self, x:XOffenerPosten ):
+    # def updateOrInsert( self, x:XOffenerPosten ):
+    #     l = self._oposList
+    #     cols = len( self.getHeaders() )
+    #     if x.opos_id > 0:  # update of existing auszahlung
+    #         row = self.getRow( x )
+    #         cols = len( self.getHeaders() )
+    #         idxfrom = self.index( row, 0 )
+    #         idxbis = self.index( row, cols - 1 )
+    #         self.writeChangeLog( constants.tableAction.UPDATE, x )
+    #         self.dataChanged.emit( idxfrom, idxbis )
+    #     else:
+    #         l.append( x )
+    #         self._writeChangeLog( constants.tableAction.INSERT, x )
+    #         self.layoutChanged.emit()
+
+    def insert( self, x: XOffenerPosten ):
+        self._oposList.append( x )
+        self._writeChangeLog( constants.tableAction.INSERT, x )
+        self.layoutChanged.emit()
+
+    def update( self, x: XOffenerPosten ):
         l = self._oposList
         cols = len( self.getHeaders() )
-        if x.opos_id > 0:  # update of existing auszahlung
-            row = self.getRow( x )
-            cols = len( self.getHeaders() )
-            idxfrom = self.index( row, 0 )
-            idxbis = self.index( row, cols - 1 )
+        row = self.getRow( x )
+        idxfrom = self.index( row, 0 )
+        idxbis = self.index( row, cols - 1 )
+        if not self._isInChangeLog( x, constants.tableAction.INSERT ):
             self.writeChangeLog( constants.tableAction.UPDATE, x )
-            self.dataChanged.emit( idxfrom, idxbis )
-        else:
-            l.append( x )
-            self._writeChangeLog( constants.tableAction.INSERT, x )
-            self.layoutChanged.emit()
+        self.dataChanged.emit( idxfrom, idxbis )
 
     def delete( self, x:XOffenerPosten ) -> None:
         self._oposList.remove( x )
@@ -186,9 +201,20 @@ class OffenePostenTableModel( IccTableModel ):
     def getRow( self, x: XOffenerPosten ) -> int:
         for r in range( len( self._oposList ) ):
             e: XOffenerPosten = self._oposList[r]
-            if e.id == x.id:
+            #if e.opos_id == x.opos_id:
+            if e == x:
                 return r
-        raise Exception( "OffenePostenTableModel.getRow(): can't find id %d" % (x.id ) )
+        raise Exception( "OffenePostenTableModel.getRow(): can't find id %d" % (x.opos_id ) )
+
+    def _isInChangeLog( self, x:XOffenerPosten, actionId:constants.tableAction ) -> bool:
+        actionstring = constants.actionList[actionId]
+        xlist: List[XOffenerPosten] = self._changes[actionstring]
+        return ( x in xlist )
+
+    def _removeFromChangeLog( self, x:XOffenerPosten, actionId:constants.tableAction ) -> bool:
+        actionstring = constants.actionList[actionId]
+        xlist: List[XOffenerPosten] = self._changes[actionstring]
+        xlist.remove( x )
 
     #@abstractmethod
     def writeChangeLog( self, actionId:constants.tableAction, x:XOffenerPosten ):
