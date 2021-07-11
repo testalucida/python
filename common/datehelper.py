@@ -46,6 +46,9 @@ def getCurrentYearAndMonth() -> Dict:
     d["year"] = datetime.now().year
     return d
 
+def getCurrentTimestampIso() -> str:
+    return datetime.now().strftime( "%Y-%m-%d:%H.%M.%S.%f" )
+
 def getFirstOfNextMonth() -> str:
     """
     returns start of next month in ISO format: "2021-04-01"

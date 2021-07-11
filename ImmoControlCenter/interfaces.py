@@ -231,6 +231,16 @@ class XOffenerPosten:
         if valuedict:
             setFromDict( self, valuedict )
 
+class XNotiz:
+    def __init__(self, valuedict:Dict=None ):
+        self.notiz_id = 0
+        self.bezug = ""
+        self.ueberschrift = ""
+        self.text = ""
+        self.erfasst_am = ""
+        self.erledigt = False
+        self.lwa = ""
+
 class XKontoEintrag:
     mobj_id = ""         # Name des Objekts, z.B. ww224, ist Name des Kontos (der Tabelle)
     name = ""            # Name des Mieters oder des Verwalters

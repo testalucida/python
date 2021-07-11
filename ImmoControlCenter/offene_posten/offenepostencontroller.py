@@ -5,10 +5,10 @@ from PySide2.QtWidgets import QApplication, QDialog, QWidget
 
 from business import BusinessLogic
 from datehelper import currentDateIso
-from generictable_stuff.generictableviewdialog import GenericEditableTableView
+from generictable_stuff.generictableviewdialog import EditableTableViewWidget
 from interfaces import XOffenerPosten
 from mdichildcontroller import MdiChildController
-from offene_posten.offenepostengui import OffenePostenDialog, OffenerPostenEditDialog, OffenePostenView
+from offene_posten.offenepostengui import OffenerPostenEditDialog, OffenePostenView
 from offene_posten.offenepostentablemodel import OffenePostenTableModel
 from qtderivates import AuswahlDialog
 

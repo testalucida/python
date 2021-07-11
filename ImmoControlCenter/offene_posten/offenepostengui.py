@@ -9,7 +9,7 @@ from PySide2.QtWidgets import QWidget, QComboBox, QApplication, QGridLayout, QLa
 from icctablemodel import IccTableModel
 from imagefactory import ImageFactory
 from qtderivates import IntDisplay, SmartDateEdit, FloatEdit, AuswahlDialog
-from generictable_stuff.generictableviewdialog import GenericTableViewDialog, GenericEditableTableView
+from generictable_stuff.generictableviewdialog import GenericTableViewDialog, EditableTableViewWidget
 from generictable_stuff.okcanceldialog import OkCancelDialog
 from interfaces import XOffenerPosten
 from offene_posten.offenepostentablemodel import OffenePostenTableModel
@@ -21,6 +21,9 @@ class DebiKrediAuswahlDialog():
         pass
 
 class OffenerPostenEditor( QWidget ):
+    """
+    Zum Editieren eines einzelnen Offenen Postens.
+    """
     debiKrediAuswahlFirmaPressed = Signal()
     debiKrediAuswahlVwPressed = Signal()
 
@@ -159,6 +162,10 @@ class OffenerPostenEditor( QWidget ):
 ########################################################
 
 class OffenerPostenEditDialog( OkCancelDialog ):
+    """
+    Dialog, der den OffenerPostenEditor beinhaltet.
+    Zum Editieren eines einzelnen Offenen Postens.
+    """
     chooseVerwalterSignal = Signal()
     chooseFirmaSignal = Signal()
 
@@ -188,7 +195,7 @@ class OffenePostenView( QWidget ):
         QWidget.__init__( self, parent )
         self._layout = QGridLayout()
         self._btnSave = QPushButton( self )
-        self._etv = GenericEditableTableView( model=oposmodel, isEditable=True, parent=parent )
+        self._etv = EditableTableViewWidget( model=oposmodel, isEditable=True, parent=parent )
         self._etv.createItem.connect( self._onCreateItem )
         self._etv.editItem.connect( self._onEditItem )
         self._etv.deleteItem.connect( self._onDeleteItem )
@@ -223,7 +230,8 @@ class OffenePostenView( QWidget ):
         self._btnSave.setEnabled( enabled )
 
     def getModel( self ):
-        return self._etv.getModel()
+        #return self._etv.getModel()
+        return self._etv.getTableView().model()
 
     def showException( self, title: str, exception: str, moretext: str = None ):
         # todo: show Qt-Errordialog
@@ -237,16 +245,16 @@ class OffenePostenView( QWidget ):
 
 ########################################################
 
-class OffenePostenDialog( GenericTableViewDialog ):
-    """
-    Dialog, der offene Posten in einer Liste enthält.
-    Jeder Posten kann editiert oder gelöscht werden.
-    Neue Posten können angelegt werden.
-    """
-    def __init__(self, model:OffenePostenTableModel, parent=None ):
-        GenericTableViewDialog.__init__( self, model=model, isEditable=True, parent=parent )
-        self.setWindowTitle( "Offene Posten" )
-        self.setOkButtonText( "Speichern" )
+# class OffenePostenDialog( GenericTableViewDialog ):
+#     """
+#     Dialog, der offene Posten in einer Liste enthält.
+#     Jeder Posten kann editiert oder gelöscht werden.
+#     Neue Posten können angelegt werden.
+#     """
+#     def __init__(self, model:OffenePostenTableModel, parent=None ):
+#         GenericTableViewDialog.__init__( self, model=model, isEditable=True, parent=parent )
+#         self.setWindowTitle( "Offene Posten" )
+#         self.setOkButtonText( "Speichern" )
 
 ########################################################
 

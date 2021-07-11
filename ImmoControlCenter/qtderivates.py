@@ -6,7 +6,7 @@ from PySide2.QtCore import QDate, Qt, QAbstractTableModel, QRect, Signal
 from PySide2.QtGui import QDoubleValidator, QIntValidator, QFont, QGuiApplication, QStandardItemModel, QStandardItem, \
     QMouseEvent
 from PySide2.QtWidgets import QDialog, QCalendarWidget, QVBoxLayout, QBoxLayout, QLineEdit, QGridLayout, QPushButton, \
-    QHBoxLayout, QApplication, QListView, QComboBox
+    QHBoxLayout, QApplication, QListView, QComboBox, QLabel
 
 from datehelper import isValidIsoDatestring, isValidEurDatestring, getRelativeQDate, getQDateFromIsoString
 
@@ -135,6 +135,11 @@ class SmartDateEdit( QLineEdit ):
 
     def onDatumSelected( self, date:QDate ):
         self.setText( date.toString( "yyyy-MM-dd" ) )
+
+######################  BaseLabel ##################################
+class BaseLabel( QLabel ):
+    def __init__( self, parent=None ):
+        QLabel.__init__( self, parent )
 
 
 #######################  BaseEdit  ###################################

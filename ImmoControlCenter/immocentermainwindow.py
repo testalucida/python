@@ -29,6 +29,7 @@ class MainWindowAction( Enum ):
     EXPORT_CSV = 14,
     OPEN_ANLAGEV_VIEW = 15,
     OPEN_OFFENE_POSTEN_VIEW = 16,
+    NOTIZEN = 17
     EXIT=99
 
 class DummySignal(QObject):
@@ -205,7 +206,7 @@ class ImmoCenterMainWindow( QMainWindow ):
         menu.addSeparator()
 
         # Menüpunkt "Offene Posten"
-        action = QAction( self, text="Geforderte, aber noch nicht beglichene Ein- und Auszahlungen" )
+        action = QAction( self, text="Offene Posten" )
         action.triggered.connect( self.onViewOffenePosten )
         menu.addAction( action )
 
@@ -251,6 +252,10 @@ class ImmoCenterMainWindow( QMainWindow ):
         action = QAction( self, text="Exportiere aktive Tabelle in Calc" )
         action.triggered.connect( self.onExportActiveTableView )
         menu.addAction( action )
+        action = QAction( self, text="Notizen..." )
+        action.triggered.connect( self.onNotizen )
+        menu.addAction( action )
+
 
     def _createSqlMenu( self ):
         # Menü "ImmoCenter"
@@ -432,6 +437,9 @@ class ImmoCenterMainWindow( QMainWindow ):
 
     def onExportActiveTableView( self ):
         self.doCallback( MainWindowAction.EXPORT_CSV )
+
+    def onNotizen( self ):
+        self.doCallback( MainWindowAction.NOTIZEN )
 
     def onViewRechnungen( self ):
         pass

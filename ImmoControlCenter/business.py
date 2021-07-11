@@ -10,7 +10,7 @@ from dbaccess import DbAccess
 from typing import List, Dict, Tuple
 from constants import einausart, Zahlart, zahlartstrings
 from interfaces import XSonstAus, XSonstAusSummen, XZahlung, XSollHausgeld, XSollMiete, XBuchungstextMatch, \
-    XNkAbrechnung, XAbrechnung, XHgAbrechnung, XMietverhaeltnis, XOffenerPosten
+    XNkAbrechnung, XAbrechnung, XHgAbrechnung, XMietverhaeltnis, XOffenerPosten, XNotiz
 #from monthlist import monthList, monatsletzter
 #from datehelper import monthList, monatsletzter, getLastMonth
 from datehelper import *
@@ -25,6 +25,7 @@ from datetime import datetime
 #     SONSTAUS = 4
 #
 # zahlartstrings = ("bruttomiete", "nka", "hgv", "hga", "sonstaus")
+from notizen.notizentablemodel import NotizenTableModel
 from offene_posten.offenepostentablemodel import OffenePostenTableModel
 
 id_names = ( "meinaus_id", "nka_id", "meinaus_id", "hga_id", "saus_id" )
@@ -66,11 +67,11 @@ class BusinessLogic:
             raise Exception( "BusinessLogic: cant find databasepath in resources.txt" )
         dbname += "immo.db"
         #dbname = "/home/martin/Vermietung/ImmoControlCenter/immo.db"
-
+        print( "BusinessLogic._prepare(): trying to connect to database '%s'..." % (dbname) )
         self._db = DbAccess( dbname )
         #self._db = DbAccess()
         self._db.open()
-        #self._kreditorleistungen = self._db.getKreditorleistungen()
+        print( "BusinessLogic.prepare(): ...connected to '%s'" % (dbname) )
 
     def terminate(self):
         self._db.close()
@@ -770,8 +771,11 @@ class BusinessLogic:
         self._db.commit()
         model.resetChanges()
 
-    def _prepareOpos( self, x:XOffenerPosten ) -> None:
-        pass
+
+    def getNotizenModel( self, auch_erledigte:bool=False ) -> NotizenTableModel:
+        notizenlist:List[XNotiz] = self._db.getNotizen( auch_erledigte )
+        model = NotizenTableModel( notizenlist )
+        return model
 
 def test():
     busi = BusinessLogic.inst()

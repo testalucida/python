@@ -10,6 +10,7 @@ from datehelper import getCurrentYear
 from mdisubwindow import MdiSubWindow
 from immocentermainwindow import ImmoCenterMainWindow, MainWindowAction
 from checkcontroller import MdiChildController, MietenController, HGVController
+from notizen.notizencontroller import NotizenController
 from offene_posten.offenepostencontroller import OffenePostenController
 from sollzahlungencontroller import SollzahlungenController, SollType, SollmietenController, SollHgvController
 from sonstauscontroller import SonstAusController
@@ -45,6 +46,7 @@ class MainController:
 
         self._anlageVCtrl:AnlageVController = None
         self._oposCtrl:OffenePostenController = OffenePostenController()
+        self._notizenCtrl:NotizenController = NotizenController()
 
         self._nChanges = 0  # zählt die Änderungen, damit nach Speichern-Vorgängen das Sternchen nicht zu früh entfernt wird.
 
@@ -89,7 +91,8 @@ class MainController:
             MainWindowAction.OPEN_ANLAGEV_VIEW: self.showAnlageVView,
             MainWindowAction.RESIZE_MAIN_WINDOW: self.resizeAllViews,
             MainWindowAction.EXPORT_CSV: self.exportToCsv,
-            MainWindowAction.OPEN_OFFENE_POSTEN_VIEW: self.showOffenePostenView
+            MainWindowAction.OPEN_OFFENE_POSTEN_VIEW: self.showOffenePostenView,
+            MainWindowAction.NOTIZEN: self.showNotizenView
         }
         fnc = switcher.get( action )
         try:
@@ -121,6 +124,9 @@ class MainController:
 
     def showOffenePostenView( self ):
         self.createOposViewAndShow()
+
+    def showNotizenView( self ):
+        self.createNotizenViewAndShow()
 
     def test( self ):
         print( "test")
@@ -218,6 +224,12 @@ class MainController:
         # w2 = w/2
         # subwin.setGeometry( 0, 0, w2, h )  # h-22 )
         #subwin.setGeometry( 0, 0, 700, h )
+        subwin.show()
+
+    def createNotizenViewAndShow( self ):
+        subwin = self._notizenCtrl.createSubwindow()
+        self._installView( subwin, self._notizenCtrl )
+        subwin.setGeometry( 50, 10, 800, 600 )
         subwin.show()
 
     def showSollMietenView( self ):

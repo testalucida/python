@@ -4,40 +4,73 @@ from typing import List
 from PySide2 import QtWidgets
 from PySide2.QtCore import QAbstractTableModel, Qt, Signal, QModelIndex, QPoint
 from PySide2.QtWidgets import QDialog, QPushButton, QTableView, QGridLayout, QApplication, QHBoxLayout, \
-    QAbstractItemView, QVBoxLayout, QLabel, QWidget
+    QAbstractItemView, QVBoxLayout, QLabel, QWidget, QAbstractScrollArea
 
 from imagefactory import ImageFactory
 
 ##########################################################
 
-class GenericTableView(QTableView):
-    leftClicked = Signal( QModelIndex )
-    rightClicked = Signal( [QModelIndex] )
+class CustomTableView( QTableView ):
+    ctvLeftClicked = Signal( QModelIndex )
+    ctvRightClicked = Signal( QPoint )
+    ctvDoubleClicked = Signal( QModelIndex )
+
     def __init__( self, parent=None ):
         QTableView.__init__( self, parent )
         # left mouse click
         self.clicked.connect( self.onLeftClick )
+        self.doubleClicked.connect( self.onDoubleClick )
         # right mouse click
         self.setContextMenuPolicy( Qt.CustomContextMenu )
         self.customContextMenuRequested.connect( self.onRightClick )
 
+    def setModel( self, model:QAbstractTableModel, selectRows:bool=True, singleSelection:bool=True  ) -> None:
+        super().setModel( model )
+        self.setSizeAdjustPolicy( QAbstractScrollArea.AdjustToContents )
+        self.resizeColumnsToContents()
+        if selectRows:
+            self.setSelectionBehavior( QTableView.SelectRows )
+        if singleSelection:
+            self.setSelectionMode( QAbstractItemView.SingleSelection )
+
+
     def onRightClick( self, point:QPoint ):
-        selected_indexes = self.selectedIndexes()
-        print( "GenericTableView.onRightClick:", selected_indexes )
-        self.rightClicked.emit( selected_indexes )
+        #selected_indexes = self.selectedIndexes()
+        #print( "GenericTableView.onRightClick:", point )
+        self.ctvRightClicked.emit( point )
 
     def onLeftClick( self, index:QModelIndex ):
-        print( index.row(), index.column() )
-        print( "GenericTableView.onLeftClick: %d,%d" % ( index.row(), index.column() ) )
+        #print( "GenericTableView.onLeftClick: %d,%d" % ( index.row(), index.column() ) )
+        self.ctvLeftClicked.emit( index )
+
+    def onDoubleClick( self, index:QModelIndex ):
+        #print( "GenericTableView.onDoubleClick: %d,%d" % (index.row(), index.column()) )
+        self.ctvDoubleClicked.emit( index )
+
+    def getSelectedRows( self ) -> List[int]:
+        sm = self.selectionModel()
+        #if sm.hasSelection():
+        return sm.selectedRows()
+        #return list()
+
+    def getSelectedIndexes( self ) -> List[QModelIndex]:
+        """
+        returns an empty list if no item is selected
+        :return:
+        """
+        return self.selectionModel().selectedIndexes()
+
+    def getFirstSelectedRow( self ) -> int:
+        rowlist = self.getSelectedRows()
+        return rowlist[0] if len( rowlist ) > 0 else -1
+
 
 ########################################################
 
-class GenericEditableTableView( QWidget ):
+class EditableTableViewWidget( QWidget ):
     createItem = Signal()
     editItem = Signal( QModelIndex )
     deleteItem = Signal( QModelIndex )
-    okPressed = Signal()
-    cancelled = Signal()
 
     def __init__( self, model:QAbstractTableModel=None, isEditable:bool=False, parent=None ):
         QWidget.__init__( self, parent )
@@ -59,7 +92,7 @@ class GenericEditableTableView( QWidget ):
             self._deleteButton.setIcon( icon )
             self._deleteButton.setToolTip( "Ausgewählten Tabelleneintrag löschen" )
 
-        self._tv = GenericTableView()
+        self._tv = CustomTableView()
         self._createGui()
         if model:
             self.setTableModel( model )
@@ -82,19 +115,16 @@ class GenericEditableTableView( QWidget ):
         hbox.addWidget( self._deleteButton )
         self._layout.addLayout( hbox, 2, 0, alignment=Qt.AlignLeft )
 
-    def setTableModel( self, model:QAbstractTableModel ):
-        self._tv.setModel( model )
-        self._tv.setSizeAdjustPolicy( QtWidgets.QAbstractScrollArea.AdjustToContents )
-        self._tv.resizeColumnsToContents()
-        self._tv.setSelectionBehavior( QTableView.SelectRows )
-        self._tv.setSelectionMode( QAbstractItemView.SingleSelection )
+    def setTableModel( self, model:QAbstractTableModel,  selectRows:bool=True, singleSelection:bool=True  ):
+        self._tv.setModel( model, selectRows, singleSelection )
         if self._isEditable:
             self._newButton.setFocus()
-        else:
-            self._okButton.setFocus()
 
     def getModel( self ):
         return self._tv.model()
+
+    def getTableView( self ) -> CustomTableView:
+        return self._tv
 
     def _onNew( self ):
         self.createItem.emit()
@@ -111,16 +141,15 @@ class GenericEditableTableView( QWidget ):
             raise Exception( "GenericTableViewDialog: no item selected to delete" )
         self.deleteItem.emit( indexlist[0] )
 
-    def getTableView( self ) -> GenericTableView:
-        return self._tv
-
     def getSelectedIndexes( self ) -> List[QModelIndex]:
         """
         returns an empty list if no item is selected
         :return:
         """
-        indexes = self._tv.selectionModel().selectedIndexes()
-        return indexes
+        sm = self._tv.selectionModel()
+        if sm:
+            indexes = sm.selectedIndexes()
+        return list()
 
     def getSelectedRows( self ) -> List[int]:
         indexes = self.getSelectedIndexes()
@@ -165,7 +194,7 @@ class GenericTableViewDialog( QDialog ):
             self._deleteButton.setIcon( icon )
             self._deleteButton.setToolTip( "Ausgewählten Tabelleneintrag löschen" )
 
-        self._tv = GenericTableView( self )
+        self._tv = CustomTableView( self )
         self._createGui()
         self.setModal( True )
         if model:
@@ -201,10 +230,10 @@ class GenericTableViewDialog( QDialog ):
     def setOkButtonText( self, text:str ):
         self._okButton.setText( text )
 
-    def setTableModel( self, model:QAbstractTableModel ):
+    def setTableModel( self, model:QAbstractTableModel, selectRows:bool=True, singleSelection:bool=True ):
         self._tv.setModel( model )
-        self._tv.setSizeAdjustPolicy( QtWidgets.QAbstractScrollArea.AdjustToContents )
-        self._tv.resizeColumnsToContents()
+        # self._tv.setSizeAdjustPolicy( QtWidgets.QAbstractScrollArea.AdjustToContents )
+        # self._tv.resizeColumnsToContents()
         self._tv.setSelectionBehavior( QTableView.SelectRows )
         self._tv.setSelectionMode( QAbstractItemView.SingleSelection )
         if self._isEditable:
@@ -216,13 +245,13 @@ class GenericTableViewDialog( QDialog ):
         self.createItem.emit()
 
     def _onEdit( self ):
-        indexlist = self.getSelectedIndexes()
+        indexlist = self._tv.getSelectedIndexes()
         if len( indexlist ) == 0:
             raise Exception( "GenericTableViewDialog: no item selected to edit" )
         self.editItem.emit( indexlist[0] )
 
     def _onDelete( self ):
-        indexlist = self.getSelectedIndexes()
+        indexlist = self._tv.getSelectedIndexes()
         if len( indexlist ) == 0:
             raise Exception( "GenericTableViewDialog: no item selected to delete" )
         self.deleteItem.emit( indexlist[0] )
@@ -235,27 +264,27 @@ class GenericTableViewDialog( QDialog ):
         self.cancelled.emit()
         self.reject()
 
-    def getTableView( self ) -> GenericTableView:
+    def getTableView( self ) -> CustomTableView:
         return self._tv
 
-    def getSelectedIndexes( self ) -> List[QModelIndex]:
-        """
-        returns an empty list if no item is selected
-        :return:
-        """
-        indexes = self._tv.selectionModel().selectedIndexes()
-        return indexes
+    # def getSelectedIndexes( self ) -> List[QModelIndex]:
+    #     """
+    #     returns an empty list if no item is selected
+    #     :return:
+    #     """
+    #     indexes = self._tv.selectionModel().selectedIndexes()
+    #     return indexes
 
-    def getSelectedRows( self ) -> List[int]:
-        indexes = self.getSelectedIndexes()
-        l = list()
-        for i in indexes:
-            l.append( i.row() )
-        return l
+    # def getSelectedRows( self ) -> List[int]:
+    #     indexes = self.getSelectedIndexes()
+    #     l = list()
+    #     for i in indexes:
+    #         l.append( i.row() )
+    #     return l
 
-    def getFirstSelectedRow( self ) -> int:
-        rowlist = self.getSelectedRows()
-        return rowlist[0] if len( rowlist ) > 0 else -1
+    # def getFirstSelectedRow( self ) -> int:
+    #     rowlist = self.getSelectedRows()
+    #     return rowlist[0] if len( rowlist ) > 0 else -1
 ###########################################################
 
 def doEdit( idx:QModelIndex ):
@@ -296,13 +325,16 @@ def test():
     app = QApplication()
     #os.chdir( "" )
     tm = TestModel()
-    dlg = GenericTableViewDialog( isEditable=True )
-    dlg.setWindowTitle( "testdialog" )
-    dlg.setTableModel( tm )
-    dlg.editItem.connect( doEdit )
-    #dlg.setCancelButtonVisible( False )
-    dlg.setOkButtonText( "Speichern" )
-    dlg.show()
+    # dlg = GenericTableViewDialog( isEditable=True )
+    # dlg.setWindowTitle( "testdialog" )
+    # dlg.setTableModel( tm )
+    # dlg.editItem.connect( doEdit )
+    # #dlg.setCancelButtonVisible( False )
+    # dlg.setOkButtonText( "Speichern" )
+    # dlg.show()
+    v = EditableTableViewWidget( tm, True )
+    v.show()
+    v.getSelectedRows()
     app.exec_()
 
 

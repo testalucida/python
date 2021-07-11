@@ -28,27 +28,23 @@ class ImageFactory:
         ImageFactory.__instance = self
         self._setImagePath()
 
-        # path = os.getcwd()
-        # if path.endswith( "ImmoControlCenter" ):
-        #     self._imagePath = "./images/"
-        # else:
-        #     self._imagePath = "../images/"
-
     def _setImagePath( self ):
         """
         reads resources.txt and sets self._imagePath
         :return:
         """
         cwd = os.getcwd()
-        f = open( "./resources.txt", "r" )
-        lines = f.readlines()
-        for l in lines:
-            if l.startswith( "imagepath" ):
-                parts = l.split( "=" )
-                self._imagePath = parts[1][:-1] #truncate newline
-                f.close()
-                return
-        raise Exception( "ImageFactory: cant find imagepath in resources.txt" )
+        try:
+            f = open( "./resources.txt", "r" )
+            lines = f.readlines()
+            for l in lines:
+                if l.startswith( "imagepath" ):
+                    parts = l.split( "=" )
+                    self._imagePath = parts[1][:-1] #truncate newline
+                    f.close()
+                    return
+        except Exception as exc:
+            print( "ImageFactory._setImagePath(): failed open/read/close file ./resources.txt:\n\n" + str(exc) )
 
     def getOkIcon(self) -> QIcon:
         if self._okIcon == None:

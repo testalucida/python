@@ -4,9 +4,9 @@ from typing import List, Tuple, Dict
 from ConnectionProvider import ConnectionProvider
 from anlage_v.anlagev_interfaces import XObjektStammdaten
 from constants import einausart
-from datehelper import getNumberOfDays
+from datehelper import getNumberOfDays, getCurrentTimestampIso
 from interfaces import XSonstAus, XZahlung, XSollHausgeld, XSollMiete, XNkAbrechnung, XHgAbrechnung, XMietverhaeltnis, \
-    XOffenerPosten
+    XOffenerPosten, XNotiz
 
 mon_dbnames = ("jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dez" )
 
@@ -630,6 +630,18 @@ class DbAccess:
             xlist.append( x )
         return xlist
 
+    def getNotizen( self, auch_erledigte:bool=False ) -> List[XNotiz]:
+        sql = "select notiz_id, bezug, ueberschrift, text, erfasst_am, erledigt, lwa " \
+              "from notiz "
+        if not auch_erledigte:  #nur aktive
+            sql += "where erledigt = 1"
+        dictlist = self._doReadAllGetDict( sql )
+        xlist: List[XNotiz] = list()
+        for d in dictlist:
+            x = XNotiz( d )
+            xlist.append( x )
+        return xlist
+
     def insertMietobjekt( self, d:Dict, commit:bool=True ) -> int :
         sql = "insert into mietobjekt " \
               "(mobj_id, master_id, whg_bez, qm, container_nr, bemerkung, aktiv) " \
@@ -929,7 +941,33 @@ class DbAccess:
               "where opos_id = %d" % (opos_id)
         return self._doWrite( sql, commit )
 
-#########################################################################################
+    def insertNotiz( self, x:XNotiz, commit:bool=True ) -> int:
+        erledigt = 0 if x.erledigt == False else 1
+        lwa = getCurrentTimestampIso()
+        sql = "insert into notiz " \
+              "(bezug, ueberschrift, text, erfasst_am, erledigt, lwa) " \
+              "values" \
+              "('%s', '%s', '%s', '%s', %d, '%s')" %( x.bezug, x.ueberschrift, x.text, x.erfasst_am, erledigt, lwa)
+        return self._doWrite( sql, commit )
+
+    def updateNotiz( self, x:XNotiz, commit:bool=True ) -> int:
+        erledigt = 0 if x.erledigt == False else 1
+        lwa = getCurrentTimestampIso()
+        sql = "update notiz " \
+              "set bezug = '%s', " \
+              "ueberschrift = '%s', " \
+              "text = '%s', " \
+              "erledigt = %d, " \
+              "lwa = '%s' " \
+              "where notiz_id = %d " % ( x.bezug, x.ueberschrift, x.text, erledigt, lwa, x.notiz_id )
+        return self._doWrite( sql, commit )
+
+    def deleteNotiz( self, notiz_id:int, commit:bool=True ) -> int:
+        sql = "delete from notiz " \
+              "where notiz_id = %d" % (notiz_id)
+        return self._doWrite( sql, commit )
+
+    #########################################################################################
 
     def createObjektKonto( self, konto_name:str, commit:bool=True ) -> None:
         ddl = """CREATE TABLE %s (
