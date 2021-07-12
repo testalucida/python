@@ -238,8 +238,10 @@ class XNotiz:
         self.ueberschrift = ""
         self.text = ""
         self.erfasst_am = ""
-        self.erledigt = False
+        self.erledigt = 0
         self.lwa = ""
+        if valuedict:
+            setFromDict( self, valuedict )
 
 class XKontoEintrag:
     mobj_id = ""         # Name des Objekts, z.B. ww224, ist Name des Kontos (der Tabelle)

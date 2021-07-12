@@ -461,22 +461,30 @@ class DbAccess:
         list = [x[0] for x in rowlist]
         return list
 
+    def getAlleMieter( self ) -> List[str]:
+        sql = "select distinct mv_id " \
+              "from mietverhaeltnis "
+        rowlist = self._doRead( sql )
+        li = [x[0] for x in rowlist]
+        li = sorted( li, key=str.casefold )
+        return li
+
     def getKreditoren( self, master_name:str ) -> List[str]:
         sql = "select distinct kreditor " \
               "from kreditorleistung k " \
               "inner join masterobjekt m on m.master_id = k.master_id " \
               "where m.master_name = '%s' " % ( master_name )
         rowlist = self._doRead( sql )
-        list = [x[0] for x in rowlist]
-        list = sorted( list, key=str.casefold )
-        return list
+        li = [x[0] for x in rowlist]
+        li = sorted( list, key=str.casefold )
+        return li
 
     def getAlleKreditoren( self ) -> List[str]:
         sql = "select distinct kreditor from kreditorleistung "
         rowlist = self._doRead( sql )
-        list = [x[0] for x in rowlist]
-        list = sorted( list, key=str.casefold )
-        return list
+        li = [x[0] for x in rowlist]
+        li = sorted( li, key=str.casefold )
+        return li
 
     def getKreditorleistungen( self ) -> List[Dict]:
         sql = "select distinct k.kreditor, k.master_id, m.master_name, k.mobj_id, buchungstext, umlegbar " \
@@ -633,8 +641,10 @@ class DbAccess:
     def getNotizen( self, auch_erledigte:bool=False ) -> List[XNotiz]:
         sql = "select notiz_id, bezug, ueberschrift, text, erfasst_am, erledigt, lwa " \
               "from notiz "
-        if not auch_erledigte:  #nur aktive
-            sql += "where erledigt = 1"
+        if auch_erledigte:  #nur aktive
+            sql += "where erledigt in (0, 1)"
+        else:
+            sql += "where erledigt = 0"
         dictlist = self._doReadAllGetDict( sql )
         xlist: List[XNotiz] = list()
         for d in dictlist:

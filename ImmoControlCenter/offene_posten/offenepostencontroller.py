@@ -15,6 +15,7 @@ from qtderivates import AuswahlDialog
 
 class OffenePostenController( MdiChildController ):
     def __init__( self ):
+        MdiChildController.__init__( self )
         self._view:OffenePostenView() = None
         self._model:OffenePostenTableModel = None
 

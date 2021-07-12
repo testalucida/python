@@ -744,6 +744,9 @@ class BusinessLogic:
     def getAlleFirmen( self ) -> List[str]:
         return self._db.getAlleKreditoren()
 
+    def getAlleMieter( self ) -> List[str]:
+        return self._db.getAlleMieter()
+
     def validateOffenerPosten( self, x:XOffenerPosten ) -> str:
         if not x.erfasst_am:
             return "Datum 'erfasst am' fehlt."
@@ -751,6 +754,13 @@ class BusinessLogic:
             return "Debitor/Kreditor fehlt."
         if x.betrag == 0:
             return "Betrag fehlt."
+        return ""
+
+    def validateNotiz( self, x:XNotiz ) -> str:
+        if not x.ueberschrift:
+            return "Überschrift fehlt"
+        if not x.bezug:
+            return "Bezug fehlt"
         return ""
 
     def saveOffenePosten( self, model:OffenePostenTableModel ) -> None:
@@ -768,6 +778,24 @@ class BusinessLogic:
                     self._db.deleteOpos( opos.opos_id, False )
             else:
                 raise Exception( "OffenePostenController.save(): Unknown key: %s" % (key) )
+        self._db.commit()
+        model.resetChanges()
+
+    def saveNotizen( self, model: NotizenTableModel ) -> None:
+        changes: Dict[str, List[XNotiz]] = model.getChanges()
+        for key in changes.keys():
+            notizlist = changes[key]
+            if key == "INSERT":
+                for notiz in notizlist:
+                    self._db.insertNotiz( notiz, False )
+            elif key == "UPDATE":
+                for notiz in notizlist:
+                    self._db.updateNotiz( notiz, False )
+            elif key == "DELETE":
+                for notiz in notizlist:
+                    self._db.deleteNotiz( notiz.notiz_id, False )
+            else:
+                raise Exception( "NotizenController.save(): Unknown key: %s" % (key) )
         self._db.commit()
         model.resetChanges()
 

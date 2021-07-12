@@ -148,7 +148,7 @@ class EditableTableViewWidget( QWidget ):
         """
         sm = self._tv.selectionModel()
         if sm:
-            indexes = sm.selectedIndexes()
+            return sm.selectedIndexes()
         return list()
 
     def getSelectedRows( self ) -> List[int]:

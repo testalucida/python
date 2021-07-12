@@ -4,9 +4,9 @@ from typing import Any, List, Tuple
 from PySide2 import QtWidgets, QtCore
 from PySide2.QtCore import QDate, Qt, QAbstractTableModel, QRect, Signal
 from PySide2.QtGui import QDoubleValidator, QIntValidator, QFont, QGuiApplication, QStandardItemModel, QStandardItem, \
-    QMouseEvent
+    QMouseEvent, QTextDocument
 from PySide2.QtWidgets import QDialog, QCalendarWidget, QVBoxLayout, QBoxLayout, QLineEdit, QGridLayout, QPushButton, \
-    QHBoxLayout, QApplication, QListView, QComboBox, QLabel
+    QHBoxLayout, QApplication, QListView, QComboBox, QLabel, QTextEdit, QCheckBox
 
 from datehelper import isValidIsoDatestring, isValidEurDatestring, getRelativeQDate, getQDateFromIsoString
 
@@ -203,6 +203,11 @@ class IntDisplay( BaseEdit ):
         if not val: val = "0"
         return int( val )
 
+################ TextDocument #####################
+class TextDocument( QTextDocument ):
+    def __init__( self, text ):
+        QTextDocument.__init__( self, text )
+
 ################ LineEdit #########################
 class LineEdit( BaseEdit ):
     def __init__( self, parent=None ):
@@ -219,6 +224,11 @@ class LineEdit( BaseEdit ):
 
     def getValue( self ) -> Any:
         return self.text()
+
+################  MultiLineEdit  ##################
+class MultiLineEdit( QTextEdit ):
+    def __init__( self, parent=None ):
+        QTextEdit.__init__( self, parent )
 
 ################ TableViewDialog ##################
 class TableViewDialog( QDialog ):
@@ -266,6 +276,11 @@ class TableViewDialog( QDialog ):
 
     def _onClose( self ):
         self.close()
+
+###############  CheckBox  ########################
+class CheckBox( QCheckBox ):
+    def __init__( self, parent=None ):
+        QCheckBox.__init__( self, parent )
 
 ################ SumDialog ########################
 class SumDialog( QDialog ):

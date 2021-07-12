@@ -16,10 +16,6 @@ from offene_posten.offenepostentablemodel import OffenePostenTableModel
 
 ########################################################
 
-class DebiKrediAuswahlDialog():
-    def __init__(self, parent=None ):
-        pass
-
 class OffenerPostenEditor( QWidget ):
     """
     Zum Editieren eines einzelnen Offenen Postens.

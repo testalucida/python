@@ -7,34 +7,93 @@ from business import BusinessLogic
 from datehelper import currentDateIso
 from interfaces import XNotiz
 from mdichildcontroller import MdiChildController
-from notizen.notizengui import NotizenView
+from notizen.notizengui import NotizenView, NotizEditDialog
 from notizen.notizentablemodel import NotizenTableModel
 from offene_posten.offenepostengui import OffenerPostenEditDialog, OffenePostenView
+from qtderivates import AuswahlDialog
 
 
 class NotizenController( MdiChildController ):
     def __init__( self ):
+        MdiChildController.__init__( self )
         self._view:NotizenView() = None
         self._model:NotizenTableModel = None
 
     def createView( self ) -> QWidget:
         self._model = BusinessLogic.inst().getNotizenModel()
         v = NotizenView( self._model )
-        v.getNotizenTableView().createItem.connect( self.onCreateNotiz )
-        v.getNotizenTableView().deleteItem.connect( self.onDeleteNotiz )
+        v.getNotizenTableViewWidget().createItem.connect( self.onCreateNotiz )
+        v.getNotizenTableViewWidget().deleteItem.connect( self.onDeleteNotiz )
         v.saveNotiz.connect( self.onSaveNotizen )
         self._view = v
         return v
 
     def onCreateNotiz( self ):
-        print( "createNotiz" )
+        x = XNotiz()
+        x.erfasst_am = currentDateIso()
+        if self._editAndValidateNotiz( x ):
+            # übernehmen in Tabelle und aktivieren des Save-Buttons
+            self._model.insert( x )
+            self._view.setSaveButtonEnabled()
 
     def onDeleteNotiz( self ):
         print( "deleteNotiz" )
 
     def onSaveNotizen( self ):
-        print( "saveNotizen" )
+        self.save()
 
+    def _editAndValidateNotiz( self, x:XNotiz ) -> bool:
+        """
+        Öffnet den NoDialog mit dem übergebenen Offenen Posten.
+        Wird im Dlg OK gedrückt, werden die eingegebenen (geänderten) Daten geprüft.
+        Sind sie in Ordnung, werden die geänderten Daten in den Offenen Posten übernommen
+        und der Dialog wird geschlossen.
+        :param x:
+        :return:
+        """
+        def getAlleFirmen():
+            firmenlist = BusinessLogic.inst().getAlleKreditoren()
+            firma = self._chooseBezugFromList( firmenlist )
+            edidlg.getEditor().setBezug( firma )
+        def getAlleVerwalter():
+            vwlist = BusinessLogic.inst().getAlleVerwalter()
+            vw = self._chooseBezugFromList( vwlist )
+            edidlg.getEditor().setBezug( vw )
+        def getAlleMieter():
+            mieterlist = BusinessLogic.inst().getAlleMieter()
+            mieter = self._chooseBezugFromList( mieterlist )
+            edidlg.getEditor().setBezug( mieter )
+        def validateOpos() -> bool:
+            xcopy:XNotiz = edidlg.getEditor().getNotizCopyWithChanges()
+            msg = BusinessLogic.inst().validateNotiz( xcopy )
+            if msg:
+                # Validation nicht ok, denn es gibt eine Meldung.
+                # Meldung ausgeben und Dialog offen lassen.
+                self._view.showException( "Validierungsfehler", msg )
+                return False
+            else:
+                # Validation ok. Zurück zum Aufrufer.
+                edidlg.getEditor().guiToData()
+                return True
+
+        edidlg = NotizEditDialog( x )
+        edidlg.setValidationFunction( validateOpos )
+        edidlg.getEditor().bezugAuswahlFirmaPressed.connect( getAlleFirmen )
+        edidlg.getEditor().bezugAuswahlVwPressed.connect( getAlleVerwalter )
+        edidlg.getEditor().bezugAuswahlMieterPressed.connect( getAlleMieter )
+        if edidlg.exec_() == QDialog.Accepted:
+            return True
+        else:
+            return False
+
+    def _chooseBezugFromList( self, l:List[str] ) -> str:
+        dlg = AuswahlDialog()
+        for i in l:
+            dlg.appendItem( i )
+        if dlg.exec_() == QDialog.Accepted:
+            sel = dlg.getSelection()
+            return sel[0][0]
+        return ""
 
     def getViewTitle( self ) -> str:
         return "Notizen"
