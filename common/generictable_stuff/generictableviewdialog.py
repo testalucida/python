@@ -3,17 +3,38 @@ from typing import List
 
 from PySide2 import QtWidgets
 from PySide2.QtCore import QAbstractTableModel, Qt, Signal, QModelIndex, QPoint
+from PySide2.QtGui import QMouseEvent
 from PySide2.QtWidgets import QDialog, QPushButton, QTableView, QGridLayout, QApplication, QHBoxLayout, \
-    QAbstractItemView, QVBoxLayout, QLabel, QWidget, QAbstractScrollArea
+    QAbstractItemView, QVBoxLayout, QLabel, QWidget, QAbstractScrollArea, QHeaderView, QTextEdit
 
 from imagefactory import ImageFactory
 
-##########################################################
+#####################  Cell  #################################
+class CellEvent:
+    def __init__(self, mouseX:int=-1, mouseY:int=-1, row:int=-1, column:int=-1 ):
+        self.mouseX = mouseX
+        self.mouseY = mouseY
+        self.row = row
+        self.column = column
 
+#####################  CustomHeaderView  ####################
+class CustomHeaderView( QHeaderView ):
+    chvMouseMove = Signal( QMouseEvent )
+
+    def __init__( self, orientation:Qt.Orientation=Qt.Orientation.Vertical, parent=None ):
+        QHeaderView.__init__( self, orientation, parent )
+        self.setMouseTracking( True )
+
+    def mouseMoveEvent(self, evt:QMouseEvent):
+        self.chvMouseMove.emit( evt )
+
+#####################  CustomTableView  ####################
 class CustomTableView( QTableView ):
     ctvLeftClicked = Signal( QModelIndex )
     ctvRightClicked = Signal( QPoint )
     ctvDoubleClicked = Signal( QModelIndex )
+    ctvCellEnter = Signal( CellEvent )
+    ctvCellLeave = Signal( CellEvent )
 
     def __init__( self, parent=None ):
         QTableView.__init__( self, parent )
@@ -23,6 +44,17 @@ class CustomTableView( QTableView ):
         # right mouse click
         self.setContextMenuPolicy( Qt.CustomContextMenu )
         self.customContextMenuRequested.connect( self.onRightClick )
+        self.setMouseTracking( True )
+        self.ctvCellEnter.connect( self._onCellEnter )
+        self.ctvCellLeave.connect( self._onCellLeave )
+        self._vheaderView = CustomHeaderView( Qt.Orientation.Vertical )
+        self.setVerticalHeader( self._vheaderView )
+        self._vheaderView.chvMouseMove.connect( self.onMouseMoveOutside )
+        self._hheaderView = CustomHeaderView( Qt.Orientation.Horizontal )
+        self._hheaderView.chvMouseMove.connect( self.onMouseMoveOutside )
+        self.setHorizontalHeader( self._hheaderView )
+        self._mouseOverCol = -1
+        self._mouseOverRow = -1
 
     def setModel( self, model:QAbstractTableModel, selectRows:bool=True, singleSelection:bool=True  ) -> None:
         super().setModel( model )
@@ -33,6 +65,31 @@ class CustomTableView( QTableView ):
         if singleSelection:
             self.setSelectionMode( QAbstractItemView.SingleSelection )
 
+    def mouseMoveEvent(self, event:QMouseEvent):
+        p = event.pos()
+        col = self.columnAt( p.x() )
+        row = self.rowAt( p.y() )
+        if row != self._mouseOverRow or col != self._mouseOverCol:
+            if self._mouseOverRow > -1 and self._mouseOverCol > -1:
+                self.ctvCellLeave.emit( CellEvent( p.x(), p.y(), self._mouseOverRow, self._mouseOverCol ) )
+            if row > -1 and col > -1:
+                self.ctvCellEnter.emit( CellEvent( p.x(), p.y(), row, col ) )
+        self._mouseOverRow = row
+        self._mouseOverCol = col
+        #print( "x = %d, y=%d, row = %d, col = %d" % ( p.x(), p.y(), row, col ) )
+
+    def _onCellEnter( self, evt:CellEvent ):
+        print( "onCellEnter: %d, %d" % (evt.row, evt.column ) )
+
+    def _onCellLeave( self, evt: CellEvent ):
+        print( "onCellLeave: %d, %d" % (evt.row, evt.column) )
+
+    def onMouseMoveOutside( self, event:QMouseEvent ):
+        if self._mouseOverRow > -1 and self._mouseOverCol > -1:
+            p = event.pos()
+            self.ctvCellLeave.emit( CellEvent( p.x(), p.y(), self._mouseOverRow, self._mouseOverCol ) )
+            self._mouseOverRow = -1
+            self._mouseOverCol = -1
 
     def onRightClick( self, point:QPoint ):
         #selected_indexes = self.selectedIndexes()
@@ -65,8 +122,7 @@ class CustomTableView( QTableView ):
         return rowlist[0] if len( rowlist ) > 0 else -1
 
 
-########################################################
-
+###################  EditableTableViewWidget  #########################
 class EditableTableViewWidget( QWidget ):
     createItem = Signal()
     editItem = Signal( QModelIndex )
@@ -162,8 +218,7 @@ class EditableTableViewWidget( QWidget ):
         rowlist = self.getSelectedRows()
         return rowlist[0] if len( rowlist ) > 0 else -1
 
-########################################################
-
+###################  GenericTableViewDialog  ##############################
 class GenericTableViewDialog( QDialog ):
     createItem = Signal()
     editItem = Signal( QModelIndex )
@@ -267,30 +322,31 @@ class GenericTableViewDialog( QDialog ):
     def getTableView( self ) -> CustomTableView:
         return self._tv
 
-    # def getSelectedIndexes( self ) -> List[QModelIndex]:
-    #     """
-    #     returns an empty list if no item is selected
-    #     :return:
-    #     """
-    #     indexes = self._tv.selectionModel().selectedIndexes()
-    #     return indexes
+####################  ZoomView  #######################################
+class ZoomView( QDialog ):
+    def __init__( self, text:str, parent=None ):
+        QDialog.__init__( self, parent )
+        self.setWindowFlags( Qt.FramelessWindowHint )
+        self.layout = QHBoxLayout()
+        self.zoom = QTextEdit()
+        self.layout.addWidget( self.zoom )
+        self.setLayout( self.layout )
+        self.zoom.setText( text )
 
-    # def getSelectedRows( self ) -> List[int]:
-    #     indexes = self.getSelectedIndexes()
-    #     l = list()
-    #     for i in indexes:
-    #         l.append( i.row() )
-    #     return l
-
-    # def getFirstSelectedRow( self ) -> int:
-    #     rowlist = self.getSelectedRows()
-    #     return rowlist[0] if len( rowlist ) > 0 else -1
-###########################################################
-
+#######################################################################
 def doEdit( idx:QModelIndex ):
     print( "Edit %d/%d" % (idx.row(), idx.column() ) )
 
 def test():
+    def onCellEnter( evt:CellEvent ):
+        m = tv.model()
+        idx = m.index( evt.row, evt.column )
+        txt = m.data( idx, Qt.DisplayRole )
+        print( "onCellEnter. Text = %s" % ( txt ) )
+        z = ZoomView( txt, tv )
+        z.setGeometry( 1200, 100, 400, 100 )
+        z.exec_()
+
     class TestModel( QAbstractTableModel ):
         def __init__( self ):
             QAbstractTableModel.__init__( self )
@@ -333,6 +389,8 @@ def test():
     # dlg.setOkButtonText( "Speichern" )
     # dlg.show()
     v = EditableTableViewWidget( tm, True )
+    tv = v.getTableView()
+    tv.ctvCellEnter.connect( onCellEnter )
     v.show()
     v.getSelectedRows()
     app.exec_()

@@ -130,6 +130,7 @@ class NotizenTableViewWidget( EditableTableViewWidget ):
     """
     def __init__(self, model:NotizenTableModel=None, parent=None):
         EditableTableViewWidget.__init__( self, model, True, parent )
+        self.getTableView().setSortingEnabled( True )
 
 ########################  NotizenView  ###########################
 class NotizenView( QWidget ):

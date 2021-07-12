@@ -63,6 +63,10 @@ class NotizenTableModel( IccTableModel ):
     def getHeaders( self ) -> List[str]:
         return self._headers
 
+    def _getValue( self, x:XNotiz, idx:int ) -> str:
+        key = list( x.__dict__.keys() )[idx]
+        return x.__dict__[key]
+
     def duplicate( self, x: XNotiz ) -> XNotiz:
         """
         duplicates x and returns the duplicate copy
@@ -207,9 +211,8 @@ class NotizenTableModel( IccTableModel ):
         self._notizenList = li
 
     def compare( self, x1:XNotiz, x2:XNotiz ) -> int:
-        key = self.getKeyList()[self.sort_col]
-        v1 = x1.__dict__[key]
-        v2 = x2.__dict__[key]
+        v1 = self._getValue( x1, self.sort_col )
+        v2 = self._getValue( x2, self.sort_col )
         if isinstance( v1, str ):
             v1 = v1.lower()
             v2 = v2.lower()

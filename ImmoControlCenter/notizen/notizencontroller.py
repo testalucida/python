@@ -18,13 +18,16 @@ class NotizenController( MdiChildController ):
         MdiChildController.__init__( self )
         self._view:NotizenView() = None
         self._model:NotizenTableModel = None
+        self._notizInProcess:XNotiz = None
 
     def createView( self ) -> QWidget:
         self._model = BusinessLogic.inst().getNotizenModel()
         v = NotizenView( self._model )
         v.getNotizenTableViewWidget().createItem.connect( self.onCreateNotiz )
+        v.getNotizenTableViewWidget().editItem.connect( self.onEditNotiz )
         v.getNotizenTableViewWidget().deleteItem.connect( self.onDeleteNotiz )
         v.saveNotiz.connect( self.onSaveNotizen )
+        self._model.setSortable( True )
         self._view = v
         return v
 
@@ -36,8 +39,18 @@ class NotizenController( MdiChildController ):
             self._model.insert( x )
             self._view.setSaveButtonEnabled()
 
-    def onDeleteNotiz( self ):
-        print( "deleteNotiz" )
+    def onEditNotiz( self, index: QModelIndex ):
+        self._notizInProcess = x = self._getNotiz( index )
+        if self._editAndValidateNotiz( x ):
+            # übernehmen in Tabelle und aktivieren des Save-Buttons
+            self._model.update( x )
+            self._view.setSaveButtonEnabled()
+
+    def onDeleteNotiz( self, index: QModelIndex ):
+        x = self._getNotiz( index )
+        # aus Tabelle löschen und aktivieren des Save-Buttons
+        self._model.delete( x )
+        self._view.setSaveButtonEnabled()
 
     def onSaveNotizen( self ):
         self.save()
