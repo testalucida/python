@@ -63,8 +63,10 @@ class NotizenTableModel( IccTableModel ):
     def getHeaders( self ) -> List[str]:
         return self._headers
 
-    def _getValue( self, x:XNotiz, idx:int ) -> str:
-        key = list( x.__dict__.keys() )[idx]
+    def _getValue( self, x:XNotiz, col:int ) -> str:
+        keys = list( self._keyHeaderMapper.values() )
+        key = keys[col]
+        #key = list( x.__dict__.keys() )[idx]
         return x.__dict__[key]
 
     def duplicate( self, x: XNotiz ) -> XNotiz:

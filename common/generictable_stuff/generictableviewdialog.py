@@ -26,6 +26,7 @@ class CustomHeaderView( QHeaderView ):
         self.setMouseTracking( True )
 
     def mouseMoveEvent(self, evt:QMouseEvent):
+        # super().mouseMoveEvent( evt )
         self.chvMouseMove.emit( evt )
 
 #####################  CustomTableView  ####################
@@ -45,14 +46,14 @@ class CustomTableView( QTableView ):
         self.setContextMenuPolicy( Qt.CustomContextMenu )
         self.customContextMenuRequested.connect( self.onRightClick )
         self.setMouseTracking( True )
-        self.ctvCellEnter.connect( self._onCellEnter )
-        self.ctvCellLeave.connect( self._onCellLeave )
+        # self.ctvCellEnter.connect( self._onCellEnter )
+        # self.ctvCellLeave.connect( self._onCellLeave )
         self._vheaderView = CustomHeaderView( Qt.Orientation.Vertical )
         self.setVerticalHeader( self._vheaderView )
         self._vheaderView.chvMouseMove.connect( self.onMouseMoveOutside )
         self._hheaderView = CustomHeaderView( Qt.Orientation.Horizontal )
         self._hheaderView.chvMouseMove.connect( self.onMouseMoveOutside )
-        self.setHorizontalHeader( self._hheaderView )
+        #self.setHorizontalHeader( self._hheaderView )  # mit dem CustomHeaderView funktioniert das Sortieren nicht
         self._mouseOverCol = -1
         self._mouseOverRow = -1
 
@@ -78,11 +79,11 @@ class CustomTableView( QTableView ):
         self._mouseOverCol = col
         #print( "x = %d, y=%d, row = %d, col = %d" % ( p.x(), p.y(), row, col ) )
 
-    def _onCellEnter( self, evt:CellEvent ):
-        print( "onCellEnter: %d, %d" % (evt.row, evt.column ) )
+    # def _onCellEnter( self, evt:CellEvent ):
+    #     print( "onCellEnter: %d, %d" % (evt.row, evt.column ) )
 
-    def _onCellLeave( self, evt: CellEvent ):
-        print( "onCellLeave: %d, %d" % (evt.row, evt.column) )
+    # def _onCellLeave( self, evt: CellEvent ):
+    #     print( "onCellLeave: %d, %d" % (evt.row, evt.column) )
 
     def onMouseMoveOutside( self, event:QMouseEvent ):
         if self._mouseOverRow > -1 and self._mouseOverCol > -1:
@@ -343,8 +344,9 @@ def test():
         idx = m.index( evt.row, evt.column )
         txt = m.data( idx, Qt.DisplayRole )
         print( "onCellEnter. Text = %s" % ( txt ) )
-        z = ZoomView( txt, tv )
-        z.setGeometry( 1200, 100, 400, 100 )
+        z = ZoomView( txt )
+        #z.setModal( False )
+        #z.setGeometry( 1200, 100, 400, 100 )
         z.exec_()
 
     class TestModel( QAbstractTableModel ):

@@ -1,10 +1,11 @@
+import copy
 from typing import List, Dict
 
-from PySide2.QtCore import QModelIndex
+from PySide2.QtCore import QModelIndex, QSize
 from PySide2.QtWidgets import QApplication, QDialog, QWidget
 
 from business import BusinessLogic
-from datehelper import currentDateIso
+from datehelper import currentDateIso, getCurrentTimestampIso
 from interfaces import XNotiz
 from mdichildcontroller import MdiChildController
 from notizen.notizengui import NotizenView, NotizEditDialog
@@ -26,6 +27,7 @@ class NotizenController( MdiChildController ):
         v.getNotizenTableViewWidget().createItem.connect( self.onCreateNotiz )
         v.getNotizenTableViewWidget().editItem.connect( self.onEditNotiz )
         v.getNotizenTableViewWidget().deleteItem.connect( self.onDeleteNotiz )
+        v.getNotizenTableViewWidget().getTableView().ctvDoubleClicked.connect( self.onEditNotiz )
         v.saveNotiz.connect( self.onSaveNotizen )
         self._model.setSortable( True )
         self._view = v
@@ -41,10 +43,13 @@ class NotizenController( MdiChildController ):
 
     def onEditNotiz( self, index: QModelIndex ):
         self._notizInProcess = x = self._getNotiz( index )
+        notizCopy = copy.copy( x )
         if self._editAndValidateNotiz( x ):
-            # übernehmen in Tabelle und aktivieren des Save-Buttons
-            self._model.update( x )
-            self._view.setSaveButtonEnabled()
+            if self._isDifferent( notizCopy, x ):
+                # übernehmen in Tabelle und aktivieren des Save-Buttons
+                x.lwa = getCurrentTimestampIso()
+                self._model.update( x )
+                self._view.setSaveButtonEnabled()
 
     def onDeleteNotiz( self, index: QModelIndex ):
         x = self._getNotiz( index )
@@ -76,7 +81,7 @@ class NotizenController( MdiChildController ):
             mieterlist = BusinessLogic.inst().getAlleMieter()
             mieter = self._chooseBezugFromList( mieterlist )
             edidlg.getEditor().setBezug( mieter )
-        def validateOpos() -> bool:
+        def validateNotiz() -> bool:
             xcopy:XNotiz = edidlg.getEditor().getNotizCopyWithChanges()
             msg = BusinessLogic.inst().validateNotiz( xcopy )
             if msg:
@@ -90,10 +95,11 @@ class NotizenController( MdiChildController ):
                 return True
 
         edidlg = NotizEditDialog( x )
-        edidlg.setValidationFunction( validateOpos )
+        edidlg.setValidationFunction( validateNotiz )
         edidlg.getEditor().bezugAuswahlFirmaPressed.connect( getAlleFirmen )
         edidlg.getEditor().bezugAuswahlVwPressed.connect( getAlleVerwalter )
         edidlg.getEditor().bezugAuswahlMieterPressed.connect( getAlleMieter )
+        edidlg.resize( 600, 400 )
         if edidlg.exec_() == QDialog.Accepted:
             return True
         else:
@@ -107,6 +113,15 @@ class NotizenController( MdiChildController ):
             sel = dlg.getSelection()
             return sel[0][0]
         return ""
+
+    def _isDifferent( self, n1:XNotiz, n2:XNotiz ) -> bool:
+        if n1.bezug != n2.bezug or \
+            n1.ueberschrift != n2.ueberschrift or \
+            n1.text != n2.ueberschrift or \
+            n1.erledigt != n2.erledigt:
+                return True
+        return False
+
 
     def getViewTitle( self ) -> str:
         return "Notizen"
