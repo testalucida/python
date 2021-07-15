@@ -2,11 +2,11 @@ import sqlite3
 from typing import List, Tuple, Dict
 
 from ConnectionProvider import ConnectionProvider
-from anlage_v.anlagev_interfaces import XObjektStammdaten
+from anlage_v.anlagev_interfaces import XObjektStammdaten, XSammelAbgabeDetail
 from constants import einausart
 from datehelper import getNumberOfDays, getCurrentTimestampIso
 from interfaces import XSonstAus, XZahlung, XSollHausgeld, XSollMiete, XNkAbrechnung, XHgAbrechnung, XMietverhaeltnis, \
-    XOffenerPosten, XNotiz
+    XOffenerPosten, XNotiz, XZahlung2
 
 mon_dbnames = ("jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dez" )
 
@@ -21,6 +21,9 @@ class DbAccess:
         self._con = None
         self._cursor = None
         self._dbname = dbname
+
+    def getDbName( self ) -> str :
+        return self._dbname
 
     def open( self ) -> None:
         self._con = sqlite3.connect( self._dbname )
@@ -454,9 +457,28 @@ class DbAccess:
             x.zahl_art = d["zahl_art"]
         return x
 
+    def getZahlungen( self, jahr:int, master_name:str=None ) -> List[XZahlung2]:
+        sql = "select master.master_name, mobj.mobj_id, z.z_id, z.meinaus_id, z.saus_id, z.nka_id, z.hga_id, z.betrag, " \
+              "z.zahl_art, z.jahr, coalesce( mobj.qm, 0 ) as qm, coalesce( master.gesamt_wfl, 0 ) as gesamt_wfl, coalesce( master.afa, 0 ) as afa " \
+              "from zahlung z  inner join mietobjekt mobj on mobj.mobj_id = z.mobj_id " \
+              "inner join masterobjekt master on master.master_id = mobj.master_id " \
+              "where jahr = %d " % ( jahr )
+        if master_name:
+            sql += ( "and master.master_name = '%s' order by master.master_name, mobj.mobj_id, z.zahl_art " % (master_name) )
+        else:
+            sql += "and master.master_name not like '%*%' "
+            sql += "order by master.master_name, z.zahl_art "
+        dictlist = self._doReadAllGetDict( sql )
+        zlist = []
+        for d in dictlist:
+            x = XSonstAus( d )
+            zlist.append( x )
+
+        return zlist
+
     def getJahre( self, eaart:einausart ) -> List[int]:
         id = "mv_id" if eaart == einausart.MIETE else "vwg_art"
-        sql = "select distinct jahr from mtleinaus where %s > 0 " % ( id )
+        sql = "select distinct jahr from mtleinaus where %s > 0 order by jahr desc " % ( id )
         rowlist = self._doRead( sql )
         list = [x[0] for x in rowlist]
         return list
@@ -651,6 +673,19 @@ class DbAccess:
             x = XNotiz( d )
             xlist.append( x )
         return xlist
+
+    def getDetailFromSammelabgabe( self, master_name:str, jahr:int ) -> XSammelAbgabeDetail or None:
+        sql = "select master.master_name, " \
+              "sd.master_id, sd.grundsteuer, sd.abwasser, sd.strassenreinigung " \
+              "from sammelabgabe_detail sd " \
+              "inner join masterobjekt master on master.master_id = sd.master_id " \
+              "where master.master_name = '%s' " \
+              "and jahr = %d " % (master_name, jahr)
+        d = self._doReadOneGetDict( sql )
+        if d:
+            x = XSammelAbgabeDetail( d )
+            return x
+        return None
 
     def insertMietobjekt( self, d:Dict, commit:bool=True ) -> int :
         sql = "insert into mietobjekt " \
@@ -1038,7 +1073,9 @@ class DbAccess:
 def test():
     db = DbAccess( "immo.db" )
     db.open()
-    stringlist = db.getVerwalter()
+    #stringlist = db.getVerwalter()
+    zlist = db.getZahlungen( 2021 )
+
     print( "" )
     # xlist = db.getOffenePosten()
     # print( xlist )

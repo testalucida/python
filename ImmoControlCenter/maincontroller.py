@@ -92,7 +92,8 @@ class MainController:
             MainWindowAction.RESIZE_MAIN_WINDOW: self.resizeAllViews,
             MainWindowAction.EXPORT_CSV: self.exportToCsv,
             MainWindowAction.OPEN_OFFENE_POSTEN_VIEW: self.showOffenePostenView,
-            MainWindowAction.NOTIZEN: self.showNotizenView
+            MainWindowAction.NOTIZEN: self.showNotizenView,
+            MainWindowAction.RENDITE_VIEW: self.showRenditeView
         }
         fnc = switcher.get( action )
         try:
@@ -127,6 +128,9 @@ class MainController:
 
     def showNotizenView( self ):
         self.createNotizenViewAndShow()
+
+    def showRenditeView( self ):
+        self.createRenditeViewAndShow()
 
     def test( self ):
         print( "test")
@@ -231,6 +235,10 @@ class MainController:
         self._installView( subwin, self._notizenCtrl )
         subwin.setGeometry( 50, 10, 800, 600 )
         subwin.show()
+
+    def createRenditeViewAndShow( self ):
+        print( "MainController.createRenditeViewAndShow()" )
+
 
     def showSollMietenView( self ):
         # TODO: prüfen, ob shon ein SollzahlungenView vorhanden ist. Nur wenn nein, einen anlegen.

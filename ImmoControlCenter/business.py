@@ -1,3 +1,4 @@
+import itertools
 import os
 import sys
 from enum import  IntEnum
@@ -5,12 +6,14 @@ from enum import  IntEnum
 from PySide2.QtCore import QAbstractItemModel, Qt
 
 from abrechnungentablemodel import NkAbrechnungenTableModel, HgAbrechnungenTableModel
+from anlage_v.anlagev_dataacess import AnlageV_DataAccess
+from anlage_v.anlagev_interfaces import XSammelAbgabeDetail
 from buchungstextmatchmodel import BuchungstextMatchModel
 from dbaccess import DbAccess
 from typing import List, Dict, Tuple
 from constants import einausart, Zahlart, zahlartstrings
 from interfaces import XSonstAus, XSonstAusSummen, XZahlung, XSollHausgeld, XSollMiete, XBuchungstextMatch, \
-    XNkAbrechnung, XAbrechnung, XHgAbrechnung, XMietverhaeltnis, XOffenerPosten, XNotiz
+    XNkAbrechnung, XAbrechnung, XHgAbrechnung, XMietverhaeltnis, XOffenerPosten, XNotiz, XZahlung2, XRendite
 #from monthlist import monthList, monatsletzter
 #from datehelper import monthList, monatsletzter, getLastMonth
 from datehelper import *
@@ -27,6 +30,7 @@ from datetime import datetime
 # zahlartstrings = ("bruttomiete", "nka", "hgv", "hga", "sonstaus")
 from notizen.notizentablemodel import NotizenTableModel
 from offene_posten.offenepostentablemodel import OffenePostenTableModel
+from rendite.renditetablemodel import RenditeTableModel
 
 id_names = ( "meinaus_id", "nka_id", "meinaus_id", "hga_id", "saus_id" )
 #---------------------------------------------------------------------
@@ -805,10 +809,40 @@ class BusinessLogic:
         model = NotizenTableModel( notizenlist )
         return model
 
+    def getRenditeTableModel( self, jahr:int ) -> RenditeTableModel:
+        renditeList:List[XRendite] = list()
+        def getXRenditeFromZahlungslist( master_name:str, zlist:List[XZahlung2] ) -> XRendite:
+            x = XRendite()
+            x.master_name = master_name
+            x.wert = 0 # todo
+            xsammeldetail:XSammelAbgabeDetail = self._db.getDetailFromSammelabgabe( master_name, jahr )
+            if xsammeldetail:
+                x.ausgaben = xsammeldetail.grundsteuer + xsammeldetail.abwasser + xsammeldetail.strassenreinigung
+            if len( zlist ) > 0:
+                x.jahr = zlist[0].jahr
+                x.afa = zlist[0].afa
+                x.qm = zlist[0].gesamt_wfl
+            for z in zlist:
+                if z.betrag > 0:
+                    x.einnahmen += z.betrag
+                else:
+                    x.ausgaben += z.betrag
+            x.ueberschuss_o_afa = x.einnahmen + x.ausgaben # "+", weil der ausgaben-Wert negativ ist
+            x.ueberschuss_m_afa = x.ueberschuss_o_afa + x.afa # "+", weil afa negativ ist
+            return x
+        zahlungenList:List[XZahlung2] = self._db.getZahlungen( jahr )
+        key_fnc = lambda x: x.master_name
+        for key, group in itertools.groupby( zahlungenList, key_fnc ):
+            xrendite = getXRenditeFromZahlungslist( key, list( group ) )
+            renditeList.append( xrendite )
+        tm = RenditeTableModel( renditeList )
+        return tm
+
 def test():
     busi = BusinessLogic.inst()
 
-    model = busi.getNkAbrechnungenTableModel( 2019 )
+    #model = busi.getNkAbrechnungenTableModel( 2019 )
+    model = busi.getRenditeTableModel( 2021 )
     print( model )
 
     # model = busi.getBuchungstextMatches( "2019" )

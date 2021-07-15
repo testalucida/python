@@ -57,6 +57,26 @@ class XZahlung:
     betrag:float = 0.0
     zahl_art:str = ""  # {'brutto_miete', 'nka', 'hgv', 'hga', 'rechng'}
 
+class XZahlung2:
+    def __init__( self, valuedict:Dict=None ):
+        self.z_id: int = 0
+        self.master_name: str = ""
+        self.mobj_id: str = ""  # ID des Mietobjekts (Tabelle mietobjekt)
+        # GENAU einer der nachfolgenden 4 IDs muss versorgt sein
+        self.meinaus_id: int = 0  # ID der monatlichen Einzahlung (Tabelle mtleinaus)
+        self.saus_id: int = 0  # ID der sonstigen Auszahlung (Tabelle sonstaus)
+        self.nka_id: int = 0  # ID der Nebenkostenabrechnung (Tabelle nkabrechng)
+        self.hga_id: int = 0  # ID der Hausgeld-Abrechnung (Tabelle hgabrechng)
+        self.jahr: int = 0  # Veranlagungsjahr
+        self.betrag: float = 0.0
+        self.zahl_art: str = ""  # {'brutto_miete', 'nka', 'hgv', 'hga', 'rechng'}
+        self.qm:int = 0
+        self.gesamt_wfl:int = 0
+        self.afa:int = 0
+        if valuedict:
+            setFromDict( self, valuedict )
+
+
 #################### SonstAus  ###################################
 
 class XSonstAus:
@@ -242,6 +262,18 @@ class XNotiz:
         self.lwa = ""
         if valuedict:
             setFromDict( self, valuedict )
+
+class XRendite:
+    def __init__( self ):
+        self.master_name = ""
+        self.wert = 0
+        self.qm = 0
+        self.jahr = 0
+        self.einnahmen = 0
+        self.ausgaben = 0
+        self.ueberschuss_o_afa = 0
+        self.afa = 0
+        self.ueberschuss_m_afa = 0
 
 class XKontoEintrag:
     mobj_id = ""         # Name des Objekts, z.B. ww224, ist Name des Kontos (der Tabelle)

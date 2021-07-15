@@ -29,7 +29,8 @@ class MainWindowAction( Enum ):
     EXPORT_CSV = 14,
     OPEN_ANLAGEV_VIEW = 15,
     OPEN_OFFENE_POSTEN_VIEW = 16,
-    NOTIZEN = 17
+    NOTIZEN = 17,
+    RENDITE_VIEW = 18
     EXIT=99
 
 class DummySignal(QObject):
@@ -255,6 +256,9 @@ class ImmoCenterMainWindow( QMainWindow ):
         action = QAction( self, text="Notizen..." )
         action.triggered.connect( self.onNotizen )
         menu.addAction( action )
+        action = QAction( self, text="Renditevergleich..." )
+        action.triggered.connect( self.onRenditeVergleich )
+        menu.addAction( action )
 
 
     def _createSqlMenu( self ):
@@ -440,6 +444,9 @@ class ImmoCenterMainWindow( QMainWindow ):
 
     def onNotizen( self ):
         self.doCallback( MainWindowAction.NOTIZEN )
+
+    def onRenditeVergleich( self ):
+        self.doCallback( MainWindowAction.RENDITE_VIEW )
 
     def onViewRechnungen( self ):
         pass

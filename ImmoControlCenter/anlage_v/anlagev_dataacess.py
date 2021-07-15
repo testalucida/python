@@ -387,18 +387,18 @@ class AnlageV_DataAccess( DbAccess ):
         li = [ x[0] for x in tuplelist ]
         return li
 
-    def getDetailFromSammelabgabe( self, master_name:str, jahr:int ) -> XSammelAbgabeDetail or None:
-        sql = "select master.master_name, " \
-              "sd.master_id, sd.grundsteuer, sd.abwasser, sd.strassenreinigung " \
-              "from sammelabgabe_detail sd " \
-              "inner join masterobjekt master on master.master_id = sd.master_id " \
-              "where master.master_name = '%s' " \
-              "and jahr = %d " % (master_name, jahr)
-        d = self._doReadOneGetDict( sql )
-        if d:
-            x = XSammelAbgabeDetail( d )
-            return x
-        return None
+    # def getDetailFromSammelabgabe( self, master_name:str, jahr:int ) -> XSammelAbgabeDetail or None:
+    #     sql = "select master.master_name, " \
+    #           "sd.master_id, sd.grundsteuer, sd.abwasser, sd.strassenreinigung " \
+    #           "from sammelabgabe_detail sd " \
+    #           "inner join masterobjekt master on master.master_id = sd.master_id " \
+    #           "where master.master_name = '%s' " \
+    #           "and jahr = %d " % (master_name, jahr)
+    #     d = self._doReadOneGetDict( sql )
+    #     if d:
+    #         x = XSammelAbgabeDetail( d )
+    #         return x
+    #     return None
 
 def test():
     av = AnlageV_DataAccess( "../immo.db")
