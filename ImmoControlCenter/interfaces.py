@@ -272,6 +272,7 @@ class XRendite:
         self.einnahmen = 0
         self.ausgaben = 0
         self.ueberschuss_o_afa = 0
+        self.ertrag_pro_qm = 0.0
         self.afa = 0
         self.ueberschuss_m_afa = 0
 

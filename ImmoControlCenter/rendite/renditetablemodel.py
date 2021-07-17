@@ -22,6 +22,7 @@ class RenditeTableModel( IccTableModel ):
             "Einnahmen": "einnahmen",
             "Ausgaben": "ausgaben",
             "Überschuss o.Afa": "ueberschuss_o_afa",
+            "Ertrag je qm" : "ertrag_pro_qm",
             "AfA": "afa",
             "Überschuss m.Afa": "ueberschuss_m_afa"
         }
@@ -31,7 +32,7 @@ class RenditeTableModel( IccTableModel ):
         self._redBrush = QBrush( Qt.red )
         self._yellowBrush = QBrush( Qt.yellow )
         self._boldFont = QFont( "Arial", 11, QFont.Bold )
-        self._betragColumns = (1, 2, 3, 4, 5, 6, 7)
+        self._betragColumns = (1, 2, 3, 4, 5, 6, 7, 8)
         # self._sortable = False
 
     def isChanged( self ) -> bool:

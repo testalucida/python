@@ -828,6 +828,8 @@ class BusinessLogic:
                 else:
                     x.ausgaben += z.betrag
             x.ueberschuss_o_afa = x.einnahmen + x.ausgaben # "+", weil der ausgaben-Wert negativ ist
+            if x.qm > 0:
+                x.ertrag_pro_qm = round( float( x.ueberschuss_o_afa / x.qm ), 2 )
             x.ueberschuss_m_afa = x.ueberschuss_o_afa + x.afa # "+", weil afa negativ ist
             return x
         zahlungenList:List[XZahlung2] = self._db.getZahlungen( jahr )

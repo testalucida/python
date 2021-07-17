@@ -12,6 +12,7 @@ from immocentermainwindow import ImmoCenterMainWindow, MainWindowAction
 from checkcontroller import MdiChildController, MietenController, HGVController
 from notizen.notizencontroller import NotizenController
 from offene_posten.offenepostencontroller import OffenePostenController
+from rendite.renditecontroller import RenditeController
 from sollzahlungencontroller import SollzahlungenController, SollType, SollmietenController, SollHgvController
 from sonstauscontroller import SonstAusController
 from sumfieldsprovider import SumFieldsProvider
@@ -47,6 +48,7 @@ class MainController:
         self._anlageVCtrl:AnlageVController = None
         self._oposCtrl:OffenePostenController = OffenePostenController()
         self._notizenCtrl:NotizenController = NotizenController()
+        self._renditeCtrl:RenditeController = RenditeController()
 
         self._nChanges = 0  # zählt die Änderungen, damit nach Speichern-Vorgängen das Sternchen nicht zu früh entfernt wird.
 
@@ -237,7 +239,10 @@ class MainController:
         subwin.show()
 
     def createRenditeViewAndShow( self ):
-        print( "MainController.createRenditeViewAndShow()" )
+        subwin = self._renditeCtrl.createSubwindow()
+        self._installView( subwin, self._renditeCtrl )
+        subwin.setGeometry( 50, 10, 800, 900 )
+        subwin.show()
 
 
     def showSollMietenView( self ):

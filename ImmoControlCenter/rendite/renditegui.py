@@ -72,6 +72,9 @@ class RenditeView( QWidget ):
     def setTableModel( self, model:RenditeTableModel ):
         self._tv.setModel( model )
 
+    def getModel( self ) -> RenditeTableModel:
+        return self._tv.model()
+
 ##########################################################################
 def onChangeBetrachtungsjahr( jahr:int ):
     print( "neues Betrachtungsjahr: ", str( jahr ) )
