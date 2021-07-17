@@ -1,11 +1,12 @@
 import os
+from numbers import Number
 from typing import List
 
 from PySide2 import QtWidgets
 from PySide2.QtCore import QAbstractTableModel, Qt, Signal, QModelIndex, QPoint
-from PySide2.QtGui import QMouseEvent
+from PySide2.QtGui import QMouseEvent, QGuiApplication
 from PySide2.QtWidgets import QDialog, QPushButton, QTableView, QGridLayout, QApplication, QHBoxLayout, \
-    QAbstractItemView, QVBoxLayout, QLabel, QWidget, QAbstractScrollArea, QHeaderView, QTextEdit
+    QAbstractItemView, QVBoxLayout, QLabel, QWidget, QAbstractScrollArea, QHeaderView, QTextEdit, QAction, QMenu
 
 from imagefactory import ImageFactory
 
@@ -122,6 +123,55 @@ class CustomTableView( QTableView ):
         rowlist = self.getSelectedRows()
         return rowlist[0] if len( rowlist ) > 0 else -1
 
+#####################  TableViewContextMenuHandler  #########
+class TableViewContextMenuHandler:
+    def __init__( self, tv: CustomTableView ):
+        tv.setMouseTracking( True )
+        tv.setContextMenuPolicy( Qt.CustomContextMenu )
+        tv.customContextMenuRequested.connect( self.onRightClick )
+        #tv.setCopyCallback( self._onCopy )  # wenn der User Ctrl+c drückt
+        self._tv = tv
+        self._actionList:List[List] = list() #Liste, die eine Liste mit Paaren action / callback enthält.
+        self._actionList.append( ( QAction( "Kopiere" ), self._onCopy) ) # für Kontextmenü
+
+    def addAction( self, action:QAction, callback ):
+        self._actionList.append( ( action, callback ) )
+
+    def onRightClick( self, point: QPoint ):
+        index = self._tv.indexAt( point )
+        row = index.row()
+        if row < 0 or index.column() < 0: return  # nicht auf eine  Zeile geklickt
+        selectedIndexes = self._tv.selectedIndexes()
+        if selectedIndexes is None or len( selectedIndexes ) < 1: return
+        menu = QMenu( self._tv )
+        for pair in self._actionList:
+            menu.addAction( pair[0] )
+        action = menu.exec_( self._tv.viewport().mapToGlobal( point ) )
+        if action:
+            sel = [pair[1] for pair in self._actionList if pair[0] == action]
+            sel[0]( action, point )
+
+    def _onCopy( self, action:QAction, point:QPoint ):
+        values:str = ""
+        indexes = self._tv.selectedIndexes()
+        row = -1
+        for idx in indexes:
+            if row == -1: row = idx.row()
+            if row != idx.row():
+                values += "\n"
+                row = idx.row()
+            elif len( values ) > 0:
+                values += "\t"
+            val = self._tv.model().data( idx, Qt.DisplayRole )
+            val = "" if not val else val
+            if isinstance( val, Number ):
+                values += str( val )
+            else:
+                values += val
+            #print( idx.row(), "/", idx.column(), ": ", val )
+        #print( "valuestring: ",  values )
+        clipboard = QGuiApplication.clipboard()
+        clipboard.setText( values )
 
 ###################  EditableTableViewWidget  #########################
 class EditableTableViewWidget( QWidget ):

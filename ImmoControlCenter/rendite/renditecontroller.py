@@ -1,5 +1,5 @@
-
-from PySide2.QtWidgets import QApplication, QDialog, QWidget
+from PySide2.QtCore import QPoint
+from PySide2.QtWidgets import QApplication, QDialog, QWidget, QAction
 
 from business import BusinessLogic
 from constants import einausart
@@ -13,6 +13,7 @@ class RenditeController( MdiChildController ):
         MdiChildController.__init__( self )
         self._view:RenditeView() = None
         self._model:RenditeTableModel = None
+        self._jahr = 0
 
     def createView( self ) -> QWidget:
         busi:BusinessLogic = BusinessLogic.inst()
@@ -25,6 +26,7 @@ class RenditeController( MdiChildController ):
                 jahr = jahre[0]
         self._model = busi.getRenditeTableModel( jahr )
         v = RenditeView( self._model )
+        v.getRenditeTableView().detaillierteAusgabenSignal.connect( self._onDetaillierteAusgaben )
         v.setBetrachtungsjahre( jahre )
         v.setBetrachtungsjahr( jahr )
         v.betrachtungsjahrChanged.connect( self._onBetrachtungsjahrChanged )
@@ -32,10 +34,14 @@ class RenditeController( MdiChildController ):
         self._view = v
         return v
 
+    def _onDetaillierteAusgaben( self, action:QAction, point:QPoint, row:int  ):
+        ausgaben = BusinessLogic.inst().getDetaillierteAusgaben( self._model, row, self._jahr )
+
     def _onBetrachtungsjahrChanged( self, jahr:int ):
         self._model = BusinessLogic.inst().getRenditeTableModel( jahr )
         self._view.setTableModel( jahr )
         self._model.setSortable( True )
+        self._jahr = jahr
 
     def getViewTitle( self ) -> str:
         return "Renditebetrachtung"

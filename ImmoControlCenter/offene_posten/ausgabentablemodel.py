@@ -8,23 +8,20 @@ from PySide2.QtGui import QBrush, QFont
 
 import constants
 from icctablemodel import IccTableModel
-from interfaces import XRendite
+from interfaces import XAusgabe
 
 
-class RenditeTableModel( IccTableModel ):
-    def __init__( self, renditeList:List[XRendite] ):
+class AusgabenTableModel( IccTableModel ):
+    def __init__( self, ausgabeList:List[XAusgabe] ):
         IccTableModel.__init__( self )
-        self._renditeList:List[XRendite] = renditeList
+        self._ausgabeList:List[XAusgabe] = ausgabeList
         self._keyHeaderMapper = {
-            "Objekt": "master_name",
-            "Wert": "wert",
-            "qm": "qm",
-            "Einnahmen": "einnahmen",
-            "Ausgaben": "ausgaben",
-            "Überschuss o.Afa": "ueberschuss_o_afa",
-            "Ertrag je qm" : "ertrag_pro_qm",
-            "AfA": "afa",
-            "Überschuss m.Afa": "ueberschuss_m_afa"
+            "Objekt": "mobj_id",
+            "Kreditor": "kreditor",
+            "Betrag": "betrag",
+            "Buchungsdatum": "buchungsdatum",
+            "Kostenart": "kostenart",
+            "Buchungstext": "buchungstext",
         }
         self._headers = list( self._keyHeaderMapper.keys() )
         self._greyBrush = QBrush( Qt.gray )
@@ -32,7 +29,7 @@ class RenditeTableModel( IccTableModel ):
         self._yellowBrush = QBrush( Qt.yellow )
         self._boldFont = QFont( "Arial", 11, QFont.Bold )
         self._objectColumnId = 0
-        self._betragColumns = (1, 2, 3, 4, 5, 6, 7, 8)
+        self._betragColumns = ( 2, )
         # self._sortable = False
 
     def isChanged( self ) -> bool:
@@ -42,10 +39,10 @@ class RenditeTableModel( IccTableModel ):
     #     self._sortable = sortable
 
     def rowCount( self, parent:QModelIndex=None ) -> int:
-        return len( self._renditeList )
+        return len( self._ausgabeList )
 
-    def getXRendite( self, row:int ) -> XRendite:
-        return self._renditeList[row]
+    def getXAusgabe( self, row:int ) -> XAusgabe:
+        return self._ausgabeList[row]
 
     def columnCount( self, parent: QModelIndex = None ) -> int:
         return len( self.getHeaders() )
@@ -60,7 +57,7 @@ class RenditeTableModel( IccTableModel ):
        return self.getValue( row, self._objectColumnId )
 
     def getValue( self, indexrow: int, indexcolumn: int ) -> Any:
-        x = self._renditeList[indexrow]
+        x = self._ausgabeList[indexrow]
         header = self._headers[indexcolumn]
         key = self._keyHeaderMapper.get( header )
         val = x.__dict__[key]
@@ -112,20 +109,20 @@ class RenditeTableModel( IccTableModel ):
             #     pass
         return None
 
-    def getRow( self, x: XRendite ) -> int:
-        for r in range( len( self._renditeList ) ):
-            e: XRendite = self._renditeList[r]
+    def getRow( self, x: XAusgabe ) -> int:
+        for r in range( len( self._ausgabeList ) ):
+            e: XAusgabe = self._ausgabeList[r]
             if e == x:
                 return r
-        raise Exception( "RenditeTableModel.getRow(): can't find object '%s'" % ( x. master_name ) )
+        raise Exception( "AusgabeTableModel.getRow(): can't find object '%s'" % ( x. master_name ) )
 
     def getListToSort( self ) -> List:
-        return self._renditeList
+        return self._ausgabeList
 
     def receiveSortedList( self, li:List ) -> None:
-        self._renditeList = li
+        self._ausgabeList = li
 
-    def compare( self, x1:XRendite, x2:XRendite ) -> int:
+    def compare( self, x1:Any, x2:Any ) -> int:
         key = self.getKeyList()[self.sort_col]
         v1 = x1.__dict__[key]
         v2 = x2.__dict__[key]

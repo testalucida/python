@@ -75,6 +75,16 @@ class DbAccess:
               "order by mobj_id "
         return self._doReadAllGetDict( sql )
 
+    def getMietobjekteZuMasterId( self, master_id:int ) -> List[str]:
+        """
+        Liefert alle Mietobjekte (mobj_id) zu einem Master-Objekt (master_id)
+        """
+        sql = "select mobj_id " \
+              "from mietobjekt " \
+              "where master_id = %d " \
+              "order by mobj_id " % ( master_id )
+        return self._doReadAllGetDict( sql )
+
     def getMasterUndMietobjekte( self ) -> List[Dict]:
         """
         Liefert Informationen aus einem Join von masterobjekt und mietobjekt
@@ -390,7 +400,7 @@ class DbAccess:
             sollList.append( x )
         return sollList
 
-    def getSonstigeAusgaben( self, jahr:int ) -> List[XSonstAus]:
+    def getSonstigeAusgaben( self, jahr:int, master_id:int=None ) -> List[XSonstAus]:
         """
         Liest alle Einträge der Tabelle sonstaus für buchungsjahr <jahr>
         :param jahr: gewünschtes Buchungsjahr
@@ -401,6 +411,8 @@ class DbAccess:
               "from sonstaus s " \
               "inner join masterobjekt m on m.master_id = s.master_id " \
               "where buchungsjahr = %d " % (jahr)
+        if master_id:
+            sql += "and s.master_id = %d " % ( master_id )
         dictlist = self._doReadAllGetDict( sql )
         sonstalist = []
         for d in dictlist:
@@ -498,7 +510,7 @@ class DbAccess:
               "where m.master_name = '%s' " % ( master_name )
         rowlist = self._doRead( sql )
         li = [x[0] for x in rowlist]
-        li = sorted( list, key=str.casefold )
+        li = sorted( li, key=str.casefold )
         return li
 
     def getAlleKreditoren( self ) -> List[str]:

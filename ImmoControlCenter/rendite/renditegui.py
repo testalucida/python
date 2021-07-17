@@ -3,18 +3,26 @@ from PySide2.QtCore import QSize, Qt, QDate, QPoint, Signal
 from PySide2.QtGui import QIcon, QDoubleValidator, QFont, QIntValidator
 from PySide2.QtWidgets import QWidget, QComboBox, QLineEdit, QCheckBox, QPushButton, QCalendarWidget, \
     QVBoxLayout, QDialog, QBoxLayout, QHBoxLayout, QTextEdit, QSpinBox, QLabel, QTableView, QMessageBox, \
-    QAbstractItemView
+    QAbstractItemView, QMenu, QAction
 from typing import List
 
-from generictable_stuff.generictableviewdialog import CustomTableView
-
-############  RenditeTableView  #####################
+from generictable_stuff.generictableviewdialog import CustomTableView, TableViewContextMenuHandler
 from rendite.renditetablemodel import RenditeTableModel
 
-
+############  RenditeTableView  #####################
 class RenditeTableView( CustomTableView ):
+    detaillierteAusgabenSignal = Signal( QAction, QPoint, int )
+
     def __init__( self, parent=None ):
         CustomTableView.__init__( self, parent )
+        self.cmhandler = TableViewContextMenuHandler( self )
+        action = QAction("Ausgaben im Detail anzeigen...")
+        self.cmhandler.addAction( action, self.onAusgabenImDetail )
+
+    def onAusgabenImDetail( self, action:QAction, point:QPoint ):
+        row = self.getFirstSelectedRow()
+        self.detaillierteAusgabenSignal.emit(  action, point, row )
+
 
 ################  RenditeView  ######################
 class RenditeView( QWidget ):
@@ -25,7 +33,7 @@ class RenditeView( QWidget ):
         self._mainLayout = QtWidgets.QGridLayout()
         self._toolbarLayout = QHBoxLayout()
         self._cboBetrachtungsjahr = QtWidgets.QComboBox()
-        self._tv = CustomTableView()
+        self._tv = RenditeTableView()
         self._btnClose = QPushButton( "Schließen" )
         self._btnClose.clicked.connect( self.close )
         self._createGui()
@@ -49,7 +57,6 @@ class RenditeView( QWidget ):
         self._toolbarLayout.addWidget( self._cboBetrachtungsjahr, stretch=0, alignment=Qt.AlignLeft )
 
     def _onBetrachtungsjahrChanged( self, arg:int ):
-        print( arg )
         self.betrachtungsjahrChanged.emit( int( self._cboBetrachtungsjahr.currentText() ) )
 
     def setBetrachtungsjahre( self, jahre:List[int] ):
@@ -74,6 +81,9 @@ class RenditeView( QWidget ):
 
     def getModel( self ) -> RenditeTableModel:
         return self._tv.model()
+
+    def getRenditeTableView( self ) -> RenditeTableView:
+        return self._tv
 
 ##########################################################################
 def onChangeBetrachtungsjahr( jahr:int ):

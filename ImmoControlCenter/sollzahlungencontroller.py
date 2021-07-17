@@ -88,7 +88,7 @@ class SollzahlungenController( MdiChildController, ABC ):
     def onEditIntervalAction( self ):
         pass
 
-    def onNewIntervalAction( self ):
+    def onNewIntervalAction( self, action:QAction, point:QPoint ):
         # callback für Kontext-Menü "Dieses Soll-Intervall beenden..."
         tv = self._view.getTableView()
         idx = tv.selectedIndexes()[0]

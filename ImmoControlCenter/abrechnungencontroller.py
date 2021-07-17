@@ -59,7 +59,7 @@ class AbrechnungenController( MdiChildController ):
     def _getExistingAbrechnungsjahre( self ) -> List[int]:
         pass
 
-    def _onComputeSum( self ):
+    def _onComputeSum( self, action:QAction, point:QPoint ):
         tv = self._view.getAbrechnungenTableView()
         model: AbrechnungenTableModel = tv.model()
         indexes = tv.selectedIndexes()
@@ -74,7 +74,7 @@ class AbrechnungenController( MdiChildController ):
         sumval = sum( valuelist )
         self._tableCellActionHandler.showSumDialog( sumval )
 
-    def _onDeleteAbrechnung( self ):
+    def _onDeleteAbrechnung( self, action:QAction, point:QPoint ):
         tv = self._view.getAbrechnungenTableView()
         model: AbrechnungenTableModel = tv.model()
         indexes = tv.selectedIndexes()

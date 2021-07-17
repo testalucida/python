@@ -38,9 +38,9 @@ class TableCellActionHandler:
         action = menu.exec_( self._tv.viewport().mapToGlobal( point ) )
         if action:
             sel = [pair[1] for pair in self._actionList if pair[0] == action]
-            sel[0]()
+            sel[0]( action, point )
 
-    def _onComputeSum( self ):
+    def _onComputeSum( self, action:QAction, point:QPoint ):
         valuelist = list()
         model = self._tv.model()
         if not model: return
@@ -59,7 +59,7 @@ class TableCellActionHandler:
         dlg.setSum( sumval )
         dlg.show()
 
-    def _onCopy( self ):
+    def _onCopy( self, action:QAction, point:QPoint ):
         values:str = ""
         indexes = self._tv.selectedIndexes()
         row = -1

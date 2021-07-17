@@ -195,7 +195,7 @@ class SonstAusController( MdiChildController ):
     #         self._setChangedFlag( True )
     #         self._view.clearEditFields()
 
-    def _onComputeSum( self ):
+    def _onComputeSum( self, action:QAction, point:QPoint ):
         tv = self._view.getAuszahlungenTableView()
         model: SonstAusTableModel = tv.model()
         indexes = tv.selectedIndexes()
@@ -210,7 +210,7 @@ class SonstAusController( MdiChildController ):
         sumval = sum( valuelist )
         self._tableCellActionHandler.showSumDialog( sumval )
 
-    def _onShowSausId( self ):
+    def _onShowSausId( self, action:QAction, point:QPoint ):
         tv = self._view.getAuszahlungenTableView()
         model: SonstAusTableModel = tv.model()
         indexes = tv.selectedIndexes()
@@ -235,7 +235,7 @@ class SonstAusController( MdiChildController ):
                 rows.append( idx.row() )
         return rows
 
-    def _onDeleteAuszahlung( self ):
+    def _onDeleteAuszahlung( self, action:QAction, point:QPoint ):
         tv = self._view.getAuszahlungenTableView()
         model: SonstAusTableModel = tv.model()
         idx = tv.selectedIndexes()[0]
@@ -244,7 +244,7 @@ class SonstAusController( MdiChildController ):
         delta = int( round( x.betrag * (-1) ) )
         self._updateViewAfterDuplicateAndDelete( delta, x.werterhaltend, x.umlegbar )
 
-    def _onDuplicateAuszahlung( self ):
+    def _onDuplicateAuszahlung( self, action:QAction, point:QPoint ):
         tv = self._view.getAuszahlungenTableView()
         model: SonstAusTableModel = tv.model()
         idx = tv.selectedIndexes()[0]

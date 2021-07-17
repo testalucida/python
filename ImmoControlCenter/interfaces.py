@@ -276,6 +276,16 @@ class XRendite:
         self.afa = 0
         self.ueberschuss_m_afa = 0
 
+class XAusgabe:
+    def __init__(self):
+        self.master_name = ""
+        self.mobj_id = ""
+        self.kreditor = ""
+        self.betrag = 0.0
+        self.buchungsdatum = ""
+        self.kostenart = ""
+        self.buchungstext = ""
+
 class XKontoEintrag:
     mobj_id = ""         # Name des Objekts, z.B. ww224, ist Name des Kontos (der Tabelle)
     name = ""            # Name des Mieters oder des Verwalters

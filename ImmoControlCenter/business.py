@@ -13,7 +13,7 @@ from dbaccess import DbAccess
 from typing import List, Dict, Tuple
 from constants import einausart, Zahlart, zahlartstrings
 from interfaces import XSonstAus, XSonstAusSummen, XZahlung, XSollHausgeld, XSollMiete, XBuchungstextMatch, \
-    XNkAbrechnung, XAbrechnung, XHgAbrechnung, XMietverhaeltnis, XOffenerPosten, XNotiz, XZahlung2, XRendite
+    XNkAbrechnung, XAbrechnung, XHgAbrechnung, XMietverhaeltnis, XOffenerPosten, XNotiz, XZahlung2, XRendite, XAusgabe
 #from monthlist import monthList, monatsletzter
 #from datehelper import monthList, monatsletzter, getLastMonth
 from datehelper import *
@@ -29,6 +29,7 @@ from datetime import datetime
 #
 # zahlartstrings = ("bruttomiete", "nka", "hgv", "hga", "sonstaus")
 from notizen.notizentablemodel import NotizenTableModel
+from offene_posten.ausgabentablemodel import AusgabenTableModel
 from offene_posten.offenepostentablemodel import OffenePostenTableModel
 from rendite.renditetablemodel import RenditeTableModel
 
@@ -815,9 +816,10 @@ class BusinessLogic:
             x = XRendite()
             x.master_name = master_name
             x.wert = 0 # todo
-            xsammeldetail:XSammelAbgabeDetail = self._db.getDetailFromSammelabgabe( master_name, jahr )
-            if xsammeldetail:
-                x.ausgaben = xsammeldetail.grundsteuer + xsammeldetail.abwasser + xsammeldetail.strassenreinigung
+            # xsammeldetail:XSammelAbgabeDetail = self._db.getDetailFromSammelabgabe( master_name, jahr )
+            # if xsammeldetail:
+            #     x.ausgaben = xsammeldetail.grundsteuer + xsammeldetail.abwasser + xsammeldetail.strassenreinigung
+            x.ausgaben = self._getSummeAbgabenAusSammelAbgabe( master_name, jahr )
             if len( zlist ) > 0:
                 x.jahr = zlist[0].jahr
                 x.afa = zlist[0].afa
@@ -839,6 +841,57 @@ class BusinessLogic:
             renditeList.append( xrendite )
         tm = RenditeTableModel( renditeList )
         return tm
+
+    def _getSummeAbgabenAusSammelAbgabe( self, master_name, jahr ) -> float:
+        xsammeldetail: XSammelAbgabeDetail = self._db.getDetailFromSammelabgabe( master_name, jahr )
+        if xsammeldetail:
+            ausgaben = xsammeldetail.grundsteuer + xsammeldetail.abwasser + xsammeldetail.strassenreinigung
+            return round( ausgaben, 2 )
+        return 0.0
+
+    def getDetaillierteAusgaben( self, model:RenditeTableModel, row:int, jahr:int ) -> AusgabenTableModel:
+        master_name:str = model.getObjekt( row )
+        master_id:int = self._db.getMasterId( master_name )
+        ausgabenlist:List[XSonstAus] = self._db.getSonstigeAusgaben( jahr, master_id )
+        mobj_id_list:List[str] = self._db.getMietobjekteZuMasterId( master_id )
+        nkabrechnglist:List[XNkAbrechnung] = self._db.getNkAbrechnungen( jahr - 1 )
+        hgabrechnglist:List[XHgAbrechnung] = self._db.getHgAbrechnungen( jahr - 1 )
+        li:List[XAusgabe] = list()
+        for aus in ausgabenlist:
+            x = XAusgabe()
+            x.master_name = master_name
+            x.mobj_id = aus.mobj_id
+            x.kreditor = aus.kreditor
+            x.betrag = aus.betrag
+            x.kostenart = aus.kostenart
+            x.buchungsdatum = aus.buchungsdatum
+            x.buchungstext = aus.buchungstext
+            li.append( x )
+        for nka in nkabrechnglist:
+            if nka.mobj_id in mobj_id_list:
+                x = XAusgabe()
+                x.master_name = master_name
+                x.mobj_id = nka.mobj_id
+                x.betrag = nka.betrag
+                x.buchungsdatum = nka.buchungsdatum
+                li.append( x )
+        for hga in hgabrechnglist:
+            if hga.mobj_id in mobj_id_list:
+                x = XAusgabe()
+                x.master_name = master_name
+                x.mobj_id = hga.mobj_id
+                x.betrag = hga.betrag
+                x.buchungsdatum = hga.buchungsdatum
+                li.append( x )
+        sammelabgabe:float = self._getSummeAbgabenAusSammelAbgabe( master_name, jahr )
+        if sammelabgabe > 0:
+            x = XAusgabe()
+            x.master_name = master_name
+            x.betrag = sammelabgabe
+            x.buchungstext = "Grundsteuer/Abwasser/Str.reinigg aus Sammelabgabe"
+            li.append( x )
+        model = AusgabenTableModel( li )
+        return model
 
 def test():
     busi = BusinessLogic.inst()
