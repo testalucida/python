@@ -161,13 +161,15 @@ class AnlageVController( QObject ):
 def testPreview():
     app = QApplication()
     ctrl = AnlageVController( )
-    ctrl.testPrinting( "ILL_Eich", 2021 )
+    # ctrl.testPrinting( "ILL_Eich", 2021 )
     # tm:AusgabenModel = ctrl._busi.getAusgabenModel( "ILL_Eich", 2021 )
     # ctrl._showAusgabenDialog( tm )
-    #win = ctrl.createView()
-    #win.show()
+    win = ctrl.createView()
+    #win.resize( 900, 900 )
+    win.setGeometry( 1700, 50, 1400, 1300 )
+    win.show()
 
-    #app.exec_()
+    app.exec_()
 
 if __name__ == "__main__":
     testPreview()

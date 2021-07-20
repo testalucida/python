@@ -17,10 +17,11 @@ class RenditeTableModel( IccTableModel ):
         self._renditeList:List[XRendite] = renditeList
         self._keyHeaderMapper = {
             "Objekt": "master_name",
-            "Wert": "wert",
+            #"Wert": "wert",
             "qm": "qm",
             "Einnahmen": "einnahmen",
             "Ausgaben": "ausgaben",
+            "davon Rep.": "davon_reparaturen",
             "Überschuss o.Afa": "ueberschuss_o_afa",
             "Ertrag je qm" : "ertrag_pro_qm",
             "AfA": "afa",
@@ -34,6 +35,9 @@ class RenditeTableModel( IccTableModel ):
         self._objectColumnId = 0
         self._betragColumns = (1, 2, 3, 4, 5, 6, 7, 8)
         # self._sortable = False
+
+    def getKeyList( self ) -> List[str]:
+        return list( self._keyHeaderMapper.values() )
 
     def isChanged( self ) -> bool:
         return False

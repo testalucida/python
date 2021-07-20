@@ -400,7 +400,7 @@ class DbAccess:
             sollList.append( x )
         return sollList
 
-    def getSonstigeAusgaben( self, jahr:int, master_id:int=None ) -> List[XSonstAus]:
+    def getSonstigeAusgaben( self, jahr:int, master_id:int=None, kostenart:str=None ) -> List[XSonstAus]:
         """
         Liest alle Einträge der Tabelle sonstaus für buchungsjahr <jahr>
         :param jahr: gewünschtes Buchungsjahr
@@ -413,6 +413,8 @@ class DbAccess:
               "where buchungsjahr = %d " % (jahr)
         if master_id:
             sql += "and s.master_id = %d " % ( master_id )
+        if kostenart:
+            sql += "and s.kostenart = '%s' " % ( kostenart )
         dictlist = self._doReadAllGetDict( sql )
         sonstalist = []
         for d in dictlist:
@@ -420,6 +422,17 @@ class DbAccess:
             sonstalist.append( x )
 
         return sonstalist
+
+    def getSummeSonstigeAusgaben( self, jahr:int, master_id:int, kostenart:str ):
+        sql = "select sum(betrag) as summe " \
+              "from sonstaus s " \
+              "inner join masterobjekt m on m.master_id = s.master_id " \
+              "where buchungsjahr = %d " \
+              "and s.master_id = %d " \
+              "and s.kostenart = '%s' " % ( jahr, master_id, kostenart )
+        lst = self._doRead( sql )
+        sum = lst[0][0]
+        return 0.0 if sum is None else sum
 
     # def getSonstigeAusgabenFuerMasterObjekt( self, master_name:str, jahr:int ) -> List[XSonstAus]:
     #     """

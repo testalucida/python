@@ -34,3 +34,7 @@ gelöscht wird. Alternativ Feld leer anbieten.
 eine Bemerkung eintragen, warum es noch keine Abrechnung gibt.
 
 16. Notizen-Dialog
+    --> erl.
+
+17. Fehler: AnlageV: Grundsteuer wird doppelt berücksichtigt - Bsp. Eich
+Vermutlich wird nicht nur Tabelle sonstaus ausgewertet, sondern auch Tabelle zahlung

@@ -6,11 +6,10 @@ from enum import  IntEnum
 from PySide2.QtCore import QAbstractItemModel, Qt
 
 from abrechnungentablemodel import NkAbrechnungenTableModel, HgAbrechnungenTableModel
-from anlage_v.anlagev_dataacess import AnlageV_DataAccess
 from anlage_v.anlagev_interfaces import XSammelAbgabeDetail
 from buchungstextmatchmodel import BuchungstextMatchModel
 from dbaccess import DbAccess
-from typing import List, Dict, Tuple
+from typing import List
 from constants import einausart, Zahlart, zahlartstrings
 from interfaces import XSonstAus, XSonstAusSummen, XZahlung, XSollHausgeld, XSollMiete, XBuchungstextMatch, \
     XNkAbrechnung, XAbrechnung, XHgAbrechnung, XMietverhaeltnis, XOffenerPosten, XNotiz, XZahlung2, XRendite, XAusgabe
@@ -29,7 +28,7 @@ from datetime import datetime
 #
 # zahlartstrings = ("bruttomiete", "nka", "hgv", "hga", "sonstaus")
 from notizen.notizentablemodel import NotizenTableModel
-from offene_posten.ausgabentablemodel import AusgabenTableModel
+from rendite.ausgabentablemodel import AusgabenTableModel
 from offene_posten.offenepostentablemodel import OffenePostenTableModel
 from rendite.renditetablemodel import RenditeTableModel
 
@@ -812,14 +811,22 @@ class BusinessLogic:
 
     def getRenditeTableModel( self, jahr:int ) -> RenditeTableModel:
         renditeList:List[XRendite] = list()
+
         def getXRenditeFromZahlungslist( master_name:str, zlist:List[XZahlung2] ) -> XRendite:
+            """
+            macht für ein Master-Objekt aus einer Liste von Zahlungen ein Rendite-Objekt
+            :param master_name:
+            :param zlist: Liste aller Zahlungen, die für das Master-Objekt <master_name> angefallen sind (Ein- und Ausz.)
+            :return:
+            """
             x = XRendite()
             x.master_name = master_name
             x.wert = 0 # todo
-            # xsammeldetail:XSammelAbgabeDetail = self._db.getDetailFromSammelabgabe( master_name, jahr )
-            # if xsammeldetail:
-            #     x.ausgaben = xsammeldetail.grundsteuer + xsammeldetail.abwasser + xsammeldetail.strassenreinigung
+            ## in der Liste der Zahlungen sind Sammelabgaben, wie sie die Stadt NK erhebt, NICHT enthalten;
+            ## deshalb selektieren wir sie hier extra
             x.ausgaben = self._getSummeAbgabenAusSammelAbgabe( master_name, jahr )
+            master_id = self._db.getMasterId( master_name )
+            x.davon_reparaturen = self._db.getSummeSonstigeAusgaben( jahr, master_id, "r" )
             if len( zlist ) > 0:
                 x.jahr = zlist[0].jahr
                 x.afa = zlist[0].afa
@@ -834,6 +841,7 @@ class BusinessLogic:
                 x.ertrag_pro_qm = round( float( x.ueberschuss_o_afa / x.qm ), 2 )
             x.ueberschuss_m_afa = x.ueberschuss_o_afa + x.afa # "+", weil afa negativ ist
             return x
+        # alle Ein- und Auszahlungen des betreffenden Jahres holen:
         zahlungenList:List[XZahlung2] = self._db.getZahlungen( jahr )
         key_fnc = lambda x: x.master_name
         for key, group in itertools.groupby( zahlungenList, key_fnc ):
@@ -853,9 +861,9 @@ class BusinessLogic:
         master_name:str = model.getObjekt( row )
         master_id:int = self._db.getMasterId( master_name )
         ausgabenlist:List[XSonstAus] = self._db.getSonstigeAusgaben( jahr, master_id )
-        mobj_id_list:List[str] = self._db.getMietobjekteZuMasterId( master_id )
-        nkabrechnglist:List[XNkAbrechnung] = self._db.getNkAbrechnungen( jahr - 1 )
-        hgabrechnglist:List[XHgAbrechnung] = self._db.getHgAbrechnungen( jahr - 1 )
+        # mobj_id_list:List[str] = self._db.getMietobjekteZuMasterId( master_id )
+        # nkabrechnglist:List[XNkAbrechnung] = self._db.getNkAbrechnungen( jahr - 1 )
+        # hgabrechnglist:List[XHgAbrechnung] = self._db.getHgAbrechnungen( jahr - 1 )
         li:List[XAusgabe] = list()
         for aus in ausgabenlist:
             x = XAusgabe()
@@ -867,30 +875,60 @@ class BusinessLogic:
             x.buchungsdatum = aus.buchungsdatum
             x.buchungstext = aus.buchungstext
             li.append( x )
-        for nka in nkabrechnglist:
-            if nka.mobj_id in mobj_id_list:
-                x = XAusgabe()
-                x.master_name = master_name
-                x.mobj_id = nka.mobj_id
-                x.betrag = nka.betrag
-                x.buchungsdatum = nka.buchungsdatum
-                li.append( x )
-        for hga in hgabrechnglist:
-            if hga.mobj_id in mobj_id_list:
-                x = XAusgabe()
-                x.master_name = master_name
-                x.mobj_id = hga.mobj_id
-                x.betrag = hga.betrag
-                x.buchungsdatum = hga.buchungsdatum
-                li.append( x )
+        # for nka in nkabrechnglist:
+        #     if nka.mobj_id in mobj_id_list:
+        #         x = XAusgabe()
+        #         x.master_name = master_name
+        #         x.mobj_id = nka.mobj_id
+        #         x.betrag = nka.betrag
+        #         x.buchungsdatum = nka.buchungsdatum
+        #         x.kostenart = "nka"
+        #         li.append( x )
+        # for hga in hgabrechnglist:
+        #     if hga.mobj_id in mobj_id_list:
+        #         x = XAusgabe()
+        #         x.master_name = master_name
+        #         x.mobj_id = hga.mobj_id
+        #         x.betrag = hga.betrag
+        #         x.buchungsdatum = hga.buchungsdatum
+        #         x.kostenart = "hga"
+        #         li.append( x )
         sammelabgabe:float = self._getSummeAbgabenAusSammelAbgabe( master_name, jahr )
         if sammelabgabe > 0:
             x = XAusgabe()
             x.master_name = master_name
             x.betrag = sammelabgabe
             x.buchungstext = "Grundsteuer/Abwasser/Str.reinigg aus Sammelabgabe"
+            x.kostenart = "a"
             li.append( x )
-        model = AusgabenTableModel( li )
+        li.sort( key=lambda y: y.kostenart )
+        kostart = ""
+        li2 = list()
+        summe = total_sum = 0.0
+        for aus in li:
+            if kostart == "":
+                kostart = aus.kostenart
+            if aus.kostenart != kostart:
+                # process group break
+                x = XAusgabe()
+                x.betrag = summe
+                x.buchungstext = "Summe '%s' " % ( kostart )
+                kostart = aus.kostenart
+                total_sum += summe
+                summe = 0.0
+                li2.append( x )
+            li2.append( aus )
+            summe += aus.betrag
+        x = XAusgabe()
+        x.betrag = summe
+        x.buchungstext = "Summe '%s' " % (kostart)
+        li2.append( x )
+        total_sum += summe
+        x = XAusgabe()
+        x.betrag = total_sum
+        x.buchungstext = "Summe über alles"
+        li2.append( x )
+        model = AusgabenTableModel( li2 )
         return model
 
 def test():

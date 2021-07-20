@@ -108,9 +108,11 @@ class CustomTableView( QTableView ):
 
     def getSelectedRows( self ) -> List[int]:
         sm = self.selectionModel()
-        #if sm.hasSelection():
-        return sm.selectedRows()
-        #return list()
+        indexes:List[QModelIndex] = sm.selectedRows()  ## Achtung missverständlicher Methodenname
+        l = list( indexes )
+        print( indexes[0].row() )
+        rows = [i.row() for i in l]
+        return rows
 
     def getSelectedIndexes( self ) -> List[QModelIndex]:
         """

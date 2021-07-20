@@ -128,9 +128,9 @@ class AnlageV_Base_Logic:
 
     def _getAllgemeinKostenBlockweise( self, master_name:str, jahr:int ) -> List[XAusgabeKurz]:
         aus_grupp:List[XAusgabeKurz] = self._db.getAusgaben( master_name, jahr,
-                                                             [Sonstaus_Kostenart.ALLGEMEIN,
-                                                             Sonstaus_Kostenart.GRUNDSTEUER,
-                                                             Sonstaus_Kostenart.VERSICHERUNG] )
+                                                             [Sonstaus_Kostenart.ALLGEMEIN,] )
+                                                             # Sonstaus_Kostenart.GRUNDSTEUER,
+                                                             # Sonstaus_Kostenart.VERSICHERUNG] )
         l:List[XAusgabeKurz] = list()
         block:XAusgabeKurz = None
         memo = ""

@@ -1,9 +1,11 @@
 from PySide2.QtCore import QPoint
-from PySide2.QtWidgets import QApplication, QDialog, QWidget, QAction
+from PySide2.QtWidgets import QApplication, QWidget, QAction
 
 from business import BusinessLogic
 from constants import einausart
+from generictable_stuff.generictableviewdialog import GenericTableViewDialog
 from mdichildcontroller import MdiChildController
+from rendite.ausgabentablemodel import AusgabenTableModel
 from rendite.renditegui import RenditeView
 from rendite.renditetablemodel import RenditeTableModel
 
@@ -26,16 +28,24 @@ class RenditeController( MdiChildController ):
                 jahr = jahre[0]
         self._model = busi.getRenditeTableModel( jahr )
         v = RenditeView( self._model )
-        v.getRenditeTableView().detaillierteAusgabenSignal.connect( self._onDetaillierteAusgaben )
+        v.setWindowTitle( "Erträge der Objekte" )
         v.setBetrachtungsjahre( jahre )
         v.setBetrachtungsjahr( jahr )
         v.betrachtungsjahrChanged.connect( self._onBetrachtungsjahrChanged )
+        tv = v.getRenditeTableView()
+        tv.detaillierteAusgabenSignal.connect( self._onDetaillierteAusgaben )
+        tv.setAlternatingRowColors( True )
+        tv.setSortingEnabled( True )
         self._model.setSortable( True )
         self._view = v
+        self._jahr = jahr
         return v
 
     def _onDetaillierteAusgaben( self, action:QAction, point:QPoint, row:int  ):
-        ausgaben = BusinessLogic.inst().getDetaillierteAusgaben( self._model, row, self._jahr )
+        model:AusgabenTableModel = BusinessLogic.inst().getDetaillierteAusgaben( self._model, row, self._jahr )
+        dlg = GenericTableViewDialog( model )
+        dlg.setWindowTitle( "Detaillierte Ausgaben" )
+        dlg.exec_()
 
     def _onBetrachtungsjahrChanged( self, jahr:int ):
         self._model = BusinessLogic.inst().getRenditeTableModel( jahr )

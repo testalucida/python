@@ -16,20 +16,22 @@ class AusgabenTableModel( IccTableModel ):
         IccTableModel.__init__( self )
         self._ausgabeList:List[XAusgabe] = ausgabeList
         self._keyHeaderMapper = {
+            "Kostenart": "kostenart",
             "Objekt": "mobj_id",
             "Kreditor": "kreditor",
             "Betrag": "betrag",
             "Buchungsdatum": "buchungsdatum",
-            "Kostenart": "kostenart",
             "Buchungstext": "buchungstext",
         }
         self._headers = list( self._keyHeaderMapper.keys() )
         self._greyBrush = QBrush( Qt.gray )
+        self._lightgreyBrush = QBrush( Qt.lightGray )
         self._redBrush = QBrush( Qt.red )
         self._yellowBrush = QBrush( Qt.yellow )
         self._boldFont = QFont( "Arial", 11, QFont.Bold )
-        self._objectColumnId = 0
-        self._betragColumns = ( 2, )
+        self._kostenartColumnId = 0
+        self._objectColumnId = 1
+        self._betragColumns = ( 3, )
         # self._sortable = False
 
     def isChanged( self ) -> bool:
@@ -83,7 +85,9 @@ class AusgabenTableModel( IccTableModel ):
             return self._boldFont
 
     def getBackground( self, indexrow: int, indexcolumn: int ) -> Any:
-        #x = self.getXRendite( indexrow )
+        val = self.getValue( indexrow, self._kostenartColumnId )
+        if val == "":
+            return self._lightgreyBrush
         return None
 
     def data( self, index: QModelIndex, role: int = None ):

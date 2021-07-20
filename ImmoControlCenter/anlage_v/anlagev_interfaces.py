@@ -121,7 +121,9 @@ class XWerbungskosten:
         self.abwasser = 0
         self.versicherungen = 0
         self.allgemeine_kosten_summe = 0
-        self.allgemeine_kosten_gruppiert:List[XAusgabeKurz] = list()
+        self.allgemeine_kosten_gruppiert:List[XAusgabeKurz] = list() # ACHTUNG: enthält auch Grundsteuer + Versicherungen,
+        # die schon in den Einzelattributen grundsteuer, abwasser, versicherungen enthalten sind!!!
+        # Man darf also nix addieren!
         self.sonstige_kosten = 0
 
     def getSummeAllgemeineKosten( self ) -> int:

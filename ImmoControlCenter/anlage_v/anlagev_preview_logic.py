@@ -124,7 +124,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         self._createPreviewRowsFromAufwandVerteilt( x.erhalt_aufwand_verteilt, x.jahr, previewRows )
         self._createPreviewRowSeparator( "", previewRows )
         self._createPreviewRowsFromAllgemeineKostenDetailliert(
-            x.grundsteuer, x.abwasser, x.strassenreinigung, x.allgemeine_kosten_gruppiert, previewRows )
+            x.grundsteuer, x.abwasser, x.strassenreinigung, x.versicherungen, x.allgemeine_kosten_gruppiert, previewRows )
         self._createPreviewRowSeparator( "", previewRows )
         self._createPreviewRowFromAllgemeineKosten( int( round( x.getSummeAllgemeineKosten() ) ), previewRows )
         self._createPreviewRowSeparator( "", previewRows )
@@ -201,6 +201,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
             previewRows.append( r )
 
     def _createPreviewRowsFromAllgemeineKostenDetailliert( self, grundsteuer:int, abwasser:int, strassenreinigung:int,
+                                                           versicherungen,
                                                            ausgaben:List[XAusgabeKurz], previewRows: List[PreviewRow] ) -> None:
         r = PreviewRow()
         r.text = "Auflistung allg. Kosten: Grundsteuer, Vers., Müll, Abwasser, Str.reinigg. - summiert auf Kreditoren"
@@ -228,6 +229,13 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
             r = PreviewRow()
             r.text = indent + "Straßenreinigung " + "(a)"
             r.wert1 = strassenreinigung
+            r.isSumme = False
+            previewRows.append( r )
+        if versicherungen != 0:
+            summe += versicherungen
+            r = PreviewRow()
+            r.text = indent + "Versicherungen " + "(v)"
+            r.wert1 = versicherungen
             r.isSumme = False
             previewRows.append( r )
 
