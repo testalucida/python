@@ -11,7 +11,7 @@ class ColumnFunction:
         self.column:int = -1
         self.fnc = None
 
-class AusgabenModel( QAbstractTableModel ):
+class AnlageV_AusgabenTableModel( QAbstractTableModel ):
     def __init__( self, master_name:str, jahr:int, rowList: List[Any] ):
         QAbstractTableModel.__init__( self )
         self._master_name = master_name

@@ -95,7 +95,8 @@ class MainController:
             MainWindowAction.EXPORT_CSV: self.exportToCsv,
             MainWindowAction.OPEN_OFFENE_POSTEN_VIEW: self.showOffenePostenView,
             MainWindowAction.NOTIZEN: self.showNotizenView,
-            MainWindowAction.RENDITE_VIEW: self.showRenditeView
+            MainWindowAction.RENDITE_VIEW: self.showRenditeView,
+            MainWindowAction.MIETERWECHSEL: self.showMieterwechselDialog
         }
         fnc = switcher.get( action )
         try:
@@ -133,6 +134,9 @@ class MainController:
 
     def showRenditeView( self ):
         self.createRenditeViewAndShow()
+
+    def showMieterwechselDialog( self ):
+        pass
 
     def test( self ):
         print( "test")
@@ -241,7 +245,7 @@ class MainController:
     def createRenditeViewAndShow( self ):
         subwin = self._renditeCtrl.createSubwindow()
         self._installView( subwin, self._renditeCtrl )
-        subwin.setGeometry( 50, 10, 800, 900 )
+        subwin.setGeometry( 500, 10, 900, 900 )
         subwin.show()
 
 

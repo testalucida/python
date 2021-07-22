@@ -22,19 +22,23 @@ gelöscht wird. Alternativ Feld leer anbieten.
 
 10. bei Rechtsklick auf Objekt: wichtige Wohnungsdetails anzeigen
 
-11. Dialog "Ändern Wohnung", insbesondere Notizfunktion
+11. bei Rechtsklick auf Mieter: Kontaktdaten anzeigen
 
-12. Fehler: Aktive View verliert Focus, wenn man mit der Maus über eine andere View drüberfährt.
+12. Dialog "Ändern Wohnung", insbesondere Notizfunktion
 
-13. Funktion "Neues Jahr anlegen" prüfen / erweitern
+13. Fehler: Aktive View verliert Focus, wenn man mit der Maus über eine andere View drüberfährt.
 
-14. Dialog "Offene Forderungen und Verbindlichkeiten" (z.B. energis-Schlussrechnungen)
+14. Funktion "Neues Jahr anlegen" prüfen / erweitern
 
-15. Nebenkostenabrechnungen-View: Plausi entfernen, dass min. 1 Datum gesetzt sein muss. Manchmal muss man nur
-eine Bemerkung eintragen, warum es noch keine Abrechnung gibt.
-
-16. Notizen-Dialog
+15. Dialog "Offene Forderungen und Verbindlichkeiten" (z.B. energis-Schlussrechnungen)
     --> erl.
 
-17. Fehler: AnlageV: Grundsteuer wird doppelt berücksichtigt - Bsp. Eich
+16. Nebenkostenabrechnungen-View: Plausi entfernen, dass min. 1 Datum gesetzt sein muss. Manchmal muss man nur
+eine Bemerkung eintragen, warum es noch keine Abrechnung gibt.
+
+17. Notizen-Dialog
+    --> erl.
+
+18. Fehler: AnlageV: Grundsteuer wird doppelt berücksichtigt - Bsp. Eich
 Vermutlich wird nicht nur Tabelle sonstaus ausgewertet, sondern auch Tabelle zahlung
+    --> erl.

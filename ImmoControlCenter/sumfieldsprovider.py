@@ -8,6 +8,7 @@ class SumFieldsProvider( QObject ):
     dbaccess_failed = Signal( str )
 
     def __init__( self, sumMieten:IntDisplay, sumAusgaben:IntDisplay, sumHGV:IntDisplay, saldo:IntDisplay, errorCallback ):
+        QObject.__init__( self )
         if SumFieldsProvider.__instance != None:
             raise Exception( "You can't instantiate SumFieldsAccess more than once." )
         else:

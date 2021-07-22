@@ -76,6 +76,23 @@ class XZahlung2:
         if valuedict:
             setFromDict( self, valuedict )
 
+class XZahlung3:
+    def __init__( self, valuedict:Dict=None ):
+        self.z_id: int = 0
+        self.master_name: str = ""
+        self.mobj_id: str = ""  # ID des Mietobjekts (Tabelle mietobjekt)
+        self.saus_id: int = 0  # ID der sonstigen Auszahlung (Tabelle sonstaus)
+        self.kreditor: str = ""
+        self.betrag: float = 0.0
+        self.buchungsdatum:str = ""
+        self.buchungstext:str = "" # aus Tabelle sonstaus
+        self.kostenart:str = ""
+        self.zahl_art:str = ""
+        self.art: str = ""  # Kombination aus zahl_art und kostenart
+                            # {'brutto_miete', 'nka', 'hgv', 'hga', 'a', 'g', 'r',...}
+        if valuedict:
+            setFromDict( self, valuedict )
+
 
 #################### SonstAus  ###################################
 
@@ -274,6 +291,7 @@ class XRendite:
         self.davon_reparaturen = 0
         self.ueberschuss_o_afa = 0
         self.ertrag_pro_qm = 0.0
+        self.ertrag_pro_qm_ohne_rep = 0.0
         self.afa = 0
         self.ueberschuss_m_afa = 0
 

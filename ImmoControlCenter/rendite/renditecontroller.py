@@ -5,7 +5,8 @@ from business import BusinessLogic
 from constants import einausart
 from generictable_stuff.generictableviewdialog import GenericTableViewDialog
 from mdichildcontroller import MdiChildController
-from rendite.ausgabentablemodel import AusgabenTableModel
+from rendite.rendite_ausgabentablemodel import Rendite_AusgabenTableModel
+from rendite.rendite_zahlungentablemodel import Rendite_ZahlungenTableModel
 from rendite.renditegui import RenditeView
 from rendite.renditetablemodel import RenditeTableModel
 
@@ -42,7 +43,7 @@ class RenditeController( MdiChildController ):
         return v
 
     def _onDetaillierteAusgaben( self, action:QAction, point:QPoint, row:int  ):
-        model:AusgabenTableModel = BusinessLogic.inst().getDetaillierteAusgaben( self._model, row, self._jahr )
+        model:Rendite_ZahlungenTableModel = BusinessLogic.inst().getDetaillierteAuszahlungen( self._model, row, self._jahr )
         dlg = GenericTableViewDialog( model )
         dlg.setWindowTitle( "Detaillierte Ausgaben" )
         dlg.exec_()

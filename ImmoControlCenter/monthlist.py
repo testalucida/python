@@ -18,5 +18,5 @@ monatsletzter = {
 }
 
 def getMonatsletzter( monat:str ):
-    return monatsletzte[monat]
+    return monatsletzter[monat]
 

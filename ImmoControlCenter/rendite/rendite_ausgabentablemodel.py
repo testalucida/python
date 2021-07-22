@@ -11,7 +11,7 @@ from icctablemodel import IccTableModel
 from interfaces import XAusgabe
 
 
-class AusgabenTableModel( IccTableModel ):
+class Rendite_AusgabenTableModel( IccTableModel ):
     def __init__( self, ausgabeList:List[XAusgabe] ):
         IccTableModel.__init__( self )
         self._ausgabeList:List[XAusgabe] = ausgabeList

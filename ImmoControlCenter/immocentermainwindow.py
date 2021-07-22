@@ -30,7 +30,8 @@ class MainWindowAction( Enum ):
     OPEN_ANLAGEV_VIEW = 15,
     OPEN_OFFENE_POSTEN_VIEW = 16,
     NOTIZEN = 17,
-    RENDITE_VIEW = 18
+    RENDITE_VIEW = 18,
+    MIETERWECHSEL = 19,
     EXIT=99
 
 class DummySignal(QObject):

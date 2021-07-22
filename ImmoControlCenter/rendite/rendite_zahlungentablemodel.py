@@ -2,37 +2,31 @@ from typing import List, Dict, Tuple, Any
 from PySide2.QtCore import QAbstractTableModel, QModelIndex, Qt
 from PySide2.QtGui import QBrush, QFont
 from icctablemodel import IccTableModel
-from interfaces import XRendite
+from interfaces import XZahlung3
 
 
-class RenditeTableModel( IccTableModel ):
-    def __init__( self, renditeList:List[XRendite] ):
+class Rendite_ZahlungenTableModel( IccTableModel ):
+    def __init__( self, zahlungList:List[XZahlung3] ):
         IccTableModel.__init__( self )
-        self._renditeList:List[XRendite] = renditeList
+        self._zahlungList:List[XZahlung3] = zahlungList
         self._keyHeaderMapper = {
-            "Objekt": "master_name",
-            #"Wert": "wert",
-            "qm": "qm",
-            "Einnahmen": "einnahmen",
-            "Ausgaben": "ausgaben",
-            "davon Rep.": "davon_reparaturen",
-            "Überschuss o.Afa": "ueberschuss_o_afa",
-            "qm-Ertrag" : "ertrag_pro_qm",
-            "qm-Ertrag o. Rep.": "ertrag_pro_qm_ohne_rep",
-            "AfA": "afa",
-            "Überschuss m.Afa": "ueberschuss_m_afa"
+            "Art": "art",
+            "Objekt": "mobj_id",
+            "Kreditor": "kreditor",
+            "Betrag": "betrag",
+            "Buchungsdatum": "buchungsdatum",
+            "Buchungstext": "buchungstext",
         }
         self._headers = list( self._keyHeaderMapper.keys() )
         self._greyBrush = QBrush( Qt.gray )
+        self._lightgreyBrush = QBrush( Qt.lightGray )
         self._redBrush = QBrush( Qt.red )
         self._yellowBrush = QBrush( Qt.yellow )
         self._boldFont = QFont( "Arial", 11, QFont.Bold )
-        self._objectColumnId = 0
-        self._betragColumns = (1, 2, 3, 4, 5, 6, 7, 8, 9)
+        self._kostenartColumnId = 0
+        self._objectColumnId = 1
+        self._betragColumns = ( 3, )
         # self._sortable = False
-
-    def getKeyList( self ) -> List[str]:
-        return list( self._keyHeaderMapper.values() )
 
     def isChanged( self ) -> bool:
         return False
@@ -41,10 +35,10 @@ class RenditeTableModel( IccTableModel ):
     #     self._sortable = sortable
 
     def rowCount( self, parent:QModelIndex=None ) -> int:
-        return len( self._renditeList )
+        return len( self._zahlungList )
 
-    def getXRendite( self, row:int ) -> XRendite:
-        return self._renditeList[row]
+    def getXZahlung3( self, row:int ) -> XZahlung3:
+        return self._zahlungList[row]
 
     def columnCount( self, parent: QModelIndex = None ) -> int:
         return len( self.getHeaders() )
@@ -59,7 +53,7 @@ class RenditeTableModel( IccTableModel ):
        return self.getValue( row, self._objectColumnId )
 
     def getValue( self, indexrow: int, indexcolumn: int ) -> Any:
-        x = self._renditeList[indexrow]
+        x = self._zahlungList[indexrow]
         header = self._headers[indexcolumn]
         key = self._keyHeaderMapper.get( header )
         val = x.__dict__[key]
@@ -85,7 +79,9 @@ class RenditeTableModel( IccTableModel ):
             return self._boldFont
 
     def getBackground( self, indexrow: int, indexcolumn: int ) -> Any:
-        #x = self.getXRendite( indexrow )
+        val = self.getValue( indexrow, self._kostenartColumnId )
+        if val == "":
+            return self._lightgreyBrush
         return None
 
     def data( self, index: QModelIndex, role: int = None ):
@@ -111,20 +107,20 @@ class RenditeTableModel( IccTableModel ):
             #     pass
         return None
 
-    def getRow( self, x: XRendite ) -> int:
-        for r in range( len( self._renditeList ) ):
-            e: XRendite = self._renditeList[r]
+    def getRow( self, x: XZahlung3 ) -> int:
+        for r in range( len( self._zahlungList ) ):
+            e: XZahlung3 = self._zahlungList[r]
             if e == x:
                 return r
-        raise Exception( "RenditeTableModel.getRow(): can't find object '%s'" % ( x. master_name ) )
+        raise Exception( "Rendite_ZahlungenTableModel.getRow(): can't find object '%s'" % ( x. master_name ) )
 
     def getListToSort( self ) -> List:
-        return self._renditeList
+        return self._zahlungList
 
     def receiveSortedList( self, li:List ) -> None:
-        self._renditeList = li
+        self._zahlungList = li
 
-    def compare( self, x1:XRendite, x2:XRendite ) -> int:
+    def compare( self, x1:Any, x2:Any ) -> int:
         key = self.getKeyList()[self.sort_col]
         v1 = x1.__dict__[key]
         v2 = x2.__dict__[key]

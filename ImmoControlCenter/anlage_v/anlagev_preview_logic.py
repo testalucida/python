@@ -1,7 +1,7 @@
 from typing import List
 from PySide2.QtWidgets import QApplication
 
-from anlage_v.ausgabenmodel import AusgabenModel
+from anlage_v.anlagev_ausgabentablemodel import AnlageV_AusgabenTableModel
 from anlage_v.anlagev_base_logic import AnlageV_Base_Logic
 from anlage_v.anlagev_interfaces import XMieteinnahme, \
     XWerbungskosten, XAfA, XAufwandVerteilt, XAusgabeKurz, XVerteilterAufwand, XErhaltungsaufwand, XSammelAbgabeDetail
@@ -302,7 +302,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         r.isSeparator = True
         previewRows.append( r )
 
-    def getAllgemeineAusgabenModel( self, master_name:str, jahr:int ) -> AusgabenModel:
+    def getAllgemeineAusgabenModel( self, master_name:str, jahr:int ) -> AnlageV_AusgabenTableModel:
         l:List[XAusgabeKurz] = self._db.getAusgaben( master_name, jahr, [Sonstaus_Kostenart.GRUNDSTEUER,
                                                                           Sonstaus_Kostenart.ALLGEMEIN,
                                                                           Sonstaus_Kostenart.VERSICHERUNG] )
@@ -310,7 +310,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         if xsam:
             xauslist = self._mapXSammelAbgabeDetail2XAusgabeKurz( xsam )
             l.extend( xauslist )
-        tm:AusgabenModel = AusgabenModel( master_name, jahr, l )
+        tm:AnlageV_AusgabenTableModel = AnlageV_AusgabenTableModel( master_name, jahr, l )
         tm.setHeaders( ["Kreditor", "Wohng", "Buchungstext", "Buch.datum", "Kostenart", "Betrag", "Summe"] )
         tm.setKeys( ["kreditor", "mobj_id", "buchungstext", "buchungsdatum", "kostenart", "betrag", ""] )
         tm.addColumnFunction( 6, self.getKreditorSumme )
@@ -336,25 +336,25 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
             l.append( xaus )
         return l
 
-    def getReparaturausgabenNichtVerteilt( self, master_name:str, jahr:int ) -> AusgabenModel:
+    def getReparaturausgabenNichtVerteilt( self, master_name:str, jahr:int ) -> AnlageV_AusgabenTableModel:
         l: List[XAusgabeKurz] = self._db.getAusgaben( master_name, jahr, [Sonstaus_Kostenart.REPARATUR,] )
-        tm:AusgabenModel = AusgabenModel( master_name, jahr, l )
+        tm:AnlageV_AusgabenTableModel = AnlageV_AusgabenTableModel( master_name, jahr, l )
         tm.setHeaders( ["Kreditor", "Wohng", "Buchungstext", "Buch.datum", "Kostenart", "Betrag", "Summe"] )
         tm.setKeys( ["kreditor", "mobj_id", "buchungstext", "buchungsdatum", "kostenart", "betrag", ""] )
         tm.addColumnFunction( 6, self.getKreditorSumme )
         return tm
 
-    def getReparaturausgabenVerteilt( self, master_name:str, jahr:int ) -> AusgabenModel:
+    def getReparaturausgabenVerteilt( self, master_name:str, jahr:int ) -> AnlageV_AusgabenTableModel:
         l: List[XErhaltungsaufwand] = self._db.getVerteilteErhaltungsaufwendungen( master_name, jahr )
         for x in l:
             x.betrag = int( round( x.betrag / x.verteilen_auf_jahre ) )
-        tm:AusgabenModel = AusgabenModel( master_name, jahr, l )
+        tm:AnlageV_AusgabenTableModel = AnlageV_AusgabenTableModel( master_name, jahr, l )
         tm.setHeaders( ["Jahr", "Kreditor", "Whg", "Buch.Text", "Betrag", "Summe"] )
         tm.setKeys( ["buchungsjahr", "kreditor", "mobj_id", "buchungstext", "betrag", ""] )
         tm.addColumnFunction( 5, self.getJahressumme )
         return tm
 
-    def getZuVerteilendeAufwaende( self, master_name:str, jahr:int ) -> AusgabenModel:
+    def getZuVerteilendeAufwaende( self, master_name:str, jahr:int ) -> AnlageV_AusgabenTableModel:
         """
         Liefert die Aufwände, die in <jahr> neu hinzugekommen und zu verteilen sind.
         :param master_name:
@@ -362,13 +362,13 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         :return:
         """
         awlist: List[XErhaltungsaufwand] = self._db.getZuVerteilendeAufwaendeVJ( master_name, jahr )
-        tm:AusgabenModel = AusgabenModel( master_name, jahr, awlist )
+        tm:AnlageV_AusgabenTableModel = AnlageV_AusgabenTableModel( master_name, jahr, awlist )
         tm.setHeaders( ["Jahr", "Kreditor", "Whg", "Buch.Text", "Betrag", "Summe"] )
         tm.setKeys( ["buchungsjahr", "kreditor", "mobj_id", "buchungstext", "betrag", ""] )
         tm.addColumnFunction( 5, self.getJahressumme )
         return tm
 
-    def getJahressumme( self, tm:AusgabenModel, row:int, col:int ) -> int:
+    def getJahressumme( self, tm:AnlageV_AusgabenTableModel, row:int, col:int ) -> int:
         """
         Callback function für AusgabenModel
         :param tm:
@@ -386,7 +386,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
             return sum
         return None
 
-    def getKreditorSumme( self, tm:AusgabenModel, indexrow: int, indexcolumn:int ) -> float or None:
+    def getKreditorSumme( self, tm:AnlageV_AusgabenTableModel, indexrow: int, indexcolumn:int ) -> float or None:
         """
         Callback function für AusgabenModel
         Prüfen, ob ein Gruppenwechsel bezüglich Kreditor bevorsteht.

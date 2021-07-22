@@ -7,7 +7,7 @@ from anlage_v.anlagev_preview_logic import AnlageV_Preview_Logic
 from anlage_v.anlagev_gui import AnlageVView, AnlageVTableView, AnlageVAuswahlDialog, AnlageVDialog
 from anlage_v.anlagev_print_logic import AnlageV_Print_Logic
 from anlage_v.anlagev_tablemodel import AnlageVTableModel
-from anlage_v.ausgabenmodel import AusgabenModel
+from anlage_v.anlagev_ausgabentablemodel import AnlageV_AusgabenTableModel
 from constants import DetailLink
 from generictable_stuff.generictableviewdialog import GenericTableViewDialog
 from mdisubwindow import MdiSubWindow
@@ -127,23 +127,23 @@ class AnlageVController( QObject ):
             linkvalue = tm.getValue( row, column )
             if linkvalue:
                 if linkvalue == DetailLink.ALLGEMEINE_KOSTEN.value[0]:
-                    tm:AusgabenModel = self._busi.getAllgemeineAusgabenModel( master_objekt, jahr )
+                    tm:AnlageV_AusgabenTableModel = self._busi.getAllgemeineAusgabenModel( master_objekt, jahr )
                     self._showAusgabenDialog( tm, "Allgemeine Hauskosten" )
                 elif linkvalue == DetailLink.ERHALTUNGSKOSTEN.value[0]:
-                    tm:AusgabenModel = self._busi.getReparaturausgabenNichtVerteilt( master_objekt, jahr )
+                    tm:AnlageV_AusgabenTableModel = self._busi.getReparaturausgabenNichtVerteilt( master_objekt, jahr )
                     self._showAusgabenDialog( tm, "Voll abzuziehende Erhaltungsaufwendungen" )
                 elif linkvalue == DetailLink.ZU_VERTEIL_GESAMTKOSTEN_VJ.value[0]:
                     # Aufwände, die im VJ entstanden und zu verteilen sind
-                    tm:AusgabenModel = self._busi.getZuVerteilendeAufwaende( master_objekt, jahr )
+                    tm:AnlageV_AusgabenTableModel = self._busi.getZuVerteilendeAufwaende( master_objekt, jahr )
                     self._showAusgabenDialog( tm, "Im VJ zu verteilende Erhaltungsaufwendungen" )
                 elif linkvalue == DetailLink.ERHALTUNGSKOSTEN_VERTEILT.value[0]:
                     # Anzusetzende Teilbeträge der Aufwände, die im VJ und den vergangenen 4 Jahren entstanden sind
-                    tm:AusgabenModel = self._busi.getReparaturausgabenVerteilt( master_objekt, jahr )
+                    tm:AnlageV_AusgabenTableModel = self._busi.getReparaturausgabenVerteilt( master_objekt, jahr )
                     self._showAusgabenDialog( tm, "Anteilig anzusetzende Erhaltungsaufwendungen" )
                 elif linkvalue == DetailLink.SONSTIGE_KOSTEN.value[0]:
                     pass
 
-    def _showAusgabenDialog( self, tm:AusgabenModel, title:str ):
+    def _showAusgabenDialog( self, tm:AnlageV_AusgabenTableModel, title:str ):
         dlg = GenericTableViewDialog( tm )
         dlg.setWindowTitle( "%s für %s" % (title, tm.getMasterName()) )
         dlg.setCancelButtonVisible( False )

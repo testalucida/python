@@ -362,6 +362,10 @@ class AuswahlDialog( QDialog ):
         self.okButton.clicked.connect( self.onAccepted )
         self.cancelButton.clicked.connect( self.reject )
 
+    def appendItemList( self, itemlist:List[str] ):
+        for i in itemlist:
+            self.appendItem( i, None )
+
     def appendItem( self, text:str, userdata:Any=None ):
         item = CustomItem( text )
         if userdata:
