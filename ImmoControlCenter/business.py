@@ -497,7 +497,7 @@ class BusinessLogic:
         def getWhgBez( mobj_id:str, whg_bez:str ) -> str:
             if not whg_bez:
                 whg_bez = ""
-            return mobj_id + ":  " + whg_bez
+            return mobj_id + ",  " + whg_bez
 
         li:List[Dict] = self._db.getMietobjekteKurz()
         mobj_list = [getWhgBez( m["mobj_id"], m["whg_bez"] ) for m in li]

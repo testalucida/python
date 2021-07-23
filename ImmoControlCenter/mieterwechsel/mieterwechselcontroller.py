@@ -19,7 +19,7 @@ class MieterwechselController:
             self._doWechsel( auswahl[0][0] )
 
     def _doWechsel( self, mobj_id:str ):
-        dlg = MieterwechselDialog( mobj_id )
+        dlg = MieterwechselDialog( "Mieterwechsel:  " + mobj_id )
         if dlg.exec_() == QDialog.Accepted:
             pass
 

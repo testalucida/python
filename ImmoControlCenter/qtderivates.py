@@ -180,6 +180,34 @@ class FloatEdit( BaseEdit ):
         except:
             self.setText( "" )
 
+#########################  FloatEdit  ################################
+class IntEdit( BaseEdit ):
+    def __init__( self, parent=None ):
+        BaseEdit.__init__( self, parent )
+        intval = QIntValidator()
+        self.setValidator( intval )
+        self.setAlignment( Qt.AlignRight )
+
+    def getIntValue( self ) -> int:
+        val = self.text()
+        if not val:
+            val = "0"
+        return int( val )
+
+    def setIntValue( self, val:int ):
+        self.setText( str( val ) )
+        if val < 0:
+            self.setStyleSheet( "color: red;" )
+        else:
+            self.setStyleSheet( "color: green;" )
+
+    def setIntStringValue( self, val:str ):
+        try:
+            intval = int( val )
+            self.setIntValue( intval )
+        except:
+            self.setText( "" )
+
 ######################## Int Display  #############################
 class IntDisplay( BaseEdit ):
     def __init__( self, parent=None ):
