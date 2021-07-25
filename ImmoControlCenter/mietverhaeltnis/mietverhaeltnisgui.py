@@ -200,16 +200,17 @@ class MietverhaeltnisView( QWidget ):
         self._edAnzPers.setIntValue( mv.anzahl_pers )
         self._edNettomiete.setFloatValue( mv.nettomiete )
         self._edNkv.setFloatValue( mv.nkv )
-        self._edKaution.setIntValue( mv.kaution )
+        if mv.kaution:
+            self._edKaution.setIntValue( mv.kaution )
         if mv.kaution_bezahlt_am:
             self._sdKautionBezahltAm.setDateFromIsoString( mv.kaution_bezahlt_am )
         self._txtBemerkung1.setText( mv.bemerkung1 )
         self._txtBemerkung2.setText( mv.bemerkung2 )
 
-    ###############  MietverhaeltnisDialog  ##########################
-class MieterwechselDialog( OkCancelDialog ):
-    def __init__(self, miet_obj:str, parent=None):
+###############  MietverhaeltnisDialog  ##########################
+class MietverhaeltnisDialog( OkCancelDialog ):
+    def __init__(self, mietverhaeltnis:XMietverhaeltnis=None, parent=None):
         OkCancelDialog.__init__( self, parent )
-        self.setWindowTitle( miet_obj )
-        self._view = MietverhaeltnisView()
+        self.setWindowTitle( "Mietverhältnis " + mietverhaeltnis.mv_id + ": " + mietverhaeltnis.mobj_id )
+        self._view = MietverhaeltnisView( mietverhaeltnis )
         self.addWidget( self._view, 0 )

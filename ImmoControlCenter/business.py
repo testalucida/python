@@ -378,6 +378,10 @@ class BusinessLogic:
         self._deleteZahlung( x.saus_id, Zahlart.SONSTAUS )
         self._db.commit()
 
+    def getAktuellesMietverhaeltnis( self, mv_id:str ) -> XMietverhaeltnis:
+        x:XMietverhaeltnis = self._db.getAktuellesMietverhaeltnis( mv_id )
+        return x
+
     def kuendigeMietverhaeltnis( self, mv_id:str, kuenddatum:str ) -> None:
         """
         - Kündigung in Tabelle mietverhaeltnis eintragen

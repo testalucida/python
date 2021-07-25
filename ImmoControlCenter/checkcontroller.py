@@ -166,27 +166,39 @@ class MietenController( CheckController ):
         tv.frozenRightClick.connect( self.onFrozenRightClick )
 
     def onFrozenRightClick( self, point:QPoint ):
+
         @Slot( str, str )
         def onGekuendigt( mv_id:str, datum:str ):
             #Model aktualisieren
             model.setBis( index.row(), datum )
+
         tv = self._view.tableView
         model = tv.getModel()
         index = tv.indexAt( point )
         if not index.column() in (model.nameColumnIdx, model.sollColumnIdx ):
             return
+
         mv_id = model.getId( index.row() )
         menu = QMenu( tv )
         if index.column() == model.nameColumnIdx:
             action = QAction( "Dieses Mietverhältnis beenden" )
+            action.setData( "K" )
+            menu.addAction( action )
+            menu.addSeparator()
+            action2 = QAction( "Mietverhältnisdaten anzeigen" )
+            action2.setData( "A" )
+            menu.addAction( action2 )
         else:
             action = QAction( "Nettomiete und NKV anzeigen" )
-        menu.addAction( action )
+            menu.addAction( action )
         action = menu.exec_( tv.viewport().mapToGlobal( point ) )
         if action and index.column() == model.nameColumnIdx:
-            c = MietverhaeltnisController( self._view )
-            c.mietverhaeltnisGekuendigt.connect( onGekuendigt )
-            c.kuendigeMietverhaeltnisUsingMiniDialog( mv_id )
+            if action.data() == "K":
+                c = MietverhaeltnisController( self._view )
+                c.mietverhaeltnisGekuendigt.connect( onGekuendigt )
+                c.kuendigeMietverhaeltnisUsingMiniDialog( mv_id )
+            else:
+                self._showMietverhaeltnis( mv_id, point )
         elif action and index.column() == model.sollColumnIdx:
             netto, nkv = BusinessLogic.inst().getNettomieteUndNkv( mv_id, self._currentYear, self._currentCheckMonth )
             box = QMessageBox()
@@ -195,6 +207,10 @@ class MietenController( CheckController ):
             box.setText( "Nettomiete:\t%.2f €\n\n"
                          "Nebenkosten:\t%.2f €" % ( netto, nkv ) )
             box.exec_()
+
+    def _showMietverhaeltnis( self, mv_id:str, point:QPoint ):
+        c = MietverhaeltnisController( self._view )
+        c.showMietverhaeltnis( mv_id, point )
 
 #################### HGVController ########################
 class HGVController( CheckController ):

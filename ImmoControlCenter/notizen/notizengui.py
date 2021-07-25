@@ -159,6 +159,9 @@ class NotizenView( QWidget ):
 
         self.setLayout( self._layout )
 
+    def getModel( self ) -> NotizenTableModel:
+        return self._ntv.getModel()
+
     def setSaveButtonEnabled( self, enabled:bool=True ):
         self._btnSave.setEnabled( enabled )
 

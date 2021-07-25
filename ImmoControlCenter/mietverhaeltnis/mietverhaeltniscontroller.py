@@ -1,10 +1,12 @@
 from typing import Dict, Tuple
 
-from PySide2.QtCore import Signal, QObject, Slot
+from PySide2.QtCore import Signal, QObject, Slot, QPoint
 from PySide2.QtWidgets import QApplication, QDialog, QGridLayout, QPushButton, QWidget, QMainWindow
 
 from business import BusinessLogic
 from datehelper import getCurrentYearAndMonth, getNumberOfDays
+from interfaces import XMietverhaeltnis
+from mietverhaeltnis.mietverhaeltnisgui import MietverhaeltnisView, MietverhaeltnisDialog
 from mietverhaeltnis.minikuendigungdlg import MiniKuendigungDlg
 
 
@@ -15,6 +17,11 @@ class MietverhaeltnisController( QObject ):
         QObject.__init__( self )
         self._parent = parent
         self._miniDlg = None
+
+    def showMietverhaeltnis( self, mv_id:str, point:QPoint ):
+        mv:XMietverhaeltnis = BusinessLogic.inst().getAktuellesMietverhaeltnis( mv_id )
+        mvv = MietverhaeltnisDialog( mv )
+        mvv.exec_()
 
     def kuendigeMietverhaeltnisUsingMiniDialog( self, mv_id:str ) -> None:
         @Slot()
