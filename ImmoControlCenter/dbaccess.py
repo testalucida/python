@@ -91,31 +91,40 @@ class DbAccess:
               "order by ma.master_name, mi.mobj_id "
         return self._doReadAllGetDict( sql )
 
-    def getAktivesMietverhaeltnisZuMvId( self, mv_id: str ) -> XMietverhaeltnis:
+    def getAktuellesMietverhaeltnis( self, mv_id: str ) -> XMietverhaeltnis:
         """
-        Liefert das aktuelle Mietverhältnis zur gegebenen mv_id.
-        Es könnten mehrere sein, wenn ein Mieter von einer Wohnung in eine andere umgezogen ist.
-        Dann ist aber auch nur ein Mietverhältnis aktiv.
+        Liefert das aktuelle Mietverhältnis zur gegebenen mv_id (aktiv oder gekündigt).
         NICHT abgedeckt ist der Fall, dass ein Mieter 2 Wohnungen bewohnt.
         Dann wird eine Exception geworfen.
         :param mv_id: Selektionsparameter
         :return: XMietverhaeltnis
         """
-        sql = "select id, mv_id, mobj_id, von, coalesce(bis, '') as bis, name, " \
-              "coalesce(telefon, '') as telefon, coalesce(mobil, '') as mobil, coalesce(mailto, '') as mailto," \
-              "anzahl_pers, bemerkung1, bemerkung2, kaution, coalesce(kaution_bezahlt_am, '') as kaution_bezahlt_am " \
-              "from mietverhaeltnis " \
-              "where mv_id = '%s' " \
-              "and ( bis is NULL or bis = '' or bis >= CURRENT_DATE ) " % (mv_id)
+        sql = "select mv.id, mv.mv_id, mv.mobj_id, mv.von, coalesce(mv.bis, '') as bis, mv.name, mv.vorname, " \
+              "coalesce(mv.name2, '') as name2, coalesce(mv.vorname2, '') as vorname2, " \
+              "coalesce(mv.telefon, '') as telefon, coalesce(mv.mobil, '') as mobil, coalesce(mv.mailto, '') as mailto," \
+              "mv.anzahl_pers, mv.IBAN, " \
+              "mv.bemerkung1, mv.bemerkung2, mv.kaution, coalesce(mv.kaution_bezahlt_am, '') as kaution_bezahlt_am, " \
+              "sm.netto as nettomiete, sm.nkv " \
+              "from mietverhaeltnis mv " \
+              "inner join sollmiete sm on sm.mv_id = mv.mv_id " \
+              "where mv.mv_id = '%s' " \
+              "order by mv.von desc, sm.von desc " % mv_id
         listofdicts = self._doReadAllGetDict( sql )
-        if len( listofdicts ) > 1:
-            raise Exception( "dbaccess.getAktivesMietverhaeltnisZuMvId( mv_id ):\n"
-                             "found more than 1 row for mv_id = '%s' " % (mv_id) )
-        elif len( listofdicts ) < 0:
-            raise Exception( "dbaccess.getAktivesMietverhaeltnisZuMvId( mv_id ):\n"
-                             "found 0 rows for mv_id = '%s' " % (mv_id) )
         x = XMietverhaeltnis( listofdicts[0] )
         return x
+
+    def getAktuellesMietverhaeltnisVonBis( self, mv_id:str ) -> Dict:
+        """
+        Liefert für eine Mietverhältnis-ID das letzte (aktuelle) von/bis.
+        Das Mietverhältnis kann noch aktiv oder bereits gekündigt sein.
+        :param mv_id:
+        :return: ein Dict mit den Keys id, mv_id, mobj_id, von, bis
+        """
+        sql = "select id, mv_id, mobj_id, von, bis from mietverhaeltnis " \
+              "where mv_id = '%s' " \
+              "order by von desc " % mv_id
+        dictlist = self._doReadAllGetDict( sql )
+        return dictlist[0]
 
     def getMietverhaeltnisseEssentials( self, jahr: int, orderby: str = None ) -> List[Dict]:
         """
@@ -886,6 +895,8 @@ class DbAccess:
               "bis = '%s', " \
               "name = '%s', " \
               "vorname = '%s', " \
+              "name2 = '%s', " \
+              "vorname2 = '%s', " \
               "telefon = '%s', " \
               "mobil = '%s', " \
               "mailto = '%s', " \
@@ -894,7 +905,7 @@ class DbAccess:
               "bemerkung2 = '%s', " \
               "kaution = %d, " \
               "kaution_bezahlt_am = '%s' " \
-              "where id = %d " % (x.mv_id, x.von, x.bis, x.name, x.vorname, x.telefon, x.mobil, x.mailto,
+              "where id = %d " % (x.mv_id, x.von, x.bis, x.name, x.vorname, x.name2, x.vorname2, x.telefon, x.mobil, x.mailto,
                                   x.anzahl_pers, x.bemerkung1, x.bemerkung2, x.kaution, x.kaution_bezahlt_am, x.id)
         return self._doWrite( sql, commit )
 
@@ -1072,7 +1083,9 @@ def test():
     db = DbAccess( "immo.db" )
     db.open()
 
-    zlist = db.getZahlungen( 2021, "SB_Charlotte" )
+    d = db.getAktuellesMietverhaeltnisVonBis( "lander_anke" )
+    x = db.getAktuellesMietverhaeltnis( "lander_anke" )
+    #zlist = db.getZahlungen( 2021, "SB_Charlotte" )
 
     print( "" )
     db.close()

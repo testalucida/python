@@ -1,15 +1,14 @@
-from PySide2.QtCore import QObject, Slot, QPoint
+from PySide2.QtCore import Slot, QPoint
 from PySide2.QtWidgets import QMessageBox, QWidget, QMenu, QAction
 from abc import ABC, abstractmethod
-from typing import List, Dict
+from typing import List
 from datehelper import *
 from mdichildcontroller import MdiChildController
 from checkview import CheckView, CheckTableView
 from checktablemodel import CheckTableModel
 from business import BusinessLogic
 from constants import einausart
-from mdisubwindow import MdiSubWindow
-from mietverhaeltniscontroller import MietverhaeltnisController
+from mietverhaeltnis.mietverhaeltniscontroller import MietverhaeltnisController
 from sumfieldsprovider import SumFieldsProvider
 from tablecellactionhandler import TableCellActionHandler
 

@@ -384,11 +384,14 @@ class BusinessLogic:
         - Kündigung in Tabelle sollmiete eintragen
         """
         # aktives Mietverhältnis lesen
-        mv:XMietverhaeltnis = self._db.getAktivesMietverhaeltnisZuMvId( mv_id )
-        if kuenddatum and mv.von > kuenddatum:
+        #mv:XMietverhaeltnis = self._db.getAktivesMietverhaeltnisZuMvId( mv_id )
+        d = self._db.getAktuellesMietverhaeltnisVonBis( mv_id )
+        # if kuenddatum and mv.von > kuenddatum:
+        if kuenddatum and d["von"] > kuenddatum:
             raise Exception( "BusinessLogic.kuendigeMietverhaeltnis( '%s', '%s' ): "
                              "Mietverhältnis-von ('%s') > Mietverhältnis-bis nicht erlaubt" %
-                             (mv_id, mv.von, kuenddatum ) )
+                             # (mv_id, mv.von, kuenddatum ) )
+                             (mv_id, d["von"], kuenddatum) )
 
         # aktive Sollmiete lesen
         sm:XSollMiete = self._db.getAktiveSollmiete( mv_id )
@@ -398,7 +401,8 @@ class BusinessLogic:
                              (mv_id, sm.von, kuenddatum ) )
 
         # Mietverhältnis beenden
-        self._db.updateMietverhaeltnis2( mv.id, "bis", kuenddatum, commit=False )
+        # self._db.updateMietverhaeltnis2( mv.id, "bis", kuenddatum, commit=False )
+        self._db.updateMietverhaeltnis2( d["id"], "bis", kuenddatum, commit=False )
         # Sollmiete beenden
         sm.bis = kuenddatum
         self._db.updateSollmiete( sm, commit=True )
@@ -528,8 +532,10 @@ class BusinessLogic:
         return self._db.getKreditoren( master_name )
 
     def getKuendigungsdatum( self, mv_id:str ) -> str:
-        x:XMietverhaeltnis = self._db.getAktivesMietverhaeltnisZuMvId( mv_id )
-        return x.bis
+        #x:XMietverhaeltnis = self._db.getAktivesMietverhaeltnisZuMvId( mv_id )
+        #return x.bis
+        d = self._db.getAktuellesMietverhaeltnisVonBis( mv_id )
+        return d["bis"]
 
     def getKuendigungsdatum2( self, mv_id:str ) -> (int, int, int) or None:
         bis = self.getKuendigungsdatum( mv_id )

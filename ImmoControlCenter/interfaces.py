@@ -18,25 +18,25 @@ def setFromDict( object, valuedict:Dict ):
         d[k] = v
 
 #######################  Mietverhältnis  ########################
-class XMietverhaeltnis:
-    def __init__( self, valuedict:Dict=None ):
-        self.id = 0
-        self.mv_id = ""
-        self.mobj_id = ""
-        self.von = ""
-        self.bis = ""
-        self.name = ""
-        self.vorname = ""
-        self.telefon = ""
-        self.mobil = ""
-        self.mailto = ""
-        self.anzahl_pers = 1
-        self.bemerkung1 = ""
-        self.bemerkung2 = ""
-        self.kaution = 0
-        self.kaution_bezahlt_am = ""
-        if valuedict:
-            setFromDict( self, valuedict )
+# class XMietverhaeltnis:
+#     def __init__( self, valuedict:Dict=None ):
+#         self.id = 0
+#         self.mv_id = ""
+#         self.mobj_id = ""
+#         self.von = ""
+#         self.bis = ""
+#         self.name = ""
+#         self.vorname = ""
+#         self.telefon = ""
+#         self.mobil = ""
+#         self.mailto = ""
+#         self.anzahl_pers = 1
+#         self.bemerkung1 = ""
+#         self.bemerkung2 = ""
+#         self.kaution = 0
+#         self.kaution_bezahlt_am = ""
+#         if valuedict:
+#             setFromDict( self, valuedict )
 
 
 
@@ -93,6 +93,31 @@ class XZahlung3:
         if valuedict:
             setFromDict( self, valuedict )
 
+###################  Mietverhältnis  #########################
+class XMietverhaeltnis:
+    def __init__( self, valuedict:Dict=None ):
+        self.id = 0
+        self.mv_id = ""
+        self.mobj_id = ""
+        self.von = ""
+        self.bis = ""
+        self.name = ""
+        self.vorname = ""
+        self.name2 = ""
+        self.vorname2 = ""
+        self.telefon = ""
+        self.mobil = 22
+        self.mailto = ""
+        self.anzahl_pers = 1
+        self.IBAN = ""
+        self.nettomiete = 0.0
+        self.nkv = 0.0
+        self.kaution = 0
+        self.kaution_bezahlt_am = ""
+        self.bemerkung1 = ""
+        self.bemerkung2 = ""
+        if valuedict:
+            setFromDict( self, valuedict )
 
 #################### SonstAus  ###################################
 

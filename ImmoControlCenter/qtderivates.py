@@ -117,6 +117,17 @@ class SmartDateEdit( QLineEdit ):
         else:
             return ""
 
+    def isDateValid( self ) -> bool:
+        """
+        Prüft, ob der String im Edit-Feld ein gültiges Datum darstellt (True) oder nicht (False).
+        Ein leeres Feld gilt als "gültig" (True)
+        :return:
+        """
+        ds = self.text()
+        if ds.endswith( "\n" ): ds = ds[:-1]
+        if ds == "": return True
+        return ( isValidIsoDatestring( ds ) or isValidEurDatestring( ds ) )
+
     def showCalendar( self ):
         cal = CalendarDialog( self )
         text = self.text()

@@ -3,7 +3,7 @@ from typing import List, Dict, Tuple
 from PySide2.QtWidgets import QApplication, QDialog
 
 from business import BusinessLogic
-from mieterwechsel.mieterwechselgui import MietobjektAuswahldialog, MieterwechselDialog
+from mietverhaeltnis.mieterwechselgui import MietobjektAuswahldialog, MieterwechselDialog
 
 
 class MieterwechselController:

@@ -1,7 +1,7 @@
 from PySide2 import QtWidgets
 from PySide2.QtCore import Signal
 from PySide2.QtGui import QFont
-from PySide2.QtWidgets import QWidget, QApplication, QComboBox, QDialog, QGridLayout, QPushButton, QLabel
+from PySide2.QtWidgets import QWidget, QApplication, QComboBox, QDialog, QGridLayout, QPushButton, QLabel, QMessageBox
 
 from qtderivates import SmartDateEdit
 
@@ -53,6 +53,13 @@ class MiniKuendigungDlg( QDialog ):
         self._sdKuenddatum.setDate( yyyy, mm, dd )
 
     def _onKuendige( self ):
+        if not self._sdKuenddatum.isDateValid():
+            msgbox = QtWidgets.QMessageBox()
+            msgbox.setWindowTitle( "Datum ungültig" )
+            msgbox.setIcon( QMessageBox.Critical )
+            msgbox.setText( "Das eingegebene Datum ist ungültig." )
+            msgbox.exec_()
+            return
         self.kuendigeMietverhaeltnis.emit( self._lblName.text(), self._sdKuenddatum.getDate() )
         self._onClose()
 

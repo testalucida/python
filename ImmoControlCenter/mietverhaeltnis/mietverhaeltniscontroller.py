@@ -5,10 +5,12 @@ from PySide2.QtWidgets import QApplication, QDialog, QGridLayout, QPushButton, Q
 
 from business import BusinessLogic
 from datehelper import getCurrentYearAndMonth, getNumberOfDays
-from minikuendigungdlg import MiniKuendigungDlg
+from mietverhaeltnis.minikuendigungdlg import MiniKuendigungDlg
+
 
 class MietverhaeltnisController( QObject ):
     mietverhaeltnisGekuendigt = Signal( (str, str) )
+
     def __init__( self, parent ):
         QObject.__init__( self )
         self._parent = parent
@@ -18,6 +20,7 @@ class MietverhaeltnisController( QObject ):
         @Slot()
         def onKuendigeSlot( mv_id, kuendDatum ):
             self.kuendigeMietverhaeltnis( mv_id, kuendDatum )
+
         """
         Öffnet einen MiniKuendigungDlg und lässt den Anwender die Kündigungsdaten für mv_id erfassen.
         Nach Drücken von "Kündigen" wird die Kündigung in die Datenbank geschrieben

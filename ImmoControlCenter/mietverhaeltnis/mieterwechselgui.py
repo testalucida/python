@@ -1,7 +1,7 @@
 from PySide2.QtGui import QFont, Qt
 from PySide2.QtWidgets import QApplication, QWidget, QGridLayout, QLabel, QHBoxLayout
 from generictable_stuff.okcanceldialog import OkCancelDialog
-from mietverhaeltnisgui import MietverhaeltnisView
+from mietverhaeltnis.mietverhaeltnisgui import MietverhaeltnisView
 from qtderivates import AuswahlDialog, BaseEdit, SmartDateEdit, BaseLabel
 
 
