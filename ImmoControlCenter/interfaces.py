@@ -106,7 +106,7 @@ class XMietverhaeltnis:
         self.name2 = ""
         self.vorname2 = ""
         self.telefon = ""
-        self.mobil = 22
+        self.mobil = ""
         self.mailto = ""
         self.anzahl_pers = 1
         self.IBAN = ""

@@ -60,6 +60,7 @@ class DbAccess:
         Liefert folgende Informationen für alle aktiven Mietobjekte:
         - mobj_id
         - master_id
+        - whg_bez
         :return:
         """
         sql = "select mobj_id, master_id, whg_bez " \
@@ -112,6 +113,15 @@ class DbAccess:
         listofdicts = self._doReadAllGetDict( sql )
         x = XMietverhaeltnis( listofdicts[0] )
         return x
+
+    def getAktuellesMietverhaeltnisZuMietobjekt( self, mobj_id:str ) -> str:
+        sql = "select mv_id " \
+              "from mietverhaeltnis where mobj_id = '%s' " \
+              "order by von desc " % mobj_id
+        tuplelist:List[tuple] = self._doRead( sql )
+        if len( tuplelist ) == 0:
+            return ""
+        return tuplelist[0][0]
 
     def getAktuellesMietverhaeltnisVonBis( self, mv_id:str ) -> Dict:
         """
@@ -1082,7 +1092,7 @@ class DbAccess:
 def test():
     db = DbAccess( "immo.db" )
     db.open()
-
+    mobj_id = db.getMietobjektZuMietverhaeltnis( "lander_ank" )
     d = db.getAktuellesMietverhaeltnisVonBis( "lander_anke" )
     x = db.getAktuellesMietverhaeltnis( "lander_anke" )
     #zlist = db.getZahlungen( 2021, "SB_Charlotte" )

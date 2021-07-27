@@ -393,7 +393,7 @@ class ImmoCenterMainWindow( QMainWindow ):
         self.doCallback( MainWindowAction.NEW_WINDOW )
 
     def onMieterwechsel( self ):
-        pass
+        self.doCallback( MainWindowAction.MIETERWECHSEL )
 
     def onVerwalterwechsel( self ):
         pass

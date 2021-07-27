@@ -9,7 +9,7 @@ from abrechnungentablemodel import NkAbrechnungenTableModel, HgAbrechnungenTable
 from anlage_v.anlagev_interfaces import XSammelAbgabeDetail
 from buchungstextmatchmodel import BuchungstextMatchModel
 from dbaccess import DbAccess
-from typing import List
+from typing import List, Union
 from constants import einausart, Zahlart, zahlartstrings
 from interfaces import XSonstAus, XSonstAusSummen, XZahlung, XSollHausgeld, XSollMiete, XBuchungstextMatch, \
     XNkAbrechnung, XAbrechnung, XHgAbrechnung, XMietverhaeltnis, XOffenerPosten, XNotiz, XZahlung2, XRendite, XAusgabe, \
@@ -382,6 +382,9 @@ class BusinessLogic:
         x:XMietverhaeltnis = self._db.getAktuellesMietverhaeltnis( mv_id )
         return x
 
+    def getAktuelleMietverhaeltnisId( self, mobj_id:str ) -> str:
+        return self._db.getAktuellesMietverhaeltnisZuMietobjekt( mobj_id )
+
     def kuendigeMietverhaeltnis( self, mv_id:str, kuenddatum:str ) -> None:
         """
         - Kündigung in Tabelle mietverhaeltnis eintragen
@@ -501,15 +504,22 @@ class BusinessLogic:
 
         return masterobjekte
 
-    def getAllMietobjekte( self ) -> List[str]:
+    def getAllMietobjekte( self ) -> Tuple[List[str], list]:
+        """
+        liefert 2 Listen:
+        eine Liste mit Itemtexten für den Auswahldialog und eine Liste mit den Mietobjekt-ID's,
+        damit man nach der Auswahl aus dem gewählten Item wieder eine mobj_id machen kann.
+        :return:
+        """
         def getWhgBez( mobj_id:str, whg_bez:str ) -> str:
             if not whg_bez:
                 whg_bez = ""
             return mobj_id + ",  " + whg_bez
 
         li:List[Dict] = self._db.getMietobjekteKurz()
-        mobj_list = [getWhgBez( m["mobj_id"], m["whg_bez"] ) for m in li]
-        return mobj_list
+        itemtext_list = [getWhgBez( m["mobj_id"], m["whg_bez"] ) for m in li]
+        mobj_list = [m["mobj_id"] for m in li]
+        return itemtext_list, mobj_list
 
     def getMietobjekte( self, master_name:str ) -> List[str]:
         """

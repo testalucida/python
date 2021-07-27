@@ -1,6 +1,7 @@
 from PySide2.QtGui import QFont, Qt
 from PySide2.QtWidgets import QApplication, QWidget, QGridLayout, QLabel, QHBoxLayout
 from generictable_stuff.okcanceldialog import OkCancelDialog
+from interfaces import XMietverhaeltnis
 from mietverhaeltnis.mietverhaeltnisgui import MietverhaeltnisView
 from qtderivates import AuswahlDialog, BaseEdit, SmartDateEdit, BaseLabel
 
@@ -90,6 +91,12 @@ class MieterwechselView( QWidget ):
         r += 1
         l.addWidget( self._neuesMietvh, r, c, 1, 2 )
 
+    def setAltesMietverhaeltnis( self, xmv:XMietverhaeltnis ):
+        pass
+
+    def setNeuesMietverhaeltnis( self, xmv:XMietverhaeltnis ):
+        self._neuesMietvh.setMietverhaeltnisData( xmv )
+
 ###############  MieterwechselDialog  ##########################
 class MieterwechselDialog( OkCancelDialog ):
     def __init__(self, miet_obj:str, parent=None):
@@ -97,6 +104,12 @@ class MieterwechselDialog( OkCancelDialog ):
         self.setWindowTitle( miet_obj )
         self._view = MieterwechselView()
         self.addWidget( self._view, 0 )
+
+    def setAktuellesMietverhaeltnis( self, xmv:XMietverhaeltnis ):
+        pass
+
+    def setNeuesMietverhaeltnis( self, xmv:XMietverhaeltnis ):
+        self._view.setNeuesMietverhaeltnis( xmv )
 
 #################################################################
 

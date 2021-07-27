@@ -10,6 +10,7 @@ from datehelper import getCurrentYear
 from mdisubwindow import MdiSubWindow
 from immocentermainwindow import ImmoCenterMainWindow, MainWindowAction
 from checkcontroller import MdiChildController, MietenController, HGVController
+from mietverhaeltnis.mieterwechselcontroller import MieterwechselController
 from notizen.notizencontroller import NotizenController
 from offene_posten.offenepostencontroller import OffenePostenController
 from rendite.renditecontroller import RenditeController
@@ -136,7 +137,8 @@ class MainController:
         self.createRenditeViewAndShow()
 
     def showMieterwechselDialog( self ):
-        pass
+        c = MieterwechselController()
+        c.startWork()
 
     def test( self ):
         print( "test")
