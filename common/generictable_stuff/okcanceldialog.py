@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QWidget
 from PySide2.QtCore import Qt, Signal
-from PySide2.QtWidgets import QDialog, QPushButton, QGridLayout, QApplication, QHBoxLayout, QLabel
+from PySide2.QtWidgets import QDialog, QPushButton, QGridLayout, QApplication, QHBoxLayout, QLabel, QMessageBox
 
 
 class OkCancelDialog( QDialog ):
@@ -60,6 +60,10 @@ class OkCancelDialog( QDialog ):
 
     def setCancellationFunction( self, fnc ):
         self._cancellationFnc = fnc
+
+    def showErrorMessage( self, title:str, msg:str ):
+        mb = QMessageBox( QMessageBox.Critical, title, msg )
+        mb.exec_()
 
 def testOkCancelDialog():
     app = QApplication()

@@ -3,7 +3,7 @@ from PySide2.QtWidgets import QApplication, QWidget, QGridLayout, QLabel, QHBoxL
 from generictable_stuff.okcanceldialog import OkCancelDialog
 from interfaces import XMietverhaeltnis
 from mietverhaeltnis.mietverhaeltnisgui import MietverhaeltnisView
-from qtderivates import AuswahlDialog, BaseEdit, SmartDateEdit, BaseLabel
+from qtderivates import AuswahlDialog, BaseEdit, SmartDateEdit, BaseLabel, FloatEdit, IntEdit
 
 
 ##############  MietobjektAuswahlDialog  #######################
@@ -17,9 +17,9 @@ class MieterwechselView( QWidget ):
         self._layout = QGridLayout()
         # altes Mietverhältnis
         self._edAlterMieter = BaseEdit()
-        self._edAlteNettomiete = BaseEdit()
-        self._edAlteNKV = BaseEdit()
-        self._edAlteKaution = BaseEdit()
+        self._edAlteNettomiete = FloatEdit()
+        self._edAlteNKV = FloatEdit()
+        self._edAlteKaution = IntEdit()
         self._sdEndeMietverh = SmartDateEdit()
         # neues Mietverhältnis
         self._neuesMietvh = MietverhaeltnisView()
@@ -92,10 +92,21 @@ class MieterwechselView( QWidget ):
         l.addWidget( self._neuesMietvh, r, c, 1, 2 )
 
     def setAltesMietverhaeltnis( self, xmv:XMietverhaeltnis ):
-        pass
+        self._edAlterMieter.setText( xmv.name + ", " + xmv.vorname )
+        self._edAlteNettomiete.setFloatValue( xmv.nettomiete )
+        self._edAlteNKV.setFloatValue( xmv.nkv )
+        if xmv.kaution:
+            self._edAlteKaution.setIntValue( xmv.kaution )
+        self._sdEndeMietverh.setDateFromIsoString( xmv.bis )
 
     def setNeuesMietverhaeltnis( self, xmv:XMietverhaeltnis ):
         self._neuesMietvh.setMietverhaeltnisData( xmv )
+
+    def getNeuesMietverhaeltnisCopyWithChanges( self ) -> XMietverhaeltnis:
+        return self._neuesMietvh.getMietverhaeltnisCopyWithChanges()
+
+    def getAltesMietverhaeltnisMietEnde( self ) -> str:
+        return self._sdEndeMietverh.getDate()
 
 ###############  MieterwechselDialog  ##########################
 class MieterwechselDialog( OkCancelDialog ):
@@ -106,10 +117,16 @@ class MieterwechselDialog( OkCancelDialog ):
         self.addWidget( self._view, 0 )
 
     def setAktuellesMietverhaeltnis( self, xmv:XMietverhaeltnis ):
-        pass
+        self._view.setAltesMietverhaeltnis( xmv )
 
     def setNeuesMietverhaeltnis( self, xmv:XMietverhaeltnis ):
         self._view.setNeuesMietverhaeltnis( xmv )
+
+    def getAktuellesMietverhaeltnisMietEnde( self ) -> str:
+        return self._view.getAltesMietverhaeltnisMietEnde()
+
+    def getNeuesMietverhaeltnisCopyWithChanges( self ) -> XMietverhaeltnis:
+        return self._view.getNeuesMietverhaeltnisCopyWithChanges()
 
 #################################################################
 
