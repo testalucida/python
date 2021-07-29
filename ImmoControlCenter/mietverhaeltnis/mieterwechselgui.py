@@ -108,6 +108,9 @@ class MieterwechselView( QWidget ):
     def getAltesMietverhaeltnisMietEnde( self ) -> str:
         return self._sdEndeMietverh.getDate()
 
+    def applyChanges( self ):
+        self._neuesMietvh.applyChanges()
+
 ###############  MieterwechselDialog  ##########################
 class MieterwechselDialog( OkCancelDialog ):
     def __init__(self, miet_obj:str, parent=None):
@@ -127,6 +130,9 @@ class MieterwechselDialog( OkCancelDialog ):
 
     def getNeuesMietverhaeltnisCopyWithChanges( self ) -> XMietverhaeltnis:
         return self._view.getNeuesMietverhaeltnisCopyWithChanges()
+
+    def applyChanges( self ):
+        self._view.applyChanges()
 
 #################################################################
 

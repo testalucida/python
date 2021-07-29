@@ -706,14 +706,25 @@ class DbAccess:
               (d["mobj_id"], d["master_id"], d["whg_bez"], d["qm"], d["container_nr"], d["bemerkung"], d["aktiv"])
         return self._doWrite( sql, commit )
 
-    def insertMietverhaeltnis( self, d: Dict, commit: bool = True ) -> int:
+    # def insertMietverhaeltnis( self, d: Dict, commit: bool = True ) -> int:
+    #     sql = "insert into mietverhaeltnis " \
+    #           "(mv_id, mobj_id, von, bis, name, vorname, telefon, mobil, mailto, anzahl_pers, IBAN, bemerkung1, bemerkung2) " \
+    #           "values " \
+    #           "('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s') " % \
+    #           (d["mv_id"], d["mobj_id"], d["von"], d["bis"], d["name"], d["vorname"], "", d["mobil"], d["mailto"],
+    #            d["anzahl_pers"],
+    #            d["IBAN"], d["bemerkung1"], d["bemerkung2"])
+    #     return self._doWrite( sql, commit )
+
+    def insertMietverhaeltnis( self, x:XMietverhaeltnis, commit:bool=True ) -> int:
         sql = "insert into mietverhaeltnis " \
-              "(mv_id, mobj_id, von, bis, name, vorname, telefon, mobil, mailto, anzahl_pers, IBAN, bemerkung1, bemerkung2) " \
+              "(mv_id, mobj_id, von, bis, name, vorname, name2, vorname2, telefon, mobil, mailto, anzahl_pers, " \
+              "IBAN, kaution, kaution_bezahlt_am, bemerkung1, bemerkung2) " \
               "values " \
-              "('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s') " % \
-              (d["mv_id"], d["mobj_id"], d["von"], d["bis"], d["name"], d["vorname"], "", d["mobil"], d["mailto"],
-               d["anzahl_pers"],
-               d["IBAN"], d["bemerkung1"], d["bemerkung2"])
+              "('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, " \
+              "'%s', %d, '%s', '%s', '%s') " % \
+              ( x.mv_id, x.mobj_id, x.von, x.bis, x.name, x.vorname, x.name2, x.vorname2, x.telefon, x.mobil, x.mailto,
+               x.anzahl_pers, x.IBAN, x.kaution, x.kaution_bezahlt_am, x.bemerkung1, x.bemerkung2 )
         return self._doWrite( sql, commit )
 
     def insertSollmiete( self, x: XSollMiete, commit: bool = True ) -> int:

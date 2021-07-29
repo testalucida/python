@@ -60,7 +60,8 @@ class MieterwechselController:
         dlg.setNeuesMietverhaeltnis( xmv_neu )
         dlg.setValidationFunction( validateMieterwechsel )
         if dlg.exec_() == QDialog.Accepted:
-            print( "accepted")
+            dlg.applyChanges()
+            busi.processMieterwechsel( mv_id, dlg.getAktuellesMietverhaeltnisMietEnde(), xmv_neu )
         else: print( "aborted" )
 
 

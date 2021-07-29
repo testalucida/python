@@ -695,6 +695,69 @@ class BusinessLogic:
         model = HgAbrechnungenTableModel( abrechlist )
         return model
 
+    def validateMieterwechselData( self, mietende_akt, xmv_neu:XMietverhaeltnis ) -> str:
+        if not mietende_akt: return "Mietende fehlt"
+        if not isValidIsoDatestring( mietende_akt ): return "Mietende: kein gültiges Datumsformat"
+        if not xmv_neu.von: return "Mietbeginn fehlt"
+        if not isValidIsoDatestring( xmv_neu.von ): return "Mietbeginn: kein gültiges Datumsformat"
+        if xmv_neu.von <= mietende_akt: return "Mietbeginn muss größer sein als Mietende"
+        if not xmv_neu.name or xmv_neu.name == "": return "Name des Mieters fehlt"
+        if not xmv_neu.vorname or xmv_neu.vorname == "": return "Vorame des Mieters fehlt"
+        if xmv_neu.nettomiete <= 0: return "Netto-Miete muss größer 0 sein"
+        if xmv_neu.nkv <= 0: return "Nebenkostenvorauszahlung muss größer 0 sein"
+        return ""
+
+    def processMieterwechsel( self, mv_id:str, mietende_akt:str, xmv_neu:XMietverhaeltnis ):
+        """
+        beendet das aktuelle Mietverhältnis und legt ein neues an.
+        Inklusive der Einträge in die Tabellen sollmiete und mtleinaus
+        :param mv_id:
+        :param mietende_akt:
+        :param xmv_neu:
+        :return:
+        """
+        # Übergebene Daten validieren:
+        msg = self.validateMieterwechselData( mietende_akt, xmv_neu )
+        if msg > "":
+            raise Exception( "BusinessLogic.processMieterwechsel()\n Übergebene Daten sind fehlerhaft:\n'%s'" % msg )
+
+        # zuerst das aktuelle MV lesen, und prüfen, ob es ein Update auf das Ende-Datum braucht:
+        xmv_akt = self._db.getAktuellesMietverhaeltnis( mv_id )
+        if xmv_akt.bis != mietende_akt:
+            self._db.updateMietverhaeltnis2( xmv_akt.id, "bis", mietende_akt, False )
+        self.createMietverhaeltnis( xmv_neu )
+        self._db.commit()
+
+    def createMietverhaeltnis( self, xmv:XMietverhaeltnis ):
+        """
+        fügt ein neues Mietverhältnis ein.
+
+        :param xmv:
+        :return:
+        """
+        # neue mv_id erzeugen:
+        mv_id = self._create_mv_id( xmv.name, xmv.vorname )
+        self._db.insertMietverhaeltnis( xmv, False )
+
+    def _create_mv_id( self, name:str, vorname:str ) -> str:
+        def replaceUmlauteAndBlanks( s:str ) -> str:
+            s = s.lower()
+            s = s.replace( "ä", "ae" )
+            s = s.replace( "ö", "oe" )
+            s = s.replace( "ü", "ue" )
+            s = s.replace( "ß", "ss" )
+            s = s.replace( " ", "" )
+        name = replaceUmlauteAndBlanks( name )
+        vorname = replaceUmlauteAndBlanks( vorname )
+        return name + "_" + vorname
+
+    def updateMietverhaeltnis( self, xmv:XMietverhaeltnis ):
+        """
+        ändert ein Mietverhältnis
+        :param xmv:
+        :return:
+        """
+
     def insertSollmieten( self, xlist:List[XSollMiete] ):
         for x in xlist:
             self._db.insertSollmiete( x, False )
