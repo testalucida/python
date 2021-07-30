@@ -61,7 +61,10 @@ class MieterwechselController:
         dlg.setValidationFunction( validateMieterwechsel )
         if dlg.exec_() == QDialog.Accepted:
             dlg.applyChanges()
-            busi.processMieterwechsel( mv_id, dlg.getAktuellesMietverhaeltnisMietEnde(), xmv_neu )
+            try:
+                busi.processMieterwechsel( mv_id, dlg.getAktuellesMietverhaeltnisMietEnde(), xmv_neu )
+            except Exception as ex:
+                dlg.showErrorMessage( "Fehler beim Bearbeiten des Mieterwechsels", str( ex ) + "\n\nDialog wird abgebrochen" )
         else: print( "aborted" )
 
 

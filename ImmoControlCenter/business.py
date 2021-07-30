@@ -385,7 +385,7 @@ class BusinessLogic:
     def getAktuelleMietverhaeltnisId( self, mobj_id:str ) -> str:
         return self._db.getAktuellesMietverhaeltnisZuMietobjekt( mobj_id )
 
-    def kuendigeMietverhaeltnis( self, mv_id:str, kuenddatum:str ) -> None:
+    def kuendigeMietverhaeltnis( self, mv_id:str, kuenddatum:str, commit:bool=True ) -> None:
         """
         - Kündigung in Tabelle mietverhaeltnis eintragen
         - Kündigung in Tabelle sollmiete eintragen
@@ -412,7 +412,7 @@ class BusinessLogic:
         self._db.updateMietverhaeltnis2( d["id"], "bis", kuenddatum, commit=False )
         # Sollmiete beenden
         sm.bis = kuenddatum
-        self._db.updateSollmiete( sm, commit=True )
+        self._db.updateSollmiete( sm, commit=commit )
 
     def getSollmietenMonat( self, jahr:int, monat:int ) -> List[Dict]:
         return self._db.getSollmietenMonat( jahr, monat )
@@ -719,25 +719,39 @@ class BusinessLogic:
         # Übergebene Daten validieren:
         msg = self.validateMieterwechselData( mietende_akt, xmv_neu )
         if msg > "":
-            raise Exception( "BusinessLogic.processMieterwechsel()\n Übergebene Daten sind fehlerhaft:\n'%s'" % msg )
+            raise Exception( "BusinessLogic.processMieterwechsel()\n\n Übergebene Daten sind fehlerhaft:\n\n'%s'" % msg )
 
         # zuerst das aktuelle MV lesen, und prüfen, ob es ein Update auf das Ende-Datum braucht:
         xmv_akt = self._db.getAktuellesMietverhaeltnis( mv_id )
+        xmv_neu.mobj_id = xmv_akt.mobj_id # Objekt bleibt das gleiche
         if xmv_akt.bis != mietende_akt:
-            self._db.updateMietverhaeltnis2( xmv_akt.id, "bis", mietende_akt, False )
-        self.createMietverhaeltnis( xmv_neu )
+            self.kuendigeMietverhaeltnis( xmv_akt.mv_id, mietende_akt, False )
+        # Mietverhältnis, Sollmiete, Mietensatz anlegen:
+        self.createMietverhaeltnis( xmv_neu, False )
         self._db.commit()
 
-    def createMietverhaeltnis( self, xmv:XMietverhaeltnis ):
+    def createMietverhaeltnis( self, xmv:XMietverhaeltnis, commit:bool=True ):
         """
         fügt ein neues Mietverhältnis ein.
-
+        Das neue Mietverhältnis xmv hat noch keine mv_id. Diese wird hier aus Name und Vorname erzeugt.
         :param xmv:
         :return:
         """
         # neue mv_id erzeugen:
-        mv_id = self._create_mv_id( xmv.name, xmv.vorname )
+        xmv.mv_id = self._create_mv_id( xmv.name, xmv.vorname )
+        # neues Mietverhältnis anlegen
         self._db.insertMietverhaeltnis( xmv, False )
+        sm = XSollMiete()
+        sm.mv_id = xmv.mv_id
+        sm.mobj_id = xmv.mobj_id
+        sm.von = xmv.von
+        sm.bis = xmv.bis
+        sm.netto = xmv.nettomiete
+        sm.nkv = xmv.nkv
+        # Sollmiete anlegen
+        self.insertSollmieten( [sm,], False )
+        # Mietensatz in mtleinaus anlegen:
+        self.createMtlEinAusJahresSet( ## todo ## )
 
     def _create_mv_id( self, name:str, vorname:str ) -> str:
         def replaceUmlauteAndBlanks( s:str ) -> str:
@@ -747,6 +761,7 @@ class BusinessLogic:
             s = s.replace( "ü", "ue" )
             s = s.replace( "ß", "ss" )
             s = s.replace( " ", "" )
+            return s
         name = replaceUmlauteAndBlanks( name )
         vorname = replaceUmlauteAndBlanks( vorname )
         return name + "_" + vorname
@@ -758,10 +773,11 @@ class BusinessLogic:
         :return:
         """
 
-    def insertSollmieten( self, xlist:List[XSollMiete] ):
+    def insertSollmieten( self, xlist:List[XSollMiete], commit:bool=True ):
         for x in xlist:
             self._db.insertSollmiete( x, False )
-        self._db.commit()
+        if commit:
+            self._db.commit()
 
     def updateSollmieten( self, xlist:List[XSollMiete] ):
         for x in xlist:
