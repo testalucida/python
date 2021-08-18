@@ -50,7 +50,8 @@ class SonstAusController( MdiChildController ):
         sausview.setKreditoren( kreditoren )
         if len( kreditoren ) > 0:
             self._view.setKreditoren( kreditoren )
-        sonstauslist, summen = BusinessLogic.inst().getSonstigeAusgabenUndSummen( self._jahr )
+        sausview.setKostenarten( BusinessLogic.inst().getKostenartenLang() )
+        sonstauslist = BusinessLogic.inst().getSonstigeAusgabenUndSummen( self._jahr )
         tm = SonstAusTableModel( sonstauslist )
         sausview.setAuszahlungenTableModel( tm )
         #sausview.setSummen( summen )
@@ -85,7 +86,7 @@ class SonstAusController( MdiChildController ):
                 # übernehmen des selektierten XBuchungstextMatch in die Editfelder
                 x: XBuchungstextMatch = matchModel.getXBuchungstextMatch( indexes[0].row() )
                 self._view.provideEditFieldsPartly( (x.umlegbar > 0), x.master_id, x.master_name,
-                                                    x.mobj_id, x.kreditor, x.buchungstext )
+                                                    x.mobj_id, x.kreditor, x.kostenart_lang, x.buchungstext )
         matchModel = BusinessLogic.inst().getBuchungstextMatches( searchstring )
         dlg = TableViewDialog( self._view )
         dlg.setModal( True )
@@ -98,7 +99,7 @@ class SonstAusController( MdiChildController ):
         model:SonstAusTableModel = self._view.getAuszahlungenTableView().model()
         changes:Dict[str, List[XSonstAus]] = model.getChanges()
         self.writeChanges( changes )
-        SumFieldsProvider.inst().setSumFields()
+        #SumFieldsProvider.inst().setSumFields()
         model.resetChanges()
 
     def onSearch( self, searchstring:str ):
@@ -380,7 +381,8 @@ class SonstAusController( MdiChildController ):
             return "Kein Kreditor angegeben."
         if not x.buchungsdatum and not x.rgdatum:
             return "Entweder Buchungs- oder Rechnungsdatum muss angegeben werden."
-        print( "betrag: ", x.betrag )
+        if x.kostenart_lang == "":
+            return "Keine Kostenart angegeben."
         if x.betrag == 0:
             return "Kein Betrag angegeben."
         return ""

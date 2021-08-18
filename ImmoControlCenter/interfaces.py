@@ -38,7 +38,18 @@ def setFromDict( object, valuedict:Dict ):
 #         if valuedict:
 #             setFromDict( self, valuedict )
 
-
+####################### Wertebereich ##########################
+class XWertebereich:
+    def __init__(self, valuedict:Dict=None):
+        self.id = 0
+        self.table_name = ""
+        self.column_name = ""
+        self.isNumeric = 0
+        self.wert = None
+        self.beschreibung_kurz = ""
+        self.beschreibung = ""
+        if valuedict:
+            setFromDict( self, valuedict )
 
 ####################### Zahlung #################################1
 class XZahlung:
@@ -119,6 +130,14 @@ class XMietverhaeltnis:
         if valuedict:
             setFromDict( self, valuedict )
 
+#################### Kostenart ###################################
+
+class XKostenart:
+    def __init__( self, kostenart_kurz="", kostenart_lang="", beschreibung="" ):
+        self.kostenart_kurz = kostenart_kurz
+        self.kostenart_lang = kostenart_lang
+        self.beschreibung = beschreibung
+
 #################### SonstAus  ###################################
 
 class XSonstAus:
@@ -138,6 +157,8 @@ class XSonstAus:
         self.buchungsdatum: str = ""
         self.buchungsjahr: int = 0
         self.buchungstext: str = ""  # der Text auf dem Buchungsbeleg, der bei öfftl. Providern identifizierend ist. (Kundennummer, Vertragsnummer etc.)
+        self.kostenart: str = ""  # Kostenart-Kürzel aus Tabelle sonstaus
+        self.kostenart_lang = ""  # Langtext für das Kostenart-Kürzel
         if valuedict:
             setFromDict( self, valuedict )
 
@@ -206,6 +227,7 @@ class XBuchungstextMatch( XBase ):
     mobj_id:str = ""
     kreditor:str = ""
     buchungstext:str = ""
+    kostenart_lang:str = ""
     umlegbar:int = 0
 
 class XSollzahlung:

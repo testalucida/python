@@ -13,7 +13,7 @@ from typing import List, Union
 from constants import einausart, Zahlart, zahlartstrings
 from interfaces import XSonstAus, XSonstAusSummen, XZahlung, XSollHausgeld, XSollMiete, XBuchungstextMatch, \
     XNkAbrechnung, XAbrechnung, XHgAbrechnung, XMietverhaeltnis, XOffenerPosten, XNotiz, XZahlung2, XRendite, XAusgabe, \
-    XZahlung3
+    XZahlung3, XKostenart, XWertebereich
 #from monthlist import monthList, monatsletzter
 #from datehelper import monthList, monatsletzter, getLastMonth
 from datehelper import *
@@ -51,6 +51,7 @@ class BusinessLogic:
             BusinessLogic.__instance = self
         self._db: DbAccess
         self._masterundmietobjekte:List[Dict] = None
+        self._kostenarten:List[XKostenart] = None
         #self._kreditorleistungen:List[Dict] = None
 
     @staticmethod
@@ -78,6 +79,7 @@ class BusinessLogic:
         #self._db = DbAccess()
         self._db.open()
         print( "BusinessLogic.prepare(): ...connected to '%s'" % (dbname) )
+        self.getKostenarten()
 
     def terminate(self):
         self._db.close()
@@ -103,6 +105,7 @@ class BusinessLogic:
                 x.kreditor = d["kreditor"]
                 x.buchungstext = d["buchungstext"]
                 x.umlegbar = d["umlegbar"]
+                x.kostenart_lang = self.getKostenartLang( d["kostenart"] )
                 lst.append( x )
         model = BuchungstextMatchModel( lst )
         return model
@@ -185,6 +188,8 @@ class BusinessLogic:
                 x.master_id = self._db.getMasterId( x.master_name )
             if x.master_id < 0:
                 raise Exception( "couldn't get master_id for master_name '%s' " % (x.master_name))
+        # die Kostenart könnte sich geändert haben - aktuelles Kürzel einstellen
+        x.kostenart = self.getKostenartKurz( x.kostenart_lang )
         self._db.insertSonstAus( x, False )
         x.saus_id = self._db.getMaxId( "sonstaus", "saus_id" )
         self._writeZahlungFromXSonstAus( x, insert=True )
@@ -368,6 +373,8 @@ class BusinessLogic:
         self._db.commit()
 
     def updateSonstigeAuszahlung( self, x:XSonstAus ) -> None:
+        # die Kostenart könnte sich geändert haben - aktuelles Kürzel einstellen
+        x.kostenart = self.getKostenartKurz( x.kostenart_lang )
         self._db.updateSonstAus( x, False )
         self._writeZahlungFromXSonstAus( x, insert=False )
         self._db.commit()
@@ -378,12 +385,27 @@ class BusinessLogic:
         self._deleteZahlung( x.saus_id, Zahlart.SONSTAUS )
         self._db.commit()
 
+    def getMieterwechseldaten( self, mobj_id:str ) -> [XMietverhaeltnis, XMietverhaeltnis]:
+        """
+        Liefert die Daten, die für einen Mieterwechsel notwendig sind:
+        Das aktuelle (letzte) Mietverhältnis und ENTWEDER ein schon für die Zukunft angelegtes oder, wenn es
+        kein solches gibt, ein leeres XMietverhaeltnis-Objekt.
+        :param mobj_id:
+        :return:
+        """
+        mv_id = self.getAktuelleMietverhaeltnisId( mobj_id )
+        xmv_akt: XMietverhaeltnis = self.getAktuellesMietverhaeltnis( mv_id )
+        xmv_next: XMietverhaeltnis = self._db.getNextMietverhaeltnis( mobj_id )
+        if not xmv_next:
+            xmv_next = XMietverhaeltnis()
+        return xmv_akt, xmv_next
+
     def getAktuellesMietverhaeltnis( self, mv_id:str ) -> XMietverhaeltnis:
         x:XMietverhaeltnis = self._db.getAktuellesMietverhaeltnis( mv_id )
         return x
 
     def getAktuelleMietverhaeltnisId( self, mobj_id:str ) -> str:
-        return self._db.getAktuellesMietverhaeltnisZuMietobjekt( mobj_id )
+        return self._db.getAktuelleMietverhaeltnisIDzuMietobjekt( mobj_id )
 
     def kuendigeMietverhaeltnis( self, mv_id:str, kuenddatum:str, commit:bool=True ) -> None:
         """
@@ -556,9 +578,35 @@ class BusinessLogic:
         if not bis: return None
         return getDateParts( bis )
 
-
     def getAlleKreditoren( self ) -> List[str]:
         return self._db.getAlleKreditoren()
+
+    def getKostenarten( self ) -> List[XKostenart]:
+        if self._kostenarten is None:
+            l:List[XWertebereich] = self._db.getWertebereiche( "sonstaus", "kostenart" )
+            self._kostenarten = list()
+            for wb in l:
+                ka = XKostenart( wb.wert, wb.beschreibung_kurz, wb.beschreibung )
+                self._kostenarten.append( ka )
+        return self._kostenarten
+
+    def getKostenartenLang( self ) -> List[str]:
+        kaList = self.getKostenarten()
+        return [x.kostenart_lang for x in kaList]
+
+    def getKostenartLang( self, kostenart_kurz:str ) -> str:
+        kaList = self.getKostenarten()
+        for ka in kaList:
+            if ka.kostenart_kurz == kostenart_kurz:
+                return ka.kostenart_lang
+        raise Exception( "Business.getKostenartLang(): kostenart_kurz '%s' nicht gefunden" % kostenart_kurz )
+
+    def getKostenartKurz( self, kostenart_lang:str ) -> str:
+        kaList = self.getKostenarten()
+        for ka in kaList:
+            if ka.kostenart_lang == kostenart_lang:
+                return ka.kostenart_kurz
+        raise Exception( "Business.getKostenartKurz(): kostenart_lang '%s' nicht gefunden" % kostenart_lang )
 
     def getBuchungstexte( self, kreditor:str ) -> List[str]:
         return self._db.getBuchungstexte( kreditor )
@@ -569,18 +617,17 @@ class BusinessLogic:
     def getBuchungstexteFuerMietobjekt( self, mobj_id:str, kreditor:str ) -> List[str]:
         return self._db.getBuchungstexteFuerMasterobjekt( mobj_id, kreditor )
 
-    def getSonstigeAusgabenUndSummen( self, jahr:int ) -> Tuple[List[XSonstAus], XSonstAusSummen]:
+    def getSonstigeAusgabenUndSummen( self, jahr:int ) -> List[XSonstAus]:
+        def getKostenart_lang( kostenart_kurz:str ) -> str:
+            for ka in kaList:
+                if ka.kostenart_kurz == kostenart_kurz:
+                    return ka.kostenart_lang
+
         sonstauslist:List[XSonstAus] = self._db.getSonstigeAusgaben( jahr )
-        # Summe der Ausgaben berechnen
-        summen = XSonstAusSummen()
-        for aus in sonstauslist:
-            betrag = int( round( aus.betrag ) )
-            summen.summe_aus += betrag
-            if aus.werterhaltend:
-                summen.summe_werterhaltend += betrag
-            if aus.umlegbar:
-                summen.summe_umlegbar += betrag
-        return sonstauslist, summen
+        kaList:List[XKostenart] = self.getKostenarten()
+        for sa in sonstauslist:
+            sa.kostenart_lang = getKostenart_lang( sa.kostenart )
+        return sonstauslist
 
     def getSummen( self ) -> Tuple[int, int, int]:
         sumMiete:float = self._db.getSummeZahlungen( "bruttomiete" )
@@ -721,18 +768,28 @@ class BusinessLogic:
         if msg > "":
             raise Exception( "BusinessLogic.processMieterwechsel()\n\n Übergebene Daten sind fehlerhaft:\n\n'%s'" % msg )
 
-        # zuerst das aktuelle MV lesen, und prüfen, ob es ein Update auf das Ende-Datum braucht:
+        # zuerst das aktuelle MV lesen und prüfen, ob es ein Update auf das Ende-Datum braucht:
         xmv_akt = self._db.getAktuellesMietverhaeltnis( mv_id )
         xmv_neu.mobj_id = xmv_akt.mobj_id # Objekt bleibt das gleiche
         if xmv_akt.bis != mietende_akt:
             self.kuendigeMietverhaeltnis( xmv_akt.mv_id, mietende_akt, False )
-        # Mietverhältnis, Sollmiete, Mietensatz anlegen:
-        self.createMietverhaeltnis( xmv_neu, False )
+        if xmv_neu.id > 0: # es ist keine Neuanlage, nur ein Update auf das Folge-Mietverhältnis
+            # hat sich etwas geändert?
+            xmv = self._db.getMietverhaeltnisById( xmv_neu.id )
+            if xmv == xmv_neu: # nein, zurück
+                return
+            if xmv_neu.mv_id != xmv.mv_id: # GAU - mv_id geändert
+                self.changeMV_ID( xmv.mv_id, xmv_neu.mv_id )
+            self.updateMietverhaeltnis( xmv_neu, xmv_akt )
+        else: # neues Mietverhältnis anlegen
+            # Mietverhältnis, Sollmiete, Mietensatz anlegen:
+            self.createMietverhaeltnis( xmv_neu, False )
         self._db.commit()
 
     def createMietverhaeltnis( self, xmv:XMietverhaeltnis, commit:bool=True ):
         """
-        fügt ein neues Mietverhältnis ein.
+        fügt ein neues Mietverhältnis ein: einen Satz in Tabelle mietverhaeltnis, einen in sollmiete und
+        einen in mtleinaus
         Das neue Mietverhältnis xmv hat noch keine mv_id. Diese wird hier aus Name und Vorname erzeugt.
         :param xmv:
         :return:
@@ -741,6 +798,7 @@ class BusinessLogic:
         xmv.mv_id = self._create_mv_id( xmv.name, xmv.vorname )
         # neues Mietverhältnis anlegen
         self._db.insertMietverhaeltnis( xmv, False )
+        # Sollmiete anlegen
         sm = XSollMiete()
         sm.mv_id = xmv.mv_id
         sm.mobj_id = xmv.mobj_id
@@ -748,10 +806,10 @@ class BusinessLogic:
         sm.bis = xmv.bis
         sm.netto = xmv.nettomiete
         sm.nkv = xmv.nkv
-        # Sollmiete anlegen
         self.insertSollmieten( [sm,], False )
         # Mietensatz in mtleinaus anlegen:
-        self.createMtlEinAusJahresSet( ## todo ## )
+        jahr = int( xmv.von[0:4] )
+        self._db.insertMtlEinAus( xmv.mv_id, einausart.MIETE, jahr, commit=commit )
 
     def _create_mv_id( self, name:str, vorname:str ) -> str:
         def replaceUmlauteAndBlanks( s:str ) -> str:
@@ -766,10 +824,14 @@ class BusinessLogic:
         vorname = replaceUmlauteAndBlanks( vorname )
         return name + "_" + vorname
 
-    def updateMietverhaeltnis( self, xmv:XMietverhaeltnis ):
+    def updateMietverhaeltnis( self, xmv_neu:XMietverhaeltnis, xmv_akt:XMietverhaeltnis=None ):
         """
-        ändert ein Mietverhältnis
-        :param xmv:
+        ändert ein Mietverhältnis.
+        Macht 2 Updates in den Tabellen mietverhaeltnis und sollmiete.
+        Die mv_id kann über diese Funktion nicht geändert werden.
+        :param xmv_neu: das Mietverhältnis-Objekt mit den neuen Daten.
+        :param xmv_akt: die in der DB gespeicherten Daten dieses Mietverhältnisses.
+                        Wenn dieses Argument Null ist, werden die derzeit aktuellen Daten aus der DB gelesen.
         :return:
         """
 

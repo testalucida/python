@@ -52,21 +52,17 @@ class MieterwechselController:
             return True
 
         busi:BusinessLogic = BusinessLogic.inst()
-        mv_id = busi.getAktuelleMietverhaeltnisId( mobj_id )
-        xmv_akt:XMietverhaeltnis = busi.getAktuellesMietverhaeltnis( mv_id )
-        xmv_neu = XMietverhaeltnis()
+        xmv_akt, xmv_next = busi.getMieterwechseldaten( mobj_id )
         dlg = MieterwechselDialog( "Mieterwechsel:  " + mobj_id )
         dlg.setAktuellesMietverhaeltnis( xmv_akt )
-        dlg.setNeuesMietverhaeltnis( xmv_neu )
+        dlg.setNeuesMietverhaeltnis( xmv_next )
         dlg.setValidationFunction( validateMieterwechsel )
         if dlg.exec_() == QDialog.Accepted:
             dlg.applyChanges()
             try:
-                busi.processMieterwechsel( mv_id, dlg.getAktuellesMietverhaeltnisMietEnde(), xmv_neu )
+                busi.processMieterwechsel( xmv_akt.mv_id, dlg.getAktuellesMietverhaeltnisMietEnde(), xmv_next )
             except Exception as ex:
                 dlg.showErrorMessage( "Fehler beim Bearbeiten des Mieterwechsels", str( ex ) + "\n\nDialog wird abgebrochen" )
-        else: print( "aborted" )
-
 
 def test():
     app = QApplication()

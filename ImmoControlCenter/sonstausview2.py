@@ -198,7 +198,10 @@ class SonstigeAusgabenView( QWidget ):
         btn.setEnabled( True )
         self._editRechnungLineLayout.addWidget( btn )
 
-        # Betragsfeld
+        # self._sdRechnungsdatum.setPlaceholderText( "Datum Rg." )
+        # self._sdRechnungsdatum.setMaximumWidth( 85 )
+        # self._sdRechnungsdatum.setToolTip( "optional: Datum der Rechnung" )
+        # self._editRechnungLineLayout.addWidget( self._sdRechnungsdatum, stretch=0, alignment=Qt.AlignLeft )
         self._feBetrag.setPlaceholderText( "Betrag" )
         self._feBetrag.setMaximumWidth( 70 )
         self._feBetrag.setToolTip( "Positive Beträge sind Aus-, negative Einzahlungen (Gutschriften)" )
@@ -206,7 +209,7 @@ class SonstigeAusgabenView( QWidget ):
 
         # Combobox Kostenart
         self._cboKostenart.setPlaceholderText( "Kostenart" )
-        self._cboKostenart.setFixedWidth( 120 )
+        self._cboKostenart.setFixedWidth( 70 )
         self._cboKostenart.setToolTip( "Kostenart einstellen" )
         self._editRechnungLineLayout.addWidget( self._cboKostenart, stretch=0, alignment=Qt.AlignLeft )
 
@@ -323,7 +326,6 @@ class SonstigeAusgabenView( QWidget ):
         x.buchungstext = self._cboBuchungstext.currentText()
         x.rgdatum = self._sdRechnungsdatum.getDate()
         x.betrag = self._feBetrag.getFloatValue() * (-1)
-        x.kostenart_lang = self._cboKostenart.currentText()
         x.umlegbar = self._cbUmlegbar.isChecked()
         x.werterhaltend = self._cbWerterhaltend.isChecked()
         x.rgtext = self._teBemerkung.toPlainText()
@@ -444,7 +446,7 @@ class SonstigeAusgabenView( QWidget ):
 
     def clearEditFields( self ):
         self._suspendCallbacks = True
-        self._sdBuchungsdatum.clear()
+        #self._sdBuchungsdatum.clear()
         self._cboMasterobjekt.setCurrentIndex( -1 )
         self._cboMietobjekt.setCurrentIndex( -1 )
         self._cboKreditor.setCurrentIndex( -1 )
@@ -459,13 +461,12 @@ class SonstigeAusgabenView( QWidget ):
         self._suspendCallbacks = False
 
     def provideEditFieldsPartly( self, umlegbar:bool, master_id:int, master_name:str,
-                                 mobj_id:str, kreditor:str, kostenart_lang:str, buchungstext:str ):
+                                 mobj_id:str, kreditor:str, buchungstext:str ):
         self._cbUmlegbar.setChecked( umlegbar )
         self._cboMasterobjekt.setCurrentText( master_name )
         self._cboMietobjekt.setCurrentText( mobj_id )
         self._cboKreditor.setCurrentText( kreditor )
         self._cboBuchungstext.setCurrentText( buchungstext )
-        self._cboKostenart.setCurrentText( kostenart_lang )
         #todo: weitermachen
 
     def provideEditFields( self, x:XSonstAus ):
@@ -483,8 +484,6 @@ class SonstigeAusgabenView( QWidget ):
             self._cboMietobjekt.setCurrentText( x.mobj_id )
         if x.kreditor:
             self._cboKreditor.setCurrentText( x.kreditor )
-        if x.kostenart:
-            self._cboKostenart.setCurrentText( x.kostenart_lang )
         if x.buchungstext:
             self._cboBuchungstext.setCurrentText( x.buchungstext )
         if x.rgdatum:

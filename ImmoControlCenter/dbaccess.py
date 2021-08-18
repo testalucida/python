@@ -4,7 +4,7 @@ from anlage_v.anlagev_interfaces import XSammelAbgabeDetail
 from constants import einausart
 from datehelper import getNumberOfDays, getCurrentTimestampIso
 from interfaces import XSonstAus, XZahlung, XSollHausgeld, XSollMiete, XNkAbrechnung, XHgAbrechnung, \
-    XMietverhaeltnis, XOffenerPosten, XNotiz, XZahlung2, XZahlung3
+    XMietverhaeltnis, XOffenerPosten, XNotiz, XZahlung2, XZahlung3, XWertebereich
 
 mon_dbnames = ("jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dez")
 
@@ -54,6 +54,21 @@ class DbAccess:
     def insertLetzteBuchung( self, datum: str, text: str, commit: bool = True ) -> int:
         sql = "insert into letztebuchung (datum, text) values ('%s', '%s')" % (datum, text)
         return self._doWrite( sql, commit )
+
+    def getWertebereiche( self, table:str=None, column:str=None ) -> List[XWertebereich]:
+        """
+        Liest alle Wertebereiche aus der Tabelle wertebereich
+        :return:
+        """
+        sql = "select id, table_name, column_name, is_numeric, wert, beschreibung_kurz, beschreibung from wertebereich "
+        if table:
+            sql += "where table_name = '%s' and column_name = '%s' " % ( table, column )
+        l: List[Dict] = self._doReadAllGetDict( sql )
+        wbList: List[XWertebereich] = list()
+        for d in l:
+            x = XWertebereich( d )
+            wbList.append( x )
+        return wbList
 
     def getMietobjekteKurz( self ) -> List[Dict]:
         """
@@ -114,9 +129,19 @@ class DbAccess:
         x = XMietverhaeltnis( listofdicts[0] )
         return x
 
-    def getAktuellesMietverhaeltnisZuMietobjekt( self, mobj_id:str ) -> str:
+    def getAktuelleMietverhaeltnisIDzuMietobjekt( self, mobj_id:str ) -> str:
+        """
+        Aktuell heißt: "von" muss
+        a) kleiner sein als current date
+        b) größer sein als alle anderen "von" in der Vergangenheit
+        Es spielt keine Rolle, ob "bis" NULL, in der Vergangenheit oder in der Zukunft liegt.
+        :param mobj_id:
+        :return:
+        """
         sql = "select mv_id " \
-              "from mietverhaeltnis where mobj_id = '%s' " \
+              "from mietverhaeltnis " \
+              "where mobj_id = '%s' " \
+              "and von <= CURRENT_DATE " \
               "order by von desc " % mobj_id
         tuplelist:List[tuple] = self._doRead( sql )
         if len( tuplelist ) == 0:
@@ -127,14 +152,55 @@ class DbAccess:
         """
         Liefert für eine Mietverhältnis-ID das letzte (aktuelle) von/bis.
         Das Mietverhältnis kann noch aktiv oder bereits gekündigt sein.
+        "Von" darf nicht in der Zukunft liegen.
         :param mv_id:
         :return: ein Dict mit den Keys id, mv_id, mobj_id, von, bis
         """
         sql = "select id, mv_id, mobj_id, von, bis from mietverhaeltnis " \
               "where mv_id = '%s' " \
+              "and von <= CURRENT_DATE " \
               "order by von desc " % mv_id
         dictlist = self._doReadAllGetDict( sql )
         return dictlist[0]
+
+    def getNextMietverhaeltnis( self, mobj_id:str ) -> XMietverhaeltnis or None:
+        """
+        Liefert für ein Mietobjekt das nächste in der Zukunft liegende Mietverhältnis bzw. None, wenn kein
+        solches existiert.
+        :param mobj_id:
+        :return:
+        """
+        sql = "select mv.id, mv.mv_id, mv.mobj_id, mv.von, coalesce(mv.bis, '') as bis, mv.name, mv.vorname, " \
+              "coalesce(mv.name2, '') as name2, coalesce(mv.vorname2, '') as vorname2, " \
+              "coalesce(mv.telefon, '') as telefon, coalesce(mv.mobil, '') as mobil, coalesce(mv.mailto, '') as mailto," \
+              "mv.anzahl_pers, mv.IBAN, " \
+              "mv.bemerkung1, mv.bemerkung2, mv.kaution, coalesce(mv.kaution_bezahlt_am, '') as kaution_bezahlt_am, " \
+              "sm.netto as nettomiete, sm.nkv " \
+              "from mietverhaeltnis mv " \
+              "inner join sollmiete sm on sm.mv_id = mv.mv_id " \
+              "where mv.mobj_id = '%s' " \
+              "and mv.von > CURRENT_DATE " \
+              "order by mv.von asc, sm.von desc " % mobj_id
+        listofdicts = self._doReadAllGetDict( sql )
+        if len( listofdicts ) == 0:
+            return None
+        else:
+            x = XMietverhaeltnis( listofdicts[0] )
+            return x
+
+    def getMietverhaeltnisById( self, id:int ) -> XMietverhaeltnis:
+        sql = "select mv.id, mv.mv_id, mv.mobj_id, mv.von, coalesce(mv.bis, '') as bis, mv.name, mv.vorname, " \
+            "coalesce(mv.name2, '') as name2, coalesce(mv.vorname2, '') as vorname2, " \
+            "coalesce(mv.telefon, '') as telefon, coalesce(mv.mobil, '') as mobil, coalesce(mv.mailto, '') as mailto," \
+            "mv.anzahl_pers, mv.IBAN, " \
+            "mv.bemerkung1, mv.bemerkung2, mv.kaution, coalesce(mv.kaution_bezahlt_am, '') as kaution_bezahlt_am, " \
+            "sm.netto as nettomiete, sm.nkv " \
+            "from mietverhaeltnis mv " \
+            "inner join sollmiete sm on sm.mv_id = mv.mv_id " \
+            "where mv.id = %d " % id
+        d = self._doReadOneGetDict( sql )
+        x = XMietverhaeltnis( d )
+        return x
 
     def getMietverhaeltnisseEssentials( self, jahr: int, orderby: str = None ) -> List[Dict]:
         """
@@ -414,7 +480,8 @@ class DbAccess:
         :return:
         """
         sql = "select saus_id, m.master_id, m.master_name, mobj_id, kostenart, " \
-              "kreditor, rgnr, betrag, rgdatum, rgtext, buchungsdatum, buchungsjahr, umlegbar, werterhaltend, buchungstext " \
+              "kreditor, rgnr, betrag, rgdatum, rgtext, buchungsdatum, buchungsjahr, umlegbar, werterhaltend, " \
+              "kostenart, buchungstext " \
               "from sonstaus s " \
               "inner join masterobjekt m on m.master_id = s.master_id " \
               "where buchungsjahr = %d " % (jahr)
@@ -521,12 +588,13 @@ class DbAccess:
         return li
 
     def getKreditorleistungen( self ) -> List[Dict]:
-        sql = "select distinct k.kreditor, k.master_id, m.master_name, k.mobj_id, buchungstext, umlegbar " \
+        sql = "select distinct k.kreditor, k.master_id, m.master_name, k.mobj_id, buchungstext, umlegbar, kostenart " \
               "from kreditorleistung k " \
               "inner join masterobjekt m on m.master_id = k.master_id "
         dictlist = self._doReadAllGetDict( sql )
-        dictlist = sorted( dictlist, key=lambda x: (
-        x["master_name"].lower(), x["kreditor"].lower(), x["mobj_id"].lower(), x["buchungstext"]) )
+        dictlist = sorted( dictlist,
+                           key=lambda x: (x["master_name"].lower(), x["kreditor"].lower(),
+                                          x["mobj_id"].lower(), x["buchungstext"]) )
         return dictlist
 
     def existsKreditorleistung( self, master_id: int, mobj_id: str, kreditor: str, buchungstext: str ) -> bool:
@@ -797,12 +865,13 @@ class DbAccess:
     def insertSonstAus( self, x: XSonstAus, commit: bool = True ) -> int:
         master_id = "NULL" if x.master_id is None else str( x.master_id )
         sql = "insert into sonstaus " \
-              "(master_id, mobj_id, buchungsjahr, buchungsdatum, kreditor, rgnr, betrag, rgdatum, rgtext, umlegbar, werterhaltend, buchungstext) " \
+              "(master_id, mobj_id, buchungsjahr, buchungsdatum, kreditor, rgnr, betrag, rgdatum, rgtext, umlegbar, " \
+              "werterhaltend, kostenart, buchungstext) " \
               "values " \
-              "(%s, '%s', %d, '%s', '%s', '%s', %.2f, '%s', '%s', %d, %d, '%s') " \
+              "(%s, '%s', %d, '%s', '%s', '%s', %.2f, '%s', '%s', %d, %d, '%s', '%s') " \
               % (
               master_id, x.mobj_id, x.buchungsjahr, x.buchungsdatum, x.kreditor, x.rgnr, x.betrag, x.rgdatum, x.rgtext,
-              x.umlegbar, x.werterhaltend, x.buchungstext)
+              x.umlegbar, x.werterhaltend, x.kostenart, x.buchungstext)
         return self._doWrite( sql, commit )
 
     def updateSonstAus( self, x: XSonstAus, commit: bool = True ):
@@ -816,6 +885,7 @@ class DbAccess:
               "betrag = %.2f, " \
               "umlegbar = %d, " \
               "werterhaltend = %d, " \
+              "kostenart = '%s', " \
               "buchungsdatum = '%s', " \
               "buchungsjahr = %d, " \
               "buchungstext = '%s' " \
@@ -828,6 +898,7 @@ class DbAccess:
                                        x.betrag,
                                        x.umlegbar,
                                        x.werterhaltend,
+                                       x.kostenart,
                                        x.buchungsdatum,
                                        x.buchungsjahr,
                                        x.buchungstext,
