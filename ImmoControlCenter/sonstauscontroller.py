@@ -381,7 +381,7 @@ class SonstAusController( MdiChildController ):
             return "Kein Kreditor angegeben."
         if not x.buchungsdatum and not x.rgdatum:
             return "Entweder Buchungs- oder Rechnungsdatum muss angegeben werden."
-        if x.kostenart_lang == "":
+        if x.kostenart_lang == "Kostenart":
             return "Keine Kostenart angegeben."
         if x.betrag == 0:
             return "Kein Betrag angegeben."
