@@ -1,19 +1,20 @@
-from typing import List
+from typing import List, Any
 
 from PySide2.QtCore import Slot, QObject
 from PySide2.QtWidgets import QApplication, QDialog, QMessageBox
 
 from anlage_v.anlagev_preview_logic import AnlageV_Preview_Logic
-from anlage_v.anlagev_gui import AnlageVView, AnlageVTableView, AnlageVAuswahlDialog, AnlageVDialog
+from anlage_v.anlagev_gui import AnlageVView, AnlageVTableView, AnlageVAuswahlDialog #, AnlageVDialog
 from anlage_v.anlagev_print_logic import AnlageV_Print_Logic
 from anlage_v.anlagev_tablemodel import AnlageVTableModel
 from anlage_v.anlagev_ausgabentablemodel import AnlageV_AusgabenTableModel
 from constants import DetailLink
 from generictable_stuff.generictableviewdialog import GenericTableViewDialog
+from icccontroller import IccController
 from mdisubwindow import MdiSubWindow
 
 
-class AnlageVController( QObject ):
+class AnlageVController( IccController ):
     """
     Controller für AnlageVView.
     Lässt den Anwender beim Aufruf von startWork() eine Liste von Master-Objekten bestimmen,
@@ -22,7 +23,7 @@ class AnlageVController( QObject ):
     Er sendet nur ein Signal, wenn der Anwender einen der Drucken-Buttons gedrückt hat.
     """
     def __init__( self ):
-        QObject.__init__( self )
+        IccController.__init__( self )
         self._master_objekte:List[str] = list()
         self._jahr:int = 0
         self._subwin:MdiSubWindow = MdiSubWindow()
@@ -50,15 +51,15 @@ class AnlageVController( QObject ):
             self._master_objekte.clear()
             return None
 
-    def createDialog( self, parent ) -> AnlageVDialog:
-        """
-        instead of only creating a view (and getting returned that view)
-        a dialog containing this view may be created.
-        A parent must be given so that the dialog can be non-modal.
-        """
-        view = self.createView()
-        dlg = AnlageVDialog( view, parent )
-        return dlg
+    # def createDialog( self, parent ) -> AnlageVDialog:
+    #     """
+    #     instead of only creating a view (and getting returned that view)
+    #     a dialog containing this view may be created.
+    #     A parent must be given so that the dialog can be non-modal.
+    #     """
+    #     view = self.createView()
+    #     dlg = AnlageVDialog( view, parent )
+    #     return dlg
 
     def showAnlageVAuswahlDialog( self, jahre:List[int], master_objekte:List[str] ) -> [bool, int, List]:
         """
@@ -156,6 +157,22 @@ class AnlageVController( QObject ):
                 return tm
         raise NameError( "AnlageVController._getAnlageVTableModel(): TableModel for master_object '%s' not found."
                          % (master_objekt) )
+
+    ####### Implementierung der abstrakten Methonden von IccController
+    def isChanged( self ) -> bool:
+        return False
+
+    def getChanges( self ) -> Any:
+        return None
+
+    def writeChanges( self, changes: Any = None ) -> bool:
+        return True
+
+    def clearChanges( self ) -> None:
+        pass
+
+    def getViewTitle( self ) -> str:
+        return "Anlagen V ausgewählter Objekte"
 
 
 def testPreview():

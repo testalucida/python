@@ -11,9 +11,11 @@ from buchungstextmatchmodel import BuchungstextMatchModel
 from dbaccess import DbAccess
 from typing import List, Union
 from constants import einausart, Zahlart, zahlartstrings
+from definitions import DATABASE_DIR, DATABASE
+from geschaeftsreise.geschaeftsreisentablemodel import GeschaeftsreisenTableModel
 from interfaces import XSonstAus, XSonstAusSummen, XZahlung, XSollHausgeld, XSollMiete, XBuchungstextMatch, \
     XNkAbrechnung, XAbrechnung, XHgAbrechnung, XMietverhaeltnis, XOffenerPosten, XNotiz, XZahlung2, XRendite, XAusgabe, \
-    XZahlung3, XKostenart, XWertebereich
+    XZahlung3, XKostenart, XWertebereich, XMietobjektExt, XGeschaeftsreise
 #from monthlist import monthList, monatsletzter
 #from datehelper import monthList, monatsletzter, getLastMonth
 from datehelper import *
@@ -62,23 +64,24 @@ class BusinessLogic:
         return BusinessLogic.__instance
 
     def _prepare(self):
-        dbname = ""
-        f = open( "./resources.txt", "r" )
-        lines = f.readlines()
-        for l in lines:
-            if l.startswith( "databasepath" ):
-                parts = l.split( "=" )
-                dbname = parts[1][:-1]  # truncate newline
-                f.close()
-        if dbname == "":
-            raise Exception( "BusinessLogic: cant find databasepath in resources.txt" )
-        dbname += "immo.db"
+        dbname = DATABASE
+        # dbname = ""
+        # f = open( "./resources.txt", "r" )
+        # lines = f.readlines()
+        # for l in lines:
+        #     if l.startswith( "databasepath" ):
+        #         parts = l.split( "=" )
+        #         dbname = parts[1][:-1]  # truncate newline
+        #         f.close()
+        # if dbname == "":
+        #     raise Exception( "BusinessLogic: cant find databasepath in resources.txt" )
+        # dbname += "immo.db"
         #dbname = "/home/martin/Vermietung/ImmoControlCenter/immo.db"
         print( "BusinessLogic._prepare(): trying to connect to database '%s'..." % (dbname) )
         self._db = DbAccess( dbname )
         #self._db = DbAccess()
         self._db.open()
-        print( "BusinessLogic.prepare(): ...connected to '%s'" % (dbname) )
+        print( "BusinessLogic._prepare(): ...connected to '%s'" % (dbname) )
         self.getKostenarten()
 
     def terminate(self):
@@ -86,6 +89,12 @@ class BusinessLogic:
 
     def getLetzteBuchung( self ) -> Tuple[str, str]:
         return self._db.getLetzteBuchung()
+
+    def getIccTabellen( self ) -> List[str]:
+        return self._db.getIccTabellen()
+
+    def getTableContent( self, table:str ) -> List[Dict]:
+        return self._db.readTable( table )
 
     def setLetzteBuchung( self, datum:str, text:str ):
         self._db.deleteLetzteBuchung( False )
@@ -105,6 +114,7 @@ class BusinessLogic:
                 x.kreditor = d["kreditor"]
                 x.buchungstext = d["buchungstext"]
                 x.umlegbar = d["umlegbar"]
+                x.kostenart = d["kostenart"]
                 x.kostenart_lang = self.getKostenartLang( d["kostenart"] )
                 lst.append( x )
         model = BuchungstextMatchModel( lst )
@@ -295,10 +305,15 @@ class BusinessLogic:
         z.betrag = x.betrag #if x.betrag < 0 else x.betrag*(-1)
         z.jahr = x.buchungsjahr
         z.mobj_id = x.mobj_id
+        z.kreditor = x.kreditor
         z.master_id = x.master_id
         z.saus_id = x.saus_id
         z.write_time = datetime.now().strftime( "%Y-%m-%d:%H.%M.%S" )
         z.zahl_art = zahlartstrings[Zahlart.SONSTAUS.value]
+        z.kostenart = x.kostenart
+        z.umlegbar = x.umlegbar
+        z.buchungsdatum = x.buchungsdatum
+        z.buchungstext = x.buchungstext
         if insert:
             self._db.insertZahlung( z, False )
         else:
@@ -310,8 +325,10 @@ class BusinessLogic:
         z.jahr = int( x.buchungsdatum[0:4] )
         z.mobj_id = x.mobj_id
         z.master_id = self._db.getMasterIdFromMietobjekt( x.mobj_id )
-        z.write_time = datetime.now().strftime( "%Y-%m-%d:%H.%M.%S" )
+        #z.write_time = datetime.now().strftime( "%Y-%m-%d:%H.%M.%S" ) ==> z.writetime wird von der DB-Methode auf
+                                                                         # current timestamp gesetzt
         z.zahl_art = zahlartstrings[zahlart.value]
+        z.buchungstext = "<Abr.jahr: %d> %s" % (x.ab_jahr, x.bemerkung)
         id = x.getId()
         if zahlart == Zahlart.NKA:
             id_name = "nka_id"
@@ -542,6 +559,30 @@ class BusinessLogic:
         itemtext_list = [getWhgBez( m["mobj_id"], m["whg_bez"] ) for m in li]
         mobj_list = [m["mobj_id"] for m in li]
         return itemtext_list, mobj_list
+
+    def getMietobjektExt( self, mobj_id:str ) -> XMietobjektExt:
+        xmo:XMietobjektExt = self._db.getMietobjekt( mobj_id )
+        xmv:XMietverhaeltnis = self._db.getCurrentMietverhaeltnis( xmo.mobj_id )
+        xmo.mieter = xmv.vorname + " " + xmv.name
+        if xmv.telefon:
+            xmo.telefon_mieter = xmv.telefon
+        if xmv.mobil:
+            if xmv.telefon:
+                xmo.telefon_mieter += ", "
+            xmo.telefon_mieter += xmv.telefon
+        if xmv.mailto:
+            xmo.mailto_mieter = xmv.mailto
+
+        xmo.nettomiete = xmv.nettomiete
+        xmo.nkv = xmv.nkv
+        xmo.kaution = xmv.kaution
+        xsh:XSollHausgeld = self._db.getCurrentSollHausgeld( xmo.mobj_id )
+        xmo.verwalter = xsh.vw_id
+        xmo.weg_name = xsh.weg_name
+        xmo.hgv_netto = xsh.netto
+        xmo.ruezufue = xsh.ruezufue
+        xmo.hgv_brutto = xsh.brutto
+        return xmo
 
     def getMietobjekte( self, master_name:str ) -> List[str]:
         """
@@ -776,11 +817,12 @@ class BusinessLogic:
         if xmv_neu.id > 0: # es ist keine Neuanlage, nur ein Update auf das Folge-Mietverhältnis
             # hat sich etwas geändert?
             xmv = self._db.getMietverhaeltnisById( xmv_neu.id )
-            if xmv == xmv_neu: # nein, zurück
+            if xmv.equals( xmv_neu ): # nein, zurück
                 return
             if xmv_neu.mv_id != xmv.mv_id: # GAU - mv_id geändert
-                self.changeMV_ID( xmv.mv_id, xmv_neu.mv_id )
-            self.updateMietverhaeltnis( xmv_neu, xmv_akt )
+                raise Exception( "GAU: business.processMieterwechsel - MV_ID hat sich geändert")
+            # self.updateMietverhaeltnis( xmv_neu, xmv_akt ) ich glaube, dass das falsch ist
+            self.updateMietverhaeltnis( xmv_neu )
         else: # neues Mietverhältnis anlegen
             # Mietverhältnis, Sollmiete, Mietensatz anlegen:
             self.createMietverhaeltnis( xmv_neu, False )
@@ -799,17 +841,33 @@ class BusinessLogic:
         # neues Mietverhältnis anlegen
         self._db.insertMietverhaeltnis( xmv, False )
         # Sollmiete anlegen
-        sm = XSollMiete()
-        sm.mv_id = xmv.mv_id
-        sm.mobj_id = xmv.mobj_id
-        sm.von = xmv.von
-        sm.bis = xmv.bis
-        sm.netto = xmv.nettomiete
-        sm.nkv = xmv.nkv
+        sm = self._createXSollmieteInstance( xmv.mv_id, xmv.mobj_id, xmv.von, xmv.bis, xmv.nettomiete, xmv.nkv )
         self.insertSollmieten( [sm,], False )
         # Mietensatz in mtleinaus anlegen:
         jahr = int( xmv.von[0:4] )
         self._db.insertMtlEinAus( xmv.mv_id, einausart.MIETE, jahr, commit=commit )
+
+    def _createXSollmieteInstance( self, mv_id:str, mobj_id:str, von:str, bis:str, netto:float, nkv:float ) -> XSollMiete:
+        """
+        Das XSollmiete-Objekt wird ausschließlich mit den übergebenen Daten erzeugt.
+        Es enthält **KEINE** sm_id!
+        D.h., dieses Objekt kann "as is" für einen Insert verwendet werden, aber nicht für einen Update!
+        :param mv_id:
+        :param mobj_id:
+        :param von:
+        :param bis:
+        :param netto:
+        :param nkv:
+        :return:
+        """
+        sm = XSollMiete()
+        sm.mv_id = mv_id
+        sm.mobj_id = mobj_id
+        sm.von = von
+        sm.bis = bis
+        sm.netto = netto
+        sm.nkv = nkv
+        return sm
 
     def _create_mv_id( self, name:str, vorname:str ) -> str:
         def replaceUmlauteAndBlanks( s:str ) -> str:
@@ -824,16 +882,31 @@ class BusinessLogic:
         vorname = replaceUmlauteAndBlanks( vorname )
         return name + "_" + vorname
 
-    def updateMietverhaeltnis( self, xmv_neu:XMietverhaeltnis, xmv_akt:XMietverhaeltnis=None ):
+    def updateMietverhaeltnis( self, xmv:XMietverhaeltnis ):
         """
-        ändert ein Mietverhältnis.
-        Macht 2 Updates in den Tabellen mietverhaeltnis und sollmiete.
+        Ändert ein Mietverhältnis.
+        Macht einen Update in die <mietverhaeltnis>.
+        Die Sollmiete kann über diese Methode nicht geändert werden.
         Die mv_id kann über diese Funktion nicht geändert werden.
         :param xmv_neu: das Mietverhältnis-Objekt mit den neuen Daten.
-        :param xmv_akt: die in der DB gespeicherten Daten dieses Mietverhältnisses.
-                        Wenn dieses Argument Null ist, werden die derzeit aktuellen Daten aus der DB gelesen.
         :return:
         """
+        self._db.updateMietverhaeltnis( xmv, commit=True )
+
+    def saveMietverhaeltnis( self, xmv: XMietverhaeltnis ):
+        """
+        Es kann sich um ein neues oder ein schon bestehendes MV handeln.
+        Wenn neu:
+            Fügt das übergebene Mietverhältnis und die Sollmiete in die Datenbank ein
+        Wenn schon existent:
+            Macht einen Update auf das schon bestehende Mietverhaeltnis und auf die Sollmiete.
+        :param xmv:
+        :return:
+        """
+        if xmv.id == 0:
+            self.createMietverhaeltnis( xmv )
+        else:
+            self.updateMietverhaeltnis( xmv )
 
     def insertSollmieten( self, xlist:List[XSollMiete], commit:bool=True ):
         for x in xlist:
@@ -1085,61 +1158,21 @@ class BusinessLogic:
         zmodel = Rendite_ZahlungenTableModel( zlist2 )
         return zmodel
 
-    # def getDetaillierteAusgaben( self, model:RenditeTableModel, row:int, jahr:int ) -> Rendite_AusgabenTableModel:
-    #     master_name:str = model.getObjekt( row )
-    #     master_id:int = self._db.getMasterId( master_name )
-    #     ausgabenlist:List[XSonstAus] = self._db.getSonstigeAusgaben( jahr, master_id )
-    #     # mobj_id_list:List[str] = self._db.getMietobjekteZuMasterId( master_id )
-    #     # nkabrechnglist:List[XNkAbrechnung] = self._db.getNkAbrechnungen( jahr - 1 )
-    #     # hgabrechnglist:List[XHgAbrechnung] = self._db.getHgAbrechnungen( jahr - 1 )
-    #     li:List[XAusgabe] = list()
-    #     for aus in ausgabenlist:
-    #         x = XAusgabe()
-    #         x.master_name = master_name
-    #         x.mobj_id = aus.mobj_id
-    #         x.kreditor = aus.kreditor
-    #         x.betrag = aus.betrag
-    #         x.kostenart = aus.kostenart
-    #         x.buchungsdatum = aus.buchungsdatum
-    #         x.buchungstext = aus.buchungstext
-    #         li.append( x )
-    #     sammelabgabe:float = self._getSummeAbgabenAusSammelAbgabe( master_name, jahr )
-    #     if sammelabgabe > 0:
-    #         x = XAusgabe()
-    #         x.master_name = master_name
-    #         x.betrag = sammelabgabe
-    #         x.buchungstext = "Grundsteuer/Abwasser/Str.reinigg aus Sammelabgabe"
-    #         x.kostenart = "a"
-    #         li.append( x )
-    #     li.sort( key=lambda y: y.kostenart )
-    #     kostart = ""
-    #     li2 = list()
-    #     summe = total_sum = 0.0
-    #     for aus in li:
-    #         if kostart == "":
-    #             kostart = aus.kostenart
-    #         if aus.kostenart != kostart:
-    #             # process group break
-    #             x = XAusgabe()
-    #             x.betrag = summe
-    #             x.buchungstext = "Summe '%s' " % ( kostart )
-    #             kostart = aus.kostenart
-    #             total_sum += summe
-    #             summe = 0.0
-    #             li2.append( x )
-    #         li2.append( aus )
-    #         summe += aus.betrag
-    #     x = XAusgabe()
-    #     x.betrag = summe
-    #     x.buchungstext = "Summe '%s' " % (kostart)
-    #     li2.append( x )
-    #     total_sum += summe
-    #     x = XAusgabe()
-    #     x.betrag = total_sum
-    #     x.buchungstext = "Summe über alles"
-    #     li2.append( x )
-    #     model = Rendite_AusgabenTableModel( li2 )
-    #     return model
+    def getGeschaeftsreisenTableModel( self, jahr:int ) -> GeschaeftsreisenTableModel:
+        reiseList:List[XGeschaeftsreise] = self._db.getGeschaeftsreisen( jahr )
+        model = GeschaeftsreisenTableModel( reiseList )
+        return model
+
+    def insertGeschaeftsreise( self, x:XGeschaeftsreise, commit:bool=True ):
+        self._db.insertGeschaeftsreise( x, commit )
+        x.id = self._db.getMaxId( "geschaeftsreise", "id" )
+
+    def updateGeschaeftsreise( self, x:XGeschaeftsreise, commit:bool=True ):
+        self._db.updateGeschaeftsreise( x, commit )
+
+    def deleteGeschaeftsreise( self, id:int, commit:bool=True ):
+        self._db.deleteGeschaeftsreise( id, commit )
+
 
 def test():
     busi = BusinessLogic.inst()

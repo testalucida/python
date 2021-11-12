@@ -1,72 +1,110 @@
-from typing import Dict, Tuple
+from typing import Any
 
-from PySide2.QtCore import Signal, QObject, Slot, QPoint
-from PySide2.QtWidgets import QApplication, QDialog, QGridLayout, QPushButton, QWidget, QMainWindow
+from PySide2.QtCore import QObject, Signal, QPoint
+from PySide2.QtWidgets import QWidget, QApplication
 
 from business import BusinessLogic
-from datehelper import getCurrentYearAndMonth, getNumberOfDays
+from icccontroller import IccController
 from interfaces import XMietverhaeltnis
-from mietverhaeltnis.mietverhaeltnisgui import MietverhaeltnisView, MietverhaeltnisDialog
-from mietverhaeltnis.minikuendigungdlg import MiniKuendigungDlg
+from mietobjekt.mietobjektauswahl import MietobjektAuswahl
+from mietverhaeltnis.mietverhaeltnisgui import MietverhaeltnisDialog, MietverhaeltnisView
 
 
-class MietverhaeltnisController( QObject ):
-    mietverhaeltnisGekuendigt = Signal( (str, str) )
-
-    def __init__( self, parent ):
-        QObject.__init__( self )
-        self._parent = parent
-        self._miniDlg = None
+class MietverhaeltnisController( IccController ):
+    def __init__( self ):
+        IccController.__init__( self )
+        self._view:MietverhaeltnisView = None
+        self._mv:XMietverhaeltnis = None
 
     def showMietverhaeltnis( self, mv_id:str, point:QPoint ):
+        """
+        Altlast: diese Methode wird aufgerufen, wenn in der Mieten-Tabelle per Kontextmenü
+        (rechter Mausklick auf den Namen) "Mietverhältnis anzeigen" gewählt wird.
+        :param mv_id:
+        :param point:
+        :return:
+        """
         mv:XMietverhaeltnis = BusinessLogic.inst().getAktuellesMietverhaeltnis( mv_id )
         mvv = MietverhaeltnisDialog( mv )
         mvv.exec_()
 
-    def kuendigeMietverhaeltnisUsingMiniDialog( self, mv_id:str ) -> None:
-        @Slot()
-        def onKuendigeSlot( mv_id, kuendDatum ):
-            self.kuendigeMietverhaeltnis( mv_id, kuendDatum )
+    def createView( self ) -> QWidget:
+        # zuerst über den Auswahldialog bestimmen, welche Daten für die View selektiert werden müssen
+        mietobjektAuswahl = MietobjektAuswahl()
+        mobj_id = mietobjektAuswahl.selectMietobjekt()
+        if not mobj_id: return
+        busi = BusinessLogic.inst()
+        mv_id = busi.getAktuelleMietverhaeltnisId( mobj_id )
+        xmv:XMietverhaeltnis = busi.getAktuellesMietverhaeltnis( mv_id )
+        self._view = MietverhaeltnisView( xmv, withSaveButton=True )
+        self._view.save.connect( self.writeChanges )
+        self._mv = xmv
+        return self._view
 
-        """
-        Öffnet einen MiniKuendigungDlg und lässt den Anwender die Kündigungsdaten für mv_id erfassen.
-        Nach Drücken von "Kündigen" wird die Kündigung in die Datenbank geschrieben
-        und das Kündigungsdatum an den Aufrufer zurückgeliefert.
-        Ein Aufrufer ist der CheckController. Er muss mit dem zurückgegebenen Datum sein TableModel aktualisieren.
-        :param mv_id: ID des Mieters, der zu kündigen ist
-        """
-        dlg = MiniKuendigungDlg( self._parent )
-        dlg.setName( mv_id )
-        kuenddatTuple = self.getKuendigungsdatum( mv_id )
-        if kuenddatTuple:
-            dlg.setDatum( kuenddatTuple[0], kuenddatTuple[1], kuenddatTuple[2] )
-        else:
-            d = getCurrentYearAndMonth()
-            dlg.setDatum( d["year"], d["month"]+3, getNumberOfDays( d["month"]+3 ) )
-        dlg.kuendigeMietverhaeltnis.connect( onKuendigeSlot )
-        self._miniDlg = dlg
-        dlg.show()
+    def _validate( self ) -> bool:
+        # Validierung sollte im ***Model*** sein, nicht im Controller.
+        # siehe: https://stackoverflow.com/questions/5651175/mvc-question-should-i-put-form-validation-rules-in-the-controller-or-model
+        # und https://stackoverflow.com/questions/5305854/best-place-for-validation-in-model-view-controller-model
+        v = self._view
+        msg = ""
+        rc = True
+        mvcopy = v.getMietverhaeltnisCopyWithChanges()
+        if not mvcopy.von:
+            msg = "Mietbeginn fehlt"
+        if mvcopy.bis and mvcopy.bis < mvcopy.von:
+            msg = "Das Mietende darf nicht vor dem Mietbeginn liegen."
+        elif not mvcopy.name:
+            msg = "Der Nachname des ersten Mieters fehlt."
+        elif not mvcopy.vorname:
+            msg = "Der Vorname des ersten Mieters fehlt."
+        elif mvcopy.name2 > " " and not mvcopy.vorname2:
+            msg = "Vorname des zweiten Mieters fehlt."
+        elif not mvcopy.anzahl_pers or mvcopy.anzahl_pers == 0:
+            msg = "Anzahl Personen muss angegeben sein."
+        elif not mvcopy.nettomiete or mvcopy.nettomiete == 0 or not mvcopy.nkv or mvcopy.nkv == 0:
+            msg = "Nettomiete und Nebenkosten müssen angegeben werden."
 
-    def getKuendigungsdatum( self, mv_id:str ) -> (int, int, int) or None:
-        return BusinessLogic.inst().getKuendigungsdatum2( mv_id )
+        if msg > " ":
+            self.showErrorMessage( "Validierung fehlgeschlagen", msg )
+            rc = False
+        if not mvcopy.telefon and not mvcopy.mobil and not mvcopy.mailto:
+            self.showWarningMessage( "Validierung kritisch", "Es ist keine Kontaktmöglichkeit angegeben!\n"
+                                                             "Telefon, Mobilfunk und Mailadresse sind leer!" )
+        return rc
 
-    def kuendigeMietverhaeltnis( self, mv_id:str, kuendDatum:str ) -> None:
-        # Kündigung in der Datenbank durchführen
-        BusinessLogic.inst().kuendigeMietverhaeltnis( mv_id, kuendDatum )
-        self.mietverhaeltnisGekuendigt.emit( mv_id, kuendDatum )
+    def getChanges( self ) -> Any:
+        pass
 
-##########################################################################################
+    def writeChanges( self, changes: Any = None ) -> bool:
+        if self._validate():
+            self._view.applyChanges()
+            try:
+                BusinessLogic.inst().saveMietverhaeltnis( self._mv )
+                return True
+            except Exception as ex:
+                self.showErrorMessage( "Mieterwechsel: Speichern fehlgeschlagen", str( ex ) )
+                return False
+        return False
 
-def onGekuendigt( mv_id, kuendDatum ):
-    print( "erfolgreich gekündigt: ", mv_id, ", ", kuendDatum )
+    def clearChanges( self ) -> None:
+        pass
+
+    def getViewTitle( self ) -> str:
+        title = "Mieterdaten von Mieter: " + self._mv.vorname + " " + self._mv.name
+        if self._mv.name2: title += ( " und " + self._mv.vorname2 + " " + self._mv.vorname2 )
+        return title
+
+    def isChanged( self ) -> bool:
+        xcopy = self._view.getMietverhaeltnisCopyWithChanges()
+        return False if xcopy.equals( self._mv ) else True
 
 
+###################################################################################
 def test():
     app = QApplication()
-    #dummy = QMainWindow()
-    c = MietverhaeltnisController( None )
-    c.kuendigeMietverhaeltnisUsingMiniDialog( "haupt_patrick" )
-    c.mietverhaeltnisGekuendigt.connect( onGekuendigt )
+    c = MietverhaeltnisController()
+    v = c.createView()
+    v.show()
     app.exec_()
 
 if __name__ == "__main__":

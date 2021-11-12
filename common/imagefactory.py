@@ -33,16 +33,23 @@ class ImageFactory:
         reads resources.txt and sets self._imagePath
         :return:
         """
-        cwd = os.getcwd()
+        #cwd = os.getcwd()
         try:
-            f = open( "./resources.txt", "r" )
-            lines = f.readlines()
-            for l in lines:
-                if l.startswith( "imagepath" ):
-                    parts = l.split( "=" )
-                    self._imagePath = parts[1][:-1] #truncate newline
-                    f.close()
-                    return
+            mypath = os.path.realpath( __file__ )  # endet mit /imagefactory.py
+            # imagefactory.py entfernen:
+            l = len( "imagefactory.py" )
+            mypath = mypath[:-l]
+            self._imagePath = mypath + "images/"
+
+            # f = open( resourcepath )
+            # #f = open( "./resources.txt", "r" )
+            # lines = f.readlines()
+            # for l in lines:
+            #     if l.startswith( "imagepath" ):
+            #         parts = l.split( "=" )
+            #         self._imagePath = parts[1][:-1] #truncate newline
+            #         f.close()
+            #         return
         except Exception as exc:
             print( "ImageFactory._setImagePath(): failed open/read/close file ./resources.txt:\n\n" + str(exc) )
 

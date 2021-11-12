@@ -1,20 +1,23 @@
-from typing import Dict
+from functools import partial
+from typing import Dict, Any, List
 
 from PySide2 import QtCore, QtWidgets, QtGui
 from PySide2.QtCore import Qt, QObject, Signal
 from PySide2.QtWidgets import QApplication, QMainWindow, QMdiArea, QMdiSubWindow, QWidget, QTextEdit, \
-    QMenuBar, QToolBar, QAction, QMessageBox, QLineEdit, QLabel, QSizePolicy
+    QMenuBar, QToolBar, QAction, QMessageBox, QLineEdit, QLabel, QSizePolicy, QMenu, QDialog
 from PySide2.QtGui import QKeySequence, QFont
 from enum import Enum
 
 from datehelper import getDateParts
+from iccdialog import IccDialog
 from imagefactory import ImageFactory
 from qtderivates import SmartDateEdit, IntDisplay
 from sumfieldsprovider import SumFieldsProvider
 
 
 class MainWindowAction( Enum ):
-    NEW_WINDOW=2,
+    OPEN_OBJEKT_STAMMDATEN_VIEW = 1,
+    OPEN_MIETVERH_VIEW = 2,
     SAVE_ACTIVE_VIEW=3,
     SAVE_ALL=4,
     PRINT_ACTIVE_VIEW=5,
@@ -25,28 +28,28 @@ class MainWindowAction( Enum ):
     OPEN_SOLL_HG_VIEW = 10,
     OPEN_NKA_VIEW = 11,
     OPEN_HGA_VIEW = 12,
-    RESIZE_MAIN_WINDOW = 13,
     EXPORT_CSV = 14,
     OPEN_ANLAGEV_VIEW = 15,
     OPEN_OFFENE_POSTEN_VIEW = 16,
-    NOTIZEN = 17,
-    RENDITE_VIEW = 18,
-    MIETERWECHSEL = 19,
+    OPEN_SONST_EIN_AUS_VIEW = 17,
+    NOTIZEN = 18,
+    RENDITE_VIEW = 19,
+    MIETERWECHSEL = 20,
+    SHOW_VIEWS = 21,
+    BRING_DIALOG_TO_FRONT = 22,
+    SHOW_TABLE_CONTENT = 23,
+    OPEN_GESCHAEFTSREISE_VIEW = 24,
     EXIT=99
 
-class DummySignal(QObject):
-    signal = Signal()
-    def emitSignal( self ):
-        self.signal.emit()
 
 class ImmoCenterMainWindow( QMainWindow ):
-    def __init__( self ):
+    def __init__( self, environment ):
         QMainWindow.__init__( self )
-        self.setWindowTitle( "ImmoControlCenter" )
-        #self.resize( 2500, 1500 )
-        self._menubar:QMenuBar
-        self.mdiArea:QMdiArea
-        self._toolbar: QToolBar
+        self.setWindowTitle( "ImmoControlCenter   " + environment )
+        self._menubar:QMenuBar = None
+        self._viewsMenu:QMenu = None
+        self._submenuShowTableContent:QMenu = None
+        self._toolbar: QToolBar = None
         self._sdLetzteBuchung: SmartDateEdit = SmartDateEdit( self )
         self._leLetzteBuchung: QLineEdit = QLineEdit( self )
 
@@ -61,8 +64,6 @@ class ImmoCenterMainWindow( QMainWindow ):
         self._sumfieldsAccess = SumFieldsProvider( self._idSumMiete, self._idSummeSonstAus, self._idSummeHGV, self._idSaldo,
                                                    self.onSumFieldsProvidingFailed )
 
-        # self.dummySignal = DummySignal()
-        # self.dummySignal.signal.connect( self.onSumFieldsProvidingFailed )
         self._actionCallbackFnc = None #callback function for all action callbacks
         self._shutdownCallback = None  # callback function for shutdown action
         self._createUI()
@@ -70,17 +71,8 @@ class ImmoCenterMainWindow( QMainWindow ):
     def onSumFieldsProvidingFailed( self, msg:str ):
         self.showException( msg )
 
-    def resizeEvent( self, event ):
-        QMainWindow.resizeEvent( self, event )
-        self.doCallback( MainWindowAction.RESIZE_MAIN_WINDOW )
-
     def _createUI( self ):
-        mdiArea = QMdiArea( self )
-        self.setCentralWidget( mdiArea )
-        self.mdiArea = mdiArea
-
         self._menubar = QMenuBar( self )
-        #self._menubar.setGeometry( QtCore.QRect( 0, 0, 94, 20 ) )
         self._toolBar = QToolBar( self )
 
         self._createImmoCenterMenu()
@@ -90,6 +82,7 @@ class ImmoCenterMainWindow( QMainWindow ):
         self._createAnlageVMenu()
         self._createExtrasMenu()
         self._createSqlMenu()
+        self._createShowViewsMenu()
 
         self._toolBar.addSeparator()
         lbl = QLabel( self, text="Letzte verarbeitete Buchung: " )
@@ -98,13 +91,17 @@ class ImmoCenterMainWindow( QMainWindow ):
                                           "um beim nächsten Anwendungsstart gezielt weiterarbeiten zu können." )
         self._sdLetzteBuchung.setMaximumWidth( 90 )
         self._toolBar.addWidget( self._sdLetzteBuchung )
+        dummy = QWidget()
+        dummy.setFixedWidth( 5 )
+        self._toolBar.addWidget( dummy )
         self._leLetzteBuchung.setToolTip( "Freier Eintrag der Kenndaten der letzten Buchung,\n "
                                           "um beim nächsten Anwendungsstart gezielt weiterarbeiten zu können." )
-        self._leLetzteBuchung.setMaximumWidth( 300 )
+        # self._leLetzteBuchung.setMaximumWidth( 300 )
         self._toolBar.addWidget( self._leLetzteBuchung )
 
         dummy = QWidget()
-        dummy.setSizePolicy( QSizePolicy.Expanding, QSizePolicy.Preferred )
+        dummy.setFixedWidth( 30 )
+        #dummy.setSizePolicy( QSizePolicy.Expanding, QSizePolicy.Preferred )
         self._toolBar.addWidget( dummy )
 
         self._addSumFields()
@@ -116,23 +113,6 @@ class ImmoCenterMainWindow( QMainWindow ):
         # Menü "ImmoCenter"
         menu = QtWidgets.QMenu( self._menubar, title="ImmoCenter" )
         self._menubar.addMenu( menu )
-
-        #Menüpunkt "Neues Fenster..."
-        action = QAction( self, text="Neues Fenster..." )
-        action.triggered.connect( self.onNewWindow )
-        menu.addAction( action )
-
-        menu.addSeparator()
-
-        # Menüpunkt "Änderungen an der aktiven Sicht speichern"
-        action = QAction( self, text="Alle Änderungen speichern" )
-        action.setShortcut( QKeySequence( "Ctrl+Shift+s" ) )
-        #icon = QtGui.QIcon( "./images/save_30.png" )
-        icon = ImageFactory.inst().getSaveIcon()
-        action.setIcon( icon )
-        action.triggered.connect( self.onSaveAll )
-        menu.addAction( action )
-        self._toolBar.addAction( action )
 
         # Menüpunkt "Alle Änderungen speichern"
         action = QAction( self, text="Alle Änderungen speichern" )
@@ -149,12 +129,12 @@ class ImmoCenterMainWindow( QMainWindow ):
 
         menu.addSeparator()
 
-        # Menüpunkt "Aktive Sicht drucken"
-        action = QAction( self, text="Aktive Sicht drucken" )
-        action.triggered.connect( self.onPrintActiveView )
-        menu.addAction( action )
-
-        menu.addSeparator()
+        # # Menüpunkt "Aktive Sicht drucken"
+        # action = QAction( self, text="Aktive Sicht drucken" )
+        # action.triggered.connect( self.onPrintActiveView )
+        # menu.addAction( action )
+        #
+        # menu.addSeparator()
 
         # Menüpunkt "Ende"
         action = QAction( self, text="Ende" )
@@ -167,13 +147,13 @@ class ImmoCenterMainWindow( QMainWindow ):
         self._menubar.addMenu( menu )
 
         # Menüpunkt "Wohnungsstammdaten..."
-        action = QAction( self, text="Wohnungsstammdaten..." )
-        action.triggered.connect( self.onViewWhgStammdaten )
+        action = QAction( self, text="Objektstammdaten..." )
+        action.triggered.connect( self.onViewObjektStammdaten )
         menu.addAction( action )
 
-        # Menüpunkt "Mietverhältnisse..."
-        action = QAction( self, text="Mietverhältnisse..." )
-        action.triggered.connect( self.onViewMietverhaeltnisse )
+        # Menüpunkt "Mietverhältnis..."
+        action = QAction( self, text="Mietverhältnis..." )
+        action.triggered.connect( self.onViewMietverhaeltnis )
         menu.addAction( action )
 
         menu.addSeparator()
@@ -251,14 +231,18 @@ class ImmoCenterMainWindow( QMainWindow ):
     def _createExtrasMenu( self ):
         menu = QtWidgets.QMenu( self._menubar, title="Extras" )
         self._menubar.addMenu( menu )
-        action = QAction( self, text="Exportiere aktive Tabelle in Calc" )
-        action.triggered.connect( self.onExportActiveTableView )
+        action = QAction( self, text="Geschäftsreise..." )
+        action.triggered.connect( self.onGeschaeftsreise )
         menu.addAction( action )
         action = QAction( self, text="Notizen..." )
         action.triggered.connect( self.onNotizen )
         menu.addAction( action )
         action = QAction( self, text="Renditevergleich..." )
         action.triggered.connect( self.onRenditeVergleich )
+        menu.addAction( action )
+        menu.addSeparator()
+        action = QAction( self, text="Exportiere aktive Tabelle in Calc" )
+        action.triggered.connect( self.onExportActiveTableView )
         menu.addAction( action )
 
 
@@ -274,33 +258,16 @@ class ImmoCenterMainWindow( QMainWindow ):
         action.setIcon( icon )
         action.triggered.connect( self.onNewSql )
         menu.addAction( action )
-        self._toolBar.addAction( action )
+        #self._toolBar.addAction( action )
 
         #Menüpunkt "Ganze Tabelle anzeigen"
-        submenu = QtWidgets.QMenu( menu, title="Ganze Tabelle anzeigen" )
+        self._submenuShowTableContent = QtWidgets.QMenu( menu, title="Ganze Tabelle anzeigen" )
+        menu.addMenu( self._submenuShowTableContent )
 
-        action = QAction( submenu, text="masterobjekt" )
-        submenu.addAction( action )
-
-        action = QAction( submenu, text="mietobjekt" )
-        submenu.addAction( action )
-
-        action = QAction( submenu, text="mietverhaeltnis" )
-        submenu.addAction( action )
-
-        action = QAction( submenu, text="sollhausgeld" )
-        submenu.addAction( action )
-
-        action = QAction( submenu, text="sollmiete" )
-        submenu.addAction( action )
-
-        action = QAction( submenu, text="verwalter" )
-        submenu.addAction( action )
-
-        action = QAction( submenu, text="verwaltung" )
-        submenu.addAction( action )
-
-        menu.addMenu( submenu )
+    def _createShowViewsMenu( self ):
+        menu = QtWidgets.QMenu( self._menubar, title="Views" )
+        self._menubar.addMenu( menu )
+        self._viewsMenu = menu
 
     def _addSumFields( self ):
         self._toolBar.addWidget( self._createSumLabel() )
@@ -370,6 +337,23 @@ class ImmoCenterMainWindow( QMainWindow ):
             pass
         self._leLetzteBuchung.setText( text )
 
+    def setTabellenAuswahl( self, tables:List[str] ) -> None:
+        """
+        Fügt dem SubMenu "Ganze Tabelle anzeigen" soviele Tabellen-Namen hinzu wie in <tables> enthalten.
+        :param tables:
+        :return:
+        """
+        n = len( tables )
+        actions = [QAction( self._submenuShowTableContent ) for i in range(n)]
+        for i in range( n ):
+            act = actions[i]
+            act.setText( tables[i] )
+            #act.triggered.connect( lambda action=act: self.onShowTableContent(action) ) --> funktioniert nicht
+            act.triggered.connect( partial( self.onShowTableContent, act ) )
+            #txt = act.text()
+            #act.triggered.connect( lambda table=txt: self.showTableContent.emit( txt ) ) --> funktioniert nicht
+            self._submenuShowTableContent.addAction( act )
+
     def getLetzteBuchung( self ) -> Dict:
         """
         :return: dictionary with keys "date" and "text"
@@ -385,9 +369,41 @@ class ImmoCenterMainWindow( QMainWindow ):
     def setActionCallback( self, callbackFnc ) -> None:
         self._actionCallbackFnc = callbackFnc
 
-    def doCallback( self, action:MainWindowAction ):
+    def addOpenedDialog( self, name:str, data:Any ):
+        """
+        Fügt dem Views-Menü eine gerade geöffnete View hinzu
+        :param name:
+        :param data:
+        :return:
+        """
+        action = QAction( self._viewsMenu, text=name )
+        action.setData( data )
+        self._viewsMenu.addAction( action )
+        #action.triggered.connect( lambda name=name, data=data: self.bringDialogToFront.emit( name, data ) )
+        action.triggered.connect( partial( self.onShowDialog, action ) )
+
+    def getOpenedDialogs( self ) -> List[IccDialog]:
+        return [a.data() for a in self._viewsMenu.actions()]
+
+    def removeClosedDialog( self, name:str, data:Any ):
+        """
+        Entfernt den Eintrag <name> aus dem Views-Menü.
+        :param name:  Name der zu entfernenden  View (entspricht dem Text des Menüpunktes)
+        :param data: Wird zur Identifikation der View verwendet.
+        :return:
+        """
+        for a in self._viewsMenu.actions():
+            if a.data() == data:
+                self._viewsMenu.removeAction( a )
+                break
+        return
+
+    def doCallback( self, action:MainWindowAction, arg=None ):
         if self._actionCallbackFnc:
-            self._actionCallbackFnc( action )
+            if arg:
+                self._actionCallbackFnc( action, arg )
+            else:
+                self._actionCallbackFnc( action )
 
     def onNewWindow( self ):
         self.doCallback( MainWindowAction.NEW_WINDOW )
@@ -404,8 +420,8 @@ class ImmoCenterMainWindow( QMainWindow ):
     # def onChangeSollhausgeld( self ):
     #     pass
 
-    def onSaveActiveView( self ):
-        self.doCallback( MainWindowAction.SAVE_ACTIVE_VIEW )
+    # def onSaveActiveView( self ):
+    #     self.doCallback( MainWindowAction.SAVE_ACTIVE_VIEW )
 
     def onSaveAll( self ):
         self.doCallback( MainWindowAction.SAVE_ALL )
@@ -446,26 +462,34 @@ class ImmoCenterMainWindow( QMainWindow ):
     def onNotizen( self ):
         self.doCallback( MainWindowAction.NOTIZEN )
 
+    def onGeschaeftsreise( self ):
+        self.doCallback( MainWindowAction.OPEN_GESCHAEFTSREISE_VIEW )
+
     def onRenditeVergleich( self ):
         self.doCallback( MainWindowAction.RENDITE_VIEW )
 
     def onViewRechnungen( self ):
-        pass
+        self.doCallback( MainWindowAction.OPEN_SONST_EIN_AUS_VIEW )
 
     def onViewOffenePosten( self ):
         self.doCallback( MainWindowAction.OPEN_OFFENE_POSTEN_VIEW )
 
-    def onViewWhgStammdaten( self ):
-        self.doCallback( MainWindowAction.OPEN_OFFENE_POSTEN_VIEW )
+    def onViewObjektStammdaten( self ):
+        self.doCallback( MainWindowAction.OPEN_OBJEKT_STAMMDATEN_VIEW )
 
-    def onViewMietverhaeltnisse( self ):
-        pass
+    def onViewMietverhaeltnis( self ):
+        self.doCallback( MainWindowAction.OPEN_MIETVERH_VIEW )
 
     def onNewSql( self ):
         pass
 
+    def onShowTableContent( self, action ):
+        self.doCallback( MainWindowAction.SHOW_TABLE_CONTENT, action.text() )
+
+    def onShowDialog( self, action ):
+        self.doCallback( MainWindowAction.BRING_DIALOG_TO_FRONT, action.data() )
+
     def showException( self, exception: str, moretext: str = None ):
-        # todo: show Qt-Errordialog
         print( exception )
         msg = QtWidgets.QMessageBox()
         msg.setIcon( QMessageBox.Critical )
@@ -475,15 +499,15 @@ class ImmoCenterMainWindow( QMainWindow ):
         msg.setWindowTitle( "Error" )
         msg.exec_()
 
-    def addMdiChild( self, subwin:QMdiSubWindow ) -> None:
-        self.mdiArea.addSubWindow( subwin )
-        subwin.widget().setAttribute( Qt.WA_DeleteOnClose )
+    # def addMdiChild( self, subwin:QMdiSubWindow ) -> None:
+    #     self.mdiArea.addSubWindow( subwin )
+    #     subwin.widget().setAttribute( Qt.WA_DeleteOnClose )
 
-    def _addMdiChild( self ):
-        te = QTextEdit( self )
-        subwin = self.mdiArea.addSubWindow( te )
-        subwin.setWindowTitle( "Mein Subwin" )
-        te.setAttribute( Qt.WA_DeleteOnClose )
+    # def _addMdiChild( self ):
+    #     te = QTextEdit( self )
+    #     subwin = self.mdiArea.addSubWindow( te )
+    #     subwin.setWindowTitle( "Mein Subwin" )
+    #     te.setAttribute( Qt.WA_DeleteOnClose )
 
 
 def test():

@@ -3,8 +3,10 @@ from PySide2.QtCore import *
 from typing import List, Dict
 
 from dictlisttablemodel import DictListTableModel
+from icctablemodel import IccTableModel
 
-class CheckTableModel( DictListTableModel ):
+
+class CheckTableModel( DictListTableModel, IccTableModel ):
     """ CheckTableModel hat einen genau definierten Aufbau bzgl. der ersten 7 Spalten
         Spalte 0: meinaus_id
         Spalte 1: mv_id oder vwg_id
@@ -65,6 +67,9 @@ class CheckTableModel( DictListTableModel ):
 
     def getChanges( self ) -> Dict[int, Dict]:
         return self._changes
+
+    def clearChanges( self ) -> None:
+        self._changes.clear()
 
     def isChanged( self ) -> bool:
         return any( self._changes )

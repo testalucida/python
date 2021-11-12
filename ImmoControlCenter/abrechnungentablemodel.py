@@ -204,7 +204,7 @@ class AbrechnungenTableModel( IccTableModel ):
         sort_col = col
         global sort_reverse
         sort_reverse = True if order == Qt.SortOrder.AscendingOrder else False
-        self._abrechlist = sorted( self._abrechlist, key=cmp_to_key( self.cmpXSonstAus ) )
+        self._abrechlist = sorted( self._abrechlist, key=cmp_to_key( self.cmpXAbrechnung ) )
         self.emit(SIGNAL("layoutChanged()"))
 
     def cmpXAbrechnung( self, x1:XAbrechnung, x2:XAbrechnung ) -> int:

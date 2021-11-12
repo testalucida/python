@@ -47,6 +47,7 @@ class CustomTableView( QTableView ):
         self.setContextMenuPolicy( Qt.CustomContextMenu )
         self.customContextMenuRequested.connect( self.onRightClick )
         self.setMouseTracking( True )
+        #self.horizontalHeader().sortIndicatorChanged.connect( self.afterSort )
         # self.ctvCellEnter.connect( self._onCellEnter )
         # self.ctvCellLeave.connect( self._onCellLeave )
         self._vheaderView = CustomHeaderView( Qt.Orientation.Vertical )
@@ -58,14 +59,21 @@ class CustomTableView( QTableView ):
         self._mouseOverCol = -1
         self._mouseOverRow = -1
 
+    # def afterSort( self, idx, sortOrder ):
+    #     self.resizeColumnsToContents()
+    #     self.resizeRowsToContents()
+    #     self.model().layoutChanged.emit()
+
     def setModel( self, model:QAbstractTableModel, selectRows:bool=True, singleSelection:bool=True  ) -> None:
         super().setModel( model )
         self.setSizeAdjustPolicy( QAbstractScrollArea.AdjustToContents )
         self.resizeColumnsToContents()
+        self.resizeRowsToContents()
         if selectRows:
             self.setSelectionBehavior( QTableView.SelectRows )
         if singleSelection:
             self.setSelectionMode( QAbstractItemView.SingleSelection )
+        model.layoutChanged.emit()
 
     def mouseMoveEvent(self, event:QMouseEvent):
         p = event.pos()
@@ -229,7 +237,7 @@ class EditableTableViewWidget( QWidget ):
         if self._isEditable:
             self._newButton.setFocus()
 
-    def getModel( self ):
+    def getTableModel( self ):
         return self._tv.model()
 
     def getTableView( self ) -> CustomTableView:
@@ -442,9 +450,9 @@ def test():
     # #dlg.setCancelButtonVisible( False )
     # dlg.setOkButtonText( "Speichern" )
     # dlg.show()
-    v = EditableTableViewWidget( tm, True )
+    v = EditableTableViewWidget( tm, isEditable=True )
     tv = v.getTableView()
-    tv.ctvCellEnter.connect( onCellEnter )
+    #tv.ctvCellEnter.connect( onCellEnter )
     v.show()
     v.getSelectedRows()
     app.exec_()

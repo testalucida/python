@@ -168,6 +168,32 @@ def getDateFromIsoString( isostring:str ) -> date:
     d = date( y, m, d )
     return d
 
+def getLastOfMonthAsIsoString() -> str:
+    """
+    returns an iso date string representing the last day of current month and year
+    :return:
+    """
+    d = getCurrentYearAndMonth()
+    monthIdx = d["month"]
+    year = d["year"]
+    month = monthList[monthIdx-1]
+    lastofmonth = monatsletzter[month]
+    lastDayInMonth = "%d-%2d-%2d" % (year, monthIdx, lastofmonth )
+    return lastDayInMonth
+
+def getLastOfMonth() -> date:
+    """
+    returns a date representing the last day of current month and year
+    :return:
+    """
+    d = getCurrentYearAndMonth()
+    monthIdx = d["month"]
+    year = d["year"]
+    month = monthList[monthIdx - 1]
+    lastofmonth = monatsletzter[month]
+    return date( year, monthIdx, lastofmonth )
+
+
 def getQDateFromIsoString( isostr:str ) -> QDate:
     """
     Liefert ein QDate - Objekt zurück, das aus isostring erzeugt wurde

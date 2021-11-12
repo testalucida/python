@@ -3,19 +3,21 @@ from PySide2.QtWidgets import QMessageBox, QWidget, QMenu, QAction
 from abc import ABC, abstractmethod
 from typing import List
 from datehelper import *
-from mdichildcontroller import MdiChildController
+from icccontroller import IccController
 from checkview import CheckView, CheckTableView
 from checktablemodel import CheckTableModel
 from business import BusinessLogic
 from constants import einausart
+from iccview import IccView
 from mietverhaeltnis.mietverhaeltniscontroller import MietverhaeltnisController
+from mietverhaeltnis.minikuendigungscontroller import MiniKuendigungsController
 from sumfieldsprovider import SumFieldsProvider
 from tablecellactionhandler import TableCellActionHandler
 
 
-class CheckController( MdiChildController, ABC ):
+class CheckController( IccController ):
     def __init__(self ):
-        MdiChildController.__init__( self )
+        IccController.__init__( self )
         self._tableContextMenu: TableCellActionHandler = None
         curr = getCurrentYearAndMonth()
         self._currentYear:int = curr["year"]
@@ -31,7 +33,7 @@ class CheckController( MdiChildController, ABC ):
         if not BusinessLogic.inst().existsEinAusArt( eaart, jahr ):
             BusinessLogic.inst().createMtlEinAusJahresSet( jahr )
         model = self.createModel( jahr, self._currentCheckMonth )
-        self._subwin.widget().setModel( model )
+        self._dlg.getView().setModel( model )
         self._currentYear = jahr
 
     @abstractmethod
@@ -40,7 +42,7 @@ class CheckController( MdiChildController, ABC ):
 
     def monatChangedCallback( self, monat:int ):
         self._currentCheckMonth = monat
-        model:CheckTableModel = self._subwin.widget().getModel()
+        model:CheckTableModel = self._dlg.getView().getModel()
         self.updateSollwerte( model.rowlist, self._currentYear, monat )
         model.setCheckmonat( monat )
         model.emitSollValuesChanged()
@@ -54,7 +56,7 @@ class CheckController( MdiChildController, ABC ):
         model.setChangedCallback( self.onDataChanged )
         return model
 
-    def createView( self ) -> QWidget:
+    def createView( self ) -> IccView:
         checkView = CheckView()
         checkView.saveCallback = self.onSaveData
         jahrelist = BusinessLogic.inst().getExistingJahre( einausart.MIETE )
@@ -89,33 +91,33 @@ class CheckController( MdiChildController, ABC ):
     def onDataChanged( self ):
         # wird vom DictListTableModel gerufen
         if self.changedCallback:
-            view:CheckView = self._subwin.widget()
+            view:CheckView = self._dlg.getView()
             view.setSaveButtonEnabled()
             self.changedCallback()  #MainContrller informieren:
-            title = self._subwin.windowTitle()
+            title = self._dlg.windowTitle()
             if title[-1] != "*":
                 title += " *"
-                self._subwin.setWindowTitle( title )
+                self._dlg.setWindowTitle( title )
 
     def onSaveData( self ): # called by save button of this view
         self.save()
-        title = self._subwin.windowTitle()
+        title = self._dlg.windowTitle()
         title = title.rstrip( " *" )
-        self._subwin.setWindowTitle( title )
+        self._dlg.setWindowTitle( title )
 
     def _doDataSavedCallback( self ):
         if self.savedCallback:
-            view: CheckView = self._subwin.widget()
+            view: CheckView = self._dlg.getView()
             view.setSaveButtonEnabled( False )
             self.savedCallback()
 
     def save( self ):
-        model: CheckTableModel = self._subwin.widget().getModel()
+        model: CheckTableModel = self._dlg.getView().getModel()
         if model.isChanged():
             try:
                 self.writeChanges( model.getChanges() )
             except Exception as ex:
-                view: CheckView = self._subwin.widget()
+                view: CheckView = self._dlg.getView()
                 view.showException( "Speichern der geänderten Daten hat nicht geklappt.", str( ex ) )
                 return
 
@@ -123,8 +125,17 @@ class CheckController( MdiChildController, ABC ):
             SumFieldsProvider.inst().setSumFields()
             self._doDataSavedCallback()
 
+    def isChanged( self ) -> bool:
+        return self._view.getModel().isChanged()
+
+    def getChanges( self ):
+        return self._view.getModel().getChanges()
+
+    def clearChanges( self ) -> None:
+        self._view.getModel().clearChanges()
+
     @abstractmethod
-    def writeChanges( self, changes:Dict[int, Dict] ):
+    def writeChanges( self, changes ) -> bool:
         pass
 
     @abstractmethod
@@ -156,11 +167,13 @@ class MietenController( CheckController ):
     def updateSollwerte( self,  rowlist:List[Dict], jahr:int, monat:int ) -> None:
         return BusinessLogic.inst().provideSollmieten( rowlist, jahr, monat )
 
-    def writeChanges( self, changes:Dict[int, Dict] ):
+    def writeChanges( self, changes:Dict[int, Dict] ) -> bool:
+        # todo: in try...except einbetten
         BusinessLogic.inst().updateMietzahlungen( changes )
+        return True
 
     def addJahr( self, jahr:int ):
-        self._subwin.widget().addJahr( jahr )
+        self._dlg.getView().addJahr( jahr )
 
     def implementSpecificFeatures( self, tv:CheckTableView ):
         tv.frozenRightClick.connect( self.onFrozenRightClick )
@@ -173,6 +186,7 @@ class MietenController( CheckController ):
             model.setBis( index.row(), datum )
 
         tv = self._view.tableView
+        #model = tv.getTableModel()
         model = tv.getModel()
         index = tv.indexAt( point )
         if not index.column() in (model.nameColumnIdx, model.sollColumnIdx ):
@@ -194,7 +208,7 @@ class MietenController( CheckController ):
         action = menu.exec_( tv.viewport().mapToGlobal( point ) )
         if action and index.column() == model.nameColumnIdx:
             if action.data() == "K":
-                c = MietverhaeltnisController( self._view )
+                c = MiniKuendigungsController( self._view )
                 c.mietverhaeltnisGekuendigt.connect( onGekuendigt )
                 c.kuendigeMietverhaeltnisUsingMiniDialog( mv_id )
             else:
@@ -229,11 +243,13 @@ class HGVController( CheckController ):
     def updateSollwerte( self,  rowlist:List[Dict], jahr:int, monat:int ) -> None:
         return BusinessLogic.inst().provideSollHGV( rowlist, jahr, monat )
 
-    def writeChanges( self, changes:Dict[int, Dict] ):
+    def writeChanges( self, changes:Dict[int, Dict] ) -> bool:
+        # todo: in try...except einbetten
         BusinessLogic.inst().updateHausgeldvorauszahlungen( changes )
+        return True
 
     def addJahr( self, jahr: int ):
-        self._subwin.widget().addJahr( jahr )
+        self._dlg.getView().addJahr( jahr )
 
     def implementSpecificFeatures( self, tv:CheckTableView ):
         pass

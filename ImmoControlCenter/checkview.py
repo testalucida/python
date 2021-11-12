@@ -8,6 +8,7 @@ from PySide2 import QtWidgets
 from typing import List, Any
 
 #from models import KontrollModel
+from iccview import IccView
 from imagefactory import ImageFactory
 from tableview import TableView
 from checktablemodel import CheckTableModel
@@ -170,9 +171,9 @@ class CheckTableView( TableView ):
 
 
 ################# MonatswerteBaseView #########################
-class CheckView( QWidget ):
+class CheckView( IccView ):
     def __init__(self):
-        QWidget.__init__( self )
+        IccView.__init__( self )
         self.setWindowTitle( "Monatswerte" )
         self._gridLayout:QtWidgets.QGridLayout = QtWidgets.QGridLayout( self )
         self._combofont = QFont( "Arial", 14, weight=QFont.Bold);
@@ -233,6 +234,9 @@ class CheckView( QWidget ):
 
     def setSaveButtonEnabled( self, enabled:bool=True ):
         self._btnSave.setEnabled( enabled )
+
+    def getTableView( self ):
+        return self.tableView
 
     def setJahre( self, jahre:List[int] ) -> None:
         for  jahr in jahre:
@@ -393,7 +397,7 @@ def test():
             {"Col 1": "2/0", "Col 2": -123.45, "Col 3": "Summer in the City"},
             {"Col 1": "3/0", "Col 2": 776.45, "Col 3": "Winter in the Park"}
            )
-    tm = CheckTableModel( [], 11 )
+    tm = CheckTableModel( [], 11, 21 )
 
     win.setModel( tm )
 

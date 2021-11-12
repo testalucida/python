@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Any
 
 from PySide2 import QtWidgets, QtCore
 from PySide2.QtCore import Qt, QSize, QModelIndex, Signal
@@ -7,6 +7,7 @@ from PySide2.QtWidgets import QPushButton, QWidget, QHBoxLayout, QApplication, Q
     QComboBox, QListView, QVBoxLayout
 
 from anlage_v.anlagev_tablemodel import AnlageVTableModel
+from iccview import IccView
 from imagefactory import ImageFactory
 
 
@@ -135,13 +136,13 @@ class ToolbarButton( QPushButton ):
 
 ###################################################################
 
-class AnlageVView( QWidget ):
+class AnlageVView( IccView ):
     openAnlageV = Signal()
     printAnlageV = Signal()
     printAllAnlageV = Signal()
-    closeView = Signal()
+    #closeView = Signal()
     def __init__( self, parent=None ):
-        QWidget.__init__( self, parent )
+        IccView.__init__( self )
         self.setWindowTitle( "Anlage V" )
         self._mainLayout = QtWidgets.QGridLayout( self )
         self._toolbarLayout = QHBoxLayout()
@@ -151,7 +152,7 @@ class AnlageVView( QWidget ):
                                         ImageFactory.inst().getPrintIcon(), "Aktive Anlage V drucken" )
         self._btnPrintAll = ToolbarButton( self, QSize( 30, 30 ),
                                            ImageFactory.inst().getPrintAllIcon(), "Alle geöffneten Anlagen V drucken" )
-        self._btnClose = QPushButton( text="Schließen" )
+        #self._btnClose = QPushButton( text="Schließen" )
         self._tabs:AnlageVTabs() = AnlageVTabs()
         self._tvList:List[AnlageVTableView] = list()
         self._createGui()
@@ -170,8 +171,8 @@ class AnlageVView( QWidget ):
         self._toolbarLayout.addWidget( self._btnPrint, alignment=Qt.AlignLeft )
         self._btnPrintAll.clicked.connect( self._onPrintAll )
         self._toolbarLayout.addWidget( self._btnPrintAll, alignment=Qt.AlignLeft )
-        self._btnClose.clicked.connect( self._onClose )
-        self._toolbarLayout.addWidget( self._btnClose, alignment=Qt.AlignRight )
+        #self._btnClose.clicked.connect( self._onClose )
+        #self._toolbarLayout.addWidget( self._btnClose, alignment=Qt.AlignRight )
 
 
     def addAnlageV( self, tm:AnlageVTableModel ) -> AnlageVTableView:
@@ -198,23 +199,37 @@ class AnlageVView( QWidget ):
     def _onPrintAll( self ):
         self.printAllAnlageV.emit()
 
-    def _onClose( self ):
-        self.close()
-        self.closeView.emit()
+    # def _onClose( self ):
+    #     self.close()
+    #     self.closeView.emit()
+
+    ######## Implementierung der abstrakten Methoden von IccView ###############
+
+    def getModel( self ) -> Any:
+        pass
+
+    def setModel( self, model:Any ) ->None:
+        pass
+
+    def addJahr( self, jahr:int ) -> None:
+        pass
+
+    def getTableView( self ) -> QTableView:
+        return None
 
 
-class AnlageVDialog( QDialog ):
-    def __init__( self, view:AnlageVView, parent ):
-        QDialog.__init__( self, parent )
-        self._view = view
-        self._view.closeView.connect( self.onCloseView )
-        self._layout = QVBoxLayout()
-        self._layout.addWidget( view )
-        self.setWindowTitle( "Anlagen V ausgewählter Objekte" )
-        self.setLayout( self._layout )
-
-    def onCloseView( self ):
-        self.close()
+# class AnlageVDialog( QDialog ):
+#     def __init__( self, view:AnlageVView, parent ):
+#         QDialog.__init__( self, parent )
+#         self._view = view
+#         self._view.closeView.connect( self.onCloseView )
+#         self._layout = QVBoxLayout()
+#         self._layout.addWidget( view )
+#         self.setWindowTitle( "Anlagen V ausgewählter Objekte" )
+#         self.setLayout( self._layout )
+#
+#     def onCloseView( self ):
+#         self.close()
 
 def test():
     app = QApplication()

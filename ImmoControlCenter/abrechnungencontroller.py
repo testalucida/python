@@ -7,7 +7,7 @@ import sys
 from abrechnungentablemodel import AbrechnungenTableModel
 from abrechnungenview import AbrechnungenView
 from business import BusinessLogic
-from mdichildcontroller import MdiChildController
+from icccontroller import IccController
 from mdisubwindow import MdiSubWindow
 from interfaces import XSonstAus, XSonstAusSummen, XAbrechnung
 import constants
@@ -15,9 +15,9 @@ from datehelper import *
 from sumfieldsprovider import SumFieldsProvider
 from tablecellactionhandler import TableCellActionHandler
 
-class AbrechnungenController( MdiChildController ):
+class AbrechnungenController( IccController ):
     def __init__( self ):
-        MdiChildController.__init__( self )
+        IccController.__init__( self )
         self._tableCellActionHandler: TableCellActionHandler = None
         curr = getCurrentYearAndMonth()
         self._jahr: int = curr["year"]
@@ -113,28 +113,41 @@ class AbrechnungenController( MdiChildController ):
         SumFieldsProvider.inst().setSumFields()
         model.resetChanges()
 
-    def writeChanges( self, changes:List[XAbrechnung] ) -> None:
+    def isChanged( self ) -> bool:
+        return self._view.getModel().isChanged()
+
+    def getChanges( self ):
+        return self._view.getModel().getChanges()
+
+    def writeChanges( self, changes:List[XAbrechnung] ) -> bool:
         for x in changes:
             if x.deleteFlag == True:
                 try:
                     self._deleteAbrechnung( x )
                 except Exception as e:
                     self._view.showException( "AbrechnungenController.writeChanges()", "deleteAbrechnung", str( e ) )
+                    return False
             elif x.getId() == 0:
                 # insert new abrechnung
                 try:
                     self._insertAbrechnung( x )
                 except Exception as e:
                     self._view.showException( "AbrechnungenController.writeChanges()", "insertAbrechnung", str( e ) )
+                    return False
             else:
                 # update existing abrechnung
                 try:
                     self._updateAbrechnung( x )
                 except Exception as e:
                     self._view.showException( "AbrechnungenController.writeChanges()", "updateAbrechnung", str( e ) )
+                    return False
 
         self._view.setSaveButtonEnabled( False )
         self._setChangedFlag( False )
+        return True
+
+    def clearChanges( self ) -> None:
+        self._view.getModel().clearChanges()
 
     def _insertAbrechnung(self, x:XAbrechnung ):
         pass

@@ -1,18 +1,23 @@
 import copy
 
-from PySide2.QtGui import Qt
-from PySide2.QtWidgets import QWidget, QGridLayout, QLabel, QHBoxLayout
+from PySide2.QtCore import QSize, Signal
+from PySide2.QtGui import Qt, QIcon
+from PySide2.QtWidgets import QWidget, QGridLayout, QLabel, QHBoxLayout, QApplication, QPushButton
 from generictable_stuff.okcanceldialog import OkCancelDialog
+from imagefactory import ImageFactory
 from interfaces import XMietverhaeltnis
-from qtderivates import BaseEdit, SmartDateEdit, BaseLabel, IntEdit, MultiLineEdit, FloatEdit
+from qtderivates import BaseEdit, SmartDateEdit, BaseLabel, IntEdit, MultiLineEdit, FloatEdit, HLine
 
 
 ##################  MietverhaeltnisView  ################
 class MietverhaeltnisView( QWidget ):
-    def __init__( self, mietverhaeltnis:XMietverhaeltnis=None, parent=None ):
+    save = Signal()
+    def __init__( self, mietverhaeltnis:XMietverhaeltnis=None, withSaveButton:bool=False, parent=None ):
         QWidget.__init__( self, parent )
         self._mietverhaeltnis:XMietverhaeltnis = None
+        self._withSaveButton = withSaveButton
         self._layout = QGridLayout()
+        self._btnSave = QPushButton()
         self._sdBeginnMietverh = SmartDateEdit()
         self._sdEndeMietverh = SmartDateEdit()
         self._edMieterName_1 = BaseEdit()
@@ -34,11 +39,37 @@ class MietverhaeltnisView( QWidget ):
             self.setMietverhaeltnisData( mietverhaeltnis )
 
     def _createGui( self ):
-        self._createFelder( )
+        r = 0
+        if self._withSaveButton:
+            r = self._createSaveButton( r )
+            r = self._addHorizontalLine( r )
+        self._createFelder( r )
         self.setLayout( self._layout )
 
-    def _createFelder( self ):
-        r = 0
+    def _createSaveButton( self, r:int ):
+        btn = self._btnSave
+        btn.clicked.connect( self.save.emit )
+        btn.setFlat( True )
+        btn.setEnabled( True )
+        btn.setToolTip( "Änderungen am Mietverhältnis speichern" )
+        icon = ImageFactory.inst().getSaveIcon()
+        #icon = QIcon( "./images/save_30.png" )
+        btn.setIcon( icon )
+        size = QSize( 32, 32 )
+        btn.setFixedSize( size )
+        iconsize = QSize( 30, 30 )
+        btn.setIconSize( iconsize )
+        hbox = QHBoxLayout()
+        hbox.addWidget( btn )
+        self._layout.addLayout( hbox, r, 0, alignment=Qt.AlignLeft )
+        return r+1
+
+    def _addHorizontalLine( self, r:int ):
+        hline = HLine()
+        self._layout.addWidget( hline, r, 0, 1, 2 )
+        return r+1
+
+    def _createFelder( self, r ):
         c = 0
         l = self._layout
 
@@ -106,10 +137,13 @@ class MietverhaeltnisView( QWidget ):
 
         c+=1
         self._edNettomiete.setMaximumWidth( 100 )
+        self._edNettomiete.setEnabled( False )
         self._edNkv.setMaximumWidth( 100 )
+        self._edNkv.setEnabled( False )
         hbox = QHBoxLayout()
         hbox.addWidget( self._edNettomiete )
         hbox.addWidget( self._edNkv )
+        hbox.addWidget( BaseLabel( "Änderungen der Miete und NKV über Dialog 'Sollmiete'") )
         l.addLayout( hbox, r, c, alignment=Qt.AlignLeft )
 
         c=0
@@ -137,6 +171,9 @@ class MietverhaeltnisView( QWidget ):
         hbox.addWidget( self._txtBemerkung1 )
         hbox.addWidget( self._txtBemerkung2 )
         l.addLayout( hbox, r, c )
+
+        # cols = self._layout.columnCount()
+        # print( cols, " columns" )
 
     def _guiToData( self, x:XMietverhaeltnis ):
         """
@@ -214,3 +251,9 @@ class MietverhaeltnisDialog( OkCancelDialog ):
         self.setWindowTitle( "Mietverhältnis " + mietverhaeltnis.mv_id + ": " + mietverhaeltnis.mobj_id )
         self._view = MietverhaeltnisView( mietverhaeltnis )
         self.addWidget( self._view, 0 )
+
+def test():
+    app = QApplication()
+    v = MietverhaeltnisView( withSaveButton=True )
+    v.show()
+    app.exec_()

@@ -1,63 +1,87 @@
-from typing import List, Dict, Tuple
+from typing import List, Dict
 
-from PySide2.QtCore import QAbstractItemModel
-from PySide2.QtWidgets import QDialog, QVBoxLayout
+from PySide2.QtCore import QAbstractItemModel, QObject, Qt
+from PySide2.QtWidgets import QDialog, QApplication, QTableView
 
 from anlage_v.anlagev_controller import AnlageVController
 from business import BusinessLogic
 from constants import einausart
 from datehelper import getCurrentYear
+from dictlisttablemodel import DictListTableModel
+from geschaeftsreise.geschaeftsreisencontroller import GeschaeftsreisenController
+from iccdialog import IccDialog
 from mdisubwindow import MdiSubWindow
 from immocentermainwindow import ImmoCenterMainWindow, MainWindowAction
-from checkcontroller import MdiChildController, MietenController, HGVController
+from checkcontroller import IccController, MietenController, HGVController
+from messagebox import ErrorBox, InfoBox
+from mietobjekt.mietobjektauswahl import MietobjektAuswahl
+from mietobjekt.mietobjektcontroller import MietobjektController
+from mietobjekt.mietobjektview import MietobjektView
 from mietverhaeltnis.mieterwechselcontroller import MieterwechselController
+from mietverhaeltnis.mietverhaeltniscontroller import MietverhaeltnisController
 from notizen.notizencontroller import NotizenController
 from offene_posten.offenepostencontroller import OffenePostenController
+from qtderivates import AuswahlDialog
 from rendite.renditecontroller import RenditeController
-from sollzahlungencontroller import SollzahlungenController, SollType, SollmietenController, SollHgvController
+from sollzahlungencontroller import SollmietenController, SollHgvController
 from sonstauscontroller import SonstAusController
 from sumfieldsprovider import SumFieldsProvider
-from abrechnungencontroller import AbrechnungenController, NkAbrechnungenController, HgAbrechnungenController
+from abrechnungencontroller import NkAbrechnungenController, HgAbrechnungenController
 
 
-class MainController:
+class MainController( QObject ):
     def __init__(self, win:ImmoCenterMainWindow ):
+        QObject.__init__( self )
         self._mainwin:ImmoCenterMainWindow = win
         datum, text = BusinessLogic.inst().getLetzteBuchung()
         win.setLetzteBuchung( datum, text )
+        win.setTabellenAuswahl( BusinessLogic.inst().getIccTabellen() )
         win.setActionCallback( self.onMainWindowAction )
         win.setShutdownCallback( self.onShutdown )
 
+        #win.bringDialogToFront.connect( self.onBringDialogToFront )
+        #win.showTableContent.connect( self.onShowTableContent )
+
+        self._mietverhaeltnisDlg:IccDialog = None
+        self._mieteDlg:IccDialog = None
+        self._hgvDlg:IccDialog = None
+        self._sonstAusDlg:IccDialog = None
+        self._oposDlg:IccDialog = None
+        self._sollMietenDlg:IccDialog = None
+        self._sollHausgeldDlg:IccDialog = None
+        self._nkaDlg:IccDialog = None
+        self._hgaDlg:IccDialog = None
+        self._notizenDlg:IccDialog = None
+        self._renditeDlg:IccDialog = None
+        self._anlageVDlg:IccDialog = None
+        self._mieterWechselDlg:IccDialog = None
+        self._mietobjektDlg:IccDialog = None
+        self._geschaeftsreiseDlg:IccDialog = None
+        self._anlageVDlg:IccDialog = None
+
+        self._mietverhaeltnisCtrl = MietverhaeltnisController()
         self._mietenCtrl:MietenController = MietenController()
         self._mietenCtrl.changedCallback = self.onViewChanged
         self._mietenCtrl.savedCallback = self.onViewSaved
-
         self._hgvCtrl:HGVController = HGVController()
         self._hgvCtrl.changedCallback = self.onViewChanged
         self._hgvCtrl.savedCallback = self.onViewSaved
-
         self._sonstAusCtrl:SonstAusController = SonstAusController()
         self._sonstAusCtrl.changedCallback = self.onViewChanged
         self._sonstAusCtrl.savedCallback = self.onViewSaved
-
         self._sollMietenCtrl = SollmietenController()
         self._sollHausgelderCtrl = SollHgvController()
-
         self._nkaCtrl = NkAbrechnungenController()
         self._hgaCtrl = HgAbrechnungenController()
-
-        self._anlageVCtrl:AnlageVController = None
         self._oposCtrl:OffenePostenController = OffenePostenController()
         self._notizenCtrl:NotizenController = NotizenController()
         self._renditeCtrl:RenditeController = RenditeController()
-
+        self._anlageVCtrl: AnlageVController = None
+        self._mieterWechselCtrl:MieterwechselController = None
+        self._mietobjektCtrl:MietobjektController = None
+        self._geschaeftsreiseCtrl:GeschaeftsreisenController = None
         self._nChanges = 0  # zählt die Änderungen, damit nach Speichern-Vorgängen das Sternchen nicht zu früh entfernt wird.
-
-        #TODO: _viewsandcontroller bereinigen, wenn ein View geschlossen wird
-        self._viewsandcontroller:[Dict[MdiSubWindow, MdiChildController]] = {}
-        self._someViewChanged:bool = False
         self._x, self._y = 0, 0
-
         self._provideSumFields()
 
     def _provideSumFields( self ):
@@ -68,22 +92,22 @@ class MainController:
         #sfa.setSumAusgaben( sumAusgaben )
         #sfa.setSumHGV( sumHGV )
 
-    def showStartViews( self ):
-        self.showMieteView()
-        self.showHGVView()
-        self.showSonstAusView()
+    # def showStartViews( self ):
+    #     self.showMieteView()
+    #     # self.showHGVView()
+    #     # self.showSonstAusView()
 
-    def onMainWindowAction( self, action:MainWindowAction ):
+    def onMainWindowAction( self, action:MainWindowAction, arg=None ):
         """
         Hier laufen alle Menü-Auswahlen ein, die der User trifft (klickt)
         :param action:
         :return:
         """
         switcher = {
-            MainWindowAction.NEW_WINDOW: self._newWindow,
-            MainWindowAction.SAVE_ACTIVE_VIEW: self._saveActiveView,
+            MainWindowAction.OPEN_OBJEKT_STAMMDATEN_VIEW: self.showObjektStammdatenDialog,
+            MainWindowAction.OPEN_MIETVERH_VIEW: self.showMietverhaeltnis,
             MainWindowAction.SAVE_ALL: self._saveAll,
-            MainWindowAction.PRINT_ACTIVE_VIEW: self._printActiveView,
+            #MainWindowAction.PRINT_ACTIVE_VIEW: self._printActiveView,
             MainWindowAction.OPEN_MIETE_VIEW: self.showMieteView,
             MainWindowAction.OPEN_HGV_VIEW: self.showHGVView,
             MainWindowAction.FOLGEJAHR: self.createFolgejahr,
@@ -91,60 +115,35 @@ class MainController:
             MainWindowAction.OPEN_SOLL_HG_VIEW: self.showSollHausgelderView,
             MainWindowAction.OPEN_NKA_VIEW: self.showNKAbrechnungenView,
             MainWindowAction.OPEN_HGA_VIEW: self.showHGAbrechnungenView,
+            MainWindowAction.OPEN_SONST_EIN_AUS_VIEW: self.showSonstAusView,
             MainWindowAction.OPEN_ANLAGEV_VIEW: self.showAnlageVView,
-            MainWindowAction.RESIZE_MAIN_WINDOW: self.resizeAllViews,
             MainWindowAction.EXPORT_CSV: self.exportToCsv,
             MainWindowAction.OPEN_OFFENE_POSTEN_VIEW: self.showOffenePostenView,
             MainWindowAction.NOTIZEN: self.showNotizenView,
             MainWindowAction.RENDITE_VIEW: self.showRenditeView,
-            MainWindowAction.MIETERWECHSEL: self.showMieterwechselDialog
+            MainWindowAction.MIETERWECHSEL: self.showMieterwechselDialog,
+            MainWindowAction.OPEN_GESCHAEFTSREISE_VIEW: self.showGeschaeftsreiseDialog,
+            MainWindowAction.EXIT: self.exit
         }
+
         fnc = switcher.get( action )
+        if not fnc:
+            if action == MainWindowAction.SHOW_TABLE_CONTENT:
+                self.showTableContent( arg )
+            elif action == MainWindowAction.BRING_DIALOG_TO_FRONT:
+                self.bringDialogToFront( arg )
+            return
+
         try:
             fnc()
-        except:
-           self._mainwin.showException( "function call failed", "MainController.onMainWindowAction():\nconcerned action: '%s'." % (str( action ) ) )
+        except Exception as ex:
+            print( "MainController.onMainWindowAction()\n" + str( ex ) )
+            self._mainwin.showException( "function call failed",
+                                         "MainController.onMainWindowAction():\nconcerned action: '%s'." %
+                                         (str( action ) ) )
 
-    def showAnlageVView( self ):
-        self._anlageVCtrl = AnlageVController()
-        dlg = self._anlageVCtrl.createDialog( self._mainwin )
-        dlg.setGeometry( self._mainwin.x() + 50, self._mainwin.y() + 10, 1300, 1300 )
-        dlg.show()
-        # view = self._anlageVCtrl.createView()
-        # dlg = QDialog( self._mainwin )
-        # dlg.setModal( False )
-        # lay = QVBoxLayout()
-        # lay.addWidget( view )
-        # dlg.setLayout( lay )
-        # dlg.setGeometry( self._mainwin.x()+50, self._mainwin.y()+10, 1300, 1300 )
-        # dlg.show()
-        # if view:
-        #     view.setGeometry( self._mainwin.x()+50, self._mainwin.y()+10, 1300, 1300 )
-        #     view.show()
-
-        #subwin:MdiSubWindow = self._anlageVCtrl.startWork()
-        #self._installView( subwin, self._anlageVCtrl )
-        # subwin.setMinimumSize( 1300, 1300 )
-        #subwin.show()
-
-    def showOffenePostenView( self ):
-        self.createOposViewAndShow()
-
-    def showNotizenView( self ):
-        self.createNotizenViewAndShow()
-
-    def showRenditeView( self ):
-        self.createRenditeViewAndShow()
-
-    def showMieterwechselDialog( self ):
-        c = MieterwechselController()
-        c.startWork()
-
-    def test( self ):
-        print( "test")
-
-    def anyViewChanged( self ) -> bool:
-        return self._someViewChanged
+    def exit( self ):
+        self._mainwin.close()
 
     def onViewChanged( self ):
         self._mainwin.setWindowTitle( "ImmoControlCenter *" )
@@ -157,135 +156,179 @@ class MainController:
             self._mainwin.setWindowTitle( "ImmoControlCenter" )
             self._someViewChanged = False
 
-    def arrange( self, *views ):
-        print( views )
-
-    def _newWindow( self ):
-        pass
-
-    def _saveActiveView( self ):
-        child:MdiSubWindow = self._mainwin.mdiArea.activeSubWindow()
-        #child.installEventFilter( self )
-        ctrl:MdiChildController = self._viewsandcontroller[child]
-        ctrl.save()
-        self._mainwin.setWindowTitle( "ImmoControlCenter" )
-        self._someViewChanged = False
 
     def _saveAll( self ):
         self._setLetzteBuchung()
 
-    def _printActiveView( self ):
-        pass
+    def _showDialog( self, dlg:IccDialog, w, h ):
+        x = self._mainwin.x()
+        y = 120
+        dlg.setGeometry( x, y, w, h )
+        #dlg.setModal( False )
+        title = dlg.windowTitle()
+        self._mainwin.addOpenedDialog( title, dlg )
+        dlg.dialogClosing.connect( lambda name=title, data=dlg: self._mainwin.removeClosedDialog( title, dlg ) )
+        dlg.show()
+
+    def showMietverhaeltnis( self ):
+        self._mietverhaeltnisDlg = self._mietverhaeltnisCtrl.createDialog( self._mainwin )
+        w = 900
+        h = 500
+        self._showDialog( self._mietverhaeltnisDlg, w, h )
 
     def showMieteView( self ):
-        #TODO prüfen, ob schon ein MieteView vorhanden ist. Wenn ja, diesen in den Vordergrund bringen.
-        #     Nur wenn nein, einen anlegen.
-        # if <exists miete view:
-        #     bring to front
-        # else:
-        self.createMieteViewAndShow()
-
-    def createMieteViewAndShow( self ):
-        subwin = self._mietenCtrl.createSubwindow()
-        self._installView( subwin, self._mietenCtrl )
-        w, h = self.getMainWindowSize()
-        w2 = w/2
-        subwin.setGeometry( 0, 0, w2, h )  # h-22 )
-        #subwin.setGeometry( 0, 0, 700, h )
-        subwin.show()
+        self._mieteDlg = self._mietenCtrl.createDialog( self._mainwin )
+        if self._mieteDlg:
+            w = self._mieteDlg.getPreferredWidth()
+            h = 900 #screen.screenheight
+            #x, y = self._getXY( self._mieteDlg )
+            self._showDialog( self._mieteDlg, w, h )
 
     def showHGVView( self ):
-        # TODO prüfen, ob schon ein HGV-View vorhanden ist. Wenn ja, diesen in den Vordergrund bringen.
-        #     Nur wenn nein, einen anlegen.
-        # if <exists hgv view:
-        #     bring to front
-        # else:
-        self.createHgvViewAndShow()
-
-    def createHgvViewAndShow( self ):
-        subwin = self._hgvCtrl.createSubwindow()
-        self._installView( subwin, self._hgvCtrl )
-        w, h = self.getMainWindowSize()
-        w2 = w / 2
-        x = w2
-        # sonstaussubwin = self.getView( self._sonstAusCtrl )
-        # y = h - sonstaussubwin.height()
-        # h2 = h - y - 25
-        h2 = h/2
-        y = h2
-        subwin.setGeometry( x, y, w2, h2 )
-        subwin.show()
+        self._hgvDlg = self._hgvCtrl.createDialog( self._mainwin )
+        #w = self._hgvDlg.getPreferredWidth()
+        w = 1550
+        h = 730
+        #x, y = self._getXY( self._hgvDlg )
+        self._showDialog( self._hgvDlg, w, h )
 
     def showSonstAusView( self ):
-        self.createSonstAusViewAndShow()
+        self._sonstAusDlg = self._sonstAusCtrl.createDialog( self._mainwin )
+        w = 1800
+        h = 900
+        #x, y = self._getXY( self._sonstAusDlg )
+        self._showDialog( self._sonstAusDlg, w, h )
 
-    def createSonstAusViewAndShow( self ):
-        subwin = self._sonstAusCtrl.createSubwindow()
-        self._installView( subwin, self._sonstAusCtrl )
-        w, h = self.getMainWindowSize()
-        w2 = w / 2
-        x = w2
-        subwin.setGeometry( x, 0, w2, h / 2 )
-        subwin.show()
-
-    def createOposViewAndShow( self ):
-        subwin = self._oposCtrl.createSubwindow()
-        self._installView( subwin, self._oposCtrl )
-        subwin.setGeometry( 50, 10, 800, 600 )
-        # w, h = self.getMainWindowSize()
-        # w2 = w/2
-        # subwin.setGeometry( 0, 0, w2, h )  # h-22 )
-        #subwin.setGeometry( 0, 0, 700, h )
-        subwin.show()
-
-    def createNotizenViewAndShow( self ):
-        subwin = self._notizenCtrl.createSubwindow()
-        self._installView( subwin, self._notizenCtrl )
-        subwin.setGeometry( 50, 10, 800, 600 )
-        subwin.show()
-
-    def createRenditeViewAndShow( self ):
-        subwin = self._renditeCtrl.createSubwindow()
-        self._installView( subwin, self._renditeCtrl )
-        subwin.setGeometry( 500, 10, 900, 900 )
-        subwin.show()
-
+    def showOffenePostenView( self ):
+        self._oposDlg = self._oposCtrl.createDialog( self._mainwin )
+        w = 1000
+        h = 900
+        #x, y = self._getXY( self._oposDlg )
+        self._showDialog( self._oposDlg, w, h )
 
     def showSollMietenView( self ):
-        # TODO: prüfen, ob shon ein SollzahlungenView vorhanden ist. Nur wenn nein, einen anlegen.
-        self.createSollMietenViewAndShow()
-
-    def createSollMietenViewAndShow( self ):
-        subwin = self._sollMietenCtrl.createSubwindow()
-        self._installView( subwin, self._sollMietenCtrl )
-        # w, h = self.getMainWindowSize()
-        subwin.setGeometry( 20, 20, 1000, 900 )
-        subwin.show()
+        self._sollMietenDlg = self._sollMietenCtrl.createDialog( self._mainwin )
+        w = 1100
+        h = 950
+        self._showDialog( self._sollMietenDlg, w, h )
 
     def showSollHausgelderView( self ):
-        # TODO: prüfen, ob shon ein SollzahlungenView vorhanden ist. Nur wenn nein, einen anlegen.
-        self.createSollHausgelderViewAndShow()
+        self._sollHausgeldDlg = self._sollHausgelderCtrl.createDialog( self._mainwin )
+        w = 1100
+        h = 1000
+        self._showDialog( self._sollHausgeldDlg, w, h )
 
     def showNKAbrechnungenView( self ):
-        self.createNkaViewAndShow()
+        self._nkaDlg = self._nkaCtrl.createDialog( self._mainwin )
+        w = 1500
+        h = 950
+        self._showDialog( self._nkaDlg, w, h )
 
     def showHGAbrechnungenView( self ):
-        self.createHgaViewAndShow()
+        self._hgaDlg = self._hgaCtrl.createDialog( self._mainwin )
+        w = 1500
+        h = 950
+        self._showDialog( self._hgaDlg, w, h )
 
-    def resizeAllViews( self ):
-        # wird gerufen, wenn das MainWindow resized wird.
-        geom = self._mainwin.geometry()
-        #print( "resized. new size: ", geom.width(), " x ", geom.height() )
+    def showNotizenView( self ):
+        self._notizenDlg = self._notizenCtrl.createDialog( self._mainwin )
+        w = 1200
+        h = 800
+        self._showDialog( self._notizenDlg, w, h )
+
+    def showRenditeView( self ):
+        self._renditeDlg = self._renditeCtrl.createDialog( self._mainwin )
+        w = 1100
+        h = 900
+        self._showDialog( self._renditeDlg, w, h )
+
+    def showAnlageVView( self ):
+        self._anlageVCtrl = AnlageVController()
+        self._anlageVDlg = self._anlageVCtrl.createDialog( self._mainwin )
+        self._showDialog( self._anlageVDlg, 1300, 1300 )
+
+    def showMieterwechselDialog( self ):
+        self._mieterWechselCtrl = MieterwechselController()
+        self._mieterWechselDlg = self._mieterWechselCtrl.createDialog( self._mainwin )
+        if not self._mieterWechselDlg: return
+        w = 900
+        h = 900
+        self._showDialog( self._mieterWechselDlg, w, h )
+
+    def showGeschaeftsreiseDialog( self ):
+        self._geschaeftsreiseCtrl = GeschaeftsreisenController()
+        self._geschaeftsreiseDlg = self._geschaeftsreiseCtrl.createDialog( self._mainwin )
+        w = 1500
+        h = 900
+        self._showDialog( self._geschaeftsreiseDlg, w, h )
+
+    def showObjektStammdatenDialog( self ):
+        self._mietobjektCtrl = MietobjektController()
+        self._mietobjektDlg = self._mietobjektCtrl.createDialog( self._mainwin )
+        if not self._mietobjektDlg: return
+        view:MietobjektView = self._mietobjektDlg.getView()
+        #view.edit_verwaltung.connect( )
+        w = 900
+        h = 900
+        self._showDialog( self._mietobjektDlg, w, h )
 
     def exportToCsv( self ):
-        child: MdiSubWindow = self._mainwin.mdiArea.activeSubWindow()
-        model: QAbstractItemModel = child.widget().getModel()
+        self._mainwin.setCursor( Qt.WaitCursor )
+        QApplication.processEvents()
+        dlgs:List[IccDialog] = self._mainwin.getOpenedDialogs()
+        titles = [d.windowTitle() for d in dlgs]
+        cnt = len( titles )
+        if cnt == 0:
+            box = InfoBox( "CSV-Export", "Kein Dialog zum Exportieren geöffnet.", "", "OK" )
+            box.exec_()
+        elif cnt == 1:
+            self._doCsvExport( dlgs[0] )
+        else:
+            dlgAuswahlDlg = AuswahlDialog()
+            dlgAuswahlDlg.appendItemList( titles )
+            if dlgAuswahlDlg.exec_() == QDialog.Accepted:
+                selTitle:str = dlgAuswahlDlg.getSelection()[0][0]
+                selDlg:IccDialog = [d for d in dlgs if d.windowTitle() == selTitle][0]
+                self._doCsvExport( selDlg )
+        self._mainwin.setCursor( Qt.ArrowCursor )
+        QApplication.processEvents()
+
+    def _doCsvExport( self, dlg:IccDialog ):
+        model: QAbstractItemModel = dlg.getView().getModel()
         try:
             BusinessLogic.inst().exportToCsv( model )
         except Exception as ex:
-            child.showException( "Export als .csv-Datei", str( ex ), "in MainController.exportToCsv()" )
+            box = ErrorBox( "Export als .csv-Datei", str( ex ), "in MainController.exportToCsv()" )
+            box.exec_()
+
+    def bringDialogToFront( self, data: IccDialog ):
+        dlg:IccDialog = data
+        dlg.activateWindow()
+
+    def showTableContent( self, table:str ):
+        dictList = BusinessLogic.inst().getTableContent( table )
+        tm = DictListTableModel( dictList )
+        dlg = IccDialog( self._mainwin )
+        dlg.mayClose = lambda : 1 == 1
+        tv = QTableView()
+        tv.setModel( tm )
+        tv.setSortingEnabled( True )
+        tm.setSortable( True )
+        dlg.setView( tv )
+        dlg.setWindowTitle( table )
+        self._showDialog( dlg, 900, 900 )
 
     def onShutdown( self ) -> bool:
+        if not ( self._mietenCtrl.mayDialogClose() and
+                 self._hgvCtrl.mayDialogClose() and
+                 self._sonstAusCtrl.mayDialogClose() and
+                 self._sollMietenCtrl.mayDialogClose() and
+                 self._sollHausgelderCtrl.mayDialogClose() and
+                 self._nkaCtrl.mayDialogClose() and
+                 self._hgaCtrl.mayDialogClose() and
+                 self._oposCtrl.mayDialogClose() and
+                 self._notizenCtrl.mayDialogClose() ):
+            return False
         self._setLetzteBuchung()
         return True
 
@@ -296,35 +339,6 @@ class MainController:
         except Exception as ex:
             self._mainwin.showException( str( ex ), "MainController.onShutdown()" )
 
-    def createSollHausgelderViewAndShow( self ):
-        subwin = self._sollHausgelderCtrl.createSubwindow()
-        self._installView( subwin, self._sollHausgelderCtrl )
-        subwin.setGeometry( 20, 20, 1000, 900 )
-        subwin.show()
-
-    def createNkaViewAndShow( self ):
-        subwin = self._nkaCtrl.createSubwindow()
-        self._installView( subwin, self._nkaCtrl )
-        w, h = self._nkaCtrl.getViewSize()
-        subwin.setGeometry( 0, 0, w, h )
-        subwin.show()
-
-    def createHgaViewAndShow( self ):
-        subwin = self._hgaCtrl.createSubwindow()
-        self._installView( subwin, self._hgaCtrl )
-        w, h = self._hgaCtrl.getViewSize()
-        subwin.setGeometry( 0, 0, w, h )
-        subwin.show()
-
-    def _installView( self, subwin:MdiSubWindow, ctrl:MdiChildController ):
-        #subwin.addQuitCallback( self.onCloseSubWindow )
-        self._viewsandcontroller[subwin] = ctrl
-        self._mainwin.addMdiChild( subwin )
-
-    def getMainWindowSize( self ) -> Tuple:
-        geom = self._mainwin.mdiArea.geometry()
-        return geom.width(), geom.height()
-
     def createFolgejahr( self ):
         y = getCurrentYear()
         y += 1
@@ -334,24 +348,12 @@ class MainController:
             self._hgvCtrl.addJahr( y )
         #TODO testen!!!!!
 
-    def getView( self, ctrl:MdiChildController ) -> MdiSubWindow:
-        for w, c in self._viewsandcontroller.items():
-            if c == ctrl:
-                return w
-        raise Exception( "internal error: can't find MdiSubWindow for Controller " + ctrl.getViewTitle() )
-
-    # def showSubWindow( self, subwin:MdiSubWindow, x:int, y:int, w:int, h:int ):
-    #     subwin.setGeometry( self._x, self._y, 1200, geom.height() / 5 * 4 )
-    #     self._x += 20
-    #     self._y += 20
-    #     subwin.show()
-
-    def onCloseSubWindow( self, window:MdiSubWindow ) -> bool:
-        self._viewsandcontroller.pop( window )
-        return True
-
-    def _exit( self ):
-        pass
+    # def onCloseSubWindow( self, window:MdiSubWindow ) -> bool:
+    #     self._viewsandcontroller.pop( window )
+    #     return True
+    #
+    # def _exit( self ):
+    #     pass
 
 
 def test():

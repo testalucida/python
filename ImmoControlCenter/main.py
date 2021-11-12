@@ -4,6 +4,8 @@ import sys
 from typing import Tuple, Dict, List
 from PySide2.QtGui import QIcon
 
+from screen import setScreenSize
+
 sys.path.append( "../common" )
 from PySide2.QtWidgets import QApplication, QMessageBox
 from PySide2 import QtCore
@@ -114,13 +116,15 @@ def terminate_if_running():
         box.exec_()
         sys.exit( 1 )
 
-
 def main():
     app = QApplication()
+    setScreenSize( app )
+    env = "DEVELOP"
     if not runningInDev():
         terminate_if_running()
         createControlFile()
-    win = ImmoCenterMainWindow()
+        env = "RELEASE"
+    win = ImmoCenterMainWindow( env )
     # see: https://stackoverflow.com/questions/53097415/pyside2-connect-close-by-window-x-to-custom-exit-method
     shutDownFilter = ShutDownFilter( win, app )
     win.installEventFilter( shutDownFilter )
@@ -128,12 +132,14 @@ def main():
     try:
         pos_size = getGeometryOnLastShutdown()
         win.move( pos_size["x"], pos_size["y"] )
-        win.resize( pos_size["w"], pos_size["h"] )
+        #win.resize( pos_size["w"], pos_size["h"] )
+        win.setFixedWidth( 1100 )
+        win.setFixedHeight( 63 )
     except:
         win.resize( 1900, 1000 )
 
     ctrl = MainController( win )
-    ctrl.showStartViews()
+    # ctrl.showStartViews()
 
     icon = QIcon( "./images/houses.png" )
     app.setWindowIcon( icon )

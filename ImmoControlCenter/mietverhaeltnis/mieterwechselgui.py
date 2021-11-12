@@ -1,20 +1,21 @@
-from PySide2.QtGui import QFont, Qt
-from PySide2.QtWidgets import QApplication, QWidget, QGridLayout, QLabel, QHBoxLayout
+from PySide2.QtCore import QSize, Signal
+from PySide2.QtGui import QFont, Qt, QIcon
+from PySide2.QtWidgets import QApplication, QWidget, QGridLayout, QLabel, QHBoxLayout, QPushButton
 from generictable_stuff.okcanceldialog import OkCancelDialog
+from iccdialog import IccDialog
+from iccview import IccView
 from interfaces import XMietverhaeltnis
 from mietverhaeltnis.mietverhaeltnisgui import MietverhaeltnisView
 from qtderivates import AuswahlDialog, BaseEdit, SmartDateEdit, BaseLabel, FloatEdit, IntEdit
 
 
-##############  MietobjektAuswahlDialog  #######################
-class MietobjektAuswahldialog( AuswahlDialog ):
-    def __init__(self, parent=None):
-        AuswahlDialog.__init__( self, "Auswahl des Mietobjekts", parent )
-
-class MieterwechselView( QWidget ):
-    def __init__( self, parent=None ):
-        QWidget.__init__( self, parent )
+############### MieterwechselView ########################
+class MieterwechselView( IccView ):
+    mieterwechsel_save = Signal()
+    def __init__( self ):
+        IccView.__init__( self )
         self._layout = QGridLayout()
+        self._btnSave = QPushButton()
         # altes Mietverhältnis
         self._edAlterMieter = BaseEdit()
         self._edAlteNettomiete = FloatEdit()
@@ -27,6 +28,7 @@ class MieterwechselView( QWidget ):
         self._createGui()
 
     def _createGui( self ):
+        self._createSaveButton()
         r = self._createGuiAlterMieter()
         r+=1
         self._layout.addWidget( QLabel( "" ), r, 0 )
@@ -34,9 +36,26 @@ class MieterwechselView( QWidget ):
         self._createGuiNeuerMieter( r )
         self.setLayout( self._layout )
 
+    def _createSaveButton( self ):
+        btn = self._btnSave
+        btn.clicked.connect( self.mieterwechsel_save.emit )
+        btn.setFlat( True )
+        btn.setEnabled( True )
+        btn.setToolTip( "Änderungen dieser View speichern" )
+        icon = QIcon( "./images/save_30.png" )
+        btn.setIcon( icon )
+        size = QSize( 32, 32 )
+        btn.setFixedSize( size )
+        iconsize = QSize( 30, 30 )
+        btn.setIconSize( iconsize )
+        hbox = QHBoxLayout()
+        hbox.addWidget( btn )
+        self._layout.addLayout( hbox, 0, 0, alignment=Qt.AlignLeft )
+
     def _createGuiAlterMieter( self ) -> int:
         l = self._layout
-        r = c = 0
+        r = 1
+        c = 0
         lbl = BaseLabel( "Aktuelles / letztes Mietverhältnis " )
         lbl.setFont( QFont( "Arial", 12, QFont.Bold ) )
         l.addWidget( lbl, r, c, 1, 2 )
@@ -111,36 +130,14 @@ class MieterwechselView( QWidget ):
     def applyChanges( self ):
         self._neuesMietvh.applyChanges()
 
-###############  MieterwechselDialog  ##########################
-class MieterwechselDialog( OkCancelDialog ):
-    def __init__(self, miet_obj:str, parent=None):
-        OkCancelDialog.__init__( self, parent )
-        self.setWindowTitle( miet_obj )
-        self._view = MieterwechselView()
-        self.addWidget( self._view, 0 )
-
-    def setAktuellesMietverhaeltnis( self, xmv:XMietverhaeltnis ):
-        self._view.setAltesMietverhaeltnis( xmv )
-
-    def setNeuesMietverhaeltnis( self, xmv:XMietverhaeltnis ):
-        self._view.setNeuesMietverhaeltnis( xmv )
-
-    def getAktuellesMietverhaeltnisMietEnde( self ) -> str:
-        return self._view.getAltesMietverhaeltnisMietEnde()
-
-    def getNeuesMietverhaeltnisCopyWithChanges( self ) -> XMietverhaeltnis:
-        return self._view.getNeuesMietverhaeltnisCopyWithChanges()
-
-    def applyChanges( self ):
-        self._view.applyChanges()
-
-#################################################################
+    def getModel( self ):
+        return self._neuesMietvh.getMietverhaeltnisCopyWithChanges()
 
 
-def test():
-    dlg = MieterwechselDialog( "NK_Volkerstal" )
-    dlg.exec_()
-
-if __name__ == "__main__":
-    app = QApplication()
-    test()
+# def test():
+#     dlg = MieterwechselDialog( "NK_Volkerstal" )
+#     dlg.exec_()
+#
+# if __name__ == "__main__":
+#     app = QApplication()
+#     test()

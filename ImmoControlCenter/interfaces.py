@@ -11,6 +11,10 @@ class XBase:
         for k, v in d.items():
             _d[k] = v
 
+    def equals( self, other ) -> bool:
+        return True if self.__dict__ == other.__dict__ else False
+
+
 #################################################################
 def setFromDict( object, valuedict:Dict ):
     d = object.__dict__
@@ -38,6 +42,64 @@ def setFromDict( object, valuedict:Dict ):
 #         if valuedict:
 #             setFromDict( self, valuedict )
 
+#################  Mietobjekt  #############################
+class XMietobjektExt( XBase ):
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self )
+        ### zuerst die Master-Daten ###
+        self.master_id:int = 0 # ID des Master-Objekts (Tabelle masterobjekt)
+        self.master_name:str = ""
+        self.strasse_hnr:str = ""
+        self.plz:str = ""
+        self.ort:str = ""
+        self.gesamt_wfl:int = 0
+        self.anz_whg:int = 0
+        self.veraeussert_am:str = ""
+        self.hauswart:str = ""
+        self.hauswart_telefon:str = ""
+        self.hauswart_mailto:str = ""
+        self.bemerkung_masterobjekt:str = "" ### ACHTUNG: Dieses Feld heißt in der Tabelle masterobjekt "bemerkung" --
+                                                # Beim Select berücksichtigen!
+        ### dann die Daten des Mietobjekts, das ausgesucht wurde
+        self.mobj_id:str = "" # ID des Mietobjekts (Tabelle mietobjekt)
+        self.whg_bez:str = ""
+        self.qm:int = 0  # Größe der Wohnung -- ist identisch mit gesamt_wfl, wenn es sich beim Masterobjekt nicht um ein
+                         # ganzes Haus handelt
+        self.container_nr:str = "" # Nummer des zur Wohnung gehörenden Abfallcontainers
+        self.bemerkung_mietobjekt:str = "" ### ACHTUNG: Dieses Feld heißt in der Tabelle mietobjekt "bemerkung" --
+                                            # Beim Select berücksichtigen!
+        # Ergänzende Daten zu Mieter, Miete, NKV, Verwaltung und HGV
+        self.mieter:str = ""
+        self.telefon_mieter:str = ""
+        self.mailto_mieter:str = ""
+        self.nettomiete:float = 0.0
+        self.nkv:float = 0.0
+        self.kaution:float = 0.0
+        self.weg_name:str = ""
+        self.verwalter:str = ""
+        self.hgv_netto:float = 0.0
+        self.ruezufue:float = 0.0
+        self.hgv_brutto:float = 0.0
+        if valuedict:
+            self.setFromDict( valuedict )
+
+#######################  Geschäftsreise  #######################
+class XGeschaeftsreise( XBase ):
+    def __init__( self, valuedict:Dict=None ):
+        self.id = 0
+        self.mobj_id = ""
+        self.jahr = 0
+        self.von = ""
+        self.bis = ""
+        self.ziel = ""
+        self.zweck = ""
+        self.km = 0
+        self.verpfleg_pauschale = 0.0
+        self.uebernachtung = ""
+        self.uebernacht_kosten = 0.0
+        if valuedict:
+            setFromDict( self, valuedict )
+
 ####################### Wertebereich ##########################
 class XWertebereich:
     def __init__(self, valuedict:Dict=None):
@@ -52,21 +114,29 @@ class XWertebereich:
             setFromDict( self, valuedict )
 
 ####################### Zahlung #################################1
-class XZahlung:
-    z_id:int = 0
-    master_id:int = 0 # ID des Master-Objekts (Tabelle masterobjekt)
-    mobj_id:str = "" # ID des Mietobjekts (Tabelle mietobjekt) --- kann frei sein, dann muss aber master_id versorgt sein
-    # GENAU einer der nachfolgenden 4 IDs muss versorgt sein
-    meinaus_id:int = 0 # ID der monatlichen Einzahlung (Tabelle mtleinaus)
-    saus_id:int = 0 # ID der sonstigen Auszahlung (Tabelle sonstaus)
-    nka_id:int = 0  # ID der Nebenkostenabrechnung (Tabelle nkabrechng)
-    hga_id:int = 0  # ID der Hausgeld-Abrechnung (Tabelle hgabrechng)
-    #---
-    write_time:str = ""  # Zeitpunkt der Anlage dieses Satzes
-    jahr:int = 0 # Veranlagungsjahr
-    monat:str = ""  # auf welchen Monat sich die Zahlung bezieht (nur für Miete und HGV relevant)
-    betrag:float = 0.0
-    zahl_art:str = ""  # {'brutto_miete', 'nka', 'hgv', 'hga', 'rechng'}
+class XZahlung( XBase ):
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self )
+        self.z_id:int = 0
+        self.master_id:int = 0 # ID des Master-Objekts (Tabelle masterobjekt)
+        self.mobj_id:str = "" # ID des Mietobjekts (Tabelle mietobjekt) --- kann frei sein, dann muss aber master_id versorgt sein
+            # GENAU einer der nachfolgenden 4 IDs muss versorgt sein
+        self.meinaus_id:int = 0 # ID der monatlichen Einzahlung (Tabelle mtleinaus)
+        self.saus_id:int = 0 # ID der sonstigen Auszahlung (Tabelle sonstaus)
+        self.kreditor:str = ""
+        self.nka_id:int = 0  # ID der Nebenkostenabrechnung (Tabelle nkabrechng)
+        self.hga_id:int = 0  # ID der Hausgeld-Abrechnung (Tabelle hgabrechng)
+        self.write_time:str = ""  # Zeitpunkt der Anlage dieses Satzes
+        self.jahr:int = 0 # Veranlagungsjahr
+        self.monat:str = ""  # auf welchen Monat sich die Zahlung bezieht (nur für Miete und HGV relevant)
+        self.betrag:float = 0.0
+        self.zahl_art:str = ""  # {'brutto_miete', 'nka', 'hgv', 'hga', 'rechng'}
+        self.kostenart:str = "" # {s, v, a, r, sam, g }
+        self.umlegbar:bool = False
+        self.buchungsdatum:str = ""
+        self.buchungstext:str = ""
+        if valuedict:
+            self.setFromDict( valuedict )
 
 class XZahlung2:
     def __init__( self, valuedict:Dict=None ):
@@ -105,7 +175,7 @@ class XZahlung3:
             setFromDict( self, valuedict )
 
 ###################  Mietverhältnis  #########################
-class XMietverhaeltnis:
+class XMietverhaeltnis( XBase ):
     def __init__( self, valuedict:Dict=None ):
         self.id = 0
         self.mv_id = ""
@@ -128,7 +198,7 @@ class XMietverhaeltnis:
         self.bemerkung1 = ""
         self.bemerkung2 = ""
         if valuedict:
-            setFromDict( self, valuedict )
+            self.setFromDict( valuedict )
 
 #################### Kostenart ###################################
 
@@ -227,6 +297,7 @@ class XBuchungstextMatch( XBase ):
     mobj_id:str = ""
     kreditor:str = ""
     buchungstext:str = ""
+    kostenart:str = ""
     kostenart_lang:str = ""
     umlegbar:int = 0
 
@@ -353,6 +424,14 @@ def printX( x:XSonstAus ):
     for k, v in d.items():
         print( k, ": ", v )
 
+def testCompare():
+    mv1 = XMietverhaeltnis()
+    mv2 = XMietverhaeltnis()
+    # mv2.mv_id = 22
+    # mv1.mv_id = 22
+    print( "Gleich" if mv2.equals( mv1) else "Nicht gleich" )
+    print( "Gleich" if mv2 == mv1 else "Nicht gleich" )  # SO kann man 2 Objekte nicht vergleichen!!
+
 def test():
     x = XSonstAus()
     x.saus_id = 1
@@ -379,4 +458,5 @@ def test():
     printX( x3 )
 
 if __name__ == "__main__":
-    test()
+    #test()
+    testCompare()
