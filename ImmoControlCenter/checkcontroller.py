@@ -223,7 +223,7 @@ class MietenController( CheckController ):
             box.exec_()
 
     def _showMietverhaeltnis( self, mv_id:str, point:QPoint ):
-        c = MietverhaeltnisController( self._view )
+        c = MietverhaeltnisController()
         c.showMietverhaeltnis( mv_id, point )
 
 #################### HGVController ########################

@@ -4,62 +4,42 @@ from PySide2.QtWidgets import QApplication, QWidget
 
 from business import BusinessLogic
 from icccontroller import IccController
-from interfaces import XMietverhaeltnis
+from interfaces import XMietverhaeltnis, XMieterwechsel
+from messagebox import ErrorBox, InfoBox
 from mietobjekt.mietobjektauswahl import MietobjektAuswahl
 from mietverhaeltnis.mieterwechselgui import MieterwechselView
+from mietverhaeltnis.mietverhaeltnislogic import MietverhaeltnisLogic
+from mietverhaeltnis.mietverhaeltnisservices import MietverhaeltnisServices
+from returnvalue import ReturnValue
 
 
 class MieterwechselController( IccController ):
     def __init__( self ):
         IccController.__init__( self )
         self._mobj_id:str = ""
+        self._xmieterwechsel:XMieterwechsel = None
         self._view:MieterwechselView = None
-        self._mietverhaeltnisVorher:XMietverhaeltnis = None
-        self._mietverhaeltnisNachher:XMietverhaeltnis = None
         self._mietobjektAuswahl = MietobjektAuswahl()
 
     def createView( self ) -> QWidget:
         #zuerst über den Auswahldialog bestimmen, welche Daten für die View selektiert werden müssen
         self._mobj_id:str = self._mietobjektAuswahl.selectMietobjekt()
-        if not self._mobj_id: return
+        if not self._mobj_id: return None
         self._view = MieterwechselView()
         self._view.mieterwechsel_save.connect( self.writeChanges )
-        busi: BusinessLogic = BusinessLogic.inst()
-        self._mietverhaeltnisVorher, self._mietverhaeltnisNachher = busi.getMieterwechseldaten( self._mobj_id )
-        self._view.setAltesMietverhaeltnis( self._mietverhaeltnisVorher )
-        self._view.setNeuesMietverhaeltnis( self._mietverhaeltnisNachher )
+        #busi: BusinessLogic = BusinessLogic.inst()
+        # self._mietverhaeltnisVorher, self._mietverhaeltnisNachher = busi.getMieterwechseldaten( self._mobj_id )
+        # self._view.setAltesMietverhaeltnis( self._mietverhaeltnisVorher )
+        # self._view.setNeuesMietverhaeltnis( self._mietverhaeltnisNachher )
+        # xmieterwechsel = busi.getMieterwechseldaten( self._mobj_id )
+        mvlogic = MietverhaeltnisLogic()
+        self._xmieterwechsel = mvlogic.getMieterwechseldaten( self._mobj_id )
+        self._view.setMieterwechselData( self._xmieterwechsel )
         return self._view
 
-    def _validateMieterwechsel( self ) -> bool:
-        v = self._view
-        mietEnde_akt = v.getAltesMietverhaeltnisMietEnde()  # das Mietende ist das einzige Attribut, das
-                                                            # beim alten Mietverhältnis verändert werden kann
-        if not mietEnde_akt:
-            self.showErrorMessage( "Validierung fehlerhaft",
-                                  "Das Ende des aktuellen Mietverhältnisses fehlt oder ist fehlerhaft." )
-            return False
-        xmv_neu_cpy = v.getNeuesMietverhaeltnisCopyWithChanges()
-        if xmv_neu_cpy.von == "":
-            self.showErrorMessage( "Validierung fehlerhaft", "Der Beginn des Mietverhältnisses fehlt" )
-            return False
-        if mietEnde_akt > xmv_neu_cpy.von:
-            self.showErrorMessage( "Validierung fehlerhaft", "Das Ende des aktuellen Mietverhältnisses muss VOR "
-                                                            "dem Anfang des neuen Mietverhältnisses liegen." )
-            return False
-        if xmv_neu_cpy.name == "" or xmv_neu_cpy.vorname == "":
-            self.showErrorMessage( "Validierung fehlerhaft", "Vor- und Nachname müssen eingegeben werden." )
-            return False
-        if xmv_neu_cpy.nettomiete <= 0:
-            self.showErrorMessage( "Validierung fehlerhaft", "Nettomiete fehlt." )
-            return False
-        if xmv_neu_cpy.nkv <= 0:
-            self.showErrorMessage( "Validierung fehlerhaft", "Nebenkostenvorauszahlung fehlt." )
-            return False
-        return True
-
     def isChanged( self ) -> bool:
-        xmv_neu = self._view.getNeuesMietverhaeltnisCopyWithChanges()
-        return False if xmv_neu.equals( self._mietverhaeltnisNachher ) else True
+        xmw_gui = self._view.getMieterwechselDataCopyWithChanges()
+        return False if xmw_gui.equals( self._xmieterwechsel ) else True
 
     def getChanges( self ) -> Any:
         return None
@@ -68,19 +48,16 @@ class MieterwechselController( IccController ):
         pass
 
     def writeChanges( self, changes:Any=None ) -> bool:
-        #wird von _askWhatToDo gerufen
-        if self._validateMieterwechsel():
-            self._view.applyChanges()
-            try:
-                BusinessLogic.inst().processMieterwechsel( self._mietverhaeltnisVorher.mv_id,
-                                                           self._view.getAltesMietverhaeltnisMietEnde(),
-                                                           self._mietverhaeltnisNachher )
-                return True
-            except Exception as ex:
-                self.showErrorMessage( "Mieterwechsel: Speichern fehlgeschlagen", str( ex ) )
-                return False
-        return False
-
+        self._view.applyChanges()  # Änderungen von der GUI in XMieterwechsel übernehmen
+        retval:ReturnValue = MietverhaeltnisServices.processMieterwechsel( self._view.getMieterwechselData() )
+        if not retval.missionAccomplished():
+            box = ErrorBox( "Fehler beim Mieterwechsel", retval.exceptiontype, retval.errormessage )
+            box.exec_()
+            return False
+        box = InfoBox( "Mieterwechsel", "Verarbeitung erfolgreich.", "", "OK" )
+        box.exec_()
+        self._view.setSaveButtonEnabled( False )
+        return True
 
     def getViewTitle( self ) -> str:
         return "Mieterwechsel " + self._mobj_id
@@ -89,7 +66,9 @@ class MieterwechselController( IccController ):
 def test():
     app = QApplication()
     c = MieterwechselController()
-    c.startWork()
+    v = c.createView()
+    v.show()
+    app.exec_()
 
 if __name__ == "__main__":
     test()

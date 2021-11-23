@@ -1,3 +1,5 @@
+from functools import cmp_to_key
+
 from PySide2 import Qt
 from PySide2.QtCore import *
 from PySide2.QtGui import QFont, QBrush, QColor
@@ -101,12 +103,34 @@ class DictListTableModel( IccTableModel ):
     def setSortable( self, enable:bool ):
         self._sortable = enable
 
+    sort_col = 0
+    sort_reverse = -1
     def sort( self, col:int, order: Qt.SortOrder ) -> None:
         if not self._sortable: return
-
+        self.sort_col = col
+        self.sort_reverse *= -1
         """sort table by given column number col"""
         self.emit(SIGNAL("layoutAboutToBeChanged()"))
-        sort_reverse = True if order == Qt.SortOrder.AscendingOrder else False
-        self.rowlist = sorted( self.rowlist, key=lambda x: x[self._headers[col]], reverse=sort_reverse )
+        self.sort_reverse = True if order == Qt.SortOrder.AscendingOrder else False
+        #self.rowlist = sorted( self.rowlist, key=lambda x: x[self._headers[col]], reverse=sort_reverse )
+        self.rowlist = sorted( self.rowlist, key=cmp_to_key( self.compareGeneric ), reverse=self.sort_reverse )
         self.emit(SIGNAL("layoutChanged()"))
 
+    def compareGeneric( self, d1:Dict, d2:Dict ) -> int:
+        """
+        :param d1: dictionary
+        :param d2: dictionary
+        :return:
+        """
+        key = self._headers[self.sort_col]
+        v1 = d1[key]
+        v2 = d2[key]
+        if v1 is None and v2 is None: return 0
+        if v1 is None: return 1
+        if v2 is None: return -1
+        if isinstance( v1, str ):
+            v1 = v1.lower()
+            v2 = v2.lower()
+        if v1 < v2: return 1
+        if v1 > v2: return -1
+        if v1 == v2: return 0

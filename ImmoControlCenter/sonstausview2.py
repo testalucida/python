@@ -460,14 +460,14 @@ class SonstigeAusgabenView( QWidget ):
         self._justEditing = None
         self._suspendCallbacks = False
 
-    def provideEditFieldsPartly( self, umlegbar:bool, master_id:int, master_name:str,
-                                 mobj_id:str, kreditor:str, buchungstext:str ):
-        self._cbUmlegbar.setChecked( umlegbar )
-        self._cboMasterobjekt.setCurrentText( master_name )
-        self._cboMietobjekt.setCurrentText( mobj_id )
-        self._cboKreditor.setCurrentText( kreditor )
-        self._cboBuchungstext.setCurrentText( buchungstext )
-        #todo: weitermachen
+    # def provideEditFieldsPartly( self, umlegbar:bool, master_id:int, master_name:str,
+    #                              mobj_id:str, kreditor:str, buchungstext:str ):
+    #     self._cbUmlegbar.setChecked( umlegbar )
+    #     self._cboMasterobjekt.setCurrentText( master_name )
+    #     self._cboMietobjekt.setCurrentText( mobj_id )
+    #     self._cboKreditor.setCurrentText( kreditor )
+    #     self._cboBuchungstext.setCurrentText( buchungstext )
+    #     #todo: weitermachen
 
     def provideEditFields( self, x:XSonstAus ):
         self.clearEditFields()

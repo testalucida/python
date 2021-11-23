@@ -127,14 +127,14 @@ class Rendite_AusgabenTableModel( IccTableModel ):
         self._ausgabeList = li
 
     def compare( self, x1:Any, x2:Any ) -> int:
-        key = self.getKeyList()[self.sort_col]
+        key = self.getKeyList()[self._sort_col]
         v1 = x1.__dict__[key]
         v2 = x2.__dict__[key]
         if isinstance( v1, str ):
             v1 = v1.lower()
             v2 = v2.lower()
-        if v1 < v2: return -1 if self.sort_reverse else 1
-        if v1 > v2: return 1 if self.sort_reverse else -1
+        if v1 < v2: return -1 if self._sort_reverse else 1
+        if v1 > v2: return 1 if self._sort_reverse else -1
         if v1 == v2: return 0
 
 

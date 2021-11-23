@@ -7,6 +7,7 @@ from PySide2.QtWidgets import QWidget, QComboBox, QLineEdit, QCheckBox, QPushBut
 from typing import List
 
 from icctablemodel import IccTableModel
+from iccview import IccView
 from interfaces import XSonstAus, XSonstAusSummen
 from qtderivates import IntDisplay, SmartDateEdit, FloatEdit
 from sonstaustablemodel import SonstAusTableModel
@@ -20,9 +21,9 @@ class EditableCombo( QComboBox ):
         self.setEditable( True )
 
 #########################  SonstigeAusgabenView  ##############################
-class SonstigeAusgabenView( QWidget ):
+class SonstigeAusgabenView( IccView ):
     def __init__( self, parent=None ):
-        QWidget.__init__( self, parent )
+        IccView.__init__( self )
         #self.setWindowTitle( "Sonstige Ausgaben: Rechnungen, Abgaben, Gebühren etc." )
         self._mainLayout = QtWidgets.QGridLayout( self )
         self._toolbarLayout = QHBoxLayout()

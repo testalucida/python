@@ -11,7 +11,6 @@ class IccView( QWidget, ABC, metaclass=IccViewMeta ):
         QWidget.__init__( self, None )
 
 
-
     @abstractmethod
     def getModel( self ) -> Any:
         pass

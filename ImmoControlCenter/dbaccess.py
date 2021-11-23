@@ -334,6 +334,7 @@ class DbAccess:
                  Zusätzlich: mv_id, wenn die meinaus_id sich auf einen Mietzahlungssatz bezieht bzw.
                              vwg_id, wenn die meinaus_id sich auf einen HGV-Satz bezieht.
         """
+        #todo: REFACTOR!! Im Datenbankmodul darf je Methode nur *EINE* Query macht werden!!
         sql = "select meinaus_id, mv_id, vwg_id from mtleinaus where meinaus_id = " + str( meinaus_id )
         d = self._doReadOneGetDict( sql )
         ret: Dict = None
@@ -1340,8 +1341,13 @@ def test():
     db.open()
     db.readTable( "zahlung" )
 
+    db2 = DbAccess( "./immo.db" )
+    db2.open()
+    db2.readTable( "mtleinaus" )
+
     print( "" )
     db.close()
+    db2.close()
 
 
 if __name__ == '__main__':

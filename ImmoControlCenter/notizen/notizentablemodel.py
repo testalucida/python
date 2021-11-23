@@ -213,13 +213,13 @@ class NotizenTableModel( IccTableModel ):
         self._notizenList = li
 
     def compare( self, x1:XNotiz, x2:XNotiz ) -> int:
-        v1 = self._getValue( x1, self.sort_col )
-        v2 = self._getValue( x2, self.sort_col )
+        v1 = self._getValue( x1, self._sort_col )
+        v2 = self._getValue( x2, self._sort_col )
         if isinstance( v1, str ):
             v1 = v1.lower()
             v2 = v2.lower()
-        if v1 < v2: return -1 if self.sort_reverse else 1
-        if v1 > v2: return 1 if self.sort_reverse else -1
+        if v1 < v2: return -1 if self._sort_reverse else 1
+        if v1 > v2: return 1 if self._sort_reverse else -1
         if v1 == v2: return 0
 
 

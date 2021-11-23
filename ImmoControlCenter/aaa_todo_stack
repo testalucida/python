@@ -42,3 +42,13 @@ eine Bemerkung eintragen, warum es noch keine Abrechnung gibt.
 18. Fehler: AnlageV: Grundsteuer wird doppelt berücksichtigt - Bsp. Eich
 Vermutlich wird nicht nur Tabelle sonstaus ausgewertet, sondern auch Tabelle zahlung
     --> erl.
+
+19. Klasse DefaultIccTableModel einführen, mit der ganzen data() - und sort() - Logik
+    --> erl.
+
+20. Dialog zum Ändern der Mietverhältnisse einführen
+
+21. CheckTableView ersetzen durch normale Tabelle (ohne den frozen-Teil)
+
+22. View Objektstammdaten: es fehlt die Anzeige der qm der Wohnung
+    außerdem scheint die Anzeige des Hauswarts nicht zu funktionieren (probiert mit scheidt_22, Heidi Rocco)

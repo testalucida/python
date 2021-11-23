@@ -1,0 +1,22 @@
+meinaus_id	vwg_id	von	bis	objekt	name	soll	ok	nok	jan	feb	mrz	apr	mai	jun	jul	aug	sep	okt	nov	dez	summe
+398	17	2019-01-01		thomasmann	194 (Thomas-Mann-Str. 2) / sig	-255,0	ok	nok	-255,0	-255,0	-255,0	-255,0	-255,0	-255,0				-255,0			-1785,0
+402	21	2019-01-01		scheidt_01	Hausmeisterdienste fürs ganze Haus / fritsche	-117,6	ok	nok	-117,6	-117,6	-117,6	-117,6	-117,6	-117,6	-117,6			-117,6			-940,8000000000001
+400	19	2019-01-01		ww224	Ralf Michael Voltmer -Treuhandkonten- WG Ww224 / voltmer	-300,5	ok	nok	-300,5	-300,5	-300,5	-300,5	-300,5	-300,5							-1803,0
+413	26	2019-01-01		stadtpark	WEG Am Stadtpark / berlet	-210,0	ok	nok	-210,0	-210,0	-210,0	-210,0	-210,0	-210,0							-1260,0
+389	8	2019-01-01		charlotte	WEG Charlottenstr. 6 Saarbrücken / hansen	-313,0	ok	nok	-295,0	-295,0	-448,0	-313,0	-313,0	-313,0							-1977,0
+390	9	2019-01-01		gruelings	WEG Grülingsstr. 18-20 / gfh	-178,0	ok	nok	-178,0	-178,0	-178,0	-178,0	-178,0	-178,0				-178,0			-1246,0
+410	23	2019-01-01		heuschlag	WEG Heuschlag / vorrath	-292,0	ok	nok	-292,0	-292,0	-292,0	-292,0	-292,0	-297,0							-1757,0
+391	10	2019-01-01		hohenzoll	WEG Hohenzollernstr. 103 / hehn	-251,0	ok	nok	-464,0	-232,0	-232,0	-232,0	-232,0	-232,0							-1624,0
+392	11	2019-01-01		kuchenberg_s	WEG Kuchenbergstr. 1 W6 / palm	-450,0	ok	nok	-450,0	-450,0	-450,0	-450,0	-450,0	-450,0							-2700,0
+393	12	2019-01-01		kuchenberg_w	WEG Kuchenbergstr. 1 W8 / palm	-350,0	ok	nok	-350,0	-350,0	-350,0	-350,0	-350,0	-350,0							-2100,0
+409	22	2019-01-01		lamm	WEG Lammsgasse / lichtenhof	-358,5	ok	nok	-358,5	-358,5	-358,5	-358,5	-358,5	-358,5							-2151,0
+394	13	2019-01-01		lampennest	WEG Lampennester Str. 12 / dulgheru	-221,0	ok	nok	-900,0	-221,0	-221,0	-221,0	-221,0	-221,0							-2005,0
+395	14	2019-01-01		linx	WEG Linxweiler Str. 48a -- HV Mudter / mudter	-144,0	ok	nok	-144,0	-144,0	-144,0	-144,0	-144,0	-144,0							-864,0
+411	24	2019-01-01		mendel_7	WEG Mendelstr. 24 / nittel	-120,0	ok	nok		-120,0	-120,0	-120,0	-120,0	-120,0							-600,0
+412	25	2019-01-01		mendel_8	WEG Mendelstr. 24 / nittel	-150,0	ok	nok	-150,0	-150,0	-150,0	-150,0	-150,0	-150,0							-900,0
+396	15	2019-01-01		remigius	WEG Remigiusstr. 17-23 / herter	-182,0	ok	nok	-182,0	-182,0	-182,0	-182,0	-182,0	-182,0							-1092,0
+388	7	2019-01-01		bueb	WEG Saargemünder Str. 133-133c / imoba	-101,7	ok	nok	-288,3	-101,7	-101,7	-101,7	-101,7	-101,7							-796,8000000000001
+397	16	2019-01-01		schwalbe	WEG Schwalbenweg 9, 10, 11 / naumann	-219,0	ok	nok	-219,0	-219,0	-219,0	-219,0	-219,0	-219,0							-1314,0
+399	18	2019-01-01		volkerstal	WEG Volkerstal 1a u. 1b / gwi	-364,0	ok	nok		-370,0	-370,0	-370,0	-340,0	-364,0							-1814,0
+414	27	2019-01-01		wilhelmmarx	WEG Wilhelm-Marx-Str. 15 / hager	-190,0	ok	nok	-190,0	-190,0	-190,0	-190,0	-190,0	-190,0							-1140,0
+401	20	2019-01-01		zweibrueck	WEG Zweibrücker Str. 3 / palm	-220,0	ok	nok	-220,0	-220,0	-220,0	-220,0	-220,0	-220,0							-1320,0

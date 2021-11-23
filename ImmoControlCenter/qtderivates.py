@@ -2,13 +2,22 @@ import numbers
 from typing import Any, List, Tuple
 
 from PySide2 import QtWidgets, QtCore
-from PySide2.QtCore import QDate, Qt, QAbstractTableModel, QRect, Signal
+from PySide2.QtCore import QDate, Qt, QAbstractTableModel, QRect, Signal, QSize
 from PySide2.QtGui import QDoubleValidator, QIntValidator, QFont, QGuiApplication, QStandardItemModel, QStandardItem, \
-    QMouseEvent, QTextDocument
+    QMouseEvent, QTextDocument, QIcon, QFontMetrics
 from PySide2.QtWidgets import QDialog, QCalendarWidget, QVBoxLayout, QBoxLayout, QLineEdit, QGridLayout, QPushButton, \
-    QHBoxLayout, QApplication, QListView, QComboBox, QLabel, QTextEdit, QCheckBox
+    QHBoxLayout, QApplication, QListView, QComboBox, QLabel, QTextEdit, QCheckBox, QFrame
+
+from definitions import ICON_DIR
 
 from datehelper import isValidIsoDatestring, isValidEurDatestring, getRelativeQDate, getQDateFromIsoString
+
+class EditButton( QPushButton ):
+    def __init__( self, size:QSize=None, parent=None ):
+        QPushButton.__init__( self, parent )
+        thissize = size if size else QSize( 28, 28 )
+        self.setFixedSize( thissize )
+        self.setIcon( QIcon( ICON_DIR + "edit_30x30.png" ) )
 
 ##################  CalendarWindow  ###########################
 from tableviewext import TableViewExt
@@ -152,14 +161,36 @@ class BaseLabel( QLabel ):
     def __init__( self, parent=None ):
         QLabel.__init__( self, parent )
 
+    def setBackground( self, color ):
+        # color in der Form "solid white"
+        self.setStyleSheet( "background: " + color + ";" )
+
 
 #######################  BaseEdit  ###################################
 class BaseEdit( QLineEdit ):
+    key_pressed = Signal( int )
     def __init__( self, parent=None ):
         QLineEdit.__init__( self, parent )
+        #self.textChanged.connect( self.on_change )
 
     def mousePressEvent(self, evt:QMouseEvent):
         self.setSelection( 0, len( self.text() ) )
+
+    # def keyPressEvent( self, event ):
+    #     super().keyPressEvent( event )
+    #     self.key_pressed.emit( event.key() )
+
+    # def on_change( self, s:str ):
+    #     print( s )
+
+    def setTextAndAdjustWidth( self, text:str ):
+        self.setText( text )
+        font = self.font()
+        # ps = font.pixelSize()  # --> -1
+        font.setPixelSize( 0 )
+        fm = QFontMetrics( font )
+        width = fm.width( text )
+        self.setFixedWidth( width + 6 )
 
 #########################  FloatEdit  ################################
 class FloatEdit( BaseEdit ):
@@ -251,7 +282,6 @@ class TextDocument( QTextDocument ):
 class LineEdit( BaseEdit ):
     def __init__( self, parent=None ):
         BaseEdit.__init__( self, parent )
-        intval = QIntValidator()
 
     def setValue( self, value:Any ) -> None:
         self.setText( value )
@@ -507,7 +537,89 @@ class CheckableAuswahlDialog( QDialog ):
             item = self.model.item(i)
             item.setCheckState(QtCore.Qt.Unchecked)
 
+#################################################################
 
+
+class FixedWidth20Dummy( BaseLabel ):
+    def __init__( self, parent=None ):
+        BaseLabel.__init__( self, parent )
+        self.setFixedWidth( 20 )
+
+class FixedWidthDummy( BaseLabel ):
+    def __init__( self, w:int, parent=None ):
+        BaseLabel.__init__( self, parent )
+        self.setFixedWidth( w )
+
+class FixedHeightDummy( BaseLabel ):
+    def __init__( self, height:int=20, parent=None ):
+        BaseLabel.__init__( self, parent )
+        self.setFixedHeight( height )
+
+class HLine(QFrame):
+    def __init__(self):
+        super(HLine, self).__init__()
+        self.setFrameShape(QFrame.HLine)
+        self.setFrameShadow(QFrame.Sunken)
+
+class VLine(QFrame):
+    def __init__(self):
+        super( VLine, self).__init__()
+        self.setFrameShape(QFrame.VLine)
+        self.setFrameShadow(QFrame.Sunken)
+
+class FontTimesBold12( QFont ):
+    def __init__( self ):
+        QFont.__init__( self, "Times New Roman", 12, weight=QFont.Bold )
+
+class FontArialBold12( QFont ):
+    def __init__( self ):
+        QFont.__init__( self, "Arial", 12, weight=QFont.Bold )
+
+
+class BaseBoldEdit( BaseEdit ):
+    def __init__( self, text:str=None ):
+        BaseEdit.__init__( self, parent=None )
+        if text:
+            self.setText( text )
+        self.setFont( FontArialBold12() )
+
+class LabelTimes12( BaseLabel ):
+    def __init__( self, text:str=None, parent=None ):
+        BaseLabel.__init__( self, parent )
+        self.setFont( QFont( "Times New Roman", 12 ) )
+        if text:
+            self.setText( text )
+
+
+class LabelTimesBold12( BaseLabel ):
+    def __init__( self, text:str=None, parent=None ):
+        BaseLabel.__init__( self, parent )
+        self.setFont( QFont( "Times New Roman", 12, weight=QFont.Bold ) )
+        if text:
+            self.setText( text )
+
+class LabelArial12( BaseLabel ):
+    def __init__( self, text:str=None, parent=None ):
+        BaseLabel.__init__( self, parent )
+        self.setFont( QFont( "Arial", 12 ) )
+        if text:
+            self.setText( text )
+
+class LabelArialBold12( BaseLabel ):
+    def __init__( self, text:str=None, background:str=None, parent=None ):
+        # background in der Form "solid white"
+        BaseLabel.__init__( self, parent )
+        self.setFont( QFont( "Arial", 12, weight=QFont.Bold ) )
+        if text:
+            self.setText( text )
+        if background:
+            self.setBackground( background )
+
+class FatLabel( BaseLabel ):
+    def __init__( self, text:str="", parent=None ):
+        BaseLabel.__init__( self, parent )
+        self._font = QFont( "Arial", 12, weight=QFont.Bold )
+        self.setFont( self._font )
 
 
 def testAuswahlDialog():

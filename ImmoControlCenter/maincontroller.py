@@ -161,20 +161,22 @@ class MainController( QObject ):
         self._setLetzteBuchung()
 
     def _showDialog( self, dlg:IccDialog, w, h ):
-        x = self._mainwin.x()
-        y = 120
+        win = self._mainwin
+        x = win.x()
+        print( win.y(), " / " , win.height() )
+        y = win.y() + win.height() + 50 # 120
         dlg.setGeometry( x, y, w, h )
-        #dlg.setModal( False )
         title = dlg.windowTitle()
-        self._mainwin.addOpenedDialog( title, dlg )
-        dlg.dialogClosing.connect( lambda name=title, data=dlg: self._mainwin.removeClosedDialog( title, dlg ) )
+        win.addOpenedDialog( title, dlg )
+        dlg.dialogClosing.connect( lambda name=title, data=dlg: win.removeClosedDialog( title, dlg ) )
         dlg.show()
 
     def showMietverhaeltnis( self ):
         self._mietverhaeltnisDlg = self._mietverhaeltnisCtrl.createDialog( self._mainwin )
-        w = 900
-        h = 500
-        self._showDialog( self._mietverhaeltnisDlg, w, h )
+        if self._mietverhaeltnisDlg:
+            w = 900
+            h = 500
+            self._showDialog( self._mietverhaeltnisDlg, w, h )
 
     def showMieteView( self ):
         self._mieteDlg = self._mietenCtrl.createDialog( self._mainwin )
@@ -269,7 +271,7 @@ class MainController( QObject ):
         view:MietobjektView = self._mietobjektDlg.getView()
         #view.edit_verwaltung.connect( )
         w = 900
-        h = 900
+        h = 550
         self._showDialog( self._mietobjektDlg, w, h )
 
     def exportToCsv( self ):

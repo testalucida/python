@@ -1,5 +1,6 @@
 import copy
 
+from PySide2 import QtCore
 from PySide2.QtCore import QSize, Signal
 from PySide2.QtGui import Qt, QIcon
 from PySide2.QtWidgets import QWidget, QGridLayout, QLabel, QHBoxLayout, QApplication, QPushButton
@@ -12,6 +13,7 @@ from qtderivates import BaseEdit, SmartDateEdit, BaseLabel, IntEdit, MultiLineEd
 ##################  MietverhaeltnisView  ################
 class MietverhaeltnisView( QWidget ):
     save = Signal()
+    dataChanged = Signal()
     def __init__( self, mietverhaeltnis:XMietverhaeltnis=None, withSaveButton:bool=False, parent=None ):
         QWidget.__init__( self, parent )
         self._mietverhaeltnis:XMietverhaeltnis = None
@@ -19,24 +21,48 @@ class MietverhaeltnisView( QWidget ):
         self._layout = QGridLayout()
         self._btnSave = QPushButton()
         self._sdBeginnMietverh = SmartDateEdit()
+        self._sdBeginnMietverh.textChanged.connect( self.onChange )
         self._sdEndeMietverh = SmartDateEdit()
+        self._sdEndeMietverh.textChanged.connect( self.onChange )
         self._edMieterName_1 = BaseEdit()
+        self._edMieterName_1.textChanged.connect( self.onChange )
         self._edMieterVorname_1 = BaseEdit()
+        self._edMieterVorname_1.textChanged.connect( self.onChange )
         self._edMieterName_2 = BaseEdit()
+        self._edMieterName_2.textChanged.connect( self.onChange )
         self._edMieterVorname_2 = BaseEdit()
+        self._edMieterVorname_2.textChanged.connect( self.onChange )
         self._edMieterTelefon = BaseEdit()
+        self._edMieterTelefon.textChanged.connect( self.onChange )
         self._edMieterMobil = BaseEdit()
+        self._edMieterMobil.textChanged.connect( self.onChange )
         self._edMieterMailto = BaseEdit()
+        self._edMieterMailto.textChanged.connect( self.onChange )
         self._edAnzPers = IntEdit()
+        self._edAnzPers.textChanged.connect( self.onChange )
         self._edNettomiete = FloatEdit()
+        self._edNettomiete.textChanged.connect( self.onChange )
         self._edNkv = FloatEdit()
+        self._edNkv.textChanged.connect( self.onChange )
         self._edKaution = IntEdit()
+        self._edKaution.textChanged.connect( self.onChange )
         self._sdKautionBezahltAm = SmartDateEdit()
+        self._sdKautionBezahltAm.textChanged.connect( self.onChange )
         self._txtBemerkung1 = MultiLineEdit()
+        self._txtBemerkung1.textChanged.connect( self.onChange )
         self._txtBemerkung2 = MultiLineEdit()
+        self._txtBemerkung2.textChanged.connect( self.onChange )
         self._createGui()
         if mietverhaeltnis:
             self.setMietverhaeltnisData( mietverhaeltnis )
+
+    def onChange( self, newcontent:str=None ):
+        if not self._btnSave.isEnabled():
+            self.setSaveButtonEnabled()
+        self.dataChanged.emit()
+
+    def setSaveButtonEnabled( self, enabled:bool=True ):
+        self._btnSave.setEnabled( enabled )
 
     def _createGui( self ):
         r = 0
@@ -50,7 +76,7 @@ class MietverhaeltnisView( QWidget ):
         btn = self._btnSave
         btn.clicked.connect( self.save.emit )
         btn.setFlat( True )
-        btn.setEnabled( True )
+        btn.setEnabled( False )
         btn.setToolTip( "Änderungen am Mietverhältnis speichern" )
         icon = ImageFactory.inst().getSaveIcon()
         #icon = QIcon( "./images/save_30.png" )
@@ -137,13 +163,13 @@ class MietverhaeltnisView( QWidget ):
 
         c+=1
         self._edNettomiete.setMaximumWidth( 100 )
-        self._edNettomiete.setEnabled( False )
+        #self._edNettomiete.setEnabled( False )
         self._edNkv.setMaximumWidth( 100 )
-        self._edNkv.setEnabled( False )
+        #self._edNkv.setEnabled( False )
         hbox = QHBoxLayout()
         hbox.addWidget( self._edNettomiete )
         hbox.addWidget( self._edNkv )
-        hbox.addWidget( BaseLabel( "Änderungen der Miete und NKV über Dialog 'Sollmiete'") )
+        hbox.addWidget( BaseLabel( "  Änderungen der Miete und NKV über Dialog 'Sollmiete'") )
         l.addLayout( hbox, r, c, alignment=Qt.AlignLeft )
 
         c=0
@@ -174,6 +200,10 @@ class MietverhaeltnisView( QWidget ):
 
         # cols = self._layout.columnCount()
         # print( cols, " columns" )
+
+    def setNettoUndNkvEnabled( self, enabled:bool=True ):
+        self._edNettomiete.setEnabled( enabled )
+        self._edNkv.setEnabled( enabled )
 
     def _guiToData( self, x:XMietverhaeltnis ):
         """
@@ -251,6 +281,9 @@ class MietverhaeltnisDialog( OkCancelDialog ):
         self.setWindowTitle( "Mietverhältnis " + mietverhaeltnis.mv_id + ": " + mietverhaeltnis.mobj_id )
         self._view = MietverhaeltnisView( mietverhaeltnis )
         self.addWidget( self._view, 0 )
+
+    def getView( self ) -> MietverhaeltnisView:
+        return self._view
 
 def test():
     app = QApplication()

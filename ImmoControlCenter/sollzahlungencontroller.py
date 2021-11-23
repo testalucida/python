@@ -11,7 +11,7 @@ from business import BusinessLogic
 from constants import SollType
 from datehelper import getIsoStringFromQDate, addDaysToIsoString, getNumberOfDays, getCurrentYearAndMonth, \
     getFirstOfNextMonth
-from mdichildcontroller import MdiChildController
+from icccontroller import IccController
 from qtderivates import CalendarDialog
 from sollzahlungenview import SollzahlungenView, SollmietenView, SollHgvView
 from sollzahlungentablemodel import SollzahlungenTableModel, SollmietenTableModel, SollHgvTableModel
@@ -19,12 +19,12 @@ from interfaces import XSollzahlung, XSollHausgeld, XSollMiete
 from tablecellactionhandler import TableCellActionHandler
 
 
-class SollzahlungenController( MdiChildController, ABC ):
+class SollzahlungenController( IccController, ABC ):
     """
     Controller für Soll-Mieten und Soll-HG-Vorauszahlungen
     """
     def __init__( self ):
-        MdiChildController.__init__( self )
+        IccController.__init__( self )
         self._view:SollzahlungenView = None
         self._nextSollAction = QAction( "Folge-Soll erfassen" )
         self._tm:SollzahlungenTableModel = None

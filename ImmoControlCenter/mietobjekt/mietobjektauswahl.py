@@ -1,6 +1,7 @@
 ##############  MietobjektAuswahlDialog  #######################
 from typing import List, Tuple
 
+from PySide2.QtGui import QCursor
 from PySide2.QtWidgets import QDialog
 
 from business import BusinessLogic
@@ -15,6 +16,8 @@ class MietobjektAuswahldialog( AuswahlDialog ):
 class MietobjektAuswahl():
     def selectMietobjekt( self ) -> str:
         dlg = MietobjektAuswahldialog()
+        crsr = QCursor.pos()
+        dlg.move( crsr.x(), crsr.y() )
         itemtext_list, mobj_list = BusinessLogic.inst().getAllMietobjekte()
         dlg.appendItemList( itemtext_list )
         if dlg.exec_() == QDialog.Accepted:

@@ -12,6 +12,7 @@ class XBase:
             _d[k] = v
 
     def equals( self, other ) -> bool:
+        if other is None: return False
         return True if self.__dict__ == other.__dict__ else False
 
 
@@ -42,7 +43,45 @@ def setFromDict( object, valuedict:Dict ):
 #         if valuedict:
 #             setFromDict( self, valuedict )
 
+#################  XDatum  ##############################
+class XDateParts:
+    y:int = 0
+    m:int = 0
+    d:int = 0
+#################  Masterobjekt  #############################
+class XMasterobjekt( XBase ):
+    def __init__(self, valuedict:Dict=None ):
+        XBase.__init__( self )
+        self.master_id = 0
+        self.master_name = ""
+        self.strasse_hnr = ""
+        self.plz = ""
+        self.ort = ""
+        self.gesamt_wfl = 0
+        self.anz_whg = 0
+        self.veraeussert_am = ""
+        self.bemerkung = ""
+        self.hauswart = ""
+        self.hauswart_telefon = ""
+        self.hauswart_mailto = ""
+        if valuedict:
+            setFromDict( self, valuedict )
+
 #################  Mietobjekt  #############################
+class XMietobjekt( XBase ):
+    def __init__(self, valuedict:Dict=None ):
+        XBase.__init__( self )
+        self.mobj_id = ""
+        self.master_id = 0
+        self.whg_bez = ""
+        self.qm = 0
+        self.container_nr = ""
+        self.bemerkung = ""
+        self.aktiv = 0
+        if valuedict:
+            setFromDict( self, valuedict )
+
+#################  MietobjektExt  #############################
 class XMietobjektExt( XBase ):
     def __init__( self, valuedict:Dict=None ):
         XBase.__init__( self )
@@ -83,9 +122,33 @@ class XMietobjektExt( XBase ):
         if valuedict:
             self.setFromDict( valuedict )
 
+###################### MtlEinAus  ########################
+class XMtlEinAus( XBase ):
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self )
+        self.meinaus_id = 0
+        self.mv_id = "" # entweder ist die mv_id (Miete) versorgt oder die vwg_id (Hausgeld)
+        self.vwg_id = "" # entweder ist die mv_id (Miete) versorgt oder die vwg_id (Hausgeld)
+        self.jahr = 0
+        self.jan = 0.0
+        self.feb = 0.0
+        self.mrz = 0.0
+        self.apr = 0.0
+        self.mai = 0.0
+        self.jun = 0.0
+        self.jul = 0.0
+        self.aug = 0.0
+        self.sep = 0.0
+        self.okt = 0.0
+        self.nov = 0.0
+        self.dez = 0.0
+        if valuedict:
+            setFromDict( self, valuedict )
+
 #######################  Geschäftsreise  #######################
 class XGeschaeftsreise( XBase ):
     def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self )
         self.id = 0
         self.mobj_id = ""
         self.jahr = 0
@@ -101,8 +164,9 @@ class XGeschaeftsreise( XBase ):
             setFromDict( self, valuedict )
 
 ####################### Wertebereich ##########################
-class XWertebereich:
+class XWertebereich( XBase ):
     def __init__(self, valuedict:Dict=None):
+        XBase.__init__( self )
         self.id = 0
         self.table_name = ""
         self.column_name = ""
@@ -177,6 +241,7 @@ class XZahlung3:
 ###################  Mietverhältnis  #########################
 class XMietverhaeltnis( XBase ):
     def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self )
         self.id = 0
         self.mv_id = ""
         self.mobj_id = ""
@@ -200,6 +265,18 @@ class XMietverhaeltnis( XBase ):
         if valuedict:
             self.setFromDict( valuedict )
 
+#####################  Mieterwechsel  ############################
+
+#!!! ACHTUNG: nicht von XBase abgeleitet !!!
+class XMieterwechsel:
+    def __init__( self, mietverhaeltnis_alt:XMietverhaeltnis=None, mietverhaeltnis_next:XMietverhaeltnis=None ):
+        self.mietverhaeltnis_alt = mietverhaeltnis_alt
+        self.mietverhaeltnis_next = mietverhaeltnis_next
+
+    def equals( self, other ) -> bool:
+        return ( self.mietverhaeltnis_alt.equals( other.mietverhaeltnis_alt ) and
+                 self.mietverhaeltnis_next.equals( other.mietverhaeltnis_next ) )
+
 #################### Kostenart ###################################
 
 class XKostenart:
@@ -210,8 +287,9 @@ class XKostenart:
 
 #################### SonstAus  ###################################
 
-class XSonstAus:
+class XSonstAus( XBase ):
     def __init__( self, valuedict: Dict = None ):
+        XBase.__init__( self )
         self.saus_id: int = 0
         self.master_id: int = 0
         self.master_name: str = ""
@@ -233,8 +311,9 @@ class XSonstAus:
             setFromDict( self, valuedict )
 
 #################### Abrechnung ##################################
-class XAbrechnung:
+class XAbrechnung( XBase ):
     def __init__( self ):
+        XBase.__init__( self )
         self.mobj_id = ""
         self.von = ""
         self.bis = ""
@@ -301,8 +380,9 @@ class XBuchungstextMatch( XBase ):
     kostenart_lang:str = ""
     umlegbar:int = 0
 
-class XSollzahlung:
+class XSollzahlung( XBase ):
     def __init__( self ):
+        XBase.__init__( self )
         self.mobj_id:str = ""
         self.von:str = ""
         self.bis:str = ""
@@ -348,14 +428,26 @@ class XSollMiete( XSollzahlung ):
         if( valuedict ):
             setFromDict( self, valuedict )
 
+    @classmethod
+    def createFromAttributes( cls, mv_id:str, mobj_id:str, von:str, bis:str, netto:float, nkv:float ):
+        inst = cls()
+        inst.mv_id = mv_id
+        inst.mobj_id = mobj_id
+        inst.von = von
+        inst.bis = bis
+        inst.netto = netto
+        inst.nkv = nkv
+        return inst
+
     def getId( self ) -> int:
         return self.sm_id
 
     def setId( self, value: int ) -> None:
         self.sm_id = value
 
-class XOffenerPosten:
+class XOffenerPosten( XBase ):
     def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self )
         self.opos_id = 0
         self.debi_kredi = "" # Kreditor oder Debitor, der sich hinter der gefüllten o.a. ID verbirgt; oder Firma (Freitext)
         self.erfasst_am = ""
@@ -366,8 +458,9 @@ class XOffenerPosten:
         if valuedict:
             setFromDict( self, valuedict )
 
-class XNotiz:
+class XNotiz( XBase ):
     def __init__(self, valuedict:Dict=None ):
+        XBase.__init__( self )
         self.notiz_id = 0
         self.bezug = ""
         self.ueberschrift = ""
@@ -457,6 +550,24 @@ def test():
     x3 = XSonstAus( d )
     printX( x3 )
 
+def test2():
+    class Dummy:
+        def __init__( self ):
+            self.name = ""
+            self.vorname = ""
+
+        @classmethod
+        def createFromAttributes( cls, name, vorname ):
+            inst = cls()
+            inst.name = name
+            inst.vorname = vorname
+            return inst
+
+    dummy:Dummy = Dummy.createFromAttributes( "Kendel", "Martin")
+    print( dummy.name, dummy.vorname )
+
+
 if __name__ == "__main__":
+    test2()
     #test()
-    testCompare()
+    #testCompare()

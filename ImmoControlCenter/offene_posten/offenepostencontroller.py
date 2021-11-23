@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Any
 
 from PySide2.QtCore import QModelIndex
 from PySide2.QtWidgets import QApplication, QDialog, QWidget
@@ -7,15 +7,15 @@ from business import BusinessLogic
 from datehelper import currentDateIso
 from generictable_stuff.generictableviewdialog import EditableTableViewWidget
 from interfaces import XOffenerPosten
-from mdichildcontroller import MdiChildController
+from icccontroller import IccController
 from offene_posten.offenepostengui import OffenerPostenEditDialog, OffenePostenView
 from offene_posten.offenepostentablemodel import OffenePostenTableModel
 from qtderivates import AuswahlDialog
 
 
-class OffenePostenController( MdiChildController ):
+class OffenePostenController( IccController ):
     def __init__( self ):
-        MdiChildController.__init__( self )
+        IccController.__init__( self )
         self._view:OffenePostenView() = None
         self._model:OffenePostenTableModel = None
 
@@ -51,7 +51,7 @@ class OffenePostenController( MdiChildController ):
         self._view.setSaveButtonEnabled()
 
     def onSaveChanges( self ):
-        self.save()
+        self.writeChanges()
 
     def _editAndValidateOffenerPosten( self, x:XOffenerPosten ) -> bool:
         """
@@ -104,12 +104,26 @@ class OffenePostenController( MdiChildController ):
     def getViewTitle( self ) -> str:
         return "Offene Posten"
 
-    def save( self ):
+    def isChanged( self ) -> bool:
+        #return self._view.getTableModel().isChanged()
+        return self._view.getModel().isChanged()
+
+    def getChanges( self ) -> Any:
+        return self._view.getTableModel().getChanges()
+
+    def clearChanges( self ) -> None:
+        #self._view.getTableModel().clearChanges()
+        self._view.getModel().clearChanges()
+
+    def writeChanges( self, changes=None ) -> bool:
         try:
             BusinessLogic.inst().saveOffenePosten( self._model )
+            self._model.resetChanges()
             self._view.setSaveButtonEnabled( False )
+            return True
         except Exception as exc:
             self._view.showException( "Fehler beim Speichern", str( exc ) )
+            return False
 
     def _getOffenerPosten( self, index:QModelIndex ) -> XOffenerPosten:
         return self._model.getXOffenerPosten( index.row() )

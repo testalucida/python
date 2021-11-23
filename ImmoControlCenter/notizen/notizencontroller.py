@@ -1,5 +1,5 @@
 import copy
-from typing import List, Dict
+from typing import List, Dict, Any
 
 from PySide2.QtCore import QModelIndex, QSize
 from PySide2.QtWidgets import QApplication, QDialog, QWidget
@@ -7,16 +7,16 @@ from PySide2.QtWidgets import QApplication, QDialog, QWidget
 from business import BusinessLogic
 from datehelper import currentDateIso, getCurrentTimestampIso
 from interfaces import XNotiz
-from mdichildcontroller import MdiChildController
+from icccontroller import IccController
 from notizen.notizengui import NotizenView, NotizEditDialog
 from notizen.notizentablemodel import NotizenTableModel
 from offene_posten.offenepostengui import OffenerPostenEditDialog, OffenePostenView
 from qtderivates import AuswahlDialog
 
 
-class NotizenController( MdiChildController ):
+class NotizenController( IccController ):
     def __init__( self ):
-        MdiChildController.__init__( self )
+        IccController.__init__( self )
         self._view:NotizenView() = None
         self._model:NotizenTableModel = None
         self._notizInProcess:XNotiz = None
@@ -58,7 +58,7 @@ class NotizenController( MdiChildController ):
         self._view.setSaveButtonEnabled()
 
     def onSaveNotizen( self ):
-        self.save()
+        self.writeChanges()
 
     def _editAndValidateNotiz( self, x:XNotiz ) -> bool:
         """
@@ -126,15 +126,26 @@ class NotizenController( MdiChildController ):
     def getViewTitle( self ) -> str:
         return "Notizen"
 
-    def save( self ):
+    def _getNotiz( self, index: QModelIndex ) -> XNotiz:
+        return self._model.getXNotiz( index.row() )
+
+    def isChanged( self ) -> bool:
+        return self._view.getTableModel().isChanged()
+
+    def getChanges( self ) -> Any:
+        return self._view.getTableModel().getChanges()
+
+    def writeChanges( self, changes:Any=None ) -> bool:
         try:
             BusinessLogic.inst().saveNotizen( self._model )
             self._view.setSaveButtonEnabled( False )
+            return True
         except Exception as exc:
             self._view.showException( "Fehler beim Speichern", str( exc ) )
+            return False
 
-    def _getNotiz( self, index: QModelIndex ) -> XNotiz:
-        return self._model.getXNotiz( index.row() )
+    def clearChanges( self ) -> None:
+        self._view.getTableModel().clearChanges()
 
 
 def test():

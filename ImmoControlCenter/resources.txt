@@ -1,0 +1,2 @@
+imagepath=./images/
+databasepath=./

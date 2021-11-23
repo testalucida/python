@@ -20,13 +20,11 @@ class MietobjektController( IccController ):
     def createView( self ) -> QWidget:
         #zuerst über den Auswahldialog bestimmen, welche Daten für die View selektiert werden müssen
         mobj_id = self._mietobjektAuswahl.selectMietobjekt()
-        if mobj_id: # ein existierendes Objekt öffnen
-            busi:BusinessLogic = BusinessLogic.inst()
-            self._mietobjekt = busi.getMietobjektExt( mobj_id )
-        else: # nichts ausgewählt
-            self._mietobjekt = XMietobjektExt()
+        if not mobj_id: return None
+        busi:BusinessLogic = BusinessLogic.inst()
+        self._mietobjekt = busi.getMietobjektExt( mobj_id )
         self._view = MietobjektView( self._mietobjekt )
-        self._view.save_changes.connect( self.writeChanges )
+        self._view.save.connect( self.writeChanges )
         return self._view
 
     def isChanged( self ) -> bool:

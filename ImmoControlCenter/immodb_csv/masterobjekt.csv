@@ -1,0 +1,19 @@
+id	stpfl_id	strasse_hnr	plz	ort	einh_wert_az	angeschafft_am	qm_gesamt	anz_whg	afa_lin_deg	afa_wie_vj	afa	afa_proz	verkauft_am	grundsteuer	abwasser	strassenreinigung	abfall	bemerkung
+HOM_Remigius	1	Remigiusstr. 17	66424	Homburg				1	linear	X		2.5						
+NK_ThomasMann	1	Thomas-Mann-Str. 2	66538	Neunkirchen			64	1	linear	X		2.5						
+NK_Ww224	1	Wellesweiler Str. 224	66538	Neunkirchen			112	1	linear	X		2.5						
+NK_Zweibrueck	1	Zweibrücker Str. 3	66538	Neunkirchen				1	linear	X		2.5						
+NK_Volkerstal	1	Volkerstal 1a	66539	Neunkirchen			100	1	linear	X		2.5						
+NK_KuchenbergS	1	Kuchenbergstr. 1	66540	Neunkirchen-Wiebelskirchen				1	linear	X		2.5						
+NK_KuchenbergW	1	Kuchenbergstr. 1	66540	Neunkirchen-Wiebelskirchen			78	1	linear	X		2.5						
+OTW_Schwalbe	1	Schwalbenweg 11	66564	Ottweiler				1	linear	X		2.5						
+OTW_Linx	1	Linxweiler Str. 48a	66564	Ottweiler			85	1	linear	X		2.5						
+RI_Lampennester	1	Lampennester Str. 12	66292	Riegelsberg				1	linear	X		2.5						
+SB_Hohenzoll	1	Hohenzollernstr. 103	66117	Saarbrücken			45	1	linear	X		2.5						
+SB_Charlotte	1	Charlottenstr. 6	66119	Saarbrücken				1	linear	X		2.5						
+SB_Gruelings	1	Grülingsstr. 18	66113	Saarbrücken			50	1	linear	X		2.5						
+BUEB_Saargemuend	1	Saargemünder Str. 133	66129	Bübingen			50	1	linear	X		2.5						
+NK_Kleist	1	Kleiststr. 3	66538	Neunkirchen			434	1	linear	X		2.5						
+ILL_Eich	1	An der Eich 27	66557	Illingen			257	1	linear	X		2.5						
+SB_Kaiser	1	Kaiserstr. 252	66133	Saarbrücken			738	1	linear	X		2.5						
+NK_Ww56	1	Wellesweiler Str. 56	66538	Neunkirchen				1	linear	X		2.5						

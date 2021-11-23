@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>946</width>
+    <height>635</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="9" column="1">
+    <widget class="QPushButton" name="_btnReset">
+     <property name="text">
+      <string>Reset</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="2">
+    <widget class="QComboBox" name="_cboMietobjekt">
+     <property name="toolTip">
+      <string>Wohnung: wie im Baum ausgewählt oder freie Eingabe</string>
+     </property>
+     <property name="editable">
+      <bool>true</bool>
+     </property>
+     <property name="placeholderText">
+      <string>Wohnung</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLineEdit" name="_ddmmBuchung">
+     <property name="toolTip">
+      <string>Buchungstag und -monat. Tag und Monat mit ',' oder '.' trennen.</string>
+     </property>
+     <property name="placeholderText">
+      <string>Buchungstag u. -monat</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="1">
+    <widget class="QLineEdit" name="_ddmmRechnung">
+     <property name="toolTip">
+      <string>Rechnungstag und -monat. Tag und Monat mit ',' oder '.' trennen.</string>
+     </property>
+     <property name="placeholderText">
+      <string>Rechnungstag u. -monat</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLineEdit" name="_rgnr">
+     <property name="placeholderText">
+      <string>Rechnungsnummer</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="4" rowspan="9">
+    <widget class="QTableView" name="tableView">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>1</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1">
+    <widget class="QComboBox" name="_cboMasterobjekt">
+     <property name="toolTip">
+      <string>Haus: wie im Baum ausgewählt oder freie Eingabe</string>
+     </property>
+     <property name="editable">
+      <bool>true</bool>
+     </property>
+     <property name="placeholderText">
+      <string>Haus</string>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="0">
+    <widget class="QLineEdit" name="_betrag">
+     <property name="font">
+      <font>
+       <pointsize>11</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="placeholderText">
+      <string>Betrag</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="2">
+    <widget class="QComboBox" name="_cboRechnungsjahr"/>
+   </item>
+   <item row="9" column="0">
+    <widget class="QPushButton" name="_btnUebernehmen">
+     <property name="text">
+      <string>Übernehmen</string>
+     </property>
+     <property name="default">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0">
+    <widget class="QLineEdit" name="_kreditor">
+     <property name="toolTip">
+      <string>Kreditor: wie im Baum ausgewählt oder freie Eingabe</string>
+     </property>
+     <property name="placeholderText">
+      <string>Kreditor</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QComboBox" name="_cboBuchungsjahr"/>
+   </item>
+   <item row="2" column="0" colspan="4">
+    <widget class="QTreeView" name="treeView">
+     <property name="styleSheet">
+      <string notr="true">gridline-color: rgb(94, 94, 94);</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="3">
+    <widget class="QPushButton" name="btnCalendarRechnung">
+     <property name="maximumSize">
+      <size>
+       <width>25</width>
+       <height>25</height>
+      </size>
+     </property>
+     <property name="text">
+      <string>PushButton</string>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="0" colspan="4">
+    <widget class="QTextEdit" name="_bemerkung">
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>50</height>
+      </size>
+     </property>
+     <property name="placeholderText">
+      <string>Erläuterungen zur Rechnung oder Abgabe</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

@@ -15,7 +15,7 @@ from definitions import DATABASE_DIR, DATABASE
 from geschaeftsreise.geschaeftsreisentablemodel import GeschaeftsreisenTableModel
 from interfaces import XSonstAus, XSonstAusSummen, XZahlung, XSollHausgeld, XSollMiete, XBuchungstextMatch, \
     XNkAbrechnung, XAbrechnung, XHgAbrechnung, XMietverhaeltnis, XOffenerPosten, XNotiz, XZahlung2, XRendite, XAusgabe, \
-    XZahlung3, XKostenart, XWertebereich, XMietobjektExt, XGeschaeftsreise
+    XZahlung3, XKostenart, XWertebereich, XMietobjektExt, XGeschaeftsreise, XMasterobjekt, XMieterwechsel
 #from monthlist import monthList, monatsletzter
 #from datehelper import monthList, monatsletzter, getLastMonth
 from datehelper import *
@@ -65,18 +65,6 @@ class BusinessLogic:
 
     def _prepare(self):
         dbname = DATABASE
-        # dbname = ""
-        # f = open( "./resources.txt", "r" )
-        # lines = f.readlines()
-        # for l in lines:
-        #     if l.startswith( "databasepath" ):
-        #         parts = l.split( "=" )
-        #         dbname = parts[1][:-1]  # truncate newline
-        #         f.close()
-        # if dbname == "":
-        #     raise Exception( "BusinessLogic: cant find databasepath in resources.txt" )
-        # dbname += "immo.db"
-        #dbname = "/home/martin/Vermietung/ImmoControlCenter/immo.db"
         print( "BusinessLogic._prepare(): trying to connect to database '%s'..." % (dbname) )
         self._db = DbAccess( dbname )
         #self._db = DbAccess()
@@ -402,20 +390,20 @@ class BusinessLogic:
         self._deleteZahlung( x.saus_id, Zahlart.SONSTAUS )
         self._db.commit()
 
-    def getMieterwechseldaten( self, mobj_id:str ) -> [XMietverhaeltnis, XMietverhaeltnis]:
-        """
-        Liefert die Daten, die für einen Mieterwechsel notwendig sind:
-        Das aktuelle (letzte) Mietverhältnis und ENTWEDER ein schon für die Zukunft angelegtes oder, wenn es
-        kein solches gibt, ein leeres XMietverhaeltnis-Objekt.
-        :param mobj_id:
-        :return:
-        """
-        mv_id = self.getAktuelleMietverhaeltnisId( mobj_id )
-        xmv_akt: XMietverhaeltnis = self.getAktuellesMietverhaeltnis( mv_id )
-        xmv_next: XMietverhaeltnis = self._db.getNextMietverhaeltnis( mobj_id )
-        if not xmv_next:
-            xmv_next = XMietverhaeltnis()
-        return xmv_akt, xmv_next
+    # def getMieterwechseldaten( self, mobj_id:str ) -> XMieterwechsel:
+    #     """
+    #     Liefert die Daten, die für einen Mieterwechsel notwendig sind:
+    #     Das aktuelle (letzte) Mietverhältnis und ENTWEDER ein schon für die Zukunft angelegtes oder, wenn es
+    #     kein solches gibt, ein leeres XMietverhaeltnis-Objekt.
+    #     :param mobj_id:
+    #     :return:
+    #     """
+    #     mv_id = self.getAktuelleMietverhaeltnisId( mobj_id )
+    #     xmv_akt: XMietverhaeltnis = self.getAktuellesMietverhaeltnis( mv_id )
+    #     xmv_next: XMietverhaeltnis = self._db.getNextMietverhaeltnis( mobj_id )
+    #     if not xmv_next:
+    #         xmv_next = XMietverhaeltnis()
+    #     return XMieterwechsel( xmv_akt, xmv_next )
 
     def getAktuellesMietverhaeltnis( self, mv_id:str ) -> XMietverhaeltnis:
         x:XMietverhaeltnis = self._db.getAktuellesMietverhaeltnis( mv_id )
@@ -439,8 +427,8 @@ class BusinessLogic:
                              # (mv_id, mv.von, kuenddatum ) )
                              (mv_id, d["von"], kuenddatum) )
 
-        # aktive Sollmiete lesen
-        sm:XSollMiete = self._db.getAktiveSollmiete( mv_id )
+        # letzte Sollmiete lesen
+        sm:XSollMiete = self._db.getCurrentSollmiete( mv_id )
         if kuenddatum and sm.von > kuenddatum:
             raise Exception( "BusinessLogic.kuendigeMietverhaeltnis( '%s', '%s' ): "
                              "Sollmiete-von ('%s') > Sollmiete-bis nicht erlaubt" %
@@ -598,6 +586,47 @@ class BusinessLogic:
             if d["master_id"] == master_id:
                 mietobjekte.append( d["mobj_id"] )
         return mietobjekte
+
+    def saveMasterUndMietobjekt( self, x:XMietobjektExt ):
+        """
+        Master- und Mietobjekt können im Dialog gemeinsam geändert werden.
+        Wir splitten das übergebene XMitobjektExt-Objekt auf in ein XMasterobjekt- und ein XMietobjekt-Objekt auf
+        und steuern von hier aus die Validierung und Speicherung.
+        Die Speicherung der beiden Objekte wird separat committed.
+        Wenn die Validierung oder Speicherung fehlschlägt, wird eine Exception geworfen.
+        :param x:
+        :return:
+        """
+        x:XMasterobjekt = self._createMasterFromExt( x )
+        self.saveMasteobjekt( x )
+
+    def _createMasterFromExt( self, x:XMietobjektExt ) -> XMasterobjekt:
+        xma = XMasterobjekt()
+        xma.master_id = x.master_id
+        xma.master_name = x.master_name
+        xma.strasse_hnr = x.strasse_hnr
+        xma.plz = x.plz
+        xma.ort = x.ort
+        xma.gesamt_wfl = x.gesamt_wfl
+        xma.anz_whg = x.anz_whg
+        xma.veraeussert_am = x.veraeussert_am
+        xma.hauswart = x.hauswart
+        xma.hauswart_telefon = x.hauswart_telefon
+        xma.hauswart_mailto = x.hauswart_mailto
+        xma.bemerkung = x.bemerkung_masterobjekt
+        return xma
+
+    def saveMasterobjekt( self, x:XMasterobjekt ):
+        """
+        Speichert die Daten von <x> in die Tabelle masterobjekt.
+        Wenn x.master_id == 0, erfolgt ein Insert, sonst ein Update
+        Vor einem Update wird geprüft, ob überhaupt Änderungen vorliegen
+        Wenn ja, werden die Daten validiert.
+        Wenn die Validierung fehlschlägt, wird eine Exception geworfen.
+        :param x:
+        :return:
+        """
+        pass
 
     def getMasteridFromMastername( self, master_name:str ) -> int:
         if self._masterundmietobjekte:

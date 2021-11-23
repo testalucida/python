@@ -1,10 +1,10 @@
 from PySide2.QtCore import QModelIndex, QPoint, Qt, QAbstractItemModel
 from PySide2.QtWidgets import QWidget, QAbstractItemView, QAction, QMenu, QMessageBox
-from typing import List, Dict
+from typing import List, Dict, Any
 import datetime
 import sys
 from business import BusinessLogic
-from mdichildcontroller import MdiChildController
+from icccontroller import IccController
 from qtderivates import TableViewDialog
 from searchhandler import SearchHandler
 from sonstaustablemodel import SonstAusTableModel
@@ -17,16 +17,15 @@ from sumfieldsprovider import SumFieldsProvider
 from tablecellactionhandler import TableCellActionHandler
 
 
-class SonstAusController( MdiChildController ):
+class SonstAusController( IccController ):
     """
     Controller für Rechnungen und Beiträge/Abgaben/Vers.prämien
     """
     def __init__( self ):
-        MdiChildController.__init__( self )
+        IccController.__init__( self )
         self._tableCellActionHandler: TableCellActionHandler = None
-        curr = getCurrentYearAndMonth()
-        self._jahr:int = curr["year"]
-        self._title = "Rechnungen, Abgaben, Gebühren,... " + str( self._jahr )
+        self._jahr:int = 0
+        self._title = ""
         self._view:SonstigeAusgabenView = None
         self._duplicateAction:QAction = QAction( "Dupliziere Auszahlung" )
         self._deleteAction:QAction = QAction( "Lösche Auszahlung" )
@@ -41,9 +40,9 @@ class SonstAusController( MdiChildController ):
         sausview.setBuchungsjahre( jahre )
         jahr = datetime.now().year
         sausview.setBuchungsjahr( jahr )
-        self._jahr = jahr
-        #monidx, monat = BusinessLogic.inst().getLetztenMonat()
-        #sausview.setBuchungsdatum( 1, monat )
+        self._adjustBuchungsjahr( jahr )
+        ###self._setTitle( jahr )
+        ###self._jahr = jahr
         masterobjekte = BusinessLogic.inst().getMasterobjekte()
         sausview.setMasterobjekte( masterobjekte )
         kreditoren = BusinessLogic.inst().getAlleKreditoren()
@@ -51,9 +50,9 @@ class SonstAusController( MdiChildController ):
         if len( kreditoren ) > 0:
             self._view.setKreditoren( kreditoren )
         sausview.setKostenarten( BusinessLogic.inst().getKostenartenLang() )
-        sonstauslist = BusinessLogic.inst().getSonstigeAusgabenUndSummen( self._jahr )
-        tm = SonstAusTableModel( sonstauslist )
-        sausview.setAuszahlungenTableModel( tm )
+        ###sonstauslist = BusinessLogic.inst().getSonstigeAusgabenUndSummen( self._jahr )
+        ###tm = SonstAusTableModel( sonstauslist )
+        ###sausview.setAuszahlungenTableModel( tm )
         #sausview.setSummen( summen )
         tv = sausview.getAuszahlungenTableView()
         self._searchhandler = SearchHandler( tv )
@@ -64,9 +63,9 @@ class SonstAusController( MdiChildController ):
         tcm.addAction( self._showSausIdAction, self._onShowSausId )
         self._tableCellActionHandler = tcm
 
-        tv.resizeColumnsToContents()
-        tv.setSortingEnabled( True )  # Achtung: damit wirklich sortiert werden kann, muss die Sortierbarkeit im Model eingeschaltet werden
-        tm.setSortable( True )
+        ###tv.resizeColumnsToContents()
+        ###tv.setSortingEnabled( True )  # Achtung: damit wirklich sortiert werden kann, muss die Sortierbarkeit im Model eingeschaltet werden
+        ###tm.setSortable( True )
         tv.clicked.connect( self.onAuszahlungenLeftClick )
         ## set callbacks:
         sausview.setBuchungsjahrChangedCallback( self.onBuchungsjahrChanged )
@@ -79,6 +78,20 @@ class SonstAusController( MdiChildController ):
         sausview.setSubmitChangesCallback( self.onSubmitChanges )
 
         return sausview
+
+    def _setTitle( self, jahr:int ):
+        self._title = "Rechnungen, Abgaben, Gebühren,... " + str( jahr )
+
+    def _adjustBuchungsjahr( self, jahr:int ):
+        self._jahr = jahr
+        self._title = "Rechnungen, Abgaben, Gebühren,... " + str( jahr )
+        sonstauslist = BusinessLogic.inst().getSonstigeAusgabenUndSummen( jahr )
+        tm = SonstAusTableModel( sonstauslist )
+        self._view.setAuszahlungenTableModel( tm )
+        tv = self._view.getAuszahlungenTableView()
+        tv.resizeColumnsToContents()
+        tv.setSortingEnabled( True )  # Achtung: damit wirklich sortiert werden kann, muss die Sortierbarkeit im Model eingeschaltet werden
+        tm.setSortable( True )
 
     def _onDbSearch( self, searchstring:str ):
         def onSelected( indexes:List[QModelIndex] ):
@@ -99,7 +112,6 @@ class SonstAusController( MdiChildController ):
         model:SonstAusTableModel = self._view.getAuszahlungenTableView().model()
         changes:Dict[str, List[XSonstAus]] = model.getChanges()
         self.writeChanges( changes )
-        #SumFieldsProvider.inst().setSumFields()
         model.resetChanges()
 
     def onSearch( self, searchstring:str ):
@@ -270,7 +282,7 @@ class SonstAusController( MdiChildController ):
 
 
     def onBuchungsjahrChanged( self, newjahr:int ):
-        print( "SonstausController.onBuchungsjahrChanged" )
+        self._adjustBuchungsjahr( newjahr )
 
     def onMasterobjektChanged( self, newname:str ):
         """
@@ -355,19 +367,30 @@ class SonstAusController( MdiChildController ):
                 self.savedCallback()
         self._view.setWindowTitle( self._title )
 
-    def save( self ):
+    def isChanged( self ) -> bool:
+        return self._view.getModel().isChanged()
+
+    def getChanges( self ) -> Any:
+        return self._view.getModel().getChanges()
+
+    def clearChanges( self ) -> None:
+        self._view.getModel().clearChanges()
+
+    def writeChanges( self, changes ) -> bool:
         """
-        Implementation der abstrakten Methode aus MdiChildController
+        wird von onSave aufgerufen. Veranlasst die Speicherung aller Änderungen.
+        Ruft den SumFieldProvider auf, um die Summenfelder im MainWindow zu aktualisieren.
+        :param changes:
         :return:
         """
-        print( "SonstAusController.save()" )
-
-    def writeChanges( self, changes ) -> None:
+        # todo: irgendwie ein try...except einbauen und nicht nur True zurückgeben
         for actionstring, xlist in changes.items():
             for x in xlist:
                 self._dispatchSaveAction( actionstring, x )
         self._view.setSaveButtonEnabled( False )
         self._setChangedFlag( False )
+        SumFieldsProvider.inst().setSumFields()
+        return True
 
     def _validateEditFields( self, x:XSonstAus ) -> str:
         """
@@ -381,7 +404,7 @@ class SonstAusController( MdiChildController ):
             return "Kein Kreditor angegeben."
         if not x.buchungsdatum and not x.rgdatum:
             return "Entweder Buchungs- oder Rechnungsdatum muss angegeben werden."
-        if x.kostenart_lang == "Kostenart":
+        if x.kostenart_lang in ("", "Kostenart"): # "Kostenart" ist der Placeholder-Text
             return "Keine Kostenart angegeben."
         if x.betrag == 0:
             return "Kein Betrag angegeben."

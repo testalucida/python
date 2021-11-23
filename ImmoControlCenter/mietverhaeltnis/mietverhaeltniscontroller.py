@@ -24,9 +24,9 @@ class MietverhaeltnisController( IccController ):
         :param point:
         :return:
         """
-        mv:XMietverhaeltnis = BusinessLogic.inst().getAktuellesMietverhaeltnis( mv_id )
-        mvv = MietverhaeltnisDialog( mv )
-        mvv.exec_()
+        mv:XMietverhaeltnis = BusinessLogic.inst().getAktuellesOderZukuenftigesMietverhaeltnis( mv_id )
+        dlg = MietverhaeltnisDialog( mv )
+        dlg.exec_()
 
     def createView( self ) -> QWidget:
         # zuerst über den Auswahldialog bestimmen, welche Daten für die View selektiert werden müssen
@@ -35,7 +35,7 @@ class MietverhaeltnisController( IccController ):
         if not mobj_id: return
         busi = BusinessLogic.inst()
         mv_id = busi.getAktuelleMietverhaeltnisId( mobj_id )
-        xmv:XMietverhaeltnis = busi.getAktuellesMietverhaeltnis( mv_id )
+        xmv:XMietverhaeltnis = busi.getAktuellesOderZukuenftigesMietverhaeltnis( mv_id )
         self._view = MietverhaeltnisView( xmv, withSaveButton=True )
         self._view.save.connect( self.writeChanges )
         self._mv = xmv

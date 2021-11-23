@@ -1,19 +1,21 @@
+from typing import Any
+
 from PySide2.QtCore import QPoint
 from PySide2.QtWidgets import QApplication, QWidget, QAction
 
 from business import BusinessLogic
 from constants import einausart
 from generictable_stuff.generictableviewdialog import GenericTableViewDialog
-from mdichildcontroller import MdiChildController
+from icccontroller import IccController
 from rendite.rendite_ausgabentablemodel import Rendite_AusgabenTableModel
 from rendite.rendite_zahlungentablemodel import Rendite_ZahlungenTableModel
 from rendite.renditegui import RenditeView
 from rendite.renditetablemodel import RenditeTableModel
 
 
-class RenditeController( MdiChildController ):
+class RenditeController( IccController ):
     def __init__( self ):
-        MdiChildController.__init__( self )
+        IccController.__init__( self )
         self._view:RenditeView() = None
         self._model:RenditeTableModel = None
         self._jahr = 0
@@ -56,6 +58,18 @@ class RenditeController( MdiChildController ):
 
     def getViewTitle( self ) -> str:
         return "Renditebetrachtung"
+
+    def isChanged( self ) -> bool:
+        return False
+
+    def getChanges( self ) -> Any:
+        return self._model.getChanges()
+
+    def clearChanges( self ) -> None:
+        pass #self._model.clearChanges()
+
+    def writeChanges( self, changes:Any=None ) -> bool:
+        return True
 
     def save( self ):
         pass

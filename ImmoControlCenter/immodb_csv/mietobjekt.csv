@@ -1,0 +1,35 @@
+id	masterobjekt_id	whg_bez	qm	container_nr	bemerkung
+bueb	BUEB_Saargemuend	Asia Imbiss	50		Asia Imbiss
+remigius	HOM_Remigius	Whg 7, Haus A, 2. OG li			
+eich_0	ILL_Eich	EG	59	264980	Souterrain-Whg; Abst.Raum 3; Stellplatz 3
+eich_1	ILL_Eich	1. OG	110	244602	Hauptwohnung mit Arten + Garage; Abst.Raum 2
+eich_2	ILL_Eich	DG	88	244603	Dachgeschoss
+kleist_01	NK_Kleist	EG links	54		EG links
+kleist_02	NK_Kleist	EG rechts	54		EG rechts
+kleist_11	NK_Kleist	1. OG links	59		1. OG links
+kleist_12	NK_Kleist	1. OG rechts	59		1. OG rechts
+kleist_21	NK_Kleist	2. OG links	59		2. OG links
+kleist_22	NK_Kleist	2. OG rechts	59		2. OG rechts
+kleist_31	NK_Kleist	DG links	45		DG links
+kleist_32	NK_Kleist	DG rechts	45		DG rechts
+scheidt_01	SB_Kaiser	EG links	92		EG links
+scheidt_02	SB_Kaiser	EG mitte	62		EG mitte
+scheidt_03	SB_Kaiser	EG rechts	92		EG rechts
+scheidt_11	SB_Kaiser	1. OG links	92		1. OG links
+scheidt_12	SB_Kaiser	1.OG mitte	62		1. OG mitte
+scheidt_13	SB_Kaiser	1. OG rechts	92		1. OG rechts
+scheidt_21	SB_Kaiser	2. OG links	92		2. OG links
+scheidt_22	SB_Kaiser	2. OG mitte	40		2. OG mitte
+scheidt_23	SB_Kaiser	2. OG rechts	114		2. OG rechts
+gruelings	SB_Gruelings	Whg EG rechts, Nr. 6	50		EG rechts, Whg 6
+charlotte	SB_Charlotte	Whg 7, EG			EG, Whg 7
+hohenzoll	SB_Hohenzoll	EG	45		EG
+linx	OTW_Linx	1. OG rechts	85		1. OG rechts
+schwalbe	OTW_Schwalbe				
+kuchenberg_w	NK_KuchenbergW	Wohnung	78		Wohnung
+kuchenberg_s	NK_KuchenbergS	Spielhalle			Spielhalle
+volkerstal	NK_Volkerstal	DG Whg. 15	100		DG, Whg 15
+zweibrueck	NK_Zweibrueck	Whg 14, 3. OG mi li	64		3. OG mi li, Whg 14
+ww224	NK_Ww224	Whg 6, 1. OG rechts	112		1. OG rechts, Whg 6
+thomasmann	NK_ThomasMann	Whg 18, 2. OG	64		2. OG, Whg 18
+lampennest	RI_Lampennest	EG rechts	60		EG rechts
