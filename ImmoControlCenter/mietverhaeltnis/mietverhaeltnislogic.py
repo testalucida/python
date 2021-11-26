@@ -1,9 +1,9 @@
+from typing import List
+
 import datehelper
-from interfaces import XSollMiete, XMietverhaeltnis, XMieterwechsel
+from interfaces import XSollMiete, XMietverhaeltnis, XMieterwechsel, XMietverhaeltnisKurz
 from mietverhaeltnis.mietverhaeltnisdata import MietverhaeltnisData
 from sollmiete.sollmietelogic import SollmieteLogic
-from transaction import BEGIN_TRANSACTION, COMMIT_TRANSACTION, TRANSACTION_RUNNING
-
 
 class MietverhaeltnisLogic:
     """
@@ -25,6 +25,15 @@ class MietverhaeltnisLogic:
             return self._db.getAktuellesMietverhaeltnis( mv_id )
         except Exception as ex:
             raise Exception( "Fehler beim Lesen des Aktuellen Mietverhältnisses für '%s':\n'%s' " % (mv_id, str(ex)) )
+
+    def getAktuellesMietverhaeltnisByMietobjekt( self, mobj_id:str ) -> XMietverhaeltnis:
+        try:
+            mv_id = self._db.getAktuelleMV_IDzuMietobjekt( mobj_id )
+            xmv = self._db.getAktuellesMietverhaeltnis( mv_id )
+            return xmv
+        except Exception as ex:
+            raise Exception( "Fehler beim Lesen des Aktuellen Mietverhältnisses zu Mietobjekt '%s':\n'%s' " %
+                             ( mobj_id, str(ex)) )
 
     def getMietverhaeltnisById( self, id:int ) -> XMietverhaeltnis:
         """
@@ -57,6 +66,15 @@ class MietverhaeltnisLogic:
             xmv_next = XMietverhaeltnis()
             xmv_next.mobj_id = mobj_id
         return XMieterwechsel( xmv_akt, xmv_next )
+
+    def getAktiveMietverhaeltnisseKurz( self, jahr:int ) -> List[XMietverhaeltnisKurz]:
+        """
+        Liefert alle Mietverhältnisse, die im Jahr <jahr> aktiv sind.
+        Das sind auch die, die in <jahr> enden oder anfangen.
+        :param jahr:
+        :return:
+        """
+        return self._db.getAktiveMietverhaeltnisseKurz( jahr, orderby="mv_id" )
 
     def _create_mv_id( self, name:str, vorname:str ) -> str:
         def replaceUmlauteAndBlanks( s:str ) -> str:

@@ -8,6 +8,7 @@ from icccontroller import IccController
 from interfaces import XMietverhaeltnis
 from mietobjekt.mietobjektauswahl import MietobjektAuswahl
 from mietverhaeltnis.mietverhaeltnisgui import MietverhaeltnisDialog, MietverhaeltnisView
+from mietverhaeltnis.mietverhaeltnislogic import MietverhaeltnisLogic
 
 
 class MietverhaeltnisController( IccController ):
@@ -33,9 +34,11 @@ class MietverhaeltnisController( IccController ):
         mietobjektAuswahl = MietobjektAuswahl()
         mobj_id = mietobjektAuswahl.selectMietobjekt()
         if not mobj_id: return
-        busi = BusinessLogic.inst()
-        mv_id = busi.getAktuelleMietverhaeltnisId( mobj_id )
-        xmv:XMietverhaeltnis = busi.getAktuellesOderZukuenftigesMietverhaeltnis( mv_id )
+        mvlogic = MietverhaeltnisLogic() # todo: muss raus und durch einen Service-Aufruf ersetzt werden
+        xmv:XMietverhaeltnis = mvlogic.getAktuellesMietverhaeltnisByMietobjekt( mobj_id )
+        # busi = BusinessLogic.inst()
+        # mv_id = busi.getAktuelleMietverhaeltnisId( mobj_id )
+        # xmv:XMietverhaeltnis = busi.getAktuellesOderZukuenftigesMietverhaeltnis( mv_id )
         self._view = MietverhaeltnisView( xmv, withSaveButton=True )
         self._view.save.connect( self.writeChanges )
         self._mv = xmv

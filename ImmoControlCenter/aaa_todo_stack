@@ -47,8 +47,21 @@ Vermutlich wird nicht nur Tabelle sonstaus ausgewertet, sondern auch Tabelle zah
     --> erl.
 
 20. Dialog zum Ändern der Mietverhältnisse einführen
+    --> erl.
 
 21. CheckTableView ersetzen durch normale Tabelle (ohne den frozen-Teil)
 
 22. View Objektstammdaten: es fehlt die Anzeige der qm der Wohnung
     außerdem scheint die Anzeige des Hauswarts nicht zu funktionieren (probiert mit scheidt_22, Heidi Rocco)
+    --> erl.
+
+23. Sammelabgabe-Detail-Dialog
+
+24. Funktion "Neues Jahr anlegen"
+    --> erl.
+
+25. Mietverhältnis anzeigen/Ändern
+    derzeit Fehlermeldung 'BusinessLogic' object has no attribute 'getAktuellesOderZukuenftigesMietverhaeltnis'
+    --> erl.
+
+26. Umbau MainController: soll keine Geschäftsobjekte mehr instanzieren, sondern nur noch auf Services zugreifen

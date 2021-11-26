@@ -10,7 +10,7 @@ sys.path.append( "../common" )
 from PySide2.QtWidgets import QApplication, QMessageBox
 from PySide2 import QtCore
 from PySide2.QtWidgets import QWidget, QMdiSubWindow
-from immocentermainwindow import ImmoCenterMainWindow
+from iccmainwindow import IccMainWindow
 from maincontroller import MainController
 
 
@@ -124,7 +124,7 @@ def main():
         terminate_if_running()
         createControlFile()
         env = "RELEASE"
-    win = ImmoCenterMainWindow( env )
+    win = IccMainWindow( env )
     # see: https://stackoverflow.com/questions/53097415/pyside2-connect-close-by-window-x-to-custom-exit-method
     shutDownFilter = ShutDownFilter( win, app )
     win.installEventFilter( shutDownFilter )

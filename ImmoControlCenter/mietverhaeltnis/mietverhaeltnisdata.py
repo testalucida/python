@@ -1,7 +1,7 @@
 from typing import Dict, List
 
 from databasecommon import DatabaseCommon
-from interfaces import XMietverhaeltnis
+from interfaces import XMietverhaeltnis, XMietverhaeltnisKurz, XVerwaltung
 
 
 class MietverhaeltnisData( DatabaseCommon ):
@@ -152,6 +152,22 @@ class MietverhaeltnisData( DatabaseCommon ):
         else:
             x = XMietverhaeltnis( listofdicts[0] )
             return x
+
+    def getAktiveMietverhaeltnisseKurz( self, jahr: int, orderby: str = None ) -> List[XMietverhaeltnisKurz]:
+        """
+        Liefert zu allen Mietverhältnissen, die in <jahr> aktiv sind, die Werte der Spalten mv_id, mobj_id, von, bis.
+        Geliefert werden also neben den "Langläufern" MV, die während <jahr> enden und MV, die während MV beginnen.
+        :param jahr:
+        :param orderby:
+        :return:
+        """
+        sql = "select id, mv_id, mobj_id, von, bis " \
+              "from mietverhaeltnis " \
+              "where substr(von, 0, 5) <= '%s' " \
+              "and (bis is NULL or bis = '' or substr(bis, 0, 5) >= '%s') " % (jahr, jahr)
+        if orderby:
+            sql += "order by %s " % (orderby)
+        return self.readAllGetObjectList( sql, XMietverhaeltnisKurz )
 
     def insertMietverhaeltnis( self, x:XMietverhaeltnis ) -> int:
         sql = "insert into mietverhaeltnis " \

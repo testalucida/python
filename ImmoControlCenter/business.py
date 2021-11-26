@@ -157,26 +157,26 @@ class BusinessLogic:
     def getExistingHgAbrechnungsjahre( self ) -> List[int]:
         return self._db.getExistingHgAbrechnungsjahre()
 
-    def existsEinAusArt(self, eaart: einausart, jahr: int) -> bool:
+    def existsEinAusSet(self, eaart: einausart, jahr: int) -> bool:
         return self._db.existsEinAusArt( eaart, jahr )
 
-    def createMtlEinAusJahresSet( self, jahr:int ) -> None:
-        """
-        legt
-        1.) für jedes Mietverhältnis, das in <jahr> wenigstens teilweise aktiv ist,
-        einen Mietesatz in Tabelle mtleinaus an.
-        2.) für jede Verwaltung, die in <jahr> wenigstens teilweise aktiv ist, einen
-        HGV-Satz in Tabelle mtleinaus an.
-        Macht abschließend einen Commit.
-        """
-        mvlist:List[Dict] = self._db.getMietverhaeltnisseEssentials( jahr )
-        for mv in mvlist:
-            self._db.insertMtlEinAus( mv["mv_id"], einausart.MIETE, jahr, commit=False )
-
-        vwglist: List[Dict] = self._db.getVerwaltungen( jahr )
-        for vwg in vwglist:
-            self._db.insertMtlEinAus( vwg["vwg_id"], einausart.HGV, jahr, commit=False )
-        self._db.commit()
+    # def createMtlEinAusJahresSet( self, jahr:int ) -> None:
+    #     """
+    #     legt
+    #     1.) für jedes Mietverhältnis, das in <jahr> wenigstens teilweise aktiv ist,
+    #     einen Mietesatz in Tabelle mtleinaus an.
+    #     2.) für jede Verwaltung, die in <jahr> wenigstens teilweise aktiv ist, einen
+    #     HGV-Satz in Tabelle mtleinaus an.
+    #     Macht abschließend einen Commit.
+    #     """
+    #     mvlist:List[Dict] = self._db.getMietverhaeltnisseEssentials( jahr )
+    #     for mv in mvlist:
+    #         self._db.insertMtlEinAus( mv["mv_id"], einausart.MIETE, jahr, commit=False )
+    #
+    #     vwglist: List[Dict] = self._db.getVerwaltungen( jahr )
+    #     for vwg in vwglist:
+    #         self._db.insertMtlEinAus( vwg["vwg_id"], einausart.HGV, jahr, commit=False )
+    #     self._db.commit()
 
     def insertSonstigeAuszahlung( self, x:XSonstAus ) -> None:
         # typischerweise ist hier zwar master_name, aber nicht master_id besetzt.

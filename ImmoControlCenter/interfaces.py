@@ -265,6 +265,31 @@ class XMietverhaeltnis( XBase ):
         if valuedict:
             self.setFromDict( valuedict )
 
+#####################  Mietverhältnis Kurz  ######################
+class XMietverhaeltnisKurz( XBase ):
+    def __init__( self, valuedict: Dict = None ):
+        XBase.__init__( self )
+        self.id = 0
+        self.mv_id = ""
+        self.mobj_id = ""
+        self.von = ""
+        self.bis = ""
+        if valuedict:
+            self.setFromDict( valuedict )
+
+##################### Verwaltung ##############################
+class XVerwaltung( XBase ):
+    def __init__( self, valuedict: Dict = None ):
+        XBase.__init__( self )
+        self.vwg_id = 0
+        self.mobj_id = ""
+        self.vw_id = ""
+        self.weg_name = ""
+        self.von = ""
+        self.bis = ""
+        if valuedict:
+            self.setFromDict( valuedict )
+
 #####################  Mieterwechsel  ############################
 
 #!!! ACHTUNG: nicht von XBase abgeleitet !!!

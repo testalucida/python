@@ -11,6 +11,7 @@ from enum import Enum
 from datehelper import getDateParts
 from iccdialog import IccDialog
 from imagefactory import ImageFactory
+from messagebox import InfoBox
 from qtderivates import SmartDateEdit, IntDisplay
 from sumfieldsprovider import SumFieldsProvider
 
@@ -39,10 +40,11 @@ class MainWindowAction( Enum ):
     BRING_DIALOG_TO_FRONT = 22,
     SHOW_TABLE_CONTENT = 23,
     OPEN_GESCHAEFTSREISE_VIEW = 24,
+    SAMMELABGABE_DETAIL = 25,
     EXIT=99
 
 
-class ImmoCenterMainWindow( QMainWindow ):
+class IccMainWindow( QMainWindow ):
     def __init__( self, environment ):
         QMainWindow.__init__( self )
         self.setWindowTitle( "ImmoControlCenter   " + environment )
@@ -77,6 +79,7 @@ class ImmoCenterMainWindow( QMainWindow ):
 
         self._createImmoCenterMenu()
         self._createMietobjektMenu()
+        self._createMietverhaeltnisMenu()
         self._createZahlungenMenu()
         self._createAbrechnungenMenu()
         self._createAnlageVMenu()
@@ -129,13 +132,6 @@ class ImmoCenterMainWindow( QMainWindow ):
 
         menu.addSeparator()
 
-        # # Menüpunkt "Aktive Sicht drucken"
-        # action = QAction( self, text="Aktive Sicht drucken" )
-        # action.triggered.connect( self.onPrintActiveView )
-        # menu.addAction( action )
-        #
-        # menu.addSeparator()
-
         # Menüpunkt "Ende"
         action = QAction( self, text="Ende" )
         action.triggered.connect( self.onExit )
@@ -151,8 +147,27 @@ class ImmoCenterMainWindow( QMainWindow ):
         action.triggered.connect( self.onViewObjektStammdaten )
         menu.addAction( action )
 
+        # # Menüpunkt "Mietverhältnis..."
+        # action = QAction( self, text="Mietverhältnis..." )
+        # action.triggered.connect( self.onViewMietverhaeltnis )
+        # menu.addAction( action )
+
+        menu.addSeparator()
+
+        # action = QAction( self, text="Mieterwechsel..." )
+        # action.triggered.connect( self.onMieterwechsel )
+        # menu.addAction( action )
+
+        action = QAction( self, text="Verwalterwechsel..." )
+        action.triggered.connect( self.onVerwalterwechsel )
+        menu.addAction( action )
+
+    def _createMietverhaeltnisMenu( self ):
+        menu = QtWidgets.QMenu( self._menubar, title="Mietverhältnis" )
+        self._menubar.addMenu( menu )
+
         # Menüpunkt "Mietverhältnis..."
-        action = QAction( self, text="Mietverhältnis..." )
+        action = QAction( self, text="Mietverhältnis anschauen und ändern..." )
         action.triggered.connect( self.onViewMietverhaeltnis )
         menu.addAction( action )
 
@@ -160,10 +175,6 @@ class ImmoCenterMainWindow( QMainWindow ):
 
         action = QAction( self, text="Mieterwechsel..." )
         action.triggered.connect( self.onMieterwechsel )
-        menu.addAction( action )
-
-        action = QAction( self, text="Verwalterwechsel..." )
-        action.triggered.connect( self.onVerwalterwechsel )
         menu.addAction( action )
 
     def _createZahlungenMenu( self ):
@@ -237,6 +248,11 @@ class ImmoCenterMainWindow( QMainWindow ):
         action = QAction( self, text="Notizen..." )
         action.triggered.connect( self.onNotizen )
         menu.addAction( action )
+        menu.addSeparator()
+        action = QAction( self, text="Sammelabgabenbescheid aufsplitten..." )
+        action.triggered.connect( self.onSammelabgabe )
+        menu.addAction( action )
+        menu.addSeparator()
         action = QAction( self, text="Renditevergleich..." )
         action.triggered.connect( self.onRenditeVergleich )
         menu.addAction( action )
@@ -462,6 +478,9 @@ class ImmoCenterMainWindow( QMainWindow ):
     def onNotizen( self ):
         self.doCallback( MainWindowAction.NOTIZEN )
 
+    def onSammelabgabe( self ):
+        self.doCallback( MainWindowAction.SAMMELABGABE_DETAIL )
+
     def onGeschaeftsreise( self ):
         self.doCallback( MainWindowAction.OPEN_GESCHAEFTSREISE_VIEW )
 
@@ -499,6 +518,10 @@ class ImmoCenterMainWindow( QMainWindow ):
         msg.setWindowTitle( "Error" )
         msg.exec_()
 
+    def showInfo( self, title, msg ):
+        box = InfoBox( title, msg, "", "OK" )
+        box.exec_()
+
     # def addMdiChild( self, subwin:QMdiSubWindow ) -> None:
     #     self.mdiArea.addSubWindow( subwin )
     #     subwin.widget().setAttribute( Qt.WA_DeleteOnClose )
@@ -513,7 +536,7 @@ class ImmoCenterMainWindow( QMainWindow ):
 def test():
     import sys
     app = QApplication()
-    win = ImmoCenterMainWindow()
+    win = IccMainWindow()
     win.show()
     sys.exit( app.exec_() )
 

@@ -30,8 +30,8 @@ class CheckController( IccController ):
     def jahrChangedCallback( self, jahr:int ):
         if jahr == self._currentYear: return
         eaart:einausart = self.getEinAusArt()
-        if not BusinessLogic.inst().existsEinAusArt( eaart, jahr ):
-            BusinessLogic.inst().createMtlEinAusJahresSet( jahr )
+        if not BusinessLogic.inst().existsEinAusSet( eaart, jahr ):
+            BusinessLogic.inst().createFolgejahrSet( jahr )
         model = self.createModel( jahr, self._currentCheckMonth )
         self._dlg.getView().setModel( model )
         self._currentYear = jahr
@@ -61,7 +61,7 @@ class CheckController( IccController ):
         checkView.saveCallback = self.onSaveData
         jahrelist = BusinessLogic.inst().getExistingJahre( einausart.MIETE )
         if len( jahrelist ) == 0:
-            BusinessLogic.inst().createMtlEinAusJahresSet( self._currentYear )
+            BusinessLogic.inst().createFolgejahrSet( self._currentYear )
             jahrelist.append( self._currentYear )
         checkView.setJahre( jahrelist )
         # neue CheckViews immer mit aktuellem Jahr/Monat

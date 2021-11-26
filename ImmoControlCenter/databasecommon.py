@@ -133,7 +133,6 @@ class DatabaseCommon:
         return l
 
     def read( self, sql: str ) -> List[Tuple]:
-        self._con.row_factory = None
         cur = self._con.cursor() # sieht umständlich aus, muss aber so gemacht werden:
                                  # mit jedem cursor()-call wird ein neuer Cursor erzeugt!
         cur.execute( sql )
@@ -150,13 +149,17 @@ class DatabaseCommon:
         self._con.row_factory = self.dict_factory
         cur = self._con.cursor()
         cur.execute( sql )
-        return cur.fetchone()
+        dic = cur.fetchone()
+        self._con.row_factory = None
+        return dic
 
     def readAllGetDict( self, sql: str ) -> List[Dict] or None:
         self._con.row_factory = self.dict_factory
         cur = self._con.cursor()
         cur.execute( sql )
-        return cur.fetchall()
+        dicList = cur.fetchall()
+        self._con.row_factory = None
+        return dicList
 
     def readAllGetObjectList( self, sql, xbase:Type[XBase] ) -> List[XBase]:
         """
@@ -172,6 +175,7 @@ class DatabaseCommon:
         for d in dictlist:
             x = xbase( d )
             retList.append( x )
+        self._con.row_factory = None
         return retList
 
     def write( self, sql: str ) -> int:

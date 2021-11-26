@@ -1,6 +1,7 @@
 from typing import List, Dict
 
 from PySide2.QtCore import QAbstractItemModel, QObject, Qt
+from PySide2.QtGui import QFont
 from PySide2.QtWidgets import QDialog, QApplication, QTableView
 
 from anlage_v.anlagev_controller import AnlageVController
@@ -8,10 +9,11 @@ from business import BusinessLogic
 from constants import einausart
 from datehelper import getCurrentYear
 from dictlisttablemodel import DictListTableModel
+from generictable_stuff.generictableviewdialog import CustomTableView
 from geschaeftsreise.geschaeftsreisencontroller import GeschaeftsreisenController
 from iccdialog import IccDialog
 from mdisubwindow import MdiSubWindow
-from immocentermainwindow import ImmoCenterMainWindow, MainWindowAction
+from iccmainwindow import IccMainWindow, MainWindowAction
 from checkcontroller import IccController, MietenController, HGVController
 from messagebox import ErrorBox, InfoBox
 from mietobjekt.mietobjektauswahl import MietobjektAuswahl
@@ -19,10 +21,13 @@ from mietobjekt.mietobjektcontroller import MietobjektController
 from mietobjekt.mietobjektview import MietobjektView
 from mietverhaeltnis.mieterwechselcontroller import MieterwechselController
 from mietverhaeltnis.mietverhaeltniscontroller import MietverhaeltnisController
+from mtleinaus.mtleinauslogic import MtlEinAusLogic
+from mtleinaus.mtleinausservices import MtlEinAusServices
 from notizen.notizencontroller import NotizenController
 from offene_posten.offenepostencontroller import OffenePostenController
 from qtderivates import AuswahlDialog
 from rendite.renditecontroller import RenditeController
+from returnvalue import ReturnValue
 from sollzahlungencontroller import SollmietenController, SollHgvController
 from sonstauscontroller import SonstAusController
 from sumfieldsprovider import SumFieldsProvider
@@ -30,9 +35,9 @@ from abrechnungencontroller import NkAbrechnungenController, HgAbrechnungenContr
 
 
 class MainController( QObject ):
-    def __init__(self, win:ImmoCenterMainWindow ):
+    def __init__( self, win:IccMainWindow ):
         QObject.__init__( self )
-        self._mainwin:ImmoCenterMainWindow = win
+        self._mainwin:IccMainWindow = win
         datum, text = BusinessLogic.inst().getLetzteBuchung()
         win.setLetzteBuchung( datum, text )
         win.setTabellenAuswahl( BusinessLogic.inst().getIccTabellen() )
@@ -123,6 +128,7 @@ class MainController( QObject ):
             MainWindowAction.RENDITE_VIEW: self.showRenditeView,
             MainWindowAction.MIETERWECHSEL: self.showMieterwechselDialog,
             MainWindowAction.OPEN_GESCHAEFTSREISE_VIEW: self.showGeschaeftsreiseDialog,
+            MainWindowAction.SAMMELABGABE_DETAIL: self.showSammelAbgabeDialog,
             MainWindowAction.EXIT: self.exit
         }
 
@@ -274,6 +280,10 @@ class MainController( QObject ):
         h = 550
         self._showDialog( self._mietobjektDlg, w, h )
 
+    def showSammelAbgabeDialog( self ):
+
+        raise NotImplementedError( "MainController.showSammelAbgabeDialog" )
+
     def exportToCsv( self ):
         self._mainwin.setCursor( Qt.WaitCursor )
         QApplication.processEvents()
@@ -312,13 +322,20 @@ class MainController( QObject ):
         tm = DictListTableModel( dictList )
         dlg = IccDialog( self._mainwin )
         dlg.mayClose = lambda : 1 == 1
-        tv = QTableView()
+        tv = CustomTableView()
         tv.setModel( tm )
+        tv.setFont( QFont( "Arial", 12 ) )
+        tv.resizeColumnsToContents()
+        tv.resizeRowsToContents()
         tv.setSortingEnabled( True )
         tm.setSortable( True )
+        tm.layoutChanged.connect( tv.resizeRowsToContents )  ## <======== WICHTIG bei mehrzeiligem Text in einer Zelle!
         dlg.setView( tv )
         dlg.setWindowTitle( table )
-        self._showDialog( dlg, 900, 900 )
+        w = 0
+        for c in range( tm.columnCount() ):
+            w += tv.columnWidth( c )
+        self._showDialog( dlg, w, 900 )
 
     def onShutdown( self ) -> bool:
         if not ( self._mietenCtrl.mayDialogClose() and
@@ -342,27 +359,19 @@ class MainController( QObject ):
             self._mainwin.showException( str( ex ), "MainController.onShutdown()" )
 
     def createFolgejahr( self ):
-        y = getCurrentYear()
-        y += 1
-        if not BusinessLogic.inst().existsEinAusArt( einausart.MIETE, y ):
-            BusinessLogic.inst().createMtlEinAusJahresSet( y )
-            self._mietenCtrl.addJahr( y )
-            self._hgvCtrl.addJahr( y )
-        #TODO testen!!!!!
-
-    # def onCloseSubWindow( self, window:MdiSubWindow ) -> bool:
-    #     self._viewsandcontroller.pop( window )
-    #     return True
-    #
-    # def _exit( self ):
-    #     pass
-
+        retval:ReturnValue = MtlEinAusServices.processFolgejahrNeu()
+        if not retval.missionAccomplished():
+            self._mainwin.showException( retval.exceptiontype, retval.errormessage )
+        else:
+            self._mietenCtrl.addJahr( retval.returnvalue )
+            self._hgvCtrl.addJahr( retval.returnvalue )
+            self._mainwin.showInfo( "Folgejahr eingerichtet.", "Das Folgejahr wurde eingerichtet." )
 
 def test():
     import sys
     from PySide2 import QtWidgets
     app = QtWidgets.QApplication( sys.argv )
-    win = ImmoCenterMainWindow()
+    win = IccMainWindow()
     mc = MainController( win )
     mc.showSollMietenView()
 
