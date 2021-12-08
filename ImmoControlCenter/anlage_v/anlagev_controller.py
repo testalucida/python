@@ -9,7 +9,7 @@ from anlage_v.anlagev_print_logic import AnlageV_Print_Logic
 from anlage_v.anlagev_tablemodel import AnlageVTableModel
 from anlage_v.anlagev_ausgabentablemodel import AnlageV_AusgabenTableModel
 from constants import DetailLink
-from generictable_stuff.generictableviewdialog import GenericTableViewDialog
+from generictable_stuff.customtableview import GenericTableViewDialog
 from icccontroller import IccController
 from mdisubwindow import MdiSubWindow
 

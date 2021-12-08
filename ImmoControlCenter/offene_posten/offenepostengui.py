@@ -9,7 +9,7 @@ from PySide2.QtWidgets import QWidget, QComboBox, QApplication, QGridLayout, QLa
 from icctablemodel import IccTableModel
 from imagefactory import ImageFactory
 from qtderivates import IntDisplay, SmartDateEdit, FloatEdit, AuswahlDialog
-from generictable_stuff.generictableviewdialog import GenericTableViewDialog, EditableTableViewWidget
+from generictable_stuff.customtableview import GenericTableViewDialog, EditableTableViewWidget
 from generictable_stuff.okcanceldialog import OkCancelDialog
 from interfaces import XOffenerPosten
 from offene_posten.offenepostentablemodel import OffenePostenTableModel

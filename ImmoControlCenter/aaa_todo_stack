@@ -65,3 +65,23 @@ Vermutlich wird nicht nur Tabelle sonstaus ausgewertet, sondern auch Tabelle zah
     --> erl.
 
 26. Umbau MainController: soll keine Geschäftsobjekte mehr instanzieren, sondern nur noch auf Services zugreifen
+
+27. BUG: View "Master- und Mietobjektdaten":
+    Änderungen werden nicht gespeichert
+    Hauswart-Felder uind Contanier-Nr. sind minimiert
+
+28. BUG: View "Mieterdaten": Obwohl keine Änderung, wird Box "Ändwerungen speichern" angezeigt
+
+29. BUG: View "Mieteingänge": Kontextmenü "Mietverhältnisdaten anzeigen" nach Rechtsklick auf Mietername funktioniert nicht
+
+30. Views "Sollmieten" und "Soll-Hausgelder": Trichter entfernen
+
+31. View "Rechnungen, Abgaben, Gebühren": umgekehrt sortieren: jüngste Zahlungen oben, neue Einträge oben einfügen.
+
+32. View HG- u. NK-Abrechnungen: Möglichkeit vorsehen, die defaultmäßig angezeigten Zeilen zu verdoppeln.
+    (Achtung: geht die Logik vllt davon aus, dass je Abrechnung nur *ein* Satz vorhanden ist?)
+
+33. View "Rechnungen, Abgaben, Gebühren":
+    - WICHTIG: Eingabe Kostenverteilung auf mehrere Jahre
+    - Zeilenhöhe an Inhalt anpassen
+    - Tabellengröße begrenzen (es gibt Texte in der Spalte "Buchungstext", die ewig breit sind)

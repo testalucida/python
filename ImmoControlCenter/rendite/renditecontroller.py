@@ -5,7 +5,7 @@ from PySide2.QtWidgets import QApplication, QWidget, QAction
 
 from business import BusinessLogic
 from constants import einausart
-from generictable_stuff.generictableviewdialog import GenericTableViewDialog
+from generictable_stuff.customtableview import GenericTableViewDialog
 from icccontroller import IccController
 from rendite.rendite_ausgabentablemodel import Rendite_AusgabenTableModel
 from rendite.rendite_zahlungentablemodel import Rendite_ZahlungenTableModel

@@ -9,7 +9,7 @@ from business import BusinessLogic
 from constants import einausart
 from datehelper import getCurrentYear
 from dictlisttablemodel import DictListTableModel
-from generictable_stuff.generictableviewdialog import CustomTableView
+from generictable_stuff.customtableview import CustomTableView
 from geschaeftsreise.geschaeftsreisencontroller import GeschaeftsreisenController
 from iccdialog import IccDialog
 from mdisubwindow import MdiSubWindow

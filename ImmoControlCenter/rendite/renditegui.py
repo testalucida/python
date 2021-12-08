@@ -6,7 +6,7 @@ from PySide2.QtWidgets import QWidget, QComboBox, QLineEdit, QCheckBox, QPushBut
     QAbstractItemView, QMenu, QAction
 from typing import List
 
-from generictable_stuff.generictableviewdialog import CustomTableView, TableViewContextMenuHandler
+from generictable_stuff.customtableview import CustomTableView, TableViewContextMenuHandler
 from rendite.renditetablemodel import RenditeTableModel
 
 ############  RenditeTableView  #####################

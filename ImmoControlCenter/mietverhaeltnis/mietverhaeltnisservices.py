@@ -1,4 +1,5 @@
 from interfaces import XMietverhaeltnis, XMieterwechsel
+from mietverhaeltnis.mietverhaeltnislogic import MietverhaeltnisLogic
 from mietverhaeltnis.ucc.mieterwechselucc import MieterwechselUcc
 from mietverhaeltnis.ucc.mietverhaeltnisneuucc import MietverhaeltnisNeuUcc
 from returnvalue import ReturnValue
@@ -15,6 +16,9 @@ class MietverhaeltnisServices:
         mucc = MietverhaeltnisNeuUcc( xmv )
         return mucc.processMietverhaeltnisNeu()
 
+    @staticmethod
+    def getAktuellesMietverhaeltnis( mv_id:str ) -> ReturnValue:
+        raise NotImplementedError( "MietverhaeltnisServices.getAktuellesMietverhaeltnis()" )
 
 
 def test1():

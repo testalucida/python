@@ -29,11 +29,11 @@ class MietverhaeltnisController( IccController ):
         dlg = MietverhaeltnisDialog( mv )
         dlg.exec_()
 
-    def createView( self ) -> QWidget:
+    def createView( self ) -> QWidget or None:
         # zuerst über den Auswahldialog bestimmen, welche Daten für die View selektiert werden müssen
         mietobjektAuswahl = MietobjektAuswahl()
         mobj_id = mietobjektAuswahl.selectMietobjekt()
-        if not mobj_id: return
+        if not mobj_id: return None
         mvlogic = MietverhaeltnisLogic() # todo: muss raus und durch einen Service-Aufruf ersetzt werden
         xmv:XMietverhaeltnis = mvlogic.getAktuellesMietverhaeltnisByMietobjekt( mobj_id )
         # busi = BusinessLogic.inst()

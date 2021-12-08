@@ -4,7 +4,7 @@ from PySide2.QtCore import Signal, QModelIndex
 from PySide2.QtGui import Qt
 from PySide2.QtWidgets import QWidget, QGridLayout, QPushButton, QApplication, QScrollArea, QVBoxLayout, QHBoxLayout
 
-from generictable_stuff.generictableviewdialog import EditableTableViewWidget
+from generictable_stuff.customtableview import EditableTableViewWidget
 from generictable_stuff.okcanceldialog import OkCancelDialog
 from icctablemodel import IccTableModel
 from imagefactory import ImageFactory

@@ -32,7 +32,7 @@ class MieterwechselUcc:
         Der Ucc fängt Exceptions auf und wandelt sie in einen String um, den er als ReturnValue-Objekt zurückgibt
         """
         # Übergebene Daten validieren (nur Fehler, die den Wechsel selbst betreffen):
-        msg = self.validateMieterwechselData()
+        msg = self._validateMieterwechselData()
         if msg > "": return ReturnValue.fromError( msg ) # Validierung nicht ok, Message zurückgeben
         BEGIN_TRANSACTION()
         mvlogic = MietverhaeltnisLogic()
@@ -59,7 +59,7 @@ class MieterwechselUcc:
         COMMIT_TRANSACTION()
         return ReturnValue()
 
-    def validateMieterwechselData( self ) -> str:
+    def _validateMieterwechselData( self ) -> str:
         """
         Es werden nur die Daten geprüft, die für den *Wechsel* relevant sind.
         Die übrigen Daten werden in MietverhaeltnisLogic bzw. SollmieteLogic geprüft

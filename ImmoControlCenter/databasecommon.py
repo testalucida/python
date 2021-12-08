@@ -51,40 +51,8 @@ class DatabaseConnection:
 
 ###########################  DatabaseCommon  ############################
 class DatabaseCommon:
-    # __instance = None
-    # def __init__( self ):
-    #     if DatabaseCommon.__instance:
-    #         raise Exception("DatabaseCommon is a Singleton. You may instantiate it only once." )
-    #     else:
-    #         DatabaseCommon.__instance = self
-    #     self._con = None
-    #     self._dbname = DATABASE
-    #     self._inTransaction = False
-    #
-    # @staticmethod
-    # def inst():
-    #     if not DatabaseCommon.__instance:
-    #         DatabaseCommon()
-    #         DatabaseCommon.inst().open()
-    #     return DatabaseCommon.__instance
-
-    # def open( self ):
-    #     self._con = sqlite3.connect( self._dbname )
-
     def __init__( self ):
         self._con = DatabaseConnection.inst().getConnection()
-        #self._inTransaction = False
-
-    # def begin_transaction( self ):
-    #     self._inTransaction = True
-    #
-    # def commit_transaction( self ):
-    #     self._con.commit()
-    #     self._inTransaction = False
-    #
-    # def rollback_transaction( self ):
-    #     self._con.rollback()
-    #     self._inTransaction = False
 
     def isInTransaction( self ) -> bool:
         return DatabaseConnection.inst().isInTransaction()
@@ -160,6 +128,11 @@ class DatabaseCommon:
         dicList = cur.fetchall()
         self._con.row_factory = None
         return dicList
+
+    def readOneGetObject( self, sql, xbase: Type[XBase] ) -> XBase:
+        dic = self.readOneGetDict( sql )
+        x = xbase( dic )
+        return x
 
     def readAllGetObjectList( self, sql, xbase:Type[XBase] ) -> List[XBase]:
         """

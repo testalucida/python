@@ -5,7 +5,7 @@ from PySide2.QtGui import QFont, Qt, QIcon
 from PySide2.QtWidgets import QTableView, QGridLayout, QPushButton, QComboBox, QApplication, QWidget, QHBoxLayout
 
 from definitions import ICON_DIR
-from generictable_stuff.generictableviewdialog import EditableTableViewWidget, CustomTableView
+from generictable_stuff.customtableview import EditableTableViewWidget, CustomTableView
 from generictable_stuff.okcanceldialog import OkCancelDialog
 from geschaeftsreise.geschaeftsreisentablemodel import GeschaeftsreisenTableModel
 from iccview import IccView

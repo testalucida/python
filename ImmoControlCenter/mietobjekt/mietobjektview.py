@@ -346,16 +346,17 @@ class MietobjektView( IccView ):
 
     def getMietobjektCopyWithChanges( self ) -> XMietobjektExt:
         xcopy:XMietobjektExt = copy.copy( self._mietobjekt )
+        raise NotImplementedError( "MietobjektView.getMietobjektCopyWithChanges()" )
 
     def _guiToData( self, x:XMietobjektExt ):
         x.master_name = self._bbeMasterName.text()
-
+        raise NotImplementedError( "MietobjektView._guiToData()" )
 
     def clear( self ):
-        pass
+        raise NotImplementedError( "MietobjektView.clear()" )
 
     def applyChanges( self ):
-        pass
+        raise NotImplementedError( "MietobjektView.applyChanges()" )
 
     def getModel( self ):
         return self._mietobjekt

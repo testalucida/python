@@ -32,6 +32,9 @@ class CustomHeaderView( QHeaderView ):
 
 #####################  CustomTableView  ####################
 class CustomTableView( QTableView ):
+    """
+    Mit dem Setzen des Models wird die Sortierbarkeit automatisch aktiviert.
+    """
     ctvLeftClicked = Signal( QModelIndex )
     ctvRightClicked = Signal( QPoint )
     ctvDoubleClicked = Signal( QModelIndex )
@@ -73,6 +76,7 @@ class CustomTableView( QTableView ):
             self.setSelectionBehavior( QTableView.SelectRows )
         if singleSelection:
             self.setSelectionMode( QAbstractItemView.SingleSelection )
+        self.setSortingEnabled( True )
         model.layoutChanged.emit()
 
     def mouseMoveEvent(self, event:QMouseEvent):

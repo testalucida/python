@@ -1,10 +1,17 @@
 from abc import abstractmethod
-from typing import Dict
+from typing import Dict, List, Any
+
 
 class XBase:
     def __init__( self, valuedict:Dict=None ):
         if valuedict:
             self.setFromDict( valuedict )
+
+    def getValue( self, key ) -> Any:
+        return self.__dict__[key]
+
+    def setValue( self, key, value ):
+        self.__dict__[key] = value
 
     def setFromDict( self, d: Dict ):
         _d = self.__dict__
@@ -14,6 +21,9 @@ class XBase:
     def equals( self, other ) -> bool:
         if other is None: return False
         return True if self.__dict__ == other.__dict__ else False
+
+    def getKeys( self ) -> List:
+        return self.__dict__.keys()
 
 
 #################################################################
@@ -534,6 +544,23 @@ class XKontoEintrag:
     betrag = 0.0
     art = ""             # {Bruttomiete|NKA|HGV|HGA|Rechng|Gebühr}
     bemerkung = ""
+
+
+class XGeplant( XBase ):
+    def __init__(self, valuedict:Dict=None ):
+        XBase.__init__( self )
+        self.id = 0
+        self.mobj_id = ""
+        self.leistung = ""
+        self.firma = ""
+        self.kosten = 0.0
+        self.kostenvoranschlag = 0 # existiert ein Kostenvoranschlag ja(1) / nein(0)
+        self.jahr = 0  # jahr, in dem die Maßnahme geplant ist
+        self.monat = 0 # monat, in dem die Maßnahme geplant ist
+        self.erledigtDatum = "" # Datum, zu dem die Maßnahme erledigt wurde. (Kosten verbucht in Tab. sonstaus)
+        self.bemerkung = ""
+        if valuedict:
+            setFromDict( self, valuedict )
 
 
 def printX( x:XSonstAus ):
