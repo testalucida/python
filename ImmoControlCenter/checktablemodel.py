@@ -3,7 +3,7 @@ from PySide2.QtCore import *
 from typing import List, Dict
 
 from dictlisttablemodel import DictListTableModel
-from icctablemodel import IccTableModel
+from icc.icctablemodel import IccTableModel
 
 
 class CheckTableModel( DictListTableModel, IccTableModel ):

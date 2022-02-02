@@ -73,9 +73,11 @@ class KeyHeaderMapping:
 
 ######################  CustomTableModel  ##################
 class XBaseTableModel( QAbstractTableModel ):
-    def __init__( self, rowList:List[XBase]=None ):
+    def __init__( self, rowList:List[XBase]=None, jahr:int=None ):
         QAbstractTableModel.__init__( self )
+        #super( XBaseTableModel, self ).__init__(  )
         self.rowList:List[XBase] = rowList
+        self._jahr:int = jahr # das Jahr ist bei manchen Models interessant, bei manchen nicht - kann also auf None stehen.
         self.headers:List = list()
         self.keys:List = list()
         self.headerColor = QColor( "#FDBC6A" )
@@ -131,6 +133,9 @@ class XBaseTableModel( QAbstractTableModel ):
         :return: die rohe Liste der XBase-Elemente
         """
         return self.rowList
+
+    def getJahr( self ) -> int:
+        return self._jahr
 
     def getRow( self, x:XBase ) -> int:
         """

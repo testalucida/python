@@ -33,6 +33,10 @@ class SollmieteLogic:
         if not xsm.nkv:
             return "Nebenkostenvorauszahlung fehlt."
 
+    def updateSollmiete( self, nettomiete, nkv ):
+        # todo
+        raise NotImplementedError( "SollmieteLogic.updateSollmiete()" )
+
     def createSollmiete( self, xsm:XSollMiete ):
         msg = self._validate( xsm )
         if msg:

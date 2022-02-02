@@ -17,7 +17,7 @@ class IccTableModel( QAbstractTableModel ):
     def setSortable( self, sortable:bool=True ):
         self._sortable = sortable
 
-    def sort( self, col:int, order: Qt.SortOrder ) -> None:
+    def sort( self, col:int, order: Qt.SortOrder=Qt.SortOrder.AscendingOrder ) -> None:
         if not self._sortable: return
         """sort table by given column number col"""
         self.emit(SIGNAL("layoutAboutToBeChanged()"))

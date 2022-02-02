@@ -1,16 +1,16 @@
-from PySide2 import QtWidgets, QtCore, QtGui
-from PySide2.QtCore import QSize, Qt, QDate, QPoint
-from PySide2.QtGui import QIcon, QDoubleValidator, QFont, QIntValidator
-from PySide2.QtWidgets import QWidget, QComboBox, QLineEdit, QCheckBox, QPushButton, QCalendarWidget, \
-    QVBoxLayout, QDialog, QBoxLayout, QHBoxLayout, QTextEdit, QSpinBox, QLabel, QTableView, QMessageBox, \
+from PySide2 import QtWidgets, QtCore
+from PySide2.QtCore import QSize, Qt
+from PySide2.QtGui import QIcon, QFont
+from PySide2.QtWidgets import QComboBox, QLineEdit, QCheckBox, QPushButton, QVBoxLayout, QHBoxLayout, QTextEdit, QLabel, QTableView, QMessageBox, \
     QAbstractItemView
 from typing import List
 
-from icctablemodel import IccTableModel
-from iccview import IccView
+from definitions import ICON_DIR
+from icc.icctablemodel import IccTableModel
+from icc.iccview import IccView
 from interfaces import XSonstAus, XSonstAusSummen
-from qtderivates import IntDisplay, SmartDateEdit, FloatEdit
-from sonstaustablemodel import SonstAusTableModel
+from qtderivates import SmartDateEdit, FloatEdit
+from sonstaus.sonstaustablemodel import SonstAusTableModel
 from tableviewext import TableViewExt
 from datehelper import *
 
@@ -29,15 +29,10 @@ class SonstigeAusgabenView( IccView ):
         self._toolbarLayout = QHBoxLayout()
         self._summenLayout = QHBoxLayout()
         self._btnSave = QPushButton( self )
+        self._btnComplexSort = QPushButton()
         self._editSearch = QLineEdit( self )
         self._btnSearchFwd = QPushButton( self )
         self._btnDbSearch = QPushButton( self )
-
-        # self._idSummeAus = IntDisplay( self )
-        # self._idSummeW = IntDisplay( self )
-        # self._idSummeU = IntDisplay( self )
-        # self._summenfont = QFont( "Times New Roman", 16, weight=QFont.Bold )
-        # self._summenartfont = QFont( "Times New Roman", 9 )
 
         self._cboBuchungsjahr = QtWidgets.QComboBox( self )
         self._tvAuszahlungen = TableViewExt( self )
@@ -62,8 +57,6 @@ class SonstigeAusgabenView( IccView ):
         self._teBemerkung = QTextEdit( self )
         self._btnOk = QPushButton( self )
         self._btnClear = QPushButton( self )
-        # actions für ContextMenu
-        #self._contextMenuActions:List[QAction] = None
         # Callbacks
         self._buchungsjahrChangedCallback = None
         self._saveActionCallback = None
@@ -113,7 +106,21 @@ class SonstigeAusgabenView( IccView ):
         btn.setFlat( True )
         btn.setEnabled( False )
         btn.setToolTip( "Änderungen dieser View speichern" )
-        icon = QIcon( "./images/save_30.png" )
+        icon = QIcon( ICON_DIR + "save_30.png" )
+        btn.setIcon( icon )
+        size = QSize( 30, 30 )
+        btn.setFixedSize( size )
+        iconsize = QSize( 30, 30 )
+        btn.setIconSize( iconsize )
+        self._toolbarLayout.addWidget( btn, stretch=0 )
+
+        ### complex sort button
+        btn = self._btnComplexSort
+        btn.clicked.connect( self.onSortComplex )
+        btn.setFlat( True )
+        btn.setEnabled( True )
+        btn.setToolTip( "Nach Master, Kostenart, Kreditor, Mietobjekt, Buchungsdatum  sortieren" )
+        icon = QIcon( ICON_DIR + "sort.png" )
         btn.setIcon( icon )
         size = QSize( 30, 30 )
         btn.setFixedSize( size )
@@ -132,7 +139,7 @@ class SonstigeAusgabenView( IccView ):
         size = QSize( 30, 30 )
         btn.setFixedSize( size )
         btn.setToolTip( "Suche nach eingegebenem Begriff" )
-        icon = QIcon( "./images/arrow_dn_30.png" )
+        icon = QIcon( ICON_DIR + "arrow_dn_30.png" )
         btn.setIcon( icon )
         btn.setEnabled( True )
         self._toolbarLayout.addWidget( btn, stretch=0 )
@@ -145,12 +152,12 @@ class SonstigeAusgabenView( IccView ):
         self._sdBuchungsdatum.setToolTip( "Buchungsdatum. Kann leer bleiben, wenn Buchung noch nicht erfolgt ist" )
         self._buchungsdatumLayout.addWidget( self._sdBuchungsdatum )
         size = QSize( 25, 25 )
-        self._btnAddDay.setIcon( QIcon( "./images/plus.png" ) )
+        self._btnAddDay.setIcon( QIcon( ICON_DIR + "plus.png" ) )
         self._btnAddDay.setFixedSize( size )
         self._btnAddDay.setToolTip( "Buchungsdatum um 1 Tag erhöhen" )
         self._btnAddDay.clicked.connect( self.onAddDayToBuchungsdatum )
         self._buchungsdatumLayout.addWidget( self._btnAddDay )
-        self._btnClearBuchungsdatum.setIcon( QIcon( "./images/cancel.png" ) )
+        self._btnClearBuchungsdatum.setIcon( QIcon( ICON_DIR + "cancel.png" ) )
         self._btnClearBuchungsdatum.setFixedSize( size )
         self._btnClearBuchungsdatum.setToolTip( "Buchungsdatum löschen" )
         self._btnClearBuchungsdatum.clicked.connect( self.onClearBuchungsdatum )
@@ -194,7 +201,7 @@ class SonstigeAusgabenView( IccView ):
         size = QSize( 30, 30 )
         btn.setFixedSize( size )
         btn.setToolTip( "Suche Buchungstext in der DB" )
-        icon = QIcon( "./images/search_30.png" )
+        icon = QIcon( ICON_DIR + "search_30.png" )
         btn.setIcon( icon )
         btn.setEnabled( True )
         self._editRechnungLineLayout.addWidget( btn )
@@ -226,12 +233,12 @@ class SonstigeAusgabenView( IccView ):
         self._editRechnungLineLayout.addWidget( self._teBemerkung, stretch=1 )
 
         vbox = QVBoxLayout()
-        self._btnOk.setIcon( QIcon( "./images/checked.png" ) )
+        self._btnOk.setIcon( QIcon( ICON_DIR + "checked.png" ) )
         self._btnOk.setDefault( True )
         self._btnOk.setToolTip( "Neue oder geänderte Daten in Tabelle übernehmen (kein Speichern)" )
         self._btnOk.clicked.connect( self.onOkEditFields )
         vbox.addWidget( self._btnOk )
-        self._btnClear.setIcon( QIcon( "./images/cancel.png" ) )
+        self._btnClear.setIcon( QIcon( ICON_DIR + "cancel.png" ) )
         self._btnClear.setToolTip( "Änderungen verwerfen und Felder leeren" )
         self._btnClear.clicked.connect( self.onClearEditFields )
         vbox.addWidget( self._btnClear )
@@ -263,6 +270,11 @@ class SonstigeAusgabenView( IccView ):
     def onSave( self ):
         if self._saveActionCallback:
             self._saveActionCallback()
+
+    def onSortComplex( self ):
+        sortoption1 = ("master_name", "kostenart", "kreditor", "mobj_id", "buchungsdatum" )
+        tm:SonstAusTableModel = self.getModel()
+        tm.sortComplex( sortoption1 )
 
     def _onSearch( self ):
         if self._searchActionCallback:

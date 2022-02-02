@@ -1,13 +1,13 @@
 import copy
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import List, Dict, Tuple, Any
 
-from PySide2.QtCore import QAbstractTableModel, QModelIndex, Qt
+from PySide2.QtCore import QModelIndex, Qt
 from PySide2.QtGui import QBrush, QFont
 
 import constants
-from icctablemodel import IccTableModel
-from interfaces import XSollzahlung, XSollHausgeld, XSollMiete
+from icc.icctablemodel import IccTableModel
+from interfaces import XSollzahlung
 
 
 class SollzahlungenTableModel( IccTableModel ):

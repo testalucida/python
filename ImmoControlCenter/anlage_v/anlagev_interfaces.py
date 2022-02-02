@@ -113,6 +113,8 @@ class XWerbungskosten:
         self.master_name:str = master_name
         self.jahr:int = jahr
         self.afa:XAfA = None
+        self.hg_ohne_ruezufue = 0.0 # Saldo HGV ohne Rücklagenanteil und mit Abrechnung -
+                                    # nur relevant bei Wohnungen, nicht bei den drei Häusern
         self.erhalt_aufwand:int = 0 # die Summe der im VJ komplett anzusetzenden Aufwände
         self.erhalt_aufwand_verteilt:XAufwandVerteilt = None
         self.kostenart_a = 0  # ohne Versicherungen und Grundsteuer und bei NK- und OTW-Wohnungen ohne komm. Abgaben
@@ -121,13 +123,13 @@ class XWerbungskosten:
         self.abwasser = 0
         self.versicherungen = 0
         self.allgemeine_kosten_summe = 0
-        self.allgemeine_kosten_gruppiert:List[XAusgabeKurz] = list() # ACHTUNG: enthält auch Grundsteuer + Versicherungen,
-        # die schon in den Einzelattributen grundsteuer, abwasser, versicherungen enthalten sind!!!
-        # Man darf also nix addieren!
+        self.allgemeine_kosten_gruppiert:List[XAusgabeKurz] = list() # Kosten der Kostenart "allgemein"
         self.sonstige_kosten = 0
+        self.reisekosten = 0.0 # siehe Tabelle <geschaeftsreise>
 
     def getSummeAllgemeineKosten( self ) -> int:
-        #print( self.master_name )
+        # Liefert die Summe der allgemeinen Kosten (Hauskosten, die auf die Mieter umgelegt werden können)
+        # Achtung: enthält NICHT Hausgeld <hg> und Geschäftsreisen <geschaeftsreisen>
         return int( round( self.kostenart_a + self.versicherungen + self.grundsteuer +
                            self.abwasser + self.strassenreinigung ) )
 
@@ -137,9 +139,17 @@ class XWerbungskosten:
         sum =  afa + self.erhalt_aufwand + \
                av.aufwand_vj + av.aufwand_vj_minus_1 + av.aufwand_vj_minus_2 + \
                av.aufwand_vj_minus_3 + av.aufwand_vj_minus_4 + \
+               self.hg_ohne_ruezufue + \
                self.getSummeAllgemeineKosten() + \
                self.sonstige_kosten
         return int( round( sum ) )
+
+    def getSummeSonstigeKosten( self ) -> int:
+        """
+        Liefert die Summe aus Sonstigen Kosten und Geschäftsreisen
+        :return:
+        """
+        return int( round( self.sonstige_kosten + self.reisekosten ) )
 
 class XAnlageV_Daten:
     def __init__( self ):

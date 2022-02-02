@@ -6,8 +6,8 @@ from PySide2.QtWidgets import QWidget, QMessageBox
 from typing import Any
 
 from business import BusinessLogic
-from iccdialog import IccDialog
-from icctablemodel import IccTableModel
+from icc.iccdialog import IccDialog
+from returnvalue import ReturnValue
 
 
 class IccControllerMeta( type(QObject), type(ABC) ):
@@ -46,10 +46,11 @@ class IccController( QObject, ABC, metaclass=IccControllerMeta ):
         """
         if not self._dlg: # Dialog schon geschlossen, unnötige Anfrage vom MainController
             return True
-        # model: IccTableModel = self._dlg.getView().getModel()
-        # if model.isChanged():
-        if self.isChanged():
+        v = self._dlg.getView()
+        if v.isChanged():
             return self._askWhatToDo()
+        # if self.isChanged():
+        #     return self._askWhatToDo()
         return True
 
     def onDialogClosing( self ):
@@ -92,6 +93,20 @@ class IccController( QObject, ABC, metaclass=IccControllerMeta ):
     def showWarningMessage( self, title:str, msg:str ):
         box = QMessageBox( QMessageBox.Warning, title, msg )
         box.exec_()
+
+    def getValueOrRaise( self, rv:ReturnValue ) -> Any or None:
+        """
+        Wertet das übergebene ReturnValue-Objekt aus.
+        Wenn es eine Exception wrappt, wird eine Exception geworfen und None zurückgegeben.
+        Ist ein regulärer Wert enthalten, wird dieser zurückgegeben.
+        :param rv:
+        :return:
+        """
+        if rv.missionAccomplished(): # alles okay
+            return rv.returnvalue
+        else:
+            self.showErrorMessage( rv.exceptiontype, rv.errormessage )
+            return None
 
     @abstractmethod
     def createView( self ) -> QWidget:

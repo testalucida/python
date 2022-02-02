@@ -5,6 +5,7 @@ from enum import  IntEnum
 
 from PySide2.QtCore import QAbstractItemModel, Qt
 
+import datehelper
 from abrechnungentablemodel import NkAbrechnungenTableModel, HgAbrechnungenTableModel
 from anlage_v.anlagev_interfaces import XSammelAbgabeDetail
 from buchungstextmatchmodel import BuchungstextMatchModel
@@ -557,7 +558,7 @@ class BusinessLogic:
         if xmv.mobil:
             if xmv.telefon:
                 xmo.telefon_mieter += ", "
-            xmo.telefon_mieter += xmv.telefon
+            xmo.telefon_mieter += xmv.mobil
         if xmv.mailto:
             xmo.mailto_mieter = xmv.mailto
 
@@ -699,13 +700,14 @@ class BusinessLogic:
             sa.kostenart_lang = getKostenart_lang( sa.kostenart )
         return sonstauslist
 
-    def getSummen( self ) -> Tuple[int, int, int]:
-        sumMiete:float = self._db.getSummeZahlungen( "bruttomiete" )
-        sumSonstAus:float = self._db.getSummeZahlungen( "sonstaus" )
-        sumNka:float = self._db.getSummeZahlungen( "nka" )
-        sumHga:float = self._db.getSummeZahlungen( "hga" )
+    def getSummen( self, jahr:int=None ) -> Tuple[int, int, int]:
+        y = jahr if jahr else datehelper.getCurrentYear()
+        sumMiete:float = self._db.getSummeZahlungen( "bruttomiete", y )
+        sumSonstAus:float = self._db.getSummeZahlungen( "sonstaus", y )
+        sumNka:float = self._db.getSummeZahlungen( "nka", y )
+        sumHga:float = self._db.getSummeZahlungen( "hga", y )
         sumAusgaben: float = sumSonstAus + sumNka + sumHga
-        sumHGV:float = self._db.getSummeZahlungen( "hgv" )
+        sumHGV:float = self._db.getSummeZahlungen( "hgv", y )
         return ( int(sumMiete), int(sumAusgaben), int(sumHGV) )
 
     def getNkAbrechnungenTableModel( self, ab_jahr:int ) -> NkAbrechnungenTableModel:
@@ -1187,20 +1189,20 @@ class BusinessLogic:
         zmodel = Rendite_ZahlungenTableModel( zlist2 )
         return zmodel
 
-    def getGeschaeftsreisenTableModel( self, jahr:int ) -> GeschaeftsreisenTableModel:
-        reiseList:List[XGeschaeftsreise] = self._db.getGeschaeftsreisen( jahr )
-        model = GeschaeftsreisenTableModel( reiseList )
-        return model
-
-    def insertGeschaeftsreise( self, x:XGeschaeftsreise, commit:bool=True ):
-        self._db.insertGeschaeftsreise( x, commit )
-        x.id = self._db.getMaxId( "geschaeftsreise", "id" )
-
-    def updateGeschaeftsreise( self, x:XGeschaeftsreise, commit:bool=True ):
-        self._db.updateGeschaeftsreise( x, commit )
-
-    def deleteGeschaeftsreise( self, id:int, commit:bool=True ):
-        self._db.deleteGeschaeftsreise( id, commit )
+    # def getGeschaeftsreisenTableModel( self, jahr:int ) -> GeschaeftsreisenTableModel:
+    #     reiseList:List[XGeschaeftsreise] = self._db.getGeschaeftsreisen( jahr )
+    #     model = GeschaeftsreisenTableModel( reiseList )
+    #     return model
+    #
+    # def insertGeschaeftsreise( self, x:XGeschaeftsreise, commit:bool=True ):
+    #     self._db.insertGeschaeftsreise( x, commit )
+    #     x.id = self._db.getMaxId( "geschaeftsreise", "id" )
+    #
+    # def updateGeschaeftsreise( self, x:XGeschaeftsreise, commit:bool=True ):
+    #     self._db.updateGeschaeftsreise( x, commit )
+    #
+    # def deleteGeschaeftsreise( self, id:int, commit:bool=True ):
+    #     self._db.deleteGeschaeftsreise( id, commit )
 
 
 def test():

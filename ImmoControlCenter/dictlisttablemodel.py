@@ -6,7 +6,7 @@ from PySide2.QtGui import QFont, QBrush, QColor
 import numbers
 from typing import List, Dict, Any
 
-from icctablemodel import IccTableModel
+from icc.icctablemodel import IccTableModel
 
 
 class DictListTableModel( IccTableModel ):

@@ -36,8 +36,13 @@ def jsonToObject( json_string:str, cls=None ):
         print( dict )
         #obj.__dict__ = dict
         return dict
+
     obj = cls()
-    json.loads( json_string, object_hook=lambda d: hook( **d ) )
+    res = json.loads( json_string, object_hook=lambda d: hook( **d ) )
+    d = {}
+    for key in res.keys():
+        print( key, ": ", res[key] )
+        obj.__dict__[key] = res[key]
     return obj
 
 def xbaseListToJson( xlist:List[XBase]) -> str:

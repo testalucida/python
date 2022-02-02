@@ -1,12 +1,13 @@
-from typing import Any, Tuple, Dict, List
+from typing import Any, Dict, List
 
-from PySide2.QtWidgets import QWidget, QApplication, QMessageBox, QDialog
+from PySide2.QtWidgets import QWidget, QApplication, QMessageBox
 
 from business import BusinessLogic
 from geschaeftsreise.geschaeftsreiseeditcontroller import GeschaeftsreiseEditController
+from geschaeftsreise.geschaeftsreiselogic import GeschaeftsreiseUcc
 from geschaeftsreise.geschaeftsreisentablemodel import GeschaeftsreisenTableModel
 from geschaeftsreise.geschaeftsreisenview import GeschaeftsreisenView
-from icccontroller import IccController
+from icc.icccontroller import IccController
 from interfaces import XGeschaeftsreise
 from messagebox import QuestionBox, ErrorBox
 from screen import setScreenSize, getScreenWidth
@@ -15,18 +16,20 @@ from screen import setScreenSize, getScreenWidth
 class GeschaeftsreisenController( IccController ):
     def __init__( self ):
         IccController.__init__( self )
+        self._ucc = GeschaeftsreiseUcc.inst()
         self._view:GeschaeftsreisenView = None
         self._editCtrl = GeschaeftsreiseEditController()
 
     def createView( self ) -> QWidget:
-        busi = BusinessLogic.inst()
-        ### !!! *** TESTTESTTESTTEST  *** !!! ###
-        # jahre = busi.getExistingJahre( einausart.MIETE )
-        # jahr = jahre[0]
-        jahre = [2020, 2021]
-        jahr = jahre[1]
-        ### !!! *** TESTTESTTESTTEST  *** !!! ###
-        tm:GeschaeftsreisenTableModel = busi.getGeschaeftsreisenTableModel( jahr )
+        try:
+            jahre = GeschaeftsreiseUcc.inst().getDistinctJahre()
+            jahr = jahre[0] # die Liste der Jahre muss mindestens ein Jahr (das laufende) enthalten
+            tm:GeschaeftsreisenTableModel = self._ucc.getGeschaeftsreisenTableModel( jahr )
+        except Exception as ex:
+            box = ErrorBox( "Fehler beim Erzeugen des GeschaeftsreiseView", str( ex ), "" )
+            box.exec_()
+            return None
+
         self._view = GeschaeftsreisenView( tm )
         self._view.setJahre( jahre )
         self._view.setJahr( jahr )
@@ -52,7 +55,8 @@ class GeschaeftsreisenController( IccController ):
             if rc == QMessageBox.Yes:
                 if not self.onSave():
                     #title: str, msg: str, more: str
-                    ErrorBox( "Fehler beim Speichern", "Speichern hat nicht funktioniert", "" )
+                    box = ErrorBox( "Fehler beim Speichern", "Speichern hat nicht funktioniert", "" )
+                    box.exec_()
                 else:
                     self._setNewModel( newyear )
             elif rc == QMessageBox.No: # Anwender will die Änderungen nicht speichern
@@ -63,7 +67,7 @@ class GeschaeftsreisenController( IccController ):
             self._setNewModel( newyear )
 
     def _setNewModel( self, jahr:int ):
-        tm: GeschaeftsreisenTableModel = BusinessLogic.inst().getGeschaeftsreisenTableModel( jahr )
+        tm: GeschaeftsreisenTableModel = self._ucc.getGeschaeftsreisenTableModel( jahr )
         self._view.setModel( tm )
         tm.setSortable( True )
 
@@ -82,21 +86,21 @@ class GeschaeftsreisenController( IccController ):
         changes:Dict[str, List[XGeschaeftsreise]] = self.getChanges()
         for x in changes["INSERT"]:
             try:
-                BusinessLogic.inst().insertGeschaeftsreise( x )
+                self._ucc.insertGeschaeftsreise( x )
             except Exception as ex:
                 box = ErrorBox( "Fehler beim Einfügen der Geschäftsreise", str( ex ) )
                 box.exec_()
                 return False
         for x in changes["UPDATE"]:
             try:
-                BusinessLogic.inst().updateGeschaeftsreise( x )
+                self._ucc.updateGeschaeftsreise( x )
             except Exception as ex:
                 box = ErrorBox( "Fehler beim Ändern der Geschäftsreise", str( ex ) )
                 box.exec_()
                 return False
         for x in changes["DELETE"]:
             try:
-                BusinessLogic.inst().deleteGeschaeftsreise( x.id )
+                self._ucc.deleteGeschaeftsreise( x.id )
             except Exception as ex:
                 box = ErrorBox( "Fehler beim Löschen der Geschäftsreise", str( ex ) )
                 box.exec_()

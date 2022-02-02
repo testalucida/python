@@ -1,15 +1,15 @@
 import copy
 
 from PySide2 import QtWidgets
-from PySide2.QtCore import QModelIndex, QSize, Signal, QAbstractTableModel
-from PySide2.QtGui import QFont, Qt
-from PySide2.QtWidgets import QWidget, QComboBox, QApplication, QGridLayout, QLabel, QLineEdit, QPushButton, \
-    QPlainTextEdit, QListView, QDialog, QVBoxLayout, QMessageBox
+from PySide2.QtCore import QModelIndex, QSize, Signal
+from PySide2.QtGui import Qt
+from PySide2.QtWidgets import QWidget, QApplication, QGridLayout, QLineEdit, QPushButton, \
+    QPlainTextEdit, QDialog, QVBoxLayout, QMessageBox
 
-from icctablemodel import IccTableModel
+from icc.icctablemodel import IccTableModel
 from imagefactory import ImageFactory
-from qtderivates import IntDisplay, SmartDateEdit, FloatEdit, AuswahlDialog
-from generictable_stuff.customtableview import GenericTableViewDialog, EditableTableViewWidget
+from qtderivates import SmartDateEdit, FloatEdit, AuswahlDialog
+from generictable_stuff.customtableview import EditableTableViewWidget
 from generictable_stuff.okcanceldialog import OkCancelDialog
 from interfaces import XOffenerPosten
 from offene_posten.offenepostentablemodel import OffenePostenTableModel

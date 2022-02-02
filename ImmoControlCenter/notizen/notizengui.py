@@ -1,16 +1,15 @@
 import copy
 
-from PySide2.QtCore import Signal, QModelIndex
+from PySide2.QtCore import Signal
 from PySide2.QtGui import Qt
-from PySide2.QtWidgets import QWidget, QGridLayout, QPushButton, QApplication, QScrollArea, QVBoxLayout, QHBoxLayout
+from PySide2.QtWidgets import QWidget, QGridLayout, QPushButton, QApplication, QHBoxLayout
 
 from generictable_stuff.customtableview import EditableTableViewWidget
 from generictable_stuff.okcanceldialog import OkCancelDialog
-from icctablemodel import IccTableModel
 from imagefactory import ImageFactory
 from interfaces import XNotiz
 from notizen.notizentablemodel import NotizenTableModel
-from qtderivates import BaseEdit, BaseLabel, MultiLineEdit, CheckBox
+from qtderivates import BaseEdit, MultiLineEdit, CheckBox
 
 
 #######################  NotizEditor  ##########################

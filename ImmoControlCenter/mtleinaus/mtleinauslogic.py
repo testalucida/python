@@ -3,7 +3,6 @@ from typing import List
 import datehelper
 from constants import einausart
 from interfaces import XVerwaltung
-from mietverhaeltnis.mietverhaeltnislogic import MietverhaeltnisLogic
 from mtleinaus.mtleinausdata import MtlEinAusData
 from verwaltung.verwaltunglogic import VerwaltungLogic
 
@@ -45,18 +44,25 @@ class MtlEinAusLogic:
         mvlogic = MietverhaeltnisLogic()
         mvlist = mvlogic.getAktiveMietverhaeltnisseKurz( folgejahr )
         for mv in mvlist:
-            try:
-                self._db.insertMtlEinAus( mv.mv_id, einausart.MIETE, folgejahr )
-            except Exception as ex:
-                raise Exception( "Fehler bei der Anlage des Jahressets für Mietverhaeltnis '%s':\n%s"
-                                 % (mv.mv_id, str(ex) ) )
+            self.insertMtlEinAusFuerMieter( mv.mv_id, folgejahr )
 
         vwlogic = VerwaltungLogic()
         vwglist: List[XVerwaltung] = vwlogic.getAktiveVerwaltungen( folgejahr )
         for vwg in vwglist:
-            try:
-                self._db.insertMtlEinAus( vwg.vwg_id, einausart.HGV, folgejahr )
-            except Exception as ex:
-                raise Exception( "Fehler bei der Anlage des Jahressets für Verwaltung '%s':\n%s"
-                                 % (vwg.weg_name, str( ex )) )
+            self.insertMtlEinAusFuerVerwaltung( vwg.vwg_id, folgejahr )
+
         return folgejahr
+
+    def insertMtlEinAusFuerMieter( self, mv_id:str, jahr:int ):
+        try:
+            self._db.insertMtlEinAus( mv_id, einausart.MIETE, jahr )
+        except Exception as ex:
+            raise Exception( "Fehler bei der Anlage des Jahressets für Mietverhaeltnis '%s':\n%s"
+                             % (mv_id, str( ex )) )
+
+    def insertMtlEinAusFuerVerwaltung( self, vwg_id:str, jahr:int ):
+        try:
+            self._db.insertMtlEinAus( vwg_id, einausart.HGV, jahr )
+        except Exception as ex:
+            raise Exception( "Fehler bei der Anlage des Jahressets für Verwaltung '%s':\n%s"
+                             % (vwg_id, str( ex )) )

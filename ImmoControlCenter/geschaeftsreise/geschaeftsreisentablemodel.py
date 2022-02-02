@@ -1,10 +1,6 @@
-from typing import Any, List, Dict
-from functools import cmp_to_key
-from PySide2.QtCore import SIGNAL, Qt, QModelIndex
+from typing import List
 
-import constants
 from defaulticctablemodel import DefaultIccTableModel
-from icctablemodel import IccTableModel
 from interfaces import XGeschaeftsreise
 
 
@@ -17,9 +13,9 @@ class GeschaeftsreisenTableModel( DefaultIccTableModel ):
             "Ende": "bis",
             "Ziel": "ziel",
             "Zweck": "zweck",
+            "Anz.\nPers.": "personen",
             "Übernachtung": "uebernachtung",
             "Übernacht.\nkosten": "uebernacht_kosten",
-            "Gef. km": "km",
-            "Vpfl.\npausch.": "verpfleg_pauschale"
+            "Gef. km": "km"
         } )
         self.setNumColumnsIndexes( (6, 7, 8) )

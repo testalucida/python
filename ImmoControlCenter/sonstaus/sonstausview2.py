@@ -1,14 +1,14 @@
-from PySide2 import QtWidgets, QtCore, QtGui
-from PySide2.QtCore import QSize, Qt, QDate, QPoint
-from PySide2.QtGui import QIcon, QDoubleValidator, QFont, QIntValidator
-from PySide2.QtWidgets import QWidget, QComboBox, QLineEdit, QCheckBox, QPushButton, QCalendarWidget, \
-    QVBoxLayout, QDialog, QBoxLayout, QHBoxLayout, QTextEdit, QSpinBox, QLabel, QTableView, QMessageBox, \
+from PySide2 import QtWidgets, QtCore
+from PySide2.QtCore import QSize, Qt
+from PySide2.QtGui import QIcon, QFont
+from PySide2.QtWidgets import QWidget, QComboBox, QLineEdit, QCheckBox, QPushButton, QVBoxLayout, QHBoxLayout, QTextEdit, \
+    QLabel, QTableView, QMessageBox, \
     QAbstractItemView
 from typing import List
 
-from icctablemodel import IccTableModel
+from icc.icctablemodel import IccTableModel
 from interfaces import XSonstAus, XSonstAusSummen
-from qtderivates import IntDisplay, SmartDateEdit, FloatEdit
+from qtderivates import SmartDateEdit, FloatEdit
 from sonstaustablemodel import SonstAusTableModel
 from tableviewext import TableViewExt
 from datehelper import *
@@ -55,6 +55,7 @@ class SonstigeAusgabenView( QWidget ):
         self._cboBuchungstext = EditableCombo( self )
         self._sdRechnungsdatum = SmartDateEdit( self )
         self._feBetrag = FloatEdit( self )
+        self._cboKostenart = QComboBox( self )
         self._cbUmlegbar = QCheckBox( self )
         self._cbWerterhaltend = QCheckBox( self )
         self._teBemerkung = QTextEdit( self )
@@ -89,7 +90,7 @@ class SonstigeAusgabenView( QWidget ):
         tv.verticalHeader().setVisible( False )
         tv.horizontalHeader().setMinimumSectionSize( 0 )
         self._mainLayout.addWidget( tv, 1, 0, 1, 1 )
-        self._assembleBuchungsdatum()
+        self._assembleBuchungsUndRechnungsdatum()
         self._mainLayout.addLayout( self._buchungsdatumLayout, 2, 0, alignment=Qt.AlignLeft )
         self._assembleObjektReference()
         self._mainLayout.addLayout( self._objektRefLayout, 3, 0, alignment=Qt.AlignLeft )
@@ -111,7 +112,7 @@ class SonstigeAusgabenView( QWidget ):
         btn.setFlat( True )
         btn.setEnabled( False )
         btn.setToolTip( "Änderungen dieser View speichern" )
-        icon = QIcon( "./images/save_30.png" )
+        icon = QIcon( "../images/save_30.png" )
         btn.setIcon( icon )
         size = QSize( 30, 30 )
         btn.setFixedSize( size )
@@ -130,46 +131,12 @@ class SonstigeAusgabenView( QWidget ):
         size = QSize( 30, 30 )
         btn.setFixedSize( size )
         btn.setToolTip( "Suche nach eingegebenem Begriff" )
-        icon = QIcon( "./images/arrow_dn_30.png" )
+        icon = QIcon( "../images/arrow_dn_30.png" )
         btn.setIcon( icon )
         btn.setEnabled( True )
         self._toolbarLayout.addWidget( btn, stretch=0 )
 
-    def _assembleSummen( self ):
-        parent = None
-        #### Summe Auszahlungen
-        lay = self._createSummenLabel( parent, "Aus", self._idSummeAus, "Salod aller Ausgaben und Einnahmen (Gutschriften)" )
-        self._summenLayout.addLayout( lay, stretch=0 )
-
-        #### Summe werterhaltend
-        lay = self._createSummenLabel( parent, "w", self._idSummeW, "Saldo aller werterhaltenden Zahlungen" )
-        self._summenLayout.addLayout( lay, stretch=0 )
-
-        #### Summe umlegbar
-        lay = self._createSummenLabel( parent, "u", self._idSummeU, "Saldo aller Zahlungen, die umlegbar sind" )
-        self._summenLayout.addLayout( lay, stretch=0 )
-
-    def _createSummenLabel( self, parent, sumart:str, sumfield:IntDisplay, tooltip:str ) -> QHBoxLayout:
-        lay = QHBoxLayout( parent )
-
-        lbl = QLabel( parent, text = "∑" )
-        lbl.setFont( self._summenfont )
-        lbl.setMaximumWidth( 15 )
-        lay.addWidget( lbl, stretch=0, alignment=Qt.AlignLeft | Qt.AlignVCenter )
-
-        lbl = QLabel( self, text=sumart )
-        lbl.setFont( self._summenartfont )
-        lbl.setMaximumWidth( 20 )
-        lay.addWidget( lbl, stretch=0, alignment=Qt.AlignLeft | Qt.AlignBottom )
-
-        sumfield.setMaximumWidth( 70 )
-        sumfield.setEnabled( False )
-        sumfield.setToolTip( tooltip )
-        lay.addWidget( sumfield, stretch=0, alignment=Qt.AlignLeft | Qt.AlignVCenter )
-
-        return lay
-
-    def _assembleBuchungsdatum( self ):
+    def _assembleBuchungsUndRechnungsdatum( self ):
         lbl = QLabel( self, text="Buchungsdatum: " )
         lbl.setFixedWidth( 150 )
         self._buchungsdatumLayout.addWidget( lbl )
@@ -177,16 +144,25 @@ class SonstigeAusgabenView( QWidget ):
         self._sdBuchungsdatum.setToolTip( "Buchungsdatum. Kann leer bleiben, wenn Buchung noch nicht erfolgt ist" )
         self._buchungsdatumLayout.addWidget( self._sdBuchungsdatum )
         size = QSize( 25, 25 )
-        self._btnAddDay.setIcon( QIcon( "./images/plus.png" ) )
+        self._btnAddDay.setIcon( QIcon( "../images/plus.png" ) )
         self._btnAddDay.setFixedSize( size )
         self._btnAddDay.setToolTip( "Buchungsdatum um 1 Tag erhöhen" )
         self._btnAddDay.clicked.connect( self.onAddDayToBuchungsdatum )
         self._buchungsdatumLayout.addWidget( self._btnAddDay )
-        self._btnClearBuchungsdatum.setIcon( QIcon( "./images/cancel.png" ) )
+        self._btnClearBuchungsdatum.setIcon( QIcon( "../images/cancel.png" ) )
         self._btnClearBuchungsdatum.setFixedSize( size )
         self._btnClearBuchungsdatum.setToolTip( "Buchungsdatum löschen" )
         self._btnClearBuchungsdatum.clicked.connect( self.onClearBuchungsdatum )
         self._buchungsdatumLayout.addWidget( self._btnClearBuchungsdatum )
+
+        self._sdRechnungsdatum.setPlaceholderText( "Datum Rg." )
+        self._sdRechnungsdatum.setMaximumWidth( 85 )
+        self._sdRechnungsdatum.setToolTip( "optional: Datum der Rechnung" )
+        self._buchungsdatumLayout.addSpacing( 10 )
+        lbl = QLabel( text="Rechnungsdatum (optional): " )
+        lbl.setFixedWidth( 200 )
+        self._buchungsdatumLayout.addWidget( lbl )
+        self._buchungsdatumLayout.addWidget( self._sdRechnungsdatum )
 
     def _assembleObjektReference( self ):
         lbl = QLabel( self, text="Betroffenes Objekt: " )
@@ -217,19 +193,25 @@ class SonstigeAusgabenView( QWidget ):
         size = QSize( 30, 30 )
         btn.setFixedSize( size )
         btn.setToolTip( "Suche Buchungstext in der DB" )
-        icon = QIcon( "./images/search_30.png" )
+        icon = QIcon( "../images/search_30.png" )
         btn.setIcon( icon )
         btn.setEnabled( True )
         self._editRechnungLineLayout.addWidget( btn )
 
-        self._sdRechnungsdatum.setPlaceholderText( "Datum Rg." )
-        self._sdRechnungsdatum.setMaximumWidth( 85 )
-        self._sdRechnungsdatum.setToolTip( "optional: Datum der Rechnung" )
-        self._editRechnungLineLayout.addWidget( self._sdRechnungsdatum, stretch=0, alignment=Qt.AlignLeft )
+        # self._sdRechnungsdatum.setPlaceholderText( "Datum Rg." )
+        # self._sdRechnungsdatum.setMaximumWidth( 85 )
+        # self._sdRechnungsdatum.setToolTip( "optional: Datum der Rechnung" )
+        # self._editRechnungLineLayout.addWidget( self._sdRechnungsdatum, stretch=0, alignment=Qt.AlignLeft )
         self._feBetrag.setPlaceholderText( "Betrag" )
         self._feBetrag.setMaximumWidth( 70 )
         self._feBetrag.setToolTip( "Positive Beträge sind Aus-, negative Einzahlungen (Gutschriften)" )
         self._editRechnungLineLayout.addWidget( self._feBetrag, stretch=0, alignment=Qt.AlignLeft )
+
+        # Combobox Kostenart
+        self._cboKostenart.setPlaceholderText( "Kostenart" )
+        self._cboKostenart.setFixedWidth( 70 )
+        self._cboKostenart.setToolTip( "Kostenart einstellen" )
+        self._editRechnungLineLayout.addWidget( self._cboKostenart, stretch=0, alignment=Qt.AlignLeft )
 
         vbox = QVBoxLayout()
         vbox.setSpacing( 0 )
@@ -246,12 +228,12 @@ class SonstigeAusgabenView( QWidget ):
         self._editRechnungLineLayout.addWidget( self._teBemerkung, stretch=1 )
 
         vbox = QVBoxLayout()
-        self._btnOk.setIcon( QIcon( "./images/checked.png" ) )
+        self._btnOk.setIcon( QIcon( "../images/checked.png" ) )
         self._btnOk.setDefault( True )
         self._btnOk.setToolTip( "Neue oder geänderte Daten in Tabelle übernehmen (kein Speichern)" )
         self._btnOk.clicked.connect( self.onOkEditFields )
         vbox.addWidget( self._btnOk )
-        self._btnClear.setIcon( QIcon( "./images/cancel.png" ) )
+        self._btnClear.setIcon( QIcon( "../images/cancel.png" ) )
         self._btnClear.setToolTip( "Änderungen verwerfen und Felder leeren" )
         self._btnClear.clicked.connect( self.onClearEditFields )
         vbox.addWidget( self._btnClear )
@@ -266,20 +248,6 @@ class SonstigeAusgabenView( QWidget ):
         summen.summe_werterhaltend = self._idSummeW.getIntValue()
         summen.summe_umlegbar = self._idSummeU.getIntValue()
         return summen
-
-    # def setSummen( self, summen:XSonstAusSummen ):
-    #     self.setSummeAus( summen.summe_aus )
-    #     self.setSummeU( summen.summe_umlegbar )
-    #     self.setSummeW( summen.summe_werterhaltend )
-
-    def setSummeAus( self, val:int ):
-        self._idSummeAus.setIntValue( val )
-
-    def setSummeW( self, val:int ):
-        self._idSummeW.setIntValue( val )
-
-    def setSummeU( self, val: int ):
-        self._idSummeU.setIntValue( val )
 
     def onAddDayToBuchungsdatum( self ):
         val = self._sdBuchungsdatum.getDate()
@@ -461,6 +429,21 @@ class SonstigeAusgabenView( QWidget ):
     def clearKreditoren( self ):
         self._cboKreditor.clear()
 
+    def setKostenarten( self, kostenarten:List[str] ):
+        self._cboKostenart.clear()
+        for k in kostenarten:
+            self._cboKostenart.addItem( k )
+        self._cboKostenart.setCurrentIndex( -1 )
+
+    def getCurrentKostenart( self ) -> str:
+        return self._cboKostenart.currentText()
+
+    def selectKostenart( self, kostenart:str ):
+        self._cboKostenart.setCurrentText( kostenart )
+
+    def resetKostenart( self ):
+        self._cboKostenart.setCurrentIndex( -1 )
+
     def clearEditFields( self ):
         self._suspendCallbacks = True
         #self._sdBuchungsdatum.clear()
@@ -470,20 +453,21 @@ class SonstigeAusgabenView( QWidget ):
         self._cboBuchungstext.setCurrentIndex( -1 )
         self._sdRechnungsdatum.clear()
         self._feBetrag.clear()
+        self._cboKostenart.setCurrentIndex( -1 )
         self._cbUmlegbar.setChecked( False )
         self._cbWerterhaltend.setChecked( False )
         self._teBemerkung.clear()
         self._justEditing = None
         self._suspendCallbacks = False
 
-    def provideEditFieldsPartly( self, umlegbar:bool, master_id:int, master_name:str,
-                                 mobj_id:str, kreditor:str, buchungstext:str ):
-        self._cbUmlegbar.setChecked( umlegbar )
-        self._cboMasterobjekt.setCurrentText( master_name )
-        self._cboMietobjekt.setCurrentText( mobj_id )
-        self._cboKreditor.setCurrentText( kreditor )
-        self._cboBuchungstext.setCurrentText( buchungstext )
-        #todo: weitermachen
+    # def provideEditFieldsPartly( self, umlegbar:bool, master_id:int, master_name:str,
+    #                              mobj_id:str, kreditor:str, buchungstext:str ):
+    #     self._cbUmlegbar.setChecked( umlegbar )
+    #     self._cboMasterobjekt.setCurrentText( master_name )
+    #     self._cboMietobjekt.setCurrentText( mobj_id )
+    #     self._cboKreditor.setCurrentText( kreditor )
+    #     self._cboBuchungstext.setCurrentText( buchungstext )
+    #     #todo: weitermachen
 
     def provideEditFields( self, x:XSonstAus ):
         self.clearEditFields()

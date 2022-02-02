@@ -6,7 +6,7 @@ from PySide2.QtGui import QBrush, QFont
 from PySide2.QtWidgets import QTableView
 
 import constants
-from icctablemodel import IccTableModel
+from icc.icctablemodel import IccTableModel
 from interfaces import XBase
 
 

@@ -258,7 +258,9 @@ class DbAccess:
             "sm.netto as nettomiete, sm.nkv " \
             "from mietverhaeltnis mv " \
             "inner join sollmiete sm on sm.mv_id = mv.mv_id " \
-            "where mv.id = %d " % id
+            "where mv.id = %d " \
+            "and sm.von <= CURRENT_DATE " \
+            "and (sm.bis is NULL or sm.bis = '' or sm.bis >= CURRENT_DATE) " % id
         d = self._doReadOneGetDict( sql )
         x = XMietverhaeltnis( d )
         return x
@@ -554,7 +556,7 @@ class DbAccess:
         :param jahr: gewünschtes Buchungsjahr
         :return:
         """
-        sql = "select saus_id, m.master_id, m.master_name, mobj_id, kostenart, " \
+        sql = "select saus_id, m.master_id, m.master_name, mobj_id, " \
               "kreditor, rgnr, betrag, rgdatum, rgtext, buchungsdatum, buchungsjahr, umlegbar, werterhaltend, " \
               "kostenart, buchungstext " \
               "from sonstaus s " \
@@ -583,8 +585,10 @@ class DbAccess:
         summe = lst[0][0]
         return 0.0 if summe is None else summe
 
-    def getSummeZahlungen( self, zahl_art: str ) -> float:
-        sql = "select sum( betrag ) from zahlung where zahl_art = '%s'" % (zahl_art)
+    def getSummeZahlungen( self, zahl_art: str, jahr:int ) -> float:
+        sql = "select sum( betrag ) from zahlung " \
+              "where zahl_art = '%s' " \
+              "and jahr = %d " % ( zahl_art, jahr )
         lst = self._doRead( sql )
         sum = lst[0][0]
         return 0.0 if sum is None else sum
@@ -871,48 +875,48 @@ class DbAccess:
             return x
         return None
 
-    def getGeschaeftsreisen( self, jahr:int ) -> List[XGeschaeftsreise]:
-        sql = "select id, mobj_id, von, bis, jahr, ziel, zweck, km, verpfleg_pauschale, uebernachtung, uebernacht_kosten " \
-              "from geschaeftsreise " \
-              "where jahr = %d" % jahr
-        dictlist = self._doReadAllGetDict( sql )
-        l = list()
-        for d in dictlist:
-            x = XGeschaeftsreise( d )
-            l.append( x )
-        return l
+    # def getGeschaeftsreisen( self, jahr:int ) -> List[XGeschaeftsreise]:
+    #     sql = "select id, mobj_id, von, bis, jahr, ziel, zweck, km, verpfleg_pauschale, uebernachtung, uebernacht_kosten " \
+    #           "from geschaeftsreise " \
+    #           "where jahr = %d" % jahr
+    #     dictlist = self._doReadAllGetDict( sql )
+    #     l = list()
+    #     for d in dictlist:
+    #         x = XGeschaeftsreise( d )
+    #         l.append( x )
+    #     return l
 
-    def insertGeschaeftsreise( self, x:XGeschaeftsreise, commit:bool=True ) -> int:
-        v_pausch = x.verpfleg_pauschale if x.verpfleg_pauschale > 0 else 0.0
-        uebernachtung = x.uebernachtung if x.uebernachtung > " " else ""
-        uebernacht_kosten = x.uebernacht_kosten if x.uebernacht_kosten > 0 else 0.0
-        sql = "insert into geschaeftsreise " \
-              "( mobj_id, jahr, von, bis, ziel, " \
-              "zweck, km, verpfleg_pauschale, uebernachtung, uebernacht_kosten )" \
-              "values" \
-              "( '%s', %d, '%s', '%s', '%s'," \
-              "  '%s', %d, %.2f, '%s', %.2f )" % (x.mobj_id, x.jahr, x.von, x.bis, x.ziel,
-                                                  x.zweck, x.km, v_pausch, uebernachtung, uebernacht_kosten )
-        return self._doWrite( sql, commit )
-
-    def updateGeschaeftsreise( self, x:XGeschaeftsreise, commit:bool=True ) -> int:
-        sql = "update geschaeftsreise " \
-              "set mobj_id = '%s', " \
-              "von = '%s', " \
-              "bis = '%s', " \
-              "ziel = '%s', " \
-              "zweck = '%s', " \
-              "km = %d, " \
-              "verpfleg_pauschale = %.2f, " \
-              "uebernachtung = '%s', " \
-              "uebernacht_kosten = %.2f " \
-              "where id = %d " % ( x.mobj_id, x.von, x.bis, x.ziel, x.zweck, x.km,
-                                   x.verpfleg_pauschale, x.uebernachtung, x.uebernacht_kosten, x.id )
-        return self._doWrite( sql, commit )
-
-    def deleteGeschaeftsreise( self, id:int, commit:bool=True ) -> int:
-        sql = "delete from geschaeftsreise where id = %d " % id
-        return self._doWrite( sql, commit )
+    # def insertGeschaeftsreise( self, x:XGeschaeftsreise, commit:bool=True ) -> int:
+    #     v_pausch = x.verpfleg_pauschale if x.verpfleg_pauschale > 0 else 0.0
+    #     uebernachtung = x.uebernachtung if x.uebernachtung > " " else ""
+    #     uebernacht_kosten = x.uebernacht_kosten if x.uebernacht_kosten > 0 else 0.0
+    #     sql = "insert into geschaeftsreise " \
+    #           "( mobj_id, jahr, von, bis, ziel, " \
+    #           "zweck, km, verpfleg_pauschale, uebernachtung, uebernacht_kosten )" \
+    #           "values" \
+    #           "( '%s', %d, '%s', '%s', '%s'," \
+    #           "  '%s', %d, %.2f, '%s', %.2f )" % (x.mobj_id, x.jahr, x.von, x.bis, x.ziel,
+    #                                               x.zweck, x.km, v_pausch, uebernachtung, uebernacht_kosten )
+    #     return self._doWrite( sql, commit )
+    #
+    # def updateGeschaeftsreise( self, x:XGeschaeftsreise, commit:bool=True ) -> int:
+    #     sql = "update geschaeftsreise " \
+    #           "set mobj_id = '%s', " \
+    #           "von = '%s', " \
+    #           "bis = '%s', " \
+    #           "ziel = '%s', " \
+    #           "zweck = '%s', " \
+    #           "km = %d, " \
+    #           "verpfleg_pauschale = %.2f, " \
+    #           "uebernachtung = '%s', " \
+    #           "uebernacht_kosten = %.2f " \
+    #           "where id = %d " % ( x.mobj_id, x.von, x.bis, x.ziel, x.zweck, x.km,
+    #                                x.verpfleg_pauschale, x.uebernachtung, x.uebernacht_kosten, x.id )
+    #     return self._doWrite( sql, commit )
+    #
+    # def deleteGeschaeftsreise( self, id:int, commit:bool=True ) -> int:
+    #     sql = "delete from geschaeftsreise where id = %d " % id
+    #     return self._doWrite( sql, commit )
 
     def insertMietobjekt( self, d: Dict, commit: bool = True ) -> int:
         sql = "insert into mietobjekt " \

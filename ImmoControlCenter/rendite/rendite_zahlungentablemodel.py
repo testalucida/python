@@ -1,7 +1,7 @@
-from typing import List, Dict, Tuple, Any
-from PySide2.QtCore import QAbstractTableModel, QModelIndex, Qt
+from typing import List, Any
+from PySide2.QtCore import QModelIndex, Qt
 from PySide2.QtGui import QBrush, QFont
-from icctablemodel import IccTableModel
+from icc.icctablemodel import IccTableModel
 from interfaces import XZahlung3
 
 

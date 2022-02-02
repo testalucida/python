@@ -10,31 +10,30 @@ from constants import Sonstaus_Kostenart, DetailLink
 
 
 class AnlageV_Preview_Logic( AnlageV_Base_Logic):
-    def __init__(self):
-        AnlageV_Base_Logic.__init__( self )
+    def __init__( self, jahr:int ):
+        AnlageV_Base_Logic.__init__( self, jahr )
 
-    def getAnlageVTableModel( self, master_name: str, jahr: int ) -> AnlageVTableModel:
+    def getAnlageVTableModel( self, master_name: str ) -> AnlageVTableModel:
         """
         TableModel für die AnlageV-Preview in einer QTableView
         :param master_name:
-        :param jahr:
         :return:
         """
         tm_rows: List[PreviewRow] = list()
         x = self.getObjekt( master_name )
         self._createPreviewRowsFromObjektdaten( master_name, x.gesamt_wfl, tm_rows )
         self._createPreviewRowSeparator( "EINNAHMEN und NEBENKOSTEN", tm_rows )
-        einn = self.getMieteinnahmenUndNebenkosten( master_name, jahr )
+        einn = self.getMieteinnahmenUndNebenkosten( master_name )
         self._createPreviewRowsFromMieteinnahme( einn, tm_rows )
         self._createPreviewRowSeparator( "WERBUNGSKOSTEN", tm_rows )
-        xwk = self.getWerbungskosten( master_name, jahr )
+        xwk = self.getWerbungskosten( master_name )
         self._createPreviewRowsFromWerbungskosten( xwk, tm_rows )
         summeWk = xwk.getSummeWerbungskosten()
         self._createPreviewRowFromSummeWk( summeWk, tm_rows )
         self._createPreviewRowSeparator( "ÜBERSCHUSS", tm_rows )
         ueber = self.getUeberschuss( einn, xwk )
         self._createPreviewRowFromUeberschuss( self.getSummeEinnahmenAusXMieteinnahme( einn ), summeWk, ueber, tm_rows )
-        tm = AnlageVTableModel( master_name, jahr, tm_rows )
+        tm = AnlageVTableModel( master_name, self.jahr, tm_rows )
         return tm
 
     def _createPreviewRowsFromObjektdaten( self, master_name:str, gesamt_wfl:int, previewRows:List[PreviewRow] ) -> None:
@@ -119,10 +118,11 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         if x.afa: # bei den Rülzheimer Äckern gibt's keine AfA
             self._createPreviewRowsFromAfA( x.afa, previewRows )
         self._createPreviewRowSeparator( "", previewRows  )
-        self._createPreviewRowsFromAufwandNichtVerteilt( x.erhalt_aufwand, x.jahr, previewRows )
+        self._createPreviewRowsFromAufwandNichtVerteilt( x.erhalt_aufwand, previewRows )
         self._createPreviewRowSeparator( "", previewRows )
-        self._createPreviewRowsFromAufwandVerteilt( x.erhalt_aufwand_verteilt, x.jahr, previewRows )
+        self._createPreviewRowsFromAufwandVerteilt( x.erhalt_aufwand_verteilt, previewRows )
         self._createPreviewRowSeparator( "", previewRows )
+        self._createPreviewRowsFromHausgeld( int( round( x.hg_ohne_ruezufue ) ), previewRows )
         self._createPreviewRowsFromAllgemeineKostenDetailliert(
             x.grundsteuer, x.abwasser, x.strassenreinigung, x.versicherungen, x.allgemeine_kosten_gruppiert, previewRows )
         self._createPreviewRowSeparator( "", previewRows )
@@ -159,21 +159,21 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         r.wert2 = afa.afa
         previewRows.append( r )
 
-    def _createPreviewRowsFromAufwandNichtVerteilt( self, aufwand:int, jahr:int, previewRows: List[PreviewRow] ) -> None:
+    def _createPreviewRowsFromAufwandNichtVerteilt( self, aufwand:int, previewRows: List[PreviewRow] ) -> None:
         zdef = self._getZeilenDef( "kosten_voll_abziehbar" )
         r = PreviewRow()
         r.zeile = zdef.zeile
-        r.text = "In %d voll abzuziehende Erhalt.Aufwendg." % (jahr)
+        r.text = "In %d voll abzuziehende Erhalt.Aufwendg." % (self.jahr)
         r.detailLink = DetailLink.ERHALTUNGSKOSTEN.value[0]
         r.wert2 = aufwand
         r.isSumme = False
         previewRows.append( r )
 
-    def _createPreviewRowsFromAufwandVerteilt( self, x:XAufwandVerteilt, jahr:int, previewRows: List[PreviewRow] ) -> None:
+    def _createPreviewRowsFromAufwandVerteilt( self, x:XAufwandVerteilt, previewRows: List[PreviewRow] ) -> None:
         zdef = self._getZeilenDef( "kosten_zu_verteilen" )
         r = PreviewRow()
         r.zeile = zdef.zeile
-        r.text = "Zu verteilender Gesamtaufwand in %d" % (jahr)
+        r.text = "Zu verteilender Gesamtaufwand in %d" % (self.jahr)
         r.detailLink = DetailLink.ZU_VERTEIL_GESAMTKOSTEN_VJ.value[0]
         r.wert1 = x.gesamt_aufwand_vj
         r.isSumme = False
@@ -182,7 +182,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         # Zeile bleibt gleich
         r = PreviewRow()
         r.zeile = zdef.zeile
-        r.text = "   davon in %d abzuziehen" % (jahr)
+        r.text = "   davon in %d abzuziehen" % (self.jahr)
         r.detailLink = DetailLink.ERHALTUNGSKOSTEN_VERTEILT.value[0]
         r.wert2 = x.aufwand_vj
         r.isSumme = False
@@ -195,10 +195,18 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
             r = PreviewRow()
             r.zeile = z
             z += 1
-            r.text = "      zu berücksichtigen aus %d" % ( jahr - i )
+            r.text = "      zu berücksichtigen aus %d" % ( self.jahr - i )
             r.wert2 = teilaufwaende[i-1]
             r.isSumme = False
             previewRows.append( r )
+
+    def _createPreviewRowsFromHausgeld( self, hg_ohne_ruezufue:int, previewRows:List[PreviewRow] ) -> None:
+        r = PreviewRow()
+        r.zeile = self._getZeilenDef( "hauskosten_allg" ) # Auf der Anlage V wird das Hausgeld summiert mit allg. Hauskosten
+        r.text = "Hausgeld mit Abrechnungen ohne Rücklagenzuführung"
+        r.wert2 = hg_ohne_ruezufue
+        r.isSumme = False
+        previewRows.append( r )
 
     def _createPreviewRowsFromAllgemeineKostenDetailliert( self, grundsteuer:int, abwasser:int, strassenreinigung:int,
                                                            versicherungen,
@@ -302,15 +310,15 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         r.isSeparator = True
         previewRows.append( r )
 
-    def getAllgemeineAusgabenModel( self, master_name:str, jahr:int ) -> AnlageV_AusgabenTableModel:
-        l:List[XAusgabeKurz] = self._db.getAusgaben( master_name, jahr, [Sonstaus_Kostenart.GRUNDSTEUER,
+    def getAllgemeineAusgabenModel( self, master_name:str ) -> AnlageV_AusgabenTableModel:
+        l:List[XAusgabeKurz] = self._db.getAusgaben( master_name, self.jahr, [Sonstaus_Kostenart.GRUNDSTEUER,
                                                                           Sonstaus_Kostenart.ALLGEMEIN,
                                                                           Sonstaus_Kostenart.VERSICHERUNG] )
-        xsam:XSammelAbgabeDetail = self._db.getDetailFromSammelabgabe( master_name, jahr )
+        xsam:XSammelAbgabeDetail = self._db.getDetailFromSammelabgabe( master_name, self.jahr )
         if xsam:
             xauslist = self._mapXSammelAbgabeDetail2XAusgabeKurz( xsam )
             l.extend( xauslist )
-        tm:AnlageV_AusgabenTableModel = AnlageV_AusgabenTableModel( master_name, jahr, l )
+        tm:AnlageV_AusgabenTableModel = AnlageV_AusgabenTableModel( master_name, self.jahr, l )
         tm.setHeaders( ["Kreditor", "Wohng", "Buchungstext", "Buch.datum", "Kostenart", "Betrag", "Summe"] )
         tm.setKeys( ["kreditor", "mobj_id", "buchungstext", "buchungsdatum", "kostenart", "betrag", ""] )
         tm.addColumnFunction( 6, self.getKreditorSumme )
@@ -336,15 +344,16 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
             l.append( xaus )
         return l
 
-    def getReparaturausgabenNichtVerteilt( self, master_name:str, jahr:int ) -> AnlageV_AusgabenTableModel:
-        l: List[XAusgabeKurz] = self._db.getAusgaben( master_name, jahr, [Sonstaus_Kostenart.REPARATUR,] )
-        tm:AnlageV_AusgabenTableModel = AnlageV_AusgabenTableModel( master_name, jahr, l )
+    def getReparaturausgabenNichtVerteilt( self, master_name:str ) -> AnlageV_AusgabenTableModel:
+        l: List[XAusgabeKurz] = self._db.getAusgaben( master_name, self.jahr, [Sonstaus_Kostenart.REPARATUR,] )
+        tm:AnlageV_AusgabenTableModel = AnlageV_AusgabenTableModel( master_name, self.jahr, l )
         tm.setHeaders( ["Kreditor", "Wohng", "Buchungstext", "Buch.datum", "Kostenart", "Betrag", "Summe"] )
         tm.setKeys( ["kreditor", "mobj_id", "buchungstext", "buchungsdatum", "kostenart", "betrag", ""] )
         tm.addColumnFunction( 6, self.getKreditorSumme )
         return tm
 
-    def getReparaturausgabenVerteilt( self, master_name:str, jahr:int ) -> AnlageV_AusgabenTableModel:
+    def getReparaturausgabenVerteilt( self, master_name:str ) -> AnlageV_AusgabenTableModel:
+        jahr = self.jahr
         l: List[XErhaltungsaufwand] = self._db.getVerteilteErhaltungsaufwendungen( master_name, jahr )
         for x in l:
             x.betrag = int( round( x.betrag / x.verteilen_auf_jahre ) )
@@ -354,15 +363,14 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         tm.addColumnFunction( 5, self.getJahressumme )
         return tm
 
-    def getZuVerteilendeAufwaende( self, master_name:str, jahr:int ) -> AnlageV_AusgabenTableModel:
+    def getZuVerteilendeAufwaende( self, master_name:str ) -> AnlageV_AusgabenTableModel:
         """
-        Liefert die Aufwände, die in <jahr> neu hinzugekommen und zu verteilen sind.
+        Liefert die Aufwände, die in <self.jahr> neu hinzugekommen und zu verteilen sind.
         :param master_name:
-        :param jahr:
         :return:
         """
-        awlist: List[XErhaltungsaufwand] = self._db.getZuVerteilendeAufwaendeVJ( master_name, jahr )
-        tm:AnlageV_AusgabenTableModel = AnlageV_AusgabenTableModel( master_name, jahr, awlist )
+        awlist: List[XErhaltungsaufwand] = self._db.getZuVerteilendeAufwaendeVJ( master_name, self.jahr )
+        tm:AnlageV_AusgabenTableModel = AnlageV_AusgabenTableModel( master_name, self.jahr, awlist )
         tm.setHeaders( ["Jahr", "Kreditor", "Whg", "Buch.Text", "Betrag", "Summe"] )
         tm.setKeys( ["buchungsjahr", "kreditor", "mobj_id", "buchungstext", "betrag", ""] )
         tm.addColumnFunction( 5, self.getJahressumme )

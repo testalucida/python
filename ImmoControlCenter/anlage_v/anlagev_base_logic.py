@@ -1,33 +1,39 @@
 import os
 from typing import List, Dict, Any
 
+import datehelper
 from anlage_v.anlagev_dataacess import AnlageV_DataAccess
 from anlage_v.anlagev_interfaces import XObjektStammdaten, XAnlageV_Zeile, XZeilendefinition, XMieteinnahme, \
     XWerbungskosten, XAfA, XErhaltungsaufwand, XAufwandVerteilt, XAllgemeineKosten, XSammelAbgabeDetail, XAusgabeKurz
 from constants import Zahlart, Sonstaus_Kostenart
 from datehelper import getNumberOfMonths
-from interfaces import XSollMiete
+from definitions import DATABASE
+from geschaeftsreise.geschaeftsreiselogic import GeschaeftsreiseLogic
+from interfaces import XSollMiete, XHausgeldZahlungJahr, XGeschaeftsreise, XPauschale
+from verwaltung.verwaltunglogic import VerwaltungLogic
 
 
 class AnlageV_Base_Logic:
-    def __init__(self):
+    def __init__(self, jahr:int):
         self._db: AnlageV_DataAccess
         self._steuerpflichtiger:Dict = dict() #keys: name, vorname, steuerpflichtiger
         self._objektStammdatenList:List[XObjektStammdaten] = list()
         self._anlageV_zeilendefinitionen:List[XZeilendefinition] = list()
+        self.jahr = jahr
         self._prepare()
 
     def _prepare(self):
-        path = os.getcwd()
-        if "anlage_v" in path: # test des AnlageVControllers
-            dbname = "../immo.db"
-        else:
-            dbname = "./immo.db" # Normaler Anwendungsstart
+        # path = os.getcwd()
+        # if "anlage_v" in path: # test des AnlageVControllers
+        #     dbname = "../immo.db"
+        # else:
+        #     dbname = "./immo.db" # Normaler Anwendungsstart
+        dbname = DATABASE
         #dbname = "/home/martin/Vermietung/ImmoControlCenter/immo.db"  # wenn im Test die Rel.-DB verwendet werden soll.
         self._db = AnlageV_DataAccess( dbname )
         self._db.open()
         self._steuerpflichtiger = self._db.getSteuerpflichtige()[0]
-        self._objektStammdatenList:List[XObjektStammdaten] = self._db.getObjektStammdaten()
+        self._objektStammdatenList:List[XObjektStammdaten] = self._db.getObjektStammdaten( self.jahr )
         self._anlageV_zeilendefinitionen:List[XZeilendefinition] = self._db.getAnlageV_Zeilendefinitionen()
 
     def terminate(self):
@@ -44,8 +50,13 @@ class AnlageV_Base_Logic:
                 return defi
         raise Exception( "AnlageV_Logic._getZeilenDef(): kann Feld_Id '%s' nicht finden." % (feld_id) )
 
-    def getJahre( self ) -> List[int]:
-        return self._db.getJahre()
+    @staticmethod
+    def getJahre() -> List[int]:
+        data = AnlageV_DataAccess( DATABASE )
+        data.open()
+        jahre = data.getJahre()
+        data.close()
+        return jahre
 
     def getObjekt( self, master_name:str ) -> XObjektStammdaten:
         for o in self._objektStammdatenList:
@@ -53,7 +64,7 @@ class AnlageV_Base_Logic:
         raise Exception( "AnlageV_Logic.getObjekt(): "
                          "Objekt '%s' nicht in der Objektliste gefunden." % (master_name) )
 
-    def getMieteinnahmenUndNebenkosten( self, master_name:str, jahr:int ) -> XMieteinnahme:
+    def getMieteinnahmenUndNebenkosten( self, master_name:str ) -> XMieteinnahme:
         """
         Hier werden die Zeilen für die Netto-Miete und die Nebenkosten versorgt.
         Die Nebenkosten (NK) teilen sich auf in NK-Vorauszahlungen (NKV) und NK-Abrechnungen (NKA).
@@ -85,6 +96,7 @@ class AnlageV_Base_Logic:
         :param jahr:
         :return:
         """
+        jahr = self.jahr
         x = XMieteinnahme( master_name )
         x.bruttoMiete = self._db.getZahlungssumme( master_name, jahr, Zahlart.BRUTTOMIETE )
         x.offnNkErstattg = self._db.getOffeneNKErstattungen( master_name, jahr-1 )
@@ -99,7 +111,8 @@ class AnlageV_Base_Logic:
             x.nkv = x.bruttoMiete - x.nettoMiete
         return x
 
-    def getWerbungskosten( self, master_name:str, jahr:int ) -> XWerbungskosten:
+    def getWerbungskosten( self, master_name:str ) -> XWerbungskosten:
+        jahr = self.jahr
         x:XWerbungskosten = XWerbungskosten( master_name, jahr )
         x.afa = self._db.getAfA( master_name )
         x.erhalt_aufwand = self._db.getNichtVerteiltenErhaltungsaufwandSumme( master_name, jahr )
@@ -107,6 +120,10 @@ class AnlageV_Base_Logic:
         x.kostenart_a = self._db.getAusgabenSumme( master_name, jahr, Sonstaus_Kostenart.ALLGEMEIN )
         x.versicherungen = self._db.getAusgabenSumme( master_name, jahr, Sonstaus_Kostenart.VERSICHERUNG )
         x.grundsteuer = int( round( self._db.getAusgabenSumme( master_name, jahr, Sonstaus_Kostenart.GRUNDSTEUER ) ) )
+        #Hausgeldvorauszahlungen saldiert mit HG-Abrechnungen
+        x.hg_ohne_ruezufue = self.getHGohneRueZuFueMitAbrechng( master_name )
+        #Geschäftsreisen:
+        x.reisekosten = self.getReisekosten( master_name )
         # bei einigen Objekten fehlen jetzt noch die Kosten, die von der Gemeinde
         # im Paket abgebucht wurden.
         # (Betrifft derzeit nur Gemeinden Neunkirchen und Ottweiler)
@@ -121,16 +138,28 @@ class AnlageV_Base_Logic:
             if x.abwasser == 0:
                 x.abwasser = xsam.abwasser
 
-        x.allgemeine_kosten_gruppiert = self._getAllgemeinKostenBlockweise( master_name, jahr )
+        x.allgemeine_kosten_gruppiert = self._getAllgemeinKostenBlockweise( master_name )
         # Sonstige Kosten (Hotelübernachtungen, Maklerprovisionen etc.)
         x.sonstige_kosten = self._db.getAusgabenSumme( master_name, jahr, Sonstaus_Kostenart.SONSTIGE )
         return x
 
-    def _getAllgemeinKostenBlockweise( self, master_name:str, jahr:int ) -> List[XAusgabeKurz]:
-        aus_grupp:List[XAusgabeKurz] = self._db.getAusgaben( master_name, jahr,
+    def getHGohneRueZuFueMitAbrechng( self, master_name:str ) -> int:
+        """
+        Liefert die für Vj <jahr> ansetzbare Hausgeldzahlung ohne RüZuFü aber mit Abrechnung (egal auf welches Jahr sich
+        die HGA bezieht. Wichtig ist nur, dass sie in <jahr> geflossen ist.)
+        :param master_name:
+        :param jahr:
+        :return:
+        """
+        vwglogic = VerwaltungLogic()
+        x:XHausgeldZahlungJahr = vwglogic.getHausgeldzahlung( master_name, self.jahr )
+        return x.getHGohneRueZuFue()
+
+    def _getAllgemeinKostenBlockweise( self, master_name:str ) -> List[XAusgabeKurz]:
+        aus_grupp:List[XAusgabeKurz] = self._db.getAusgaben( master_name, self.jahr,
                                                              [Sonstaus_Kostenart.ALLGEMEIN,] )
-                                                             # Sonstaus_Kostenart.GRUNDSTEUER,
-                                                             # Sonstaus_Kostenart.VERSICHERUNG] )
+                                                             # Sonstaus_Kostenart.GRUNDSTEUER,  # nein, Grundsteuer wird separat ermittelt
+                                                             # Sonstaus_Kostenart.VERSICHERUNG] ) # nein, Vers. werden separat ermittelt
         l:List[XAusgabeKurz] = list()
         block:XAusgabeKurz = None
         memo = ""
@@ -144,6 +173,19 @@ class AnlageV_Base_Logic:
                 memo = aus.kostenart + aus.kreditor
             block.betrag += aus.betrag
         return l
+
+    def getReisekosten( self, master_name:str ) -> float:
+        jahr = self.jahr
+        reiselogic = GeschaeftsreiseLogic()
+        xpausch:XPauschale = self._db.getPauschalen( jahr )
+        xreisen:List[XGeschaeftsreise] = reiselogic.getGeschaeftsreisen( master_name, jahr )
+        dauer, km, hotel = 0, 0, 0.0
+        for reise in xreisen:
+            dauer += datehelper.getNumberOfDays2( reise.von, reise.bis, jahr )
+            km += reise.km
+            hotel += reise.uebernacht_kosten
+        reisekosten = (dauer * xpausch.vpfl) + (km * xpausch.km) + hotel
+        return int( round( reisekosten ) )
 
     def getVerteiltenErhaltungsaufwand( self, master_name:str, jahr:int ) -> XAufwandVerteilt:
         """
@@ -209,10 +251,23 @@ class AnlageV_Base_Logic:
         return kosten
 
 
+
+def test2():
+    logic = AnlageV_Base_Logic( 2021 )
+    xmieteinnahme = logic.getMieteinnahmenUndNebenkosten( "BUEB_Saargemuend" )
+    print( xmieteinnahme )
+
+def test1():
+    logic = AnlageV_Base_Logic( 2021 )
+    rk = logic.getReisekosten( "NK_KuchenbergW" )
+    print( rk )
+
 # masterobjekte = [ "BUEB_Saargemuend", "HOM_Remigius",
 #                   "ILL_Eich",
 #                   "NK_Kleist", "NK_KuchenbergS", "NK_KuchenbergW", "NK_ThomasMann", "NK_Volkerstal",
 #                   "NK_Ww224", "NK_Zweibrueck", "OTW_Linx", "OTW_Schwalbe", "RI_Lampennester",
 #                   "SB_Charlotte", "SB_Gruelings", "SB_Hohenzoll", "SB_Kaiser" ]
 masterobjekte = [ "ILL_Eich", "SB_Hohenzoll", "SB_Kaiser" ]
+
+
 

@@ -1,13 +1,12 @@
-from typing import List, Dict, Any
+from typing import List, Any
 
 from PySide2.QtCore import QModelIndex
 from PySide2.QtWidgets import QApplication, QDialog, QWidget
 
 from business import BusinessLogic
 from datehelper import currentDateIso
-from generictable_stuff.customtableview import EditableTableViewWidget
 from interfaces import XOffenerPosten
-from icccontroller import IccController
+from icc.icccontroller import IccController
 from offene_posten.offenepostengui import OffenerPostenEditDialog, OffenePostenView
 from offene_posten.offenepostentablemodel import OffenePostenTableModel
 from qtderivates import AuswahlDialog

@@ -1,16 +1,15 @@
-from PySide2.QtCore import QModelIndex, QPoint, Qt, QAbstractItemModel
-from PySide2.QtWidgets import QWidget, QAbstractItemView, QAction, QMenu, QMessageBox
-from typing import List, Dict, Any
+from PySide2.QtCore import QModelIndex, QPoint, Qt
+from PySide2.QtWidgets import QWidget, QAbstractItemView, QAction, QMessageBox
+from typing import List, Any
 import datetime
 import sys
 from business import BusinessLogic
-from icccontroller import IccController
+from icc.icccontroller import IccController
 from qtderivates import TableViewDialog
 from searchhandler import SearchHandler
-from sonstaustablemodel import SonstAusTableModel
-from sonstausview import SonstigeAusgabenView
-from mdisubwindow import MdiSubWindow
-from interfaces import XSonstAus, XSonstAusSummen, XBuchungstextMatch
+from sonstaus.sonstaustablemodel import SonstAusTableModel
+from sonstaus.sonstausview import SonstigeAusgabenView
+from interfaces import XSonstAus, XBuchungstextMatch
 import constants
 from datehelper import *
 from sumfieldsprovider import SumFieldsProvider

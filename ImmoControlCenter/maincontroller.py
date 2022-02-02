@@ -1,27 +1,22 @@
-from typing import List, Dict
+from typing import List
 
 from PySide2.QtCore import QAbstractItemModel, QObject, Qt
 from PySide2.QtGui import QFont
-from PySide2.QtWidgets import QDialog, QApplication, QTableView
+from PySide2.QtWidgets import QDialog, QApplication
 
 from anlage_v.anlagev_controller import AnlageVController
 from business import BusinessLogic
-from constants import einausart
-from datehelper import getCurrentYear
 from dictlisttablemodel import DictListTableModel
 from generictable_stuff.customtableview import CustomTableView
 from geschaeftsreise.geschaeftsreisencontroller import GeschaeftsreisenController
-from iccdialog import IccDialog
-from mdisubwindow import MdiSubWindow
-from iccmainwindow import IccMainWindow, MainWindowAction
-from checkcontroller import IccController, MietenController, HGVController
+from icc.iccdialog import IccDialog
+from icc.iccmainwindow import IccMainWindow, MainWindowAction
+from checkcontroller import MietenController, HGVController
 from messagebox import ErrorBox, InfoBox
-from mietobjekt.mietobjektauswahl import MietobjektAuswahl
 from mietobjekt.mietobjektcontroller import MietobjektController
 from mietobjekt.mietobjektview import MietobjektView
 from mietverhaeltnis.mieterwechselcontroller import MieterwechselController
 from mietverhaeltnis.mietverhaeltniscontroller import MietverhaeltnisController
-from mtleinaus.mtleinauslogic import MtlEinAusLogic
 from mtleinaus.mtleinausservices import MtlEinAusServices
 from notizen.notizencontroller import NotizenController
 from offene_posten.offenepostencontroller import OffenePostenController
@@ -29,7 +24,7 @@ from qtderivates import AuswahlDialog
 from rendite.renditecontroller import RenditeController
 from returnvalue import ReturnValue
 from sollzahlungencontroller import SollmietenController, SollHgvController
-from sonstauscontroller import SonstAusController
+from sonstaus.sonstauscontroller import SonstAusController
 from sumfieldsprovider import SumFieldsProvider
 from abrechnungencontroller import NkAbrechnungenController, HgAbrechnungenController
 
@@ -253,7 +248,8 @@ class MainController( QObject ):
     def showAnlageVView( self ):
         self._anlageVCtrl = AnlageVController()
         self._anlageVDlg = self._anlageVCtrl.createDialog( self._mainwin )
-        self._showDialog( self._anlageVDlg, 1300, 1300 )
+        if self._anlageVDlg:
+            self._showDialog( self._anlageVDlg, 1300, 1300 )
 
     def showMieterwechselDialog( self ):
         self._mieterWechselCtrl = MieterwechselController()

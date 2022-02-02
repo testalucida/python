@@ -6,7 +6,7 @@ from PySide2.QtCore import QDate, Qt, QAbstractTableModel, QRect, Signal, QSize
 from PySide2.QtGui import QDoubleValidator, QIntValidator, QFont, QGuiApplication, QStandardItemModel, QStandardItem, \
     QMouseEvent, QTextDocument, QIcon, QFontMetrics
 from PySide2.QtWidgets import QDialog, QCalendarWidget, QVBoxLayout, QBoxLayout, QLineEdit, QGridLayout, QPushButton, \
-    QHBoxLayout, QApplication, QListView, QComboBox, QLabel, QTextEdit, QCheckBox, QFrame
+    QHBoxLayout, QApplication, QListView, QComboBox, QLabel, QTextEdit, QCheckBox, QFrame, QWidget
 
 from definitions import ICON_DIR
 
@@ -22,7 +22,17 @@ class EditButton( QPushButton ):
 ##################  CalendarWindow  ###########################
 from tableviewext import TableViewExt
 
+#################   BaseGridLayout  #########################
+class BaseGridLayout( QGridLayout ):
+    def __init__( self ):
+        QGridLayout.__init__( self )
 
+    def addPair( self, lbl:str, widget:QWidget, row:int, startCol:int=0, rowspan:int=1, colspan:int=1 ):
+        self.addWidget( BaseLabel( lbl ), row, startCol )
+        startCol += 1
+        self.addWidget( widget, row, startCol, rowspan, colspan )
+
+##################  CalenderDialog   #####################
 class CalendarDialog( QDialog ):
     def __init__( self, parent ):
         QDialog.__init__(self, parent)

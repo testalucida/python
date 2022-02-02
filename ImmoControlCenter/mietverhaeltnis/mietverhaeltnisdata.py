@@ -27,6 +27,7 @@ class MietverhaeltnisData( DatabaseCommon ):
               "inner join sollmiete sm on sm.mv_id = mv.mv_id " \
               "where mv.mv_id = '%s' " \
               "and mv.von <= CURRENT_DATE " \
+              "and sm.von <= CURRENT_DATE " \
               "order by mv.von desc, sm.von desc " % mv_id
         listofdicts = self.readAllGetDict( sql )
         if len( listofdicts ) == 0:
@@ -93,8 +94,8 @@ class MietverhaeltnisData( DatabaseCommon ):
     def getAktuelleMV_IDzuMietobjekt( self, mobj_id:str ) -> str:
         """
         Aktuell heißt: "von" muss
-        a) kleiner sein als current date
-        b) größer sein als alle anderen "von" in der Vergangenheit
+            a) kleiner sein als current date
+            b) größer sein als alle anderen "von" in der Vergangenheit
         Es spielt keine Rolle, ob "bis" NULL, in der Vergangenheit oder in der Zukunft liegt.
         :param mobj_id:
         :return:
@@ -108,6 +109,20 @@ class MietverhaeltnisData( DatabaseCommon ):
         if len( tuplelist ) == 0:
             return ""
         return tuplelist[0][0]
+
+    def getMietverhaeltnisse( self, mobj_id:str ) -> List[XMietverhaeltnis]:
+        sql = "select mv.id, mv.mv_id, mv.mobj_id, mv.von, coalesce(mv.bis, '') as bis, mv.name, mv.vorname, " \
+              "coalesce(mv.name2, '') as name2, coalesce(mv.vorname2, '') as vorname2, " \
+              "coalesce(mv.telefon, '') as telefon, coalesce(mv.mobil, '') as mobil, coalesce(mv.mailto, '') as mailto," \
+              "mv.anzahl_pers, mv.IBAN,  " \
+              "mv.bemerkung1, mv.bemerkung2, " \
+              "coalesce(mv.kaution, 0) as kaution, coalesce(mv.kaution_bezahlt_am, '') as kaution_bezahlt_am, " \
+              "sm.netto as nettomiete, sm.nkv " \
+              "from mietverhaeltnis mv " \
+              "inner join sollmiete sm on sm.mv_id = mv.mv_id " \
+              "where mv.mobj_id = '%s' " \
+              "order by mv.von desc " % mobj_id
+        return self.readAllGetObjectList( sql, XMietverhaeltnis )
 
     def getMietverhaeltnisById( self, id: int ) -> XMietverhaeltnis:
         sql = "select mv.id, mv.mv_id, mv.mobj_id, mv.von, coalesce(mv.bis, '') as bis, mv.name, mv.vorname, " \
@@ -214,6 +229,16 @@ class MietverhaeltnisData( DatabaseCommon ):
     def updateMietverhaeltnis2( self, id: int, column: str, newVal: str ):
         sql = "update mietverhaeltnis set %s = '%s' where id = %d " % (column, newVal, id)
         return self.write( sql )
+
+def test3():
+    mvsql = MietverhaeltnisData()
+    mvlist = mvsql.getMietverhaeltnisse( "mendel_8" )
+    print( mvlist )
+
+def test2():
+    mvsql = MietverhaeltnisData()
+    mv_id = mvsql.getAktuelleMV_IDzuMietobjekt( "mendel_8" )
+    print( mv_id )
 
 def test():
     mvsql = MietverhaeltnisData()

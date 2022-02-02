@@ -1,14 +1,12 @@
 import copy
-import numbers
 from functools import cmp_to_key
 
-from PySide2.QtGui import QFont, QBrush, QColor
+from PySide2.QtGui import QFont, QBrush
 from PySide2.QtCore import *
 from typing import List, Dict, Any
 
-from icctablemodel import IccTableModel
+from icc.icctablemodel import IccTableModel
 from interfaces import XSonstAus
-from enum import Enum
 import constants
 
 class SonstAusTableModel( IccTableModel ):
@@ -17,10 +15,11 @@ class SonstAusTableModel( IccTableModel ):
         self._sonstauslist:List[XSonstAus] = sonstausList
         """
         Gewünschte Spaltenfolge: 
-        werterhaltend | umlegbar | master_name | mobj_id | kreditor | buchungstext | rgdatum | buchungsdatum | betrag | rgtext
+        werterhaltend | umlegbar | master_name | mobj_id | kreditor | buchungstext | rgdatum | buchungsdatum | kostenart | betrag | rgtext
         """
-        self._keylist = ("werterhaltend", "umlegbar", "master_name", "mobj_id", "kreditor", "buchungstext", "rgdatum", "buchungsdatum", "betrag", "rgtext")
-        self._headers = ("w", "u", "Haus", "Whg", "Kreditor", "Buchungstext", "Rg.datum", "Buch.datum", "Betrag", "Rg.text")
+        self._keylist = ("werterhaltend", "umlegbar", "master_name", "mobj_id", "kreditor", "buchungstext", "rgdatum", "buchungsdatum", "kostenart", "betrag", "rgtext")
+        self._headers = ("w", "u", "Haus", "Whg", "Kreditor", "Buchungstext", "Rg.datum", "Buch.datum", "Art", "Betrag", "Rg.text")
+        self._sortkeys = () # für die Sortierung nach mehreren Spalten
         # Änderungslog vorbereiten:
         self._changes:Dict[str, List[XSonstAus]] = {}
         for s in constants.actionList:
@@ -41,7 +40,7 @@ class SonstAusTableModel( IccTableModel ):
         self._columnWerterhaltend = 0
         self._columnUmlegbar = 1
         self._columnBuchungsdatum = 7
-        self._columnBetrag = 8
+        self._columnBetrag = 9
         # self._sortable = False
 
     def getBetragColumnIndex( self ) -> int:
@@ -234,3 +233,24 @@ class SonstAusTableModel( IccTableModel ):
         if v1 < v2: return -1 if self._sort_reverse else 1
         if v1 > v2: return 1 if self._sort_reverse else -1
         if v1 == v2: return 0
+
+    def _compareMultiple( self, x1:XSonstAus, x2:XSonstAus ):
+        for key in self._sortkeys:
+            v1 = x1.__dict__[key]
+            v2 = x2.__dict__[key]
+            if isinstance( v1, str ):
+                v1 = v1.lower()
+                v2 = v2.lower()
+            if v1 < v2: return -1 if self._sort_reverse else 1
+            if v1 > v2: return 1 if self._sort_reverse else -1
+        return 0
+
+
+    def sortComplex( self, keys:List ):
+        self._sortkeys = keys
+        self.emit( SIGNAL( "layoutAboutToBeChanged()" ) )
+        self._sort_reverse = True #True if order == Qt.SortOrder.AscendingOrder else False
+        sortedlist = sorted( self._sonstauslist, key=cmp_to_key( self._compareMultiple ) )
+        self.receiveSortedList( sortedlist )
+        self.emit( SIGNAL( "layoutChanged()" ) )
+        self._sortkeys = ()

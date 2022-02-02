@@ -63,7 +63,7 @@ class CalendarDialog( QDialog ):
 class SonstigeAusgabenView( QWidget ):
     def __init__( self ):
         QWidget.__init__( self )
-        self._calendarIcon = QIcon( "./images/calendar25x25.png" )
+        self._calendarIcon = QIcon( "../images/calendar25x25.png" )
         self.setWindowTitle( "Sonstige Ausgaben: Rechnungen, Abgaben, Gebühren etc." )
         self._gridLayout = QtWidgets.QGridLayout( self )
         self._gridLayout.setObjectName( "gridLayout" )
@@ -74,7 +74,7 @@ class SonstigeAusgabenView( QWidget ):
         btn.setFlat( True )
         btn.setEnabled( False )
         btn.setToolTip( "Änderungen dieser View speichern" )
-        icon = QIcon( "./images/save_30.png" )
+        icon = QIcon( "../images/save_30.png" )
         btn.setIcon( icon )
         size = QSize( 30, 30 )
         btn.setFixedSize( size )

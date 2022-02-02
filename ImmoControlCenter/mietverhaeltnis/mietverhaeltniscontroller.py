@@ -1,11 +1,12 @@
-from typing import Any
+from typing import Any, List
 
-from PySide2.QtCore import QObject, Signal, QPoint
+from PySide2.QtCore import QPoint
 from PySide2.QtWidgets import QWidget, QApplication
 
 from business import BusinessLogic
-from icccontroller import IccController
+from icc.icccontroller import IccController
 from interfaces import XMietverhaeltnis
+from messagebox import InfoBox
 from mietobjekt.mietobjektauswahl import MietobjektAuswahl
 from mietverhaeltnis.mietverhaeltnisgui import MietverhaeltnisDialog, MietverhaeltnisView
 from mietverhaeltnis.mietverhaeltnislogic import MietverhaeltnisLogic
@@ -15,7 +16,9 @@ class MietverhaeltnisController( IccController ):
     def __init__( self ):
         IccController.__init__( self )
         self._view:MietverhaeltnisView = None
-        self._mv:XMietverhaeltnis = None
+        self._mvlogic = MietverhaeltnisLogic()
+        self._mvlist:List[XMietverhaeltnis] = None # Liste der Mietverhältnisse eines Mietobjekts
+        self._mv: XMietverhaeltnis = None # das aktuell im View angezeigte Mietverhältnis
 
     def showMietverhaeltnis( self, mv_id:str, point:QPoint ):
         """
@@ -25,7 +28,8 @@ class MietverhaeltnisController( IccController ):
         :param point:
         :return:
         """
-        mv:XMietverhaeltnis = BusinessLogic.inst().getAktuellesOderZukuenftigesMietverhaeltnis( mv_id )
+        #mv:XMietverhaeltnis = BusinessLogic.inst().getAktuellesOderZukuenftigesMietverhaeltnis( mv_id )
+        mv = self._mvlogic.getAktuellesMietverhaeltnis( mv_id )
         dlg = MietverhaeltnisDialog( mv )
         dlg.exec_()
 
@@ -34,15 +38,51 @@ class MietverhaeltnisController( IccController ):
         mietobjektAuswahl = MietobjektAuswahl()
         mobj_id = mietobjektAuswahl.selectMietobjekt()
         if not mobj_id: return None
-        mvlogic = MietverhaeltnisLogic() # todo: muss raus und durch einen Service-Aufruf ersetzt werden
-        xmv:XMietverhaeltnis = mvlogic.getAktuellesMietverhaeltnisByMietobjekt( mobj_id )
+        #xmv:XMietverhaeltnis = self._mvlogic.getAktuellesMietverhaeltnisByMietobjekt( mobj_id )
+        self._mvlist = self._mvlogic.getMietverhaeltnisListe( mobj_id )
         # busi = BusinessLogic.inst()
         # mv_id = busi.getAktuelleMietverhaeltnisId( mobj_id )
         # xmv:XMietverhaeltnis = busi.getAktuellesOderZukuenftigesMietverhaeltnis( mv_id )
-        self._view = MietverhaeltnisView( xmv, withSaveButton=True )
+        self._mv = self._mvlist[0]
+        self._view = MietverhaeltnisView( self._mv , withSaveButton=True )
         self._view.save.connect( self.writeChanges )
-        self._mv = xmv
+        self._view.prevMv.connect( self.onPrevMv )
+        self._view.nextMv.connect( self.onNextMv )
         return self._view
+
+    def onPrevMv( self ):
+        self._browse( False )
+
+    def onNextMv( self ):
+        self._browse( True )
+
+    def _browse( self, next:bool ):
+        if len( self._mvlist ) < 2:
+            box = InfoBox( "Blättern in Mietverhältnissen", "Blättern nicht möglich.", "Es gibt nur ein Mietverhältnis.", "OK" )
+            box.exec_()
+            return
+        idx = self._mvlist.index( self._mv )
+        max = len( self._mvlist ) - 1
+        if next: # "next" geklickt
+            if idx == 0:
+                box = InfoBox( "Blättern in Mietverhältnissen", "Blättern nicht möglich.",
+                               "Das jüngste Mietverhältnis wird angezeigt.", "OK" )
+                box.exec_()
+                return
+            self._mv = self._mvlist[idx-1]
+            self._view.clear()
+            self._view.setMietverhaeltnisData( self._mv )
+        else: # "previous" geklickt
+            if idx == max:
+                box = InfoBox( "Blättern in Mietverhältnissen", "Blättern nicht möglich.",
+                               "Das älteste Mietverhältnis wird angezeigt.", "OK" )
+                box.exec_()
+                return
+            self._mv = self._mvlist[idx+1]
+            self._view.clear()
+            self._view.setMietverhaeltnisData( self._mv )
+
+
 
     def _validate( self ) -> bool:
         # Validierung sollte im ***Model*** sein, nicht im Controller.
@@ -85,7 +125,7 @@ class MietverhaeltnisController( IccController ):
                 BusinessLogic.inst().saveMietverhaeltnis( self._mv )
                 return True
             except Exception as ex:
-                self.showErrorMessage( "Mieterwechsel: Speichern fehlgeschlagen", str( ex ) )
+                self.showErrorMessage( "Mietverhältnis: Speichern fehlgeschlagen", str( ex ) )
                 return False
         return False
 

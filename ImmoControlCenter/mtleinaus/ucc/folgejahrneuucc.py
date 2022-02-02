@@ -11,9 +11,9 @@ class FolgejahrNeuUcc:
         try:
             jahr = self._mealogic.createFolgejahrSet()
             retval = ReturnValue( returnvalue=jahr )
+            COMMIT_TRANSACTION()
             return retval
         except Exception as ex:
             ROLLBACK_TRANSACTION()
             return ReturnValue.fromException( ex )
-        COMMIT_TRANSACTION()
 

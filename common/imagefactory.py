@@ -15,6 +15,8 @@ class ImageFactory:
     _plusIcon:QIcon = None
     _deleteIcon:QIcon = None
     _editIcon:QIcon = None
+    _nextIcon:QIcon = None
+    _prevIcon:QIcon = None
 
     @staticmethod
     def inst():
@@ -69,17 +71,17 @@ class ImageFactory:
         return self._openIcon
 
     def getPlusIcon(self) -> QIcon:
-        if self._plusIcon == None:
+        if self._plusIcon is None:
             self._plusIcon = QIcon(self._imagePath + "plus_30x30.png")
         return self._plusIcon
 
     def getEditIcon(self) -> QIcon:
-        if self._editIcon == None:
+        if self._editIcon is None:
             self._editIcon = QIcon(self._imagePath + "edit.png")
         return self._editIcon
 
     def getDeleteIcon(self) -> QIcon:
-        if self._deleteIcon == None:
+        if self._deleteIcon is None:
             self._deleteIcon = QIcon(self._imagePath + "cancel.png")
         return self._deleteIcon
 
@@ -87,19 +89,29 @@ class ImageFactory:
     def getPrintIcon( self ) -> QIcon:
         path = os.getcwd()
         print( path )
-        if self._printIcon == None:
+        if self._printIcon is None:
             self._printIcon = QIcon( self._imagePath + "print_30.png" )
         return self._printIcon
 
     def getPrintAllIcon( self ) -> QIcon:
         path = os.getcwd()
         print( path )
-        if self._printAllIcon == None:
+        if self._printAllIcon is None:
             self._printAllIcon = QIcon( self._imagePath + "printall_30.png" )
         return self._printAllIcon
 
     def getSaveIcon( self ) -> QIcon:
-        if self._saveIcon == None:
+        if self._saveIcon is None:
             self._saveIcon = QIcon( self._imagePath + "save_30.png" )
         return self._saveIcon
+
+    def getNextIcon( self ) -> QIcon:
+        if self._nextIcon is None:
+            self._nextIcon = QIcon( self._imagePath + "next.png" )
+        return self._nextIcon
+
+    def getPrevIcon( self ) -> QIcon:
+        if self._prevIcon is None:
+            self._prevIcon = QIcon( self._imagePath + "prev.png" )
+        return self._prevIcon
 

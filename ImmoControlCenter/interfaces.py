@@ -160,6 +160,8 @@ class XGeschaeftsreise( XBase ):
     def __init__( self, valuedict:Dict=None ):
         XBase.__init__( self )
         self.id = 0
+        self.master_name = ""
+        self.master_id = 0
         self.mobj_id = ""
         self.jahr = 0
         self.von = ""
@@ -167,9 +169,20 @@ class XGeschaeftsreise( XBase ):
         self.ziel = ""
         self.zweck = ""
         self.km = 0
-        self.verpfleg_pauschale = 0.0
+        self.personen = 0
         self.uebernachtung = ""
         self.uebernacht_kosten = 0.0
+        if valuedict:
+            setFromDict( self, valuedict )
+
+#####################   Pauschale  ##########################
+class XPauschale( XBase ):
+    def __init__(self, valuedict:Dict=None):
+        XBase.__init__( self )
+        self.id = 0
+        self.jahr_bis = 0
+        self.km = 0.0
+        self.vpfl = 0.0
         if valuedict:
             setFromDict( self, valuedict )
 
@@ -329,7 +342,7 @@ class XSonstAus( XBase ):
         self.master_id: int = 0
         self.master_name: str = ""
         self.mobj_id: str = ""
-        self.kostenart:str = ""
+        #self.kostenart:str = ""
         self.kreditor: str = ""
         self.rgnr: str = ""
         self.rgdatum: str = ""
@@ -415,6 +428,33 @@ class XBuchungstextMatch( XBase ):
     kostenart_lang:str = ""
     umlegbar:int = 0
 
+class XHausgeldZahlungJahr:
+    """
+    Diese Zahlung bezieht sich auf ein Masterobjekt <master_name>.
+    Das muss so sein, weil in den eigenen Häusern ohne Verwaltung ein Mieter als Hauswart bestellt ist,
+    der monatlich Zahlungen erhält. In diesen Fällen ist es sinnlos, das Hausgeld an der <mobj_id> dieses Mieters
+    festzumachen, da es sich aufs ganze Haus bezieht.
+    Umgekehrt bedeutet es für verwaltete Häuser, in denen ich mehrere, aber nicht alle Wohnungen besitze,
+    je Wohnung <mobj_id> ein Masterobjekte angelegt sein muss. (Siehe Mendelstraße oder Kuchenbergstraße.)
+    """
+    def __init__(self, master_name:str="", jahr:int=0):
+        self.master_name = master_name
+        self.jahr = jahr
+        self.hgv = 0.0  # bezahlte HGV gem. Tabelle <zahlung> (ist immer negativ, da Mittelabfluss>
+        self.rueZuFue = 0.0 # davon Rücklagenzuführung gem. Tabelle <sollhausgeld> ) (immer negativ)
+        self.hga = 0.0  # in <jahr> bezahlte HG-Abrechnung gem. Tabelle <hg_abrechnung>,
+                        # egal, auf welches Jahr sie sich bezieht
+                        # kann positiv sein -> Nachzahlung vom Mieter
+                        # oder negativ -> Erstattung an den Mieter
+
+    def getHGohneRueZuFue( self ):
+        """
+        Liefert den in der StE ansetzbaren HG-Betrag:
+        Die Vorauszahlungen (negativ) plus die Abrechnung (pos. or neg.) minus die (neg.) RüZuFü.
+        :return:
+        """
+        return self.hgv + self.hga - self.rueZuFue
+
 class XSollzahlung( XBase ):
     def __init__( self ):
         XBase.__init__( self )
@@ -436,6 +476,7 @@ class XSollzahlung( XBase ):
 class XSollHausgeld( XSollzahlung ):
     def __init__( self, valuedict:Dict=None ):
         XSollzahlung.__init__( self )
+        self.master_name = ""
         self.shg_id = 0
         self.vw_id = ""
         self.vwg_id = 0
@@ -550,6 +591,7 @@ class XGeplant( XBase ):
     def __init__(self, valuedict:Dict=None ):
         XBase.__init__( self )
         self.id = 0
+        self.master_id = 0
         self.mobj_id = ""
         self.leistung = ""
         self.firma = ""
@@ -557,11 +599,23 @@ class XGeplant( XBase ):
         self.kostenvoranschlag = 0 # existiert ein Kostenvoranschlag ja(1) / nein(0)
         self.jahr = 0  # jahr, in dem die Maßnahme geplant ist
         self.monat = 0 # monat, in dem die Maßnahme geplant ist
+        self.beauftragt = 0 # ob die Leistung schon verbindlich beauftragt wurde
         self.erledigtDatum = "" # Datum, zu dem die Maßnahme erledigt wurde. (Kosten verbucht in Tab. sonstaus)
         self.bemerkung = ""
         if valuedict:
             setFromDict( self, valuedict )
 
+class XHandwerkerKurz( XBase ):
+    def __init__(self, valuedict:Dict=None ):
+        XBase.__init__( self )
+        self.id = 0
+        self.name = ""
+        self.branche = ""
+        self.adresse = ""
+        if valuedict:
+            setFromDict( self, valuedict )
+
+#####################################################################################################################
 
 def printX( x:XSonstAus ):
     print( x )

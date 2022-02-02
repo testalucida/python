@@ -8,7 +8,7 @@ from PySide2 import QtWidgets
 from typing import List, Any
 
 #from models import KontrollModel
-from iccview import IccView
+from icc.iccview import IccView
 from imagefactory import ImageFactory
 from tableview import TableView
 from checktablemodel import CheckTableModel

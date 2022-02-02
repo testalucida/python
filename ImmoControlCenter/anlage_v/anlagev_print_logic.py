@@ -10,8 +10,8 @@ from anlage_v.anlagev_printer import AnlageV_Printer
 
 
 class AnlageV_Print_Logic( AnlageV_Base_Logic):
-    def __init__(self):
-        AnlageV_Base_Logic.__init__( self )
+    def __init__(self, jahr:int):
+        AnlageV_Base_Logic.__init__( self, jahr )
         self._page = 1
 
     def printAnlagenVAll( self, jahr, nurKopfdaten:bool=False ):
@@ -71,10 +71,10 @@ class AnlageV_Print_Logic( AnlageV_Base_Logic):
         self._provideObjekt( master_name, l )
         if nurKopfdaten: return l
         # Einnahmen, Werbungskosten, Überschuss
-        xme: XMieteinnahme = self.getMieteinnahmenUndNebenkosten( master_name, jahr )
+        xme: XMieteinnahme = self.getMieteinnahmenUndNebenkosten( master_name )
         self._provideMieteinnahmenUndUmlagen( xme, l )
         self._provideSummeEinnahmen( xme, l )
-        xwk:XWerbungskosten = self.getWerbungskosten( master_name, jahr )
+        xwk:XWerbungskosten = self.getWerbungskosten( master_name )
         summeWk = xwk.getSummeWerbungskosten()
         self._provideSummeWerbungskosten( summeWk, l )
         ueberschuss = self._provideUeberschuss( xme, xwk, l )

@@ -4,7 +4,7 @@ from anlage_v.anlagev_interfaces import XObjektStammdaten, XZeilendefinition, XA
     XAllgemeineKosten, XSammelAbgabeDetail, XAusgabeKurz, XVerteilterAufwand
 from constants import Zahlart, zahlartstrings, Sonstaus_Kostenart
 from dbaccess import DbAccess
-from interfaces import XSollMiete
+from interfaces import XSollMiete, XGeschaeftsreise, XPauschale, XSollHausgeld
 
 
 class AnlageV_DataAccess( DbAccess ):
@@ -45,19 +45,28 @@ class AnlageV_DataAccess( DbAccess ):
               "where mo.master_name = '%s' " % ( master_name )
         return self._doReadOneGetDict( sql )
 
-    def getObjektNamen( self ) -> List[str]:
-        sql = "select master_name from masterobjekt " \
-              "where master_name not like '*%' " \
-              "order by master_name "
-        tuplelist = self._doRead( sql )
-        names = [e[0] for e in tuplelist]
-        return names
+    # def getObjektNamen( self ) -> List[str]:
+    #     sql = "select master_name from masterobjekt " \
+    #           "where master_name not like '*%' " \
+    #           "order by master_name "
+    #     tuplelist = self._doRead( sql )
+    #     names = [e[0] for e in tuplelist]
+    #     return names
 
-    def getObjektStammdaten( self ) -> List[XObjektStammdaten]:
+    def getObjektStammdaten( self, vjahr:int ) -> List[XObjektStammdaten]:
+        """
+        Ermittelt alle für das Veranlagungsjahr <vjahr> relevanten Masterobjekte
+        :param vjahr: Veranlagungsjahr. Ermittelt werden die Objekte, die vor oder im Vj angeschafft und frühestens
+                        im Vj verkauft wurden.
+        :return:
+        """
+        jahranfang, jahrende = "%d-01-01" % vjahr, "%d-12-31" % vjahr
         sql = "select lfdnr, master_id, master_name, strasse_hnr, plz, ort, angeschafft_am, veraeussert_am, gesamt_wfl, einhwert_az " \
               "from masterobjekt " \
-              "where master_name not like '*%' " \
-              "order by master_name"
+              "where master_name not like '%s' " \
+              "and angeschafft_am <= '%s' " \
+              "and (veraeussert_am is NULL or veraeussert_am = '' or veraeussert_am > '%s' ) " \
+              "order by master_name" % ("*%", jahrende, jahranfang)
         diclist = self._doReadAllGetDict( sql )
         li:List[XObjektStammdaten] = list()
         for dic in diclist:
@@ -225,6 +234,7 @@ class AnlageV_DataAccess( DbAccess ):
         Liefert alle Aufwände, wo buchungsjahr + verteilen_auf_jahre > <jahr>.
         Am Beispiel jahr = 2021: Es werden Aufwände aus den Jahren 2021 bis 2017 geliefert. (Aufwände können auf
         max. 5 Jahre verteilt werden.)
+        Betrifft nur Kostenart 'r'
         :param master_name:
         :param jahr:
         :return:
@@ -249,6 +259,7 @@ class AnlageV_DataAccess( DbAccess ):
     def getZuVerteilendeAufwaendeVJ( self, master_name:str, jahr:int ) -> List[XErhaltungsaufwand]:
         """
         Liefert die Aufwände aus <jahr>, die zu verteilen sind (verteilen_auf_jahre > 1)
+        Betrifft nur Kostenart 'r'.
         :param master_name:
         :param jahr:
         :return:
@@ -359,6 +370,132 @@ class AnlageV_DataAccess( DbAccess ):
             l.append( x )
         return l
 
+    def getMietobjekteZuMasterName( self, master_name:str, jahr:int ) -> List[str]:
+        """
+        Liefert alle Mietobjekte zu einem Masterobjekt, unabhängig vom Aktiv-Kennzeichen.
+        ACHTUNG: Das ist nur richtig, solange das Masterobjekt kein Haus ist, das mir gehört UND dem mehr als *ein*
+                Mietobjekt zugeordnet ist. (Beispiel Kuchenberg: Hätten die Spielhalle und die Wohnung einen
+                gemeinsamen Master, würde auch für die Veranlagung 2022 die Wohnung geliefert werden, obwohl sie schon
+                2021 verkauft wurde. Da die Wohnung aber ihren eigenen Master hat, erhält dieser ein entsprechendes
+                veraeussert_am - Datum, was bewirkt, das mit diesem Master überhaupt kein Aufruf mehr erfolgt.)
+        :param master_name:
+        :param jahr:
+        :return:
+        """
+        sql = "select mobj_id " \
+              "from mietobjekt mo " \
+              "inner join masterobjekt ma on ma.master_id = mo.master_id " \
+              "where ma.master_name = '%s' " \
+              "order by mobj_id " % master_name
+        tuplelist = self._doRead( sql )
+        return [t[0] for t in tuplelist]
+
+    # def getHGVmitRueZuFue( self, mobj_id:str, jahr:int ) -> float:
+    #     """
+    #     Liefert die Summe aller Brutto-HG-Vorauszahlungen für Mietobjekt <mobj_id> im Zeitraum <jahr>.
+    #     Achtung: es wird eine negative Zahl geliefert. (Auszahlungen)
+    #     :param mobj_id:
+    #     :param jahr:
+    #     :return:
+    #     """
+    #     sql = "select sum(betrag) as hgv " \
+    #         "from zahlung " \
+    #         "where zahl_art = 'hgv' " \
+    #         "and jahr = %d " \
+    #         "and mobj_id = '%s'" % (jahr, mobj_id)
+    #     tuplelist = self._doRead( sql )
+    #     li = [t[0] for t in tuplelist]
+    #     return li[0]
+
+    # def getSollHGV( self, mobj_id:str, jahr:int ) -> List[XSollHausgeld]:
+    #     """
+    #     Liefert für <mobj_id> die im betreffenden <jahr> relevanten Soll-Hausgelder.
+    #     Es ist eine Liste, weil sich das Hausgeld mitten im Jahr ändern kann.
+    #     :param mobj_id:
+    #     :param jahr:
+    #     :return: Eine Liste von XSollHausgeld-OBjekten
+    #     """
+    #     jahranf, jahrend = "%d-01-01" % jahr, "%d-12-31" % jahr
+    #     sql = "select s.shg_id, v.vw_id, s.vwg_id, s.von, coalesce(s.bis, '') as bis, s.netto, s.ruezufue, " \
+    #           "v.mobj_id, v.weg_name,  coalesce(s.bemerkung, '') as bemerkung " \
+    #           "from sollhausgeld s " \
+    #           "inner join verwaltung v on v.vwg_id = s.vwg_id " \
+    #           "where v.mobj_id = '%s' " \
+    #           "and (s.von <= '%s') " \
+    #           "and (s.bis is NULL or s.bis = '' or s.bis >= '%s') " \
+    #           "order by v.weg_name, s.von desc" % (mobj_id, jahrend, jahranf)
+    #     l: List[Dict] = self._doReadAllGetDict( sql )
+    #     return [XSollHausgeld( d ) for d in l]
+
+    # def getSollHGV( self, master_name:str, jahr:int ) -> List[XSollHausgeld]:
+    #     """
+    #     Liefert für <master_name> die im betreffenden <jahr> relevanten Soll-Hausgelder.
+    #     Es ist eine Liste, weil sich das Hausgeld mitten im Jahr ändern kann.
+    #     :param master_name:
+    #     :param jahr:
+    #     :return: Eine Liste von XSollHausgeld-OBjekten
+    #     """
+    #     jahranf, jahrend = "%d-01-01" % jahr, "%d-12-31" % jahr
+    #     sql = "select s.shg_id, s.vwg_id, s.von, coalesce(s.bis, '') as bis, s.netto, s.ruezufue, " \
+    #           "mao.master_name, " \
+    #           "v.vw_id, v.weg_name,  coalesce(s.bemerkung, '') as bemerkung " \
+    #           "from sollhausgeld s " \
+    #           "inner join verwaltung v on v.vwg_id = s.vwg_id " \
+    #           "inner join masterobjekt mao on mao.master_id = v.master_id " \
+    #           "where mao.master_name = '%s' " \
+    #           "and (s.von <= '%s') " \
+    #           "and (s.bis is NULL or s.bis = '' or s.bis >= '%s') " \
+    #           "order by v.weg_name, s.von desc" % (master_name, jahrend, jahranf)
+    #     l: List[Dict] = self._doReadAllGetDict( sql )
+    #     return [XSollHausgeld( d ) for d in l]
+
+    # def getHGA( self, mobj_id:str, jahr:int ) -> float:
+    #     """
+    #     Liefert die SUmmen der HG-Abrechnungszahlungen für ein Mietobjekt <mobj_id> für einen Zeitraum <jahr>.
+    #     Annahme: in der Tabelle <zahlung> kann es mehr als einen Eintrag je mobj_id und jahr geben.
+    #     Es wird eine positive (Gutschrift) oder negative Zahl (Nachzahlung) geliefert.
+    #     :param mobj_id:
+    #     :param jahr:
+    #     :return:
+    #     """
+    #     sql = "select coalesce(sum(betrag), 0) as hga " \
+    #           "from zahlung " \
+    #           "where zahl_art = 'hga' " \
+    #           "and jahr = %d " \
+    #           "and mobj_id = '%s'" % (jahr, mobj_id)
+    #     tuplelist = self._doRead( sql )
+    #     li = [x[0] for x in tuplelist]
+    #     return li[0]
+
+    def getGeschaeftsreisen( self, jahr:int ) -> List[XGeschaeftsreise]:
+        sql = "select id, mobj_id, von, bis, jahr, ziel,  zweck, km, personen, uebernachtung, uebernacht_kosten " \
+              "from geschaeftsreise " \
+              "where jahr = %d " \
+              "order by von " % jahr
+        dictlist = self._doReadAllGetDict( sql )
+        return [XGeschaeftsreise( d ) for d in dictlist]
+
+    def getPauschalen( self, jahr:int ) -> XPauschale:
+        """
+        Liefert den einen Satz in der Tabelle <pauschale>, der sich auf das übergebene <jahr> bezieht.
+        Er enthält mehrere Pauschalen, deshalb heißt die Methode getPauschalen()
+        :param jahr:
+        :return:
+        """
+        sql = "select id, coalesce(jahr_bis, 9999) as jahr_bis, km, vpfl " \
+              "from pauschale "
+        dictlist =  self._doReadAllGetDict( sql )
+        # dictlist sortieren nach jahr_bis und den für <jahr> passenden Satz zurückliefern.
+        sortedlist = sorted( dictlist, key=lambda d: d["jahr_bis"] )
+        for d in sortedlist:
+            if jahr <= d["jahr_bis"]:
+                if d["jahr_bis"] == 9999:
+                    d["jahr_bis"] = None
+                return XPauschale( d )
+        raise Exception( "Anlagev_DataAccess.getPauschalen(): "
+                         "Keinen zum Jahr %d passenden Pauschalensatz gefunden" % jahr )
+
+
     # def getVerteilteRepAufwendungen( self, master_name:str, vonjahr:int, bisjahr:int ) -> List[XVerteilterAufwand]:
     #     sql = "select  master.master_name, master.master_id, " \
     #           "mobj_id, kostenart, kreditor, buchungstext, buchungsdatum, buchungsjahr, verteilen_auf_jahre, betrag " \
@@ -387,6 +524,7 @@ class AnlageV_DataAccess( DbAccess ):
         li = [ x[0] for x in tuplelist ]
         return li
 
+
     # def getDetailFromSammelabgabe( self, master_name:str, jahr:int ) -> XSammelAbgabeDetail or None:
     #     sql = "select master.master_name, " \
     #           "sd.master_id, sd.grundsteuer, sd.abwasser, sd.strassenreinigung " \
@@ -399,6 +537,45 @@ class AnlageV_DataAccess( DbAccess ):
     #         x = XSammelAbgabeDetail( d )
     #         return x
     #     return None
+
+def test7():
+    av = AnlageV_DataAccess( "../immo.db" )
+    av.open()
+    b = av.getObjektStammdaten( 2021 )
+    print( b )
+
+def test6():
+    av = AnlageV_DataAccess( "../immo.db" )
+    av.open()
+    b = av.getMietobjekteZuMasterName( "NK_Kleist" )
+    print( b )
+
+# def test5():
+#     av = AnlageV_DataAccess( "../immo.db" )
+#     av.open()
+#     b = av.getSollHGV( "linx", 2020 )
+#     print( b )
+
+
+def test4():
+    av = AnlageV_DataAccess( "../immo.db" )
+    av.open()
+    b = av.getPauschalen( 2019 )
+    print( b )
+
+def test3():
+    av = AnlageV_DataAccess( "../immo.db" )
+    av.open()
+    b = av.getGeschaeftsreisen( 2021 )
+    print( b )
+
+# def test2():
+#     av = AnlageV_DataAccess( "../immo.db" )
+#     av.open()
+#     b = av.getHGVmitRueZuFue( "linx", 2021 )
+#     print( b )
+#     b = av.getHGA( "zweibrueck", 2021 )
+#     print( b )
 
 def test():
     av = AnlageV_DataAccess( "../immo.db")
@@ -413,8 +590,8 @@ def test():
     x = av.getAfA( "Rülzheim")
     b = av.getOffeneNKErstattungen( "NK_Zweibrueck", 2020 )
     b = av.getNKA( "NK_Kleist", 2020 )
-    names = av.getObjektNamen()
-    print( names )
+    # names = av.getObjektNamen()
+    # print( names )
 
     #li = db.getSollmieten2( 2020 )
 

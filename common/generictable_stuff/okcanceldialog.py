@@ -86,7 +86,9 @@ class OkCancelDialog2( QDialog ):
         #hbox.addStretch( 1 )
         hbox.addWidget( self._okButton )
         hbox.addWidget( self._cancelButton )
-
+        margins = hbox.contentsMargins()
+        margins.setLeft( 10 )
+        hbox.setContentsMargins( margins )
         self._layout.addLayout( hbox, 3, 0, alignment=Qt.AlignLeft | Qt.AlignBottom )
 
         self._okButton.setDefault( True )
@@ -103,9 +105,9 @@ class OkCancelDialog2( QDialog ):
     def setOkButtonText( self, text:str ):
         self._okButton.setText( text )
 
-    def addWidget( self, w:QWidget, row:int ) -> None:
+    def addWidget( self, widget:QWidget, row:int ) -> None:
         if row > 2: raise Exception( "OkCancelDialog.addWidget() -- invalid row index: %d" % ( row ) )
-        self._layout.addWidget( w, row, 0 )
+        self._layout.addWidget( widget, row, 0 )
 
     def getItemAt( self, row:int ) -> QWidget:
         return self._layout.itemAt( QModelIndex( row, 0 ) )

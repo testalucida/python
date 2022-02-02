@@ -2,13 +2,11 @@ import copy
 
 from PySide2.QtCore import QSize, Signal
 from PySide2.QtGui import QFont, Qt, QIcon
-from PySide2.QtWidgets import QApplication, QWidget, QGridLayout, QLabel, QHBoxLayout, QPushButton
-from generictable_stuff.okcanceldialog import OkCancelDialog
-from iccdialog import IccDialog
-from iccview import IccView
+from PySide2.QtWidgets import QGridLayout, QLabel, QHBoxLayout, QPushButton
+from icc.iccview import IccView
 from interfaces import XMietverhaeltnis, XMieterwechsel
 from mietverhaeltnis.mietverhaeltnisgui import MietverhaeltnisView
-from qtderivates import AuswahlDialog, BaseEdit, SmartDateEdit, BaseLabel, FloatEdit, IntEdit
+from qtderivates import BaseEdit, SmartDateEdit, BaseLabel, FloatEdit, IntEdit
 
 
 ############### MieterwechselView ########################

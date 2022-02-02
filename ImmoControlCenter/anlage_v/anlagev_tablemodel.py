@@ -84,6 +84,8 @@ class AnlageVTableModel( QAbstractTableModel ):
 
     def getFont(self, indexrow:int, indexcolumn:int ) -> QFont or None:
         row = self.getPreviewRow( indexrow )
+        # if row.text.startswith( "Hausgeld" ):
+        #     print( "JJ")
         if row.isSeparator:
             return self._boldFont
         if row.zeile:

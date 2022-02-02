@@ -3,11 +3,10 @@ from typing import Any
 from PySide2.QtWidgets import QApplication, QWidget
 
 from business import BusinessLogic
-from icccontroller import IccController
-from interfaces import XMietverhaeltnis, XMietobjektExt
+from icc.icccontroller import IccController
+from interfaces import XMietobjektExt
 from mietobjekt.mietobjektauswahl import MietobjektAuswahl
 from mietobjekt.mietobjektview import MietobjektView
-from mietverhaeltnis.mieterwechselgui import MieterwechselView
 
 
 class MietobjektController( IccController ):

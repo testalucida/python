@@ -2,9 +2,8 @@ from typing import Any
 
 from PySide2.QtWidgets import QApplication, QWidget
 
-from business import BusinessLogic
-from icccontroller import IccController
-from interfaces import XMietverhaeltnis, XMieterwechsel
+from icc.icccontroller import IccController
+from interfaces import XMieterwechsel
 from messagebox import ErrorBox, InfoBox
 from mietobjekt.mietobjektauswahl import MietobjektAuswahl
 from mietverhaeltnis.mieterwechselgui import MieterwechselView

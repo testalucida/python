@@ -377,11 +377,11 @@ class GenericTableViewDialog( QDialog ):
         self.deleteItem.emit( indexlist[0] )
 
     def _onOk( self ):
-        self.okPressed.emit()
+        #self.okPressed.emit()
         self.accept()
 
     def _onCancel( self ):
-        self.cancelled.emit()
+        #self.cancelled.emit()
         self.reject()
 
     def getTableView( self ) -> CustomTableView:

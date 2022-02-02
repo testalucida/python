@@ -1,7 +1,7 @@
 import os
 import shutil
 import sys
-from typing import Tuple, Dict, List
+from typing import Dict
 from PySide2.QtGui import QIcon
 
 from screen import setScreenSize
@@ -9,8 +9,8 @@ from screen import setScreenSize
 sys.path.append( "../common" )
 from PySide2.QtWidgets import QApplication, QMessageBox
 from PySide2 import QtCore
-from PySide2.QtWidgets import QWidget, QMdiSubWindow
-from iccmainwindow import IccMainWindow
+from PySide2.QtWidgets import QWidget
+from icc.iccmainwindow import IccMainWindow
 from maincontroller import MainController
 
 
@@ -38,7 +38,7 @@ class ShutDownFilter( QtCore.QObject ):
 
 
 def getGeometryOnLastShutdown() -> Dict:
-    f = open( "icc_settings.txt", "r" )
+    f = open( "icc/icc_settings.txt", "r" )
     s = f.read()
     parts = s.split( "," )
     d = dict()
@@ -50,7 +50,7 @@ def getGeometryOnLastShutdown() -> Dict:
 
 
 def writeGeometryOnShutdown( x, y, w, h ) -> None:
-    f = open( "icc_settings.txt", "w" )
+    f = open( "icc/icc_settings.txt", "w" )
     s = str( x ) + "," + str( y ) + "," + str( w ) + "," + str( h )
     f.write( s )
 

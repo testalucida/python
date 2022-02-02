@@ -1,10 +1,10 @@
 from functools import cmp_to_key
 
-from PySide2.QtGui import QFont, QBrush
+from PySide2.QtGui import QBrush
 from PySide2.QtCore import *
 from typing import List, Any
 
-from icctablemodel import IccTableModel
+from icc.icctablemodel import IccTableModel
 from interfaces import XBuchungstextMatch
 
 class BuchungstextMatchModel( IccTableModel ):

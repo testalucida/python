@@ -282,6 +282,28 @@ def getNumberOfMonths(d1: str, d2: str, year: int) -> int:
 
     return cnt
 
+def getNumberOfDays2( d1:str, d2:str, year:int ):
+    """
+    Gets the number of days within the period given by d1 and d2 which is part of <year>
+    Note that d2 must be the more recent date.
+    :param d1: begin of period. Format "yyyy-mm-dd"
+    :param d2: end of perion. Format "yyyy-mm-dd"
+    :param year: an int value
+    :return: number of days which are part of <year>
+    """
+    assert d2 >= d1
+    y1, m1, d1 = getDateParts( d1 )
+    assert y1 <= year
+    y2, m2, d2 = getDateParts( d2 )
+    if y1 < year:
+        y1, m1, d1 = year, 1, 1
+    if y2 > year:
+        y2, m2, d2 = year, 12, 31
+    d1 = date( y1, m1, d1 )
+    d2 = date( y2, m2, d2 )
+    delta = d2 - d1
+    return delta.days + 1
+
 def getLastMonth() -> Tuple[int, str]:
     monat = datetime.now().month
     monat = 12 if monat == 1 else monat-1
@@ -318,6 +340,15 @@ def addDaysToIsoString( isostring:str, cntDays:int ) -> str:
     d = getDateFromIsoString( isostring )
     d = addDays( d, cntDays )
     return getIsoStringFromDate( d )
+
+
+def test2():
+    days = getNumberOfDays2( "2020-12-01", "2022-01-31", 2021 )
+    print( days )
+
+def test3():
+    months = getNumberOfMonths( "2021-12-01", "2022-01-31", 2021 )
+    print( months )
 
 def test():
     dt = getFirstOfNextMonth()

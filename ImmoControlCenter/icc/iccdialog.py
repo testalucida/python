@@ -4,7 +4,7 @@ from typing import Callable
 from PySide2.QtCore import Signal
 from PySide2.QtWidgets import QDialog, QGridLayout, QWidget
 
-from iccview import IccView
+from icc.iccview import IccView
 
 
 class IccDialog( QDialog ):

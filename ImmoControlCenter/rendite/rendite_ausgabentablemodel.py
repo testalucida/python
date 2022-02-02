@@ -1,13 +1,9 @@
-import copy
-import numbers
-from abc import ABC, abstractmethod
-from typing import List, Dict, Tuple, Any
+from typing import List, Any
 
-from PySide2.QtCore import QAbstractTableModel, QModelIndex, Qt
+from PySide2.QtCore import QModelIndex, Qt
 from PySide2.QtGui import QBrush, QFont
 
-import constants
-from icctablemodel import IccTableModel
+from icc.icctablemodel import IccTableModel
 from interfaces import XAusgabe
 
 

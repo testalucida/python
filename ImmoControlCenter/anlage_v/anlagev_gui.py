@@ -3,20 +3,49 @@ from typing import List, Any
 from PySide2 import QtWidgets, QtCore
 from PySide2.QtCore import Qt, QSize, QModelIndex, Signal
 from PySide2.QtGui import QIcon, QFont, QStandardItemModel, QStandardItem
-from PySide2.QtWidgets import QPushButton, QWidget, QHBoxLayout, QApplication, QTableView, QTabWidget, QDialog, \
+from PySide2.QtWidgets import QPushButton, QHBoxLayout, QApplication, QTableView, QTabWidget, QDialog, \
     QComboBox, QListView, QVBoxLayout
 
 from anlage_v.anlagev_tablemodel import AnlageVTableModel
-from iccview import IccView
+from icc.iccview import IccView
 from imagefactory import ImageFactory
 
+class JahrAuswahlDialog( QDialog ):
+    def __init__( self, jahre:List[int] ):
+        QDialog.__init__( self )
+        self.jahr = jahre[0]
+        self.cboJahr = QComboBox()
+        self.cboJahr.setMaximumWidth( 85 )
+        self.cboJahr.setFont( QFont( "Arial", 14, QFont.Bold ) )
+        self.cboJahr.addItems( [str(j) for j in jahre] )
+        self.okButton = QPushButton( "OK" )
+        self.okButton.setDefault( True )
+        self.cancelButton = QPushButton( "Abbrechen" )
+        self.okButton.clicked.connect( self.onAccepted )
+        self.cancelButton.clicked.connect( self.reject )
+        self._layout = QVBoxLayout()
+        self.setLayout( self._layout )
+        self._layout.addWidget( self.cboJahr )
+        hbox = QHBoxLayout()
+        hbox.addWidget( self.okButton )
+        hbox.addWidget( self.cancelButton )
+        self._layout.addLayout( hbox )
+        self.setWindowTitle( "Veranlagungsjahr" )
+        self.setFixedSize( QSize( 200, 100 ) )
+
+    def onAccepted(self):
+        self.jahr = int( self.cboJahr.currentText() )
+        self.accept()
+
+#################################  AnlageVAuswahlDialog  ####################
 
 class AnlageVAuswahlDialog( QDialog ):
-    def __init__( self, masterobjektlist:List[str], jahre:List[int], checked=False, icon=None, parent=None ):
+    def __init__( self, masterobjektlist:List[str], #jahre:List[int],
+                  checked=False, icon=None, parent=None ):
         QDialog.__init__( self, parent )
         self.icon = icon
-        self._jahre = jahre
-        self.cboJahr = QComboBox()
+        #self._jahre = jahre
+        #self.cboJahr = QComboBox()
         self.listView = QListView()
         self.okButton = QPushButton( "OK" )
         self.cancelButton = QPushButton( "Abbrechen" )
@@ -26,7 +55,7 @@ class AnlageVAuswahlDialog( QDialog ):
         self.model = QStandardItemModel()
         self.choices:List[str] = list()
         self._createGui()
-        self._setJahrItems()
+        #self._setJahrItems()
         self._createModel( masterobjektlist, checked )
 
     def _createGui( self ):
@@ -41,8 +70,9 @@ class AnlageVAuswahlDialog( QDialog ):
         h2box.addWidget(self.unselectButton)
 
         vbox = QVBoxLayout(self)
-        self.cboJahr.setMaximumWidth( 100 )
-        vbox.addWidget( self.cboJahr )
+        #self.cboJahr.setMaximumWidth( 100 )
+        #self.cboJahr.setFont( QFont( "Arial", 14, QFont.Bold ) )
+        #vbox.addWidget( self.cboJahr )
         vbox.addLayout( h2box )
         vbox.addWidget(self.listView, stretch=1)
         #vbox.addStretch(1)
@@ -59,11 +89,11 @@ class AnlageVAuswahlDialog( QDialog ):
         self.selectButton.clicked.connect(self.select)
         self.unselectButton.clicked.connect(self.unselect)
 
-    def _setJahrItems( self ):
-        jahre = [str( x ) for x in self._jahre]
-        if len( jahre ) > 0:
-            self.cboJahr.addItems( jahre )
-            self.cboJahr.setCurrentText( jahre[0] )
+    # def _setJahrItems( self ):
+    #     jahre = [str( x ) for x in self._jahre]
+    #     if len( jahre ) > 0:
+    #         self.cboJahr.addItems( jahre )
+    #         self.cboJahr.setCurrentText( jahre[0] )
 
     def _createModel( self, masterobjektList:List[str], checked:bool ):
         for obj in masterobjektList:
@@ -75,16 +105,24 @@ class AnlageVAuswahlDialog( QDialog ):
             self.model.appendRow(item)
         self.listView.setModel( self.model )
 
-    def setCurrentJahr( self, jahr:int ) -> None:
-        sjahr = str( jahr )
-        self.cboJahr.setCurrentText( sjahr )
+    # def setCurrentJahr( self, jahr:int ) -> None:
+    #     sjahr = str( jahr )
+    #     self.cboJahr.setCurrentText( sjahr )
 
-    def getAuswahl( self ) -> (int, List[str]):
+    # def getAuswahl( self ) -> (int, List[str]):
+    #     """
+    #     liefert das eingestellte Jahr und die Liste der ausgewählten Objekte
+    #     :return:
+    #     """
+    #     return int( self.cboJahr.currentText() ), self.choices
+
+    def getAuswahl( self ) -> List[str]:
         """
-        liefert das eingestellte Jahr und die Liste der ausgewählten Objekte
+        liefert die Liste der ausgewählten Objekte
         :return:
         """
-        return int( self.cboJahr.currentText() ), self.choices
+        return self.choices
+
 
     def onAccepted(self):
         self.choices = [self.model.item(i).text() for i in  range(self.model.rowCount() )
@@ -111,14 +149,14 @@ class AnlageVTabs( QTabWidget ):
 ###################################################################
 
 class AnlageVTableView( QTableView ):
-    cell_clicked = Signal( str, int, int, int )
+    cell_clicked = Signal( str, int, int )
     def __init__( self, parent=None ):
         QTableView.__init__( self, parent )
         self.clicked.connect( self._onLeftClick )
 
     def _onLeftClick( self, item:QModelIndex ):
         tm:AnlageVTableModel = self.model()
-        self.cell_clicked.emit( tm.getMasterName(), tm.getJahr(), item.row(), item.column() )
+        self.cell_clicked.emit( tm.getMasterName(), item.row(), item.column() )
 
 ###################################################################
 
@@ -230,6 +268,12 @@ class AnlageVView( IccView ):
 #
 #     def onCloseView( self ):
 #         self.close()
+
+def test2():
+    app = QApplication()
+    d = JahrAuswahlDialog( (2021, 2022 ) )
+    d.show()
+    app.exec_()
 
 def test():
     app = QApplication()

@@ -14,12 +14,16 @@ from qtderivates import BaseEdit, SmartDateEdit, BaseLabel, IntEdit, MultiLineEd
 class MietverhaeltnisView( QWidget ):
     save = Signal()
     dataChanged = Signal()
+    nextMv = Signal()
+    prevMv = Signal()
     def __init__( self, mietverhaeltnis:XMietverhaeltnis=None, withSaveButton:bool=False, parent=None ):
         QWidget.__init__( self, parent )
         self._mietverhaeltnis:XMietverhaeltnis = None
         self._withSaveButton = withSaveButton
         self._layout = QGridLayout()
         self._btnSave = QPushButton()
+        self._btnVor = QPushButton()
+        self._btnRueck = QPushButton()
         self._sdBeginnMietverh = SmartDateEdit()
         self._sdBeginnMietverh.textChanged.connect( self.onChange )
         self._sdEndeMietverh = SmartDateEdit()
@@ -65,14 +69,16 @@ class MietverhaeltnisView( QWidget ):
         self._btnSave.setEnabled( enabled )
 
     def _createGui( self ):
-        r = 0
+        hbox = QHBoxLayout()
         if self._withSaveButton:
-            r = self._createSaveButton( r )
-            r = self._addHorizontalLine( r )
-        self._createFelder( r )
+            self._createSaveButton( hbox )
+        self._createVorRueckButtons( hbox )
+        self._layout.addLayout( hbox, 0, 0, alignment=Qt.AlignLeft )
+        self._addHorizontalLine( 1 )
+        self._createFelder( 2 )
         self.setLayout( self._layout )
 
-    def _createSaveButton( self, r:int ):
+    def _createSaveButton( self, hbox ):
         btn = self._btnSave
         btn.clicked.connect( self.save.emit )
         btn.setFlat( True )
@@ -85,10 +91,26 @@ class MietverhaeltnisView( QWidget ):
         btn.setFixedSize( size )
         iconsize = QSize( 30, 30 )
         btn.setIconSize( iconsize )
-        hbox = QHBoxLayout()
         hbox.addWidget( btn )
-        self._layout.addLayout( hbox, r, 0, alignment=Qt.AlignLeft )
-        return r+1
+
+    def _createVorRueckButtons( self, hbox ):
+        self._prepareButton( self._btnRueck, ImageFactory.inst().getPrevIcon(),
+                             "Zum vorigen Mietverhältnis blättern", self.prevMv )
+        hbox.addWidget( self._btnRueck )
+        self._prepareButton( self._btnVor, ImageFactory.inst().getNextIcon(),
+                             "Zum nächsten Mietverhältnis blättern", self.nextMv )
+        hbox.addWidget( self._btnVor )
+
+    def _prepareButton( self, btn:QPushButton, icon:QIcon, tooltip:str, signal:Signal ):
+        btn.setFlat( True )
+        btn.setEnabled( True )
+        btn.setToolTip( tooltip )
+        btn.setIcon( icon )
+        size = QSize( 32, 32 )
+        btn.setFixedSize( size )
+        iconsize = QSize( 30, 30 )
+        btn.setIconSize( iconsize )
+        btn.clicked.connect( signal.emit )
 
     def _addHorizontalLine( self, r:int ):
         hline = HLine()
@@ -274,6 +296,25 @@ class MietverhaeltnisView( QWidget ):
         self._txtBemerkung1.setText( mv.bemerkung1 )
         self._txtBemerkung2.setText( mv.bemerkung2 )
 
+    def clear( self ):
+        self._sdBeginnMietverh.clear()
+        self._sdEndeMietverh.clear()
+        self._edMieterName_1.clear()
+        self._edMieterVorname_1.clear()
+        self._edMieterName_2.clear()
+        self._edMieterVorname_2.clear()
+        self._edMieterTelefon.clear()
+        self._edMieterMobil.clear()
+        self._edMieterMailto.clear()
+        self._edAnzPers.clear()
+        self._edNettomiete.clear()
+        self._edNkv.clear()
+        self._edKaution.clear()
+        self._sdKautionBezahltAm.clear()
+        self._txtBemerkung1.clear()
+        self._txtBemerkung2.clear()
+
+
 ###############  MietverhaeltnisDialog  ##########################
 class MietverhaeltnisDialog( OkCancelDialog ):
     def __init__(self, mietverhaeltnis:XMietverhaeltnis=None, parent=None):
@@ -285,8 +326,16 @@ class MietverhaeltnisDialog( OkCancelDialog ):
     def getView( self ) -> MietverhaeltnisView:
         return self._view
 
+def onPrevMv():
+    print( "prev mv" )
+
+def onNextMv():
+    print( "next mv" )
+
 def test():
     app = QApplication()
     v = MietverhaeltnisView( withSaveButton=True )
+    v.prevMv.connect( onPrevMv )
+    v.nextMv.connect( onNextMv )
     v.show()
     app.exec_()

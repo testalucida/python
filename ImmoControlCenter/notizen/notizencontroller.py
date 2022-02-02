@@ -1,16 +1,15 @@
 import copy
-from typing import List, Dict, Any
+from typing import List, Any
 
-from PySide2.QtCore import QModelIndex, QSize
+from PySide2.QtCore import QModelIndex
 from PySide2.QtWidgets import QApplication, QDialog, QWidget
 
 from business import BusinessLogic
 from datehelper import currentDateIso, getCurrentTimestampIso
 from interfaces import XNotiz
-from icccontroller import IccController
+from icc.icccontroller import IccController
 from notizen.notizengui import NotizenView, NotizEditDialog
 from notizen.notizentablemodel import NotizenTableModel
-from offene_posten.offenepostengui import OffenerPostenEditDialog, OffenePostenView
 from qtderivates import AuswahlDialog
 
 

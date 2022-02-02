@@ -1,17 +1,20 @@
 from typing import List, Any
 
-from PySide2.QtCore import Slot, QObject
+from PySide2.QtCore import Slot
 from PySide2.QtWidgets import QApplication, QDialog, QMessageBox
 
+from anlage_v.anlagev_base_logic import AnlageV_Base_Logic
 from anlage_v.anlagev_preview_logic import AnlageV_Preview_Logic
-from anlage_v.anlagev_gui import AnlageVView, AnlageVTableView, AnlageVAuswahlDialog #, AnlageVDialog
+from anlage_v.anlagev_gui import AnlageVView, AnlageVTableView, AnlageVAuswahlDialog, \
+    JahrAuswahlDialog  # , AnlageVDialog
 from anlage_v.anlagev_print_logic import AnlageV_Print_Logic
 from anlage_v.anlagev_tablemodel import AnlageVTableModel
 from anlage_v.anlagev_ausgabentablemodel import AnlageV_AusgabenTableModel
 from constants import DetailLink
 from generictable_stuff.customtableview import GenericTableViewDialog
-from icccontroller import IccController
+from icc.icccontroller import IccController
 from mdisubwindow import MdiSubWindow
+from messagebox import ErrorBox
 
 
 class AnlageVController( IccController ):
@@ -29,20 +32,29 @@ class AnlageVController( IccController ):
         self._subwin:MdiSubWindow = MdiSubWindow()
         self._view:AnlageVView = AnlageVView()
         self._tmlist:List[AnlageVTableModel] = list()
-        try:
-            self._busi:AnlageV_Preview_Logic = AnlageV_Preview_Logic()
-        except Exception as ex:
-            print( str(ex) )
+        self._busi:AnlageV_Preview_Logic = None  # Logic erst instanzieren, wenn Jahr ausgewählt wurde
 
     def createView( self ) -> AnlageVView:
         self._view.openAnlageV.connect( self.onOpenAnlageV )
         self._view.printAnlageV.connect( self.onPrintAnlageV )
         self._view.printAllAnlageV.connect( self.onPrintAllAnlageV )
+        # Feststellen, für welches Veranlagungsjahr die Anlagen V erstellt werden sollen:
+        jahre = AnlageV_Base_Logic.getJahre()
+        dlg = JahrAuswahlDialog( jahre )
+        dlg.move( self._view.cursor().pos() )
+        if dlg.exec_():
+            self._jahr = dlg.jahr
+            try:
+                self._busi = AnlageV_Preview_Logic( self._jahr )
+            except Exception as ex:
+                box = ErrorBox( "AnlageVController.createView()", "Instantiation AnlageV_Preview_Logic failed.\n", str( ex ) )
+                box.exec_()
+                return None
+        else:
+            return None
         master_objekte = self._busi.getObjektNamen()
-        jahre = self._busi.getJahre()
-        accepted, jahr, objlist = self.showAnlageVAuswahlDialog( jahre, master_objekte )
+        accepted, objlist = self.showAnlageVAuswahlDialog( master_objekte )
         if accepted:
-            self._jahr = jahr
             self._master_objekte = objlist
             self._provideTabs( objlist )
             return self._view
@@ -51,34 +63,25 @@ class AnlageVController( IccController ):
             self._master_objekte.clear()
             return None
 
-    # def createDialog( self, parent ) -> AnlageVDialog:
-    #     """
-    #     instead of only creating a view (and getting returned that view)
-    #     a dialog containing this view may be created.
-    #     A parent must be given so that the dialog can be non-modal.
-    #     """
-    #     view = self.createView()
-    #     dlg = AnlageVDialog( view, parent )
-    #     return dlg
-
-    def showAnlageVAuswahlDialog( self, jahre:List[int], master_objekte:List[str] ) -> [bool, int, List]:
+    def showAnlageVAuswahlDialog( self, master_objekte:List[str] ) -> [bool, List]:
         """
         zeigt den Objekt-Auswahldialog und liefert die ausgewählten Objekte und das ausgewählte Jahr zurück
         :return: accepted: True/False, jahr, Liste der ausgewählten Masterobjekte
         """
-        dlg = AnlageVAuswahlDialog( master_objekte, jahre, checked=False )
-        if len( jahre ) > 1:
-            dlg.setCurrentJahr( jahre[len( jahre ) - 2] )
+        dlg = AnlageVAuswahlDialog( master_objekte, checked=False )
+        # if len( jahre ) > 1:
+        #     dlg.setCurrentJahr( jahre[len( jahre ) - 2] )
         dlg.setMinimumHeight( len( master_objekte * 30 ) )
         if dlg.exec_() == QDialog.Accepted:
             ausw = dlg.getAuswahl()
-            return True, ausw[0], ausw[1]
+            #return True, ausw[0], ausw[1]
+            return True, ausw
         else:
-            return False, 0, None
+            return False, None
 
     def _provideTabs( self, master_objekte:List[str] ):
         for obj in master_objekte:
-            tm = self._busi.getAnlageVTableModel( obj, self._jahr )
+            tm = self._busi.getAnlageVTableModel( obj )
             self._tmlist.append( tm )
             tv:AnlageVTableView = self._view.addAnlageV( tm )
             tv.cell_clicked.connect( self.onAnlageVLeftClick )
@@ -88,13 +91,13 @@ class AnlageVController( IccController ):
         master_objekte = self._busi.getObjektNamen()  # alle Objekte holen
         # nur die zur Auswahl geben, die noch nicht geöffnet sind:
         rem = [x for x in master_objekte if x not in self._master_objekte]
-        if self._jahr == 0:
-            jahre = self._busi.getJahre()
-        else:
-            jahre = [self._jahr,]
-        accepted, jahr, objlist = self.showAnlageVAuswahlDialog( jahre, rem )
+        # if self._jahr == 0:
+        #     jahre = self._busi.getJahre()
+        # else:
+        #     jahre = [self._jahr,]
+        accepted, objlist = self.showAnlageVAuswahlDialog( rem )
         if accepted:
-            self._jahr = jahr
+            #self._jahr = jahr
             self._master_objekte.extend( objlist )
             self._provideTabs( objlist )
 
@@ -117,29 +120,28 @@ class AnlageVController( IccController ):
         onlyKopfdaten = False
         if ret == mb.Yes:
             onlyKopfdaten = True
-        printCtrl = AnlageV_Print_Logic()
+        printCtrl = AnlageV_Print_Logic( self._jahr )
         printCtrl.printAnlagenV( master_names, self._jahr, onlyKopfdaten )
 
-    def onAnlageVLeftClick( self, master_objekt:str, jahr:int, row:int, column:int ) -> None:
-        #print( "AnlageV clicked: %s, %d, %d, %d" % (master_objekt, jahr, row, column ) )
+    def onAnlageVLeftClick( self, master_objekt:str, row:int, column:int ) -> None:
         col = self._tmlist[0].getDetailLinkColumnIndex()
         if col == column:
             tm = self._getAnlageVTableModel( master_objekt )
             linkvalue = tm.getValue( row, column )
             if linkvalue:
                 if linkvalue == DetailLink.ALLGEMEINE_KOSTEN.value[0]:
-                    tm:AnlageV_AusgabenTableModel = self._busi.getAllgemeineAusgabenModel( master_objekt, jahr )
+                    tm:AnlageV_AusgabenTableModel = self._busi.getAllgemeineAusgabenModel( master_objekt )
                     self._showAusgabenDialog( tm, "Allgemeine Hauskosten" )
                 elif linkvalue == DetailLink.ERHALTUNGSKOSTEN.value[0]:
-                    tm:AnlageV_AusgabenTableModel = self._busi.getReparaturausgabenNichtVerteilt( master_objekt, jahr )
+                    tm:AnlageV_AusgabenTableModel = self._busi.getReparaturausgabenNichtVerteilt( master_objekt )
                     self._showAusgabenDialog( tm, "Voll abzuziehende Erhaltungsaufwendungen" )
                 elif linkvalue == DetailLink.ZU_VERTEIL_GESAMTKOSTEN_VJ.value[0]:
                     # Aufwände, die im VJ entstanden und zu verteilen sind
-                    tm:AnlageV_AusgabenTableModel = self._busi.getZuVerteilendeAufwaende( master_objekt, jahr )
+                    tm:AnlageV_AusgabenTableModel = self._busi.getZuVerteilendeAufwaende( master_objekt )
                     self._showAusgabenDialog( tm, "Im VJ zu verteilende Erhaltungsaufwendungen" )
                 elif linkvalue == DetailLink.ERHALTUNGSKOSTEN_VERTEILT.value[0]:
                     # Anzusetzende Teilbeträge der Aufwände, die im VJ und den vergangenen 4 Jahren entstanden sind
-                    tm:AnlageV_AusgabenTableModel = self._busi.getReparaturausgabenVerteilt( master_objekt, jahr )
+                    tm:AnlageV_AusgabenTableModel = self._busi.getReparaturausgabenVerteilt( master_objekt )
                     self._showAusgabenDialog( tm, "Anteilig anzusetzende Erhaltungsaufwendungen" )
                 elif linkvalue == DetailLink.SONSTIGE_KOSTEN.value[0]:
                     pass

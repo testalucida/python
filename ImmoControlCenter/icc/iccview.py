@@ -2,14 +2,16 @@ from abc import abstractmethod, ABC
 from typing import Any, List
 
 from PySide2.QtCore import Signal, Qt, QSize, QAbstractTableModel, QModelIndex
-from PySide2.QtGui import QIcon, QFont
-from PySide2.QtWidgets import QWidget, QTableView, QPushButton, QGridLayout, QHBoxLayout, QApplication, QComboBox
+from PySide2.QtGui import QIcon, QFont, QCursor
+from PySide2.QtWidgets import QWidget, QTableView, QPushButton, QGridLayout, QHBoxLayout, QApplication, QComboBox, \
+    QLineEdit, QTextEdit
 
 from definitions import ICON_DIR
 from generictable_stuff.xbasetablemodel import XBaseTableModel
-from icctableeditor import IccTableEditor
+from icc.icctableeditor import IccTableEditor
 from interfaces import XBase
-from qtderivates import HLine
+from messagebox import ErrorBox
+from qtderivates import HLine, MultiLineEdit
 
 
 class IccViewMeta( type(QWidget), type(ABC) ):
@@ -21,7 +23,27 @@ class IccView( QWidget, ABC, metaclass=IccViewMeta ):
     """
     def __init__( self ):
         QWidget.__init__( self, None )
+        self._isChanged = False
 
+    def connectWidgetsToChangeSlot( self ):
+        children = self.findChildren( QWidget, "" )
+        for child in children:
+            if isinstance( child, QLineEdit ):
+                child.textChanged.connect( self.onChange )
+            if isinstance( child, QComboBox ):
+                child.currentIndexChanged.connect( self.onChange )
+                child.currentTextChanged.connect( self.onChange )
+            if isinstance( child, QTextEdit ):
+                child.textChanged.connect( self.onChange )
+
+    def onChange( self ):
+        self._isChanged = True
+
+    def isChanged( self ) -> bool:
+        return self._isChanged
+
+    def resetChangeFlag( self ):
+        self._isChanged = False
 
     @abstractmethod
     def getModel( self ) -> Any:
@@ -117,6 +139,12 @@ class IccToolBarView( QWidget ):
     def setSaveButtonEnabled( self, enabled:bool=True ):
         self._btnSave.setEnabled( enabled )
 
+    def showException( self, title, msg, more=None ):
+        box = ErrorBox( title, msg, more )
+        crsr = QCursor.pos()
+        box.move( crsr.x(), crsr.y() )
+        box.exec_()
+
 #####################   IccTableEditorView   ##############
 class IccTableEditorView( IccToolBarView ):
     """
@@ -175,7 +203,7 @@ class IccTableEditorYearSpecificView( IccTableEditorView ):
         self.addTool( self._cboYear )
 
     def addJahr( self, jahr:int ):
-        self._cboYear.addItem( text=str(jahr) )
+        self._cboYear.addItem( str(jahr) )
 
     def addJahre( self, jahre:List[int] ):
         self._cboYear.addItems( [str(j) for j in jahre] )
@@ -215,6 +243,7 @@ def test3():
     v = IccTableEditorYearSpecificView()
     v.setWindowTitle( "Test zum Testen von Jahren" )
     v.addJahre( [2021, 2022] )
+    v.addJahr( 2023 )
     v.yearChanged.connect( yearChanged )
     v.save.connect( onSave )
     v.show()

@@ -1,15 +1,12 @@
 from PySide2.QtCore import QModelIndex, QPoint, Qt
-from PySide2.QtWidgets import QWidget, QAbstractItemView, QAction, QMenu, QApplication, QSizePolicy
-from typing import List, Dict
-import datetime
-import sys
+from PySide2.QtWidgets import QWidget, QAction, QApplication
+from typing import List
 
 from abrechnungentablemodel import AbrechnungenTableModel
 from abrechnungenview import AbrechnungenView
 from business import BusinessLogic
-from icccontroller import IccController
-from mdisubwindow import MdiSubWindow
-from interfaces import XSonstAus, XSonstAusSummen, XAbrechnung
+from icc.icccontroller import IccController
+from interfaces import XAbrechnung
 import constants
 from datehelper import *
 from sumfieldsprovider import SumFieldsProvider

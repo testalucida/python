@@ -35,6 +35,13 @@ class MietverhaeltnisLogic:
             raise Exception( "Fehler beim Lesen des Aktuellen Mietverhältnisses zu Mietobjekt '%s':\n'%s' " %
                              ( mobj_id, str(ex)) )
 
+    def getMietverhaeltnisListe( self, mobj_id:str ) -> List[XMietverhaeltnis]:
+        try:
+            return self._db.getMietverhaeltnisse( mobj_id )
+        except Exception as ex:
+            raise Exception( "Fehler beim Lesen der Liste der Mietverhältnisse zu Mietobjekt '%s':\n'%s' " %
+                             ( mobj_id, str(ex)) )
+
     def getMietverhaeltnisById( self, id:int ) -> XMietverhaeltnis:
         """
         Liefert das Mietverhältnis mit der Mietverhältnis-ID <id>
@@ -99,8 +106,9 @@ class MietverhaeltnisLogic:
         """
         msg = self.validateMietverhaeltnisDaten( xmv )
         if msg:
-            raise Exception( "Anlage Mietverhältnis fehlgeschlagen:\n%s" % msg )
+            raise Exception( "Daten des neuen Mietverhältnisses fehlerhaft:\n%s" % msg )
         xmv.mv_id = self._create_mv_id( xmv.name, xmv.vorname )
+
         #prüfen, ob schon ein Mietverhältnis mit dieser mv_id existiert:
         try:
             if self._db.existsAktivesOderZukuenftigesMietverhaeltnis( xmv.mv_id ):
@@ -109,28 +117,19 @@ class MietverhaeltnisLogic:
         except Exception as ex:
             raise Exception( "Fehler bei der Dublettenprüfung bei Anlage Mietverhältnis für '%s':\n'%s'"
                              % (xmv.mv_id, str(ex) ) )
+
         # MV-Satz anlegen:
         try:
             self._db.insertMietverhaeltnis( xmv )
+            max_id = self._db.getMaxId( "mietverhaeltnis", "id" )
+            xmv.id = max_id
         except Exception as ex:
             raise Exception( "Bei der Anlage des Mietverhältnisses für '%s' ist der DB-Insert fehlgeschlagen:\n'%s'"
                              % (xmv.mv_id, str(ex) ) )
-        # Sollmiete-Satz anlegen
-        smlogic = SollmieteLogic()
-        xsm = XSollMiete()
-        xsm.von = xmv.von
-        xsm.bis = xmv.bis
-        xsm.mv_id = xmv.mv_id
-        xsm.netto = xmv.nettomiete
-        xsm.nkv = xmv.nkv
-        smlogic.createSollmiete( xsm )
-        # Alles gut gegangen - jetzt die ID ins neue MV eintragen:
-        max_id = self._db.getMaxId( "mietverhaeltnis", "id" )
-        xmv.id = max_id
 
     def kuendigeMietverhaeltnis( self, mv_id: str, kuenddatum: str ):
         """
-        Kündigung in Tabellen mietverhaeltnis und sollmiete eintragen -
+        Kündigung in Tabelle mietverhaeltnis eintragen -
         aber nur, wenn sich das Kündigungsdatum geändert hat.
         Der Update auf sollmiete muss hier erfolgen, da es fachlich falsch ist,
         ein MV ohne den zugehörigen Sollmietensatz zu kündigen.

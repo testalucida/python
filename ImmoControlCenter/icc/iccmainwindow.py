@@ -2,15 +2,14 @@ from functools import partial
 from typing import Dict, Any, List
 
 from PySide2 import QtCore, QtWidgets, QtGui
-from PySide2.QtCore import Qt, QObject, Signal
-from PySide2.QtWidgets import QApplication, QMainWindow, QMdiArea, QMdiSubWindow, QWidget, QTextEdit, \
-    QMenuBar, QToolBar, QAction, QMessageBox, QLineEdit, QLabel, QSizePolicy, QMenu, QDialog
+from PySide2.QtCore import Qt
+from PySide2.QtWidgets import QApplication, QMainWindow, QWidget, QMenuBar, QToolBar, QAction, QMessageBox, QLineEdit, QLabel, \
+    QMenu
 from PySide2.QtGui import QKeySequence, QFont
 from enum import Enum
 
 from datehelper import getDateParts
-from iccdialog import IccDialog
-from imagefactory import ImageFactory
+from icc.iccdialog import IccDialog
 from messagebox import InfoBox
 from qtderivates import SmartDateEdit, IntDisplay
 from sumfieldsprovider import SumFieldsProvider
@@ -270,7 +269,7 @@ class IccMainWindow( QMainWindow ):
         # Menüpunkt "Neue Abfrage
         action = QAction( self, text="Neue Datenbankabfrage" )
         action.setShortcut( QKeySequence( "Ctrl+n" ) )
-        icon = QtGui.QIcon( "./images/sql.xpm" )
+        icon = QtGui.QIcon( "../images/sql.xpm" )
         action.setIcon( icon )
         action.triggered.connect( self.onNewSql )
         menu.addAction( action )

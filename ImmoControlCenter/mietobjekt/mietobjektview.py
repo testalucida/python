@@ -1,15 +1,15 @@
 import copy
 
 from PySide2.QtCore import QSize, Signal
-from PySide2.QtGui import QFont, Qt, QIcon, QFontMetrics
-from PySide2.QtWidgets import QApplication, QWidget, QGridLayout, QLabel, QHBoxLayout, QPushButton
+from PySide2.QtGui import QFont, Qt, QIcon
+from PySide2.QtWidgets import QApplication, QWidget, QGridLayout, QHBoxLayout, QPushButton
 
 from definitions import ICON_DIR
-from iccview import IccView
+from icc.iccview import IccView
 from interfaces import XMietobjektExt
 from qtderivates import SmartDateEdit, BaseLabel, EditButton, \
-    BaseBoldEdit, MultiLineEdit, HLine, LabelArial12, FixedWidth20Dummy, FixedWidthDummy, LabelTimes12, \
-    LabelTimesBold12, BaseEdit
+    BaseBoldEdit, MultiLineEdit, HLine, LabelArial12, FixedWidth20Dummy, LabelTimes12, \
+    LabelTimesBold12
 
 
 class FatLabel( BaseLabel ):
@@ -67,6 +67,7 @@ class MietobjektView( IccView ):
         self._lblHgvBrutto = FatLabel()
 
         self._createGui( x )
+        self.connectWidgetsToChangeSlot()
 
     def _createGui( self, x:XMietobjektExt ):
         self._createToolBar( 0 )
@@ -199,7 +200,7 @@ class MietobjektView( IccView ):
         r, c = r+1, 0
         self._meBemerkungMaster.setText( x.bemerkung_masterobjekt )
         self._meBemerkungMaster.setMaximumHeight( 46 )
-        self._meBemerkungMaster.setPlaceholderText( "<Bmerkungen zum Master-Objekt>" )
+        self._meBemerkungMaster.setPlaceholderText( "<eBmerkungen zum Master-Objekt>" )
         self._layout.addWidget( self._meBemerkungMaster, r, c, 1, self._anzCols )
 
         return r
