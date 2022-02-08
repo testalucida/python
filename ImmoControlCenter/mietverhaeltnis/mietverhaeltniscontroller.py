@@ -127,6 +127,7 @@ class MietverhaeltnisController( IccController ):
             self._view.applyChanges()
             try:
                 BusinessLogic.inst().saveMietverhaeltnis( self._mv )
+                self._view.resetChangeFlag()
                 return True
             except Exception as ex:
                 self.showErrorMessage( "Mietverhältnis: Speichern fehlgeschlagen", str( ex ) )

@@ -171,9 +171,9 @@ class CheckTableView( TableView ):
 
 
 ################# MonatswerteBaseView #########################
-class CheckView( IccView ):
+class CheckView( QWidget ): # IccView ):
     def __init__(self):
-        IccView.__init__( self )
+        QWidget.__init__( self )
         self.setWindowTitle( "Monatswerte" )
         self._gridLayout:QtWidgets.QGridLayout = QtWidgets.QGridLayout( self )
         self._combofont = QFont( "Arial", 14, weight=QFont.Bold);
@@ -271,13 +271,7 @@ class CheckView( IccView ):
             bottom_cell = self._tm.index( 0, 2 )
             tv.dataChanged( top_cell, bottom_cell, [Qt.BackgroundRole, ] )
             index = self._tm.getCheckmonatColumnIndex()
-            # scrollposX = tv.horizontalScrollBar().value()
-            # print( "scrollposX: ", scrollposX )
-            # colidx = index.column()
-            # print( "newmonth: ", newmonth, "; checkmonthcolumnindex: ", str( index ),
-            #        "; colidx: ", colidx )
             tv.scrollTo( index )
-            #self.tableView.scroll( dx, dy )
             tv.repaint()
             self.repaint()
         self.doCheckMonatChangedCallback()
@@ -289,6 +283,9 @@ class CheckView( IccView ):
     def doCheckMonatChangedCallback( self ):
         if self._monatChangedCallback:
             self._monatChangedCallback( self.getSelectedCheckMonat() )
+
+    def isChanged( self ) -> bool:
+        return self._tm.isChanged()
 
     def setJahrChangedCallback( self, cb_fnc ):
         """
@@ -338,16 +335,9 @@ class CheckView( IccView ):
     def _okButtonClicked(self, checkstate:bool ):
         app = QApplication.instance()
         button:QPushButton = app.focusWidget()
-        # or button = self.sender()
         index = self.tableView.indexAt( button.pos() )
         if index.isValid():
-            #print(index.row(), index.column())
             self._tm.setOkState( index, button.isChecked() )
-        # ## TEST ##
-        # idx = self._tm.index( 0, self._tm.columnCount()-1 )
-        # self._tableView.scrollTo( idx )
-        # idx = self._tm.index( 0, 3 )
-        # self._tableView.scrollTo( idx )
 
     def _nokButtonClicked(self, checkstate: bool):
         # Soll-Vorgabe nicht erfüllt; manuelle Eingabe über ValueDialog

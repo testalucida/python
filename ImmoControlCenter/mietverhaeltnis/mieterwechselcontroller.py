@@ -37,8 +37,9 @@ class MieterwechselController( IccController ):
         return self._view
 
     def isChanged( self ) -> bool:
-        xmw_gui = self._view.getMieterwechselDataCopyWithChanges()
-        return False if xmw_gui.equals( self._xmieterwechsel ) else True
+        #xmw_gui = self._view.getMieterwechselDataCopyWithChanges()
+        #return False if xmw_gui.equals( self._xmieterwechsel ) else True
+        return self._view.isChanged()
 
     def getChanges( self ) -> Any:
         return None

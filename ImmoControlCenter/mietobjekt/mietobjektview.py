@@ -7,6 +7,7 @@ from PySide2.QtWidgets import QApplication, QWidget, QGridLayout, QHBoxLayout, Q
 from definitions import ICON_DIR
 from icc.iccview import IccView
 from interfaces import XMietobjektExt
+from modifiyinfo import ModifyInfo
 from qtderivates import SmartDateEdit, BaseLabel, EditButton, \
     BaseBoldEdit, MultiLineEdit, HLine, LabelArial12, FixedWidth20Dummy, LabelTimes12, \
     LabelTimesBold12
@@ -19,7 +20,7 @@ class FatLabel( BaseLabel ):
         self.setFont( self._font )
 
 ############### MieterwechselView ########################
-class MietobjektView( IccView ):
+class MietobjektView( QWidget, ModifyInfo ): # IccView ):
     save = Signal() # speichere Änderungen am Hauswart, der Masterobjekt-Bemerkung,
                             # des Mietobjekt-Containers und der Mietobjekt-Bemerkung
     edit_mieter = Signal()
@@ -28,7 +29,8 @@ class MietobjektView( IccView ):
     edit_hausgeld = Signal()
 
     def __init__( self, x:XMietobjektExt ):
-        IccView.__init__( self )
+        QWidget.__init__( self )
+        ModifyInfo.__init__( self )
         self._mietobjekt = x
         self._btnSave = QPushButton()
         self._layout = QGridLayout()

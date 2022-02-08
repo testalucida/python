@@ -74,6 +74,7 @@ Vermutlich wird nicht nur Tabelle sonstaus ausgewertet, sondern auch Tabelle zah
 28. BUG: View "Mieterdaten": Obwohl keine Änderung, wird Box "Ändwerungen speichern" angezeigt
 
 29. BUG: View "Mieteingänge": Kontextmenü "Mietverhältnisdaten anzeigen" nach Rechtsklick auf Mietername funktioniert nicht
+    --> erl.
 
 30. Views "Sollmieten" und "Soll-Hausgelder": Trichter entfernen
 
@@ -93,6 +94,7 @@ Vermutlich wird nicht nur Tabelle sonstaus ausgewertet, sondern auch Tabelle zah
 35. Zentralen Info-Mechanismus für die Abfrage von "isChanged" implementieren.
     Derzeit im IccView implementiert (connectWidgetsToChangeSlot).
     Idee: eigene Klasse ModifiyInfo, die von jeder View oder jedem Controller implementiert wird.
+    --> erl. für CheckView, MietverhaeltnisView, MietobjektView
 
 36. MietverhaeltnisView:
     Vor-/Rück-Buttons einbauen, damit man zwischen den Mietverhältnissen "blättern" kann

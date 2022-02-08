@@ -7,17 +7,19 @@ from PySide2.QtWidgets import QWidget, QGridLayout, QLabel, QHBoxLayout, QApplic
 from generictable_stuff.okcanceldialog import OkCancelDialog
 from imagefactory import ImageFactory
 from interfaces import XMietverhaeltnis
+from modifiyinfo import ModifyInfo
 from qtderivates import BaseEdit, SmartDateEdit, BaseLabel, IntEdit, MultiLineEdit, FloatEdit, HLine
 
 
 ##################  MietverhaeltnisView  ################
-class MietverhaeltnisView( QWidget ):
+class MietverhaeltnisView( QWidget, ModifyInfo ):
     save = Signal()
     dataChanged = Signal()
     nextMv = Signal()
     prevMv = Signal()
     def __init__( self, mietverhaeltnis:XMietverhaeltnis=None, withSaveButton:bool=False, enableBrowsing=False, parent=None ):
         QWidget.__init__( self, parent )
+        ModifyInfo.__init__( self )
         self._mietverhaeltnis:XMietverhaeltnis = None
         self._withSaveButton = withSaveButton
         self._enableBrowsing = enableBrowsing # ob die Browse-Buttons angezeigt werden
@@ -26,40 +28,26 @@ class MietverhaeltnisView( QWidget ):
         self._btnVor = QPushButton()
         self._btnRueck = QPushButton()
         self._sdBeginnMietverh = SmartDateEdit()
-        self._sdBeginnMietverh.textChanged.connect( self.onChange )
         self._sdEndeMietverh = SmartDateEdit()
-        self._sdEndeMietverh.textChanged.connect( self.onChange )
         self._edMieterName_1 = BaseEdit()
-        self._edMieterName_1.textChanged.connect( self.onChange )
         self._edMieterVorname_1 = BaseEdit()
-        self._edMieterVorname_1.textChanged.connect( self.onChange )
         self._edMieterName_2 = BaseEdit()
-        self._edMieterName_2.textChanged.connect( self.onChange )
         self._edMieterVorname_2 = BaseEdit()
-        self._edMieterVorname_2.textChanged.connect( self.onChange )
         self._edMieterTelefon = BaseEdit()
-        self._edMieterTelefon.textChanged.connect( self.onChange )
         self._edMieterMobil = BaseEdit()
-        self._edMieterMobil.textChanged.connect( self.onChange )
         self._edMieterMailto = BaseEdit()
-        self._edMieterMailto.textChanged.connect( self.onChange )
         self._edAnzPers = IntEdit()
-        self._edAnzPers.textChanged.connect( self.onChange )
         self._edNettomiete = FloatEdit()
-        self._edNettomiete.textChanged.connect( self.onChange )
         self._edNkv = FloatEdit()
-        self._edNkv.textChanged.connect( self.onChange )
         self._edKaution = IntEdit()
-        self._edKaution.textChanged.connect( self.onChange )
         self._sdKautionBezahltAm = SmartDateEdit()
-        self._sdKautionBezahltAm.textChanged.connect( self.onChange )
         self._txtBemerkung1 = MultiLineEdit()
-        self._txtBemerkung1.textChanged.connect( self.onChange )
         self._txtBemerkung2 = MultiLineEdit()
-        self._txtBemerkung2.textChanged.connect( self.onChange )
+
         self._createGui()
         if mietverhaeltnis:
             self.setMietverhaeltnisData( mietverhaeltnis )
+        self.connectWidgetsToChangeSlot( self.onChange )
 
     def onChange( self, newcontent:str=None ):
         if not self._btnSave.isEnabled():
@@ -297,6 +285,7 @@ class MietverhaeltnisView( QWidget ):
             self._sdKautionBezahltAm.setDateFromIsoString( mv.kaution_bezahlt_am )
         self._txtBemerkung1.setText( mv.bemerkung1 )
         self._txtBemerkung2.setText( mv.bemerkung2 )
+        self.resetChangeFlag()
 
     def clear( self ):
         self._sdBeginnMietverh.clear()
@@ -336,7 +325,7 @@ def onNextMv():
 
 def test():
     app = QApplication()
-    v = MietverhaeltnisView( withSaveButton=True )
+    v = MietverhaeltnisView( withSaveButton=True, enableBrowsing=True )
     v.prevMv.connect( onPrevMv )
     v.nextMv.connect( onNextMv )
     v.show()

@@ -2,15 +2,16 @@ import copy
 
 from PySide2.QtCore import QSize, Signal
 from PySide2.QtGui import QFont, Qt, QIcon
-from PySide2.QtWidgets import QGridLayout, QLabel, QHBoxLayout, QPushButton, QApplication
+from PySide2.QtWidgets import QGridLayout, QLabel, QHBoxLayout, QPushButton, QApplication, QWidget
 from icc.iccview import IccView
 from interfaces import XMietverhaeltnis, XMieterwechsel
 from mietverhaeltnis.mietverhaeltnisgui import MietverhaeltnisView
+from modifiyinfo import ModifyInfo
 from qtderivates import BaseEdit, SmartDateEdit, BaseLabel, FloatEdit, IntEdit
 
 
 ############### MieterwechselView ########################
-class MieterwechselView( IccView ):
+class MieterwechselView( QWidget, ModifyInfo ): # IccView ):
     """
     Enthält ein paar Felder für das aktive ("alte") Mietverhältnis,
     sowie eine MietverhaeltnisView für das Folge-MV.
@@ -18,7 +19,7 @@ class MieterwechselView( IccView ):
     """
     mieterwechsel_save = Signal()
     def __init__( self ):
-        IccView.__init__( self )
+        QWidget.__init__( self )
         self._layout = QGridLayout()
         self._btnSave = QPushButton()
         # altes Mietverhältnis
@@ -27,15 +28,16 @@ class MieterwechselView( IccView ):
         self._edAlteNKV = FloatEdit()
         self._edAlteKaution = IntEdit()
         self._sdEndeMietverh = SmartDateEdit()
-        self._sdEndeMietverh.textChanged.connect( self.onChang )
+        self._sdEndeMietverh.textChanged.connect( self.onChange )
         # neues Mietverhältnis
         self._neuesMietvhView = MietverhaeltnisView( enableBrowsing=False )
-        self._neuesMietvhView.dataChanged.connect( self.onChang )
+        self._neuesMietvhView.dataChanged.connect( self.onChange )
         self._mieterwechsel:XMieterwechsel = None
 
         self._createGui()
+        self.connectWidgetsToChangeSlot()
 
-    def onChang( self ):
+    def onChange( self ):
         if not self._btnSave.isEnabled():
             self.setSaveButtonEnabled()
 
@@ -141,9 +143,11 @@ class MieterwechselView( IccView ):
         if xmv.kaution:
             self._edAlteKaution.setIntValue( xmv.kaution )
         self._sdEndeMietverh.setDateFromIsoString( xmv.bis )
+        self.resetChangeFlag()
 
     def _setNeuesMietverhaeltnisFields( self, xmv:XMietverhaeltnis ):
         self._neuesMietvhView.setMietverhaeltnisData( xmv )
+        self._neuesMietvhView.resetChangeFlag()
 
     def getMieterwechselDataCopyWithChanges( self ) -> XMieterwechsel:
         xmwcopy = copy.copy( self._mieterwechsel )

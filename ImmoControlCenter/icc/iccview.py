@@ -11,6 +11,7 @@ from generictable_stuff.xbasetablemodel import XBaseTableModel
 from icc.icctableeditor import IccTableEditor
 from interfaces import XBase
 from messagebox import ErrorBox
+from modifiyinfo import ModifyInfo
 from qtderivates import HLine, MultiLineEdit
 
 
@@ -23,27 +24,17 @@ class IccView( QWidget, ABC, metaclass=IccViewMeta ):
     """
     def __init__( self ):
         QWidget.__init__( self, None )
-        self._isChanged = False
+        self._modifyInfo = ModifyInfo()
+        #self._isChanged = False
 
     def connectWidgetsToChangeSlot( self ):
-        children = self.findChildren( QWidget, "" )
-        for child in children:
-            if isinstance( child, QLineEdit ):
-                child.textChanged.connect( self.onChange )
-            if isinstance( child, QComboBox ):
-                child.currentIndexChanged.connect( self.onChange )
-                child.currentTextChanged.connect( self.onChange )
-            if isinstance( child, QTextEdit ):
-                child.textChanged.connect( self.onChange )
-
-    def onChange( self ):
-        self._isChanged = True
+        self._modifyInfo.connectWidgetsToChangeSlot( self )
 
     def isChanged( self ) -> bool:
-        return self._isChanged
+        return self._modifyInfo.isChanged()
 
     def resetChangeFlag( self ):
-        self._isChanged = False
+        self._modifyInfo.resetChangeFlag()
 
     @abstractmethod
     def getModel( self ) -> Any:
