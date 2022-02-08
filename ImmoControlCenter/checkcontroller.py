@@ -2,6 +2,8 @@ from PySide2.QtCore import Slot, QPoint
 from PySide2.QtWidgets import QMessageBox, QMenu, QAction
 from abc import abstractmethod
 from typing import List
+
+import datehelper
 from datehelper import *
 from icc.icccontroller import IccController
 from checkview import CheckView, CheckTableView
@@ -9,6 +11,7 @@ from checktablemodel import CheckTableModel
 from business import BusinessLogic
 from constants import einausart
 from icc.iccview import IccView
+from messagebox import InfoBox
 from mietverhaeltnis.mietverhaeltniscontroller import MietverhaeltnisController
 from mietverhaeltnis.minikuendigungscontroller import MiniKuendigungsController
 from sumfieldsprovider import SumFieldsProvider
@@ -223,8 +226,12 @@ class MietenController( CheckController ):
             box.exec_()
 
     def _showMietverhaeltnis( self, mv_id:str, point:QPoint ):
-        c = MietverhaeltnisController()
-        c.showMietverhaeltnis( mv_id, point )
+        if datehelper.getCurrentYear() == self._currentYear:
+            c = MietverhaeltnisController()
+            c.showMietverhaeltnis( mv_id, point )
+        else:
+            box = InfoBox( "Sorry", "Mietverhältnisdaten können nur für das aktuelle Jahr angezeigt werden.", "", "OK" )
+            box.exec_()
 
 #################### HGVController ########################
 class HGVController( CheckController ):

@@ -2,7 +2,7 @@ import copy
 
 from PySide2.QtCore import QSize, Signal
 from PySide2.QtGui import QFont, Qt, QIcon
-from PySide2.QtWidgets import QGridLayout, QLabel, QHBoxLayout, QPushButton
+from PySide2.QtWidgets import QGridLayout, QLabel, QHBoxLayout, QPushButton, QApplication
 from icc.iccview import IccView
 from interfaces import XMietverhaeltnis, XMieterwechsel
 from mietverhaeltnis.mietverhaeltnisgui import MietverhaeltnisView
@@ -29,7 +29,7 @@ class MieterwechselView( IccView ):
         self._sdEndeMietverh = SmartDateEdit()
         self._sdEndeMietverh.textChanged.connect( self.onChang )
         # neues Mietverhältnis
-        self._neuesMietvhView = MietverhaeltnisView()
+        self._neuesMietvhView = MietverhaeltnisView( enableBrowsing=False )
         self._neuesMietvhView.dataChanged.connect( self.onChang )
         self._mieterwechsel:XMieterwechsel = None
 
@@ -161,10 +161,9 @@ class MieterwechselView( IccView ):
         return None
 
 
-# def test():
-#     dlg = MieterwechselDialog( "NK_Volkerstal" )
-#     dlg.exec_()
-#
-# if __name__ == "__main__":
-#     app = QApplication()
-#     test()
+
+def test():
+    app = QApplication()
+    v = MieterwechselView()
+    v.show()
+    app.exec_()

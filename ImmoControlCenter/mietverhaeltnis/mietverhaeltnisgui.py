@@ -16,10 +16,11 @@ class MietverhaeltnisView( QWidget ):
     dataChanged = Signal()
     nextMv = Signal()
     prevMv = Signal()
-    def __init__( self, mietverhaeltnis:XMietverhaeltnis=None, withSaveButton:bool=False, parent=None ):
+    def __init__( self, mietverhaeltnis:XMietverhaeltnis=None, withSaveButton:bool=False, enableBrowsing=False, parent=None ):
         QWidget.__init__( self, parent )
         self._mietverhaeltnis:XMietverhaeltnis = None
         self._withSaveButton = withSaveButton
+        self._enableBrowsing = enableBrowsing # ob die Browse-Buttons angezeigt werden
         self._layout = QGridLayout()
         self._btnSave = QPushButton()
         self._btnVor = QPushButton()
@@ -72,7 +73,8 @@ class MietverhaeltnisView( QWidget ):
         hbox = QHBoxLayout()
         if self._withSaveButton:
             self._createSaveButton( hbox )
-        self._createVorRueckButtons( hbox )
+        if self._enableBrowsing:
+            self._createVorRueckButtons( hbox )
         self._layout.addLayout( hbox, 0, 0, alignment=Qt.AlignLeft )
         self._addHorizontalLine( 1 )
         self._createFelder( 2 )

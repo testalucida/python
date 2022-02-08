@@ -3,6 +3,7 @@ from typing import List
 import datehelper
 from interfaces import XSollMiete, XMietverhaeltnis, XMieterwechsel, XMietverhaeltnisKurz
 from mietverhaeltnis.mietverhaeltnisdata import MietverhaeltnisData
+from mtleinaus.mtleinauslogic import MtlEinAusLogic
 from sollmiete.sollmietelogic import SollmieteLogic
 
 class MietverhaeltnisLogic:
@@ -121,11 +122,38 @@ class MietverhaeltnisLogic:
         # MV-Satz anlegen:
         try:
             self._db.insertMietverhaeltnis( xmv )
-            max_id = self._db.getMaxId( "mietverhaeltnis", "id" )
-            xmv.id = max_id
+            xmv.id = self._db.getMaxId( "mietverhaeltnis", "id" )
         except Exception as ex:
-            raise Exception( "Bei der Anlage des Mietverhältnisses für '%s' ist der DB-Insert fehlgeschlagen:\n'%s'"
+            raise Exception( "Bei der Anlage des Mietverhältnisses für '%s' ist der DB-Insert "
+                             "in die Tabelle 'mietverhaeltnis' fehlgeschlagen:\n'%s'"
                              % (xmv.mv_id, str(ex) ) )
+
+        # Sollmiete-Satz anlegen:
+        xsm = XSollMiete()
+        xsm.mv_id = xmv.mv_id
+        xsm.von = xmv.von
+        xsm.bis = xmv.bis
+        xsm.netto = xmv.nettomiete
+        xsm.nkv = xmv.nkv
+        sml = SollmieteLogic()
+        try:
+            sml.createSollmiete( xsm )
+            xsm.sm_id = self._db.getMaxId( "sollmiete", "sm_id" )
+        except Exception as ex:
+            raise Exception( "Bei der Anlage des Mietverhältnisses für '%s' ist der DB-Insert "
+                             "in die Tabelle 'sollmiete' fehlgeschlagen:\n'%s'"
+                             % (xsm.mv_id, str( ex )) )
+
+        # MtlEinAus-Satz anlegen:
+        meinauslogic = MtlEinAusLogic()
+        jahr = int(xmv.von[:4])
+        try:
+            meinauslogic.insertMtlEinAusFuerMieter( xmv.mv_id, jahr )
+        except Exception as ex:
+            raise Exception( "Bei der Anlage des Mietverhältnisses für '%s' ist der DB-Insert "
+                             "in die Tabelle 'mtleinaus' fehlgeschlagen:\n'%s'"
+                             % (xmv.mv_id, str( ex )) )
+
 
     def kuendigeMietverhaeltnis( self, mv_id: str, kuenddatum: str ):
         """

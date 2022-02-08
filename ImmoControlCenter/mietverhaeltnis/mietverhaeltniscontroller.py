@@ -30,8 +30,12 @@ class MietverhaeltnisController( IccController ):
         """
         #mv:XMietverhaeltnis = BusinessLogic.inst().getAktuellesOderZukuenftigesMietverhaeltnis( mv_id )
         mv = self._mvlogic.getAktuellesMietverhaeltnis( mv_id )
-        dlg = MietverhaeltnisDialog( mv )
-        dlg.exec_()
+        if not mv: # wenn z.B. der Mieter schon in der Tabelle erscheint, aber das Mietverhältnis noch nicht begonnen hat.
+            box = InfoBox( "Sorry", "Die Daten können nicht angezeigt werden.", "Das Mietverhältnis hat noch nicht begonnen.", "OK" )
+            box.exec_()
+        else:
+            dlg = MietverhaeltnisDialog( mv )
+            dlg.exec_()
 
     def createView( self ) -> QWidget or None:
         # zuerst über den Auswahldialog bestimmen, welche Daten für die View selektiert werden müssen
