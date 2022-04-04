@@ -2,7 +2,7 @@
 from typing import Dict, List
 
 from databasecommon import DatabaseCommon
-from interfaces import XMietobjektExt
+from interfaces import XMietobjektExt, XMasterobjekt, XMietobjekt
 
 
 class MietobjektData( DatabaseCommon ):
@@ -90,3 +90,28 @@ class MietobjektData( DatabaseCommon ):
               "where mobj_id = '%s' " % mobj_id
         x:XMietobjektExt = self.readOneGetObject( sql, XMietobjektExt )
         return x
+
+    def updateMasterobjekt( self, x:XMasterobjekt ) -> int:
+        sql = "update masterobjekt " \
+              "set strasse_hnr = '%s', " \
+              "plz = '%s', " \
+              "ort = '%s', " \
+              "gesamt_wfl = %d, " \
+              "anz_whg = %d, " \
+              "veraeussert_am = '%s', " \
+              "bemerkung = '%s', " \
+              "hauswart = '%s', " \
+              "hauswart_telefon = '%s', " \
+              "hauswart_mailto = '%s' " \
+              "where master_id = %d " % ( x.strasse_hnr, x.plz, x.ort, x.gesamt_wfl, x.anz_whg, x.veraeussert_am,
+                                          x.bemerkung, x.hauswart, x.hauswart_telefon, x.hauswart_mailto, x.master_id )
+        return self.write( sql )
+
+    def updateMietobjekt( self, x:XMietobjekt ) -> int:
+        sql = "update mietobjekt " \
+              "set whg_bez = '%s', " \
+              "qm = %d, " \
+              "container_nr = '%s', " \
+              "bemerkung = '%s' " \
+              "where mobj_id = '%s'" % ( x.whg_bez, x.qm, x.container_nr, x.bemerkung, x.mobj_id )
+        return self.write( sql )

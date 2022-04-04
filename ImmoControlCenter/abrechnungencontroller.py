@@ -45,6 +45,7 @@ class AbrechnungenController( IccController ):
         abrview.setSubmitChangesCallback( self.onSubmitChanges )
         abrview.setSaveActionCallback( self.save )
         abrview.resize( 1050, 1000 )
+        abrview.resetChangeFlag()
         return abrview
 
     def getViewSize( self ) -> (int, int):
@@ -106,7 +107,8 @@ class AbrechnungenController( IccController ):
     def save( self ):
         model: AbrechnungenTableModel = self._view.getModel()
         changes: Dict[str, List[XAbrechnung]] = model.getChanges()
-        self.writeChanges( changes[constants.actionList[constants.tableAction.UPDATE]] )
+        #self.writeChanges( changes[constants.actionList[constants.tableAction.UPDATE]] )
+        self.writeChanges( changes )
         SumFieldsProvider.inst().setSumFields()
         model.resetChanges()
 
@@ -116,8 +118,9 @@ class AbrechnungenController( IccController ):
     def getChanges( self ):
         return self._view.getModel().getChanges()
 
-    def writeChanges( self, changes:List[XAbrechnung] ) -> bool:
-        for x in changes:
+    def writeChanges( self, changes:Dict[str, List[XAbrechnung]] ) -> bool:
+        xlist = changes["UPDATE"]  # INSERT und DELETE kommt hier nicht vor.
+        for x in xlist:
             if x.deleteFlag == True:
                 try:
                     self._deleteAbrechnung( x )
@@ -140,6 +143,7 @@ class AbrechnungenController( IccController ):
                     return False
 
         self._view.setSaveButtonEnabled( False )
+        self._view.resetChangeFlag()
         self._setChangedFlag( False )
         return True
 

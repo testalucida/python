@@ -121,7 +121,7 @@ class MietverhaeltnisData( DatabaseCommon ):
               "from mietverhaeltnis mv " \
               "inner join sollmiete sm on sm.mv_id = mv.mv_id " \
               "where mv.mobj_id = '%s' " \
-              "order by mv.von desc " % mobj_id
+              "order by mv.von desc, sm.sm_id desc " % mobj_id
         return self.readAllGetObjectList( sql, XMietverhaeltnis )
 
     def getMietverhaeltnisById( self, id: int ) -> XMietverhaeltnis:

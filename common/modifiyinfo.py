@@ -15,15 +15,18 @@ class ModifyInfo:
     def __init__( self ):
         self._isChanged = False
         self._changeCallback:Callable = None
+        self._resetCallback = None
 
-    def connectWidgetsToChangeSlot( self, changeCallback:Callable=None ):
+    def connectWidgetsToChangeSlot( self, changeCallback:Callable=None, resetCallback:Callable=None ):
         """
         Verbindet alle GUI-Elemente mit dem internen _onChange-Slot, der das Change-Flag steuert.
-        :param changeCallback: wenn angegeben, wird diese callback-Funktion bei jeder Änderung
+        :param changeCallback: wenn angegeben, wird diese callback-Funktion bei jeder Änderung aufgerufen.
+               resetCallback: wenn angegeben, wird diese Funktion bei jedem reset des Change-Flags aufgerufen.
         aufgerufen (ohne Argumente!)
         :return:
         """
         self._changeCallback = changeCallback
+        self._resetCallback = resetCallback
         children = self.findChildren( QWidget, "" )
         for child in children:
             if isinstance( child, QLineEdit ):
@@ -53,3 +56,5 @@ class ModifyInfo:
         :return:
         """
         self._isChanged = False
+        if self._resetCallback:
+            self._resetCallback()

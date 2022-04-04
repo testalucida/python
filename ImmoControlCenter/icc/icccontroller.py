@@ -49,8 +49,6 @@ class IccController( QObject, ABC, metaclass=IccControllerMeta ):
         v = self._dlg.getView()
         if v.isChanged():
             return self._askWhatToDo()
-        # if self.isChanged():
-        #     return self._askWhatToDo()
         return True
 
     def onDialogClosing( self ):

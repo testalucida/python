@@ -47,12 +47,18 @@ class MietverhaeltnisController( IccController ):
         # busi = BusinessLogic.inst()
         # mv_id = busi.getAktuelleMietverhaeltnisId( mobj_id )
         # xmv:XMietverhaeltnis = busi.getAktuellesOderZukuenftigesMietverhaeltnis( mv_id )
-        self._mv = self._mvlist[0]
-        self._view = MietverhaeltnisView( self._mv , withSaveButton=True )
-        self._view.save.connect( self.writeChanges )
-        self._view.prevMv.connect( self.onPrevMv )
-        self._view.nextMv.connect( self.onNextMv )
-        return self._view
+        if len( self._mvlist ) > 0:
+            self._mv = self._mvlist[0]
+            self._view = MietverhaeltnisView( self._mv , withSaveButton=True )
+            self._view.save.connect( self.writeChanges )
+            self._view.prevMv.connect( self.onPrevMv )
+            self._view.nextMv.connect( self.onNextMv )
+            return self._view
+        else:
+            box = InfoBox( "Mietverhältnis anzeigen", "Das Objekt '" + mobj_id + "' ist nicht vermietet.", "", "OK" )
+            box.moveToCursor()
+            box.exec_()
+            return None
 
     def onPrevMv( self ):
         self._browse( False )

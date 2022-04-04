@@ -34,6 +34,7 @@ class MieterwechselController( IccController ):
         mvlogic = MietverhaeltnisLogic()
         self._xmieterwechsel = mvlogic.getMieterwechseldaten( self._mobj_id )
         self._view.setMieterwechselData( self._xmieterwechsel )
+        print( "MieterwechselController.createView() beendet. ChangeFlag = ", self._view.isChanged() )
         return self._view
 
     def isChanged( self ) -> bool:

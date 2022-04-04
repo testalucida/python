@@ -552,6 +552,7 @@ class BusinessLogic:
     def getMietobjektExt( self, mobj_id:str ) -> XMietobjektExt:
         xmo:XMietobjektExt = self._db.getMietobjekt( mobj_id )
         xmv:XMietverhaeltnis = self._db.getCurrentMietverhaeltnis( xmo.mobj_id )
+        if not xmv: xmv = XMietverhaeltnis()
         xmo.mieter = xmv.vorname + " " + xmv.name
         if xmv.telefon:
             xmo.telefon_mieter = xmv.telefon

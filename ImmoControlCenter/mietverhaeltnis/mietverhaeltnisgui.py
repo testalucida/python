@@ -47,12 +47,16 @@ class MietverhaeltnisView( QWidget, ModifyInfo ):
         self._createGui()
         if mietverhaeltnis:
             self.setMietverhaeltnisData( mietverhaeltnis )
-        self.connectWidgetsToChangeSlot( self.onChange )
+        #self.connectWidgetsToChangeSlot( self.onChange )
+        self.connectWidgetsToChangeSlot( self.onChange, self.onResetChangeFlag )
 
     def onChange( self, newcontent:str=None ):
         if not self._btnSave.isEnabled():
             self.setSaveButtonEnabled()
         self.dataChanged.emit()
+
+    def onResetChangeFlag( self ):
+        self.setSaveButtonEnabled( False )
 
     def setSaveButtonEnabled( self, enabled:bool=True ):
         self._btnSave.setEnabled( enabled )
@@ -256,7 +260,8 @@ class MietverhaeltnisView( QWidget, ModifyInfo ):
         überträgt die Änderungen, die der User im GUI gemacht hat, in das
         originale XMietverhaeltnis-Objekt.
         """
-        self._guiToData( self._mietverhaeltnis )
+        if self.isChanged():
+            self._guiToData( self._mietverhaeltnis )
 
     def setMietverhaeltnisData( self, mv:XMietverhaeltnis ):
         """

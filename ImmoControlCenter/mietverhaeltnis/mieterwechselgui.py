@@ -20,6 +20,7 @@ class MieterwechselView( QWidget, ModifyInfo ): # IccView ):
     mieterwechsel_save = Signal()
     def __init__( self ):
         QWidget.__init__( self )
+        ModifyInfo.__init__( self )
         self._layout = QGridLayout()
         self._btnSave = QPushButton()
         # altes Mietverhältnis
@@ -40,6 +41,13 @@ class MieterwechselView( QWidget, ModifyInfo ): # IccView ):
     def onChange( self ):
         if not self._btnSave.isEnabled():
             self.setSaveButtonEnabled()
+
+    def isChanged( self ) -> bool:
+        return super().isChanged() or self._neuesMietvhView.isChanged()
+
+    def resetChangeFlag( self ):
+        super().resetChangeFlag()
+        self._neuesMietvhView.resetChangeFlag()
 
     def setSaveButtonEnabled( self, enabled:bool=True ):
         self._btnSave.setEnabled( enabled )
@@ -132,6 +140,7 @@ class MieterwechselView( QWidget, ModifyInfo ): # IccView ):
         self._setAltesMietverhaeltnisFields( xmieterwechsel.mietverhaeltnis_alt )
         self._setNeuesMietverhaeltnisFields( xmieterwechsel.mietverhaeltnis_next )
         self.setSaveButtonEnabled( False )
+        self.resetChangeFlag()
 
     def getMieterwechselData( self ) -> XMieterwechsel:
         return self._mieterwechsel
@@ -143,7 +152,6 @@ class MieterwechselView( QWidget, ModifyInfo ): # IccView ):
         if xmv.kaution:
             self._edAlteKaution.setIntValue( xmv.kaution )
         self._sdEndeMietverh.setDateFromIsoString( xmv.bis )
-        self.resetChangeFlag()
 
     def _setNeuesMietverhaeltnisFields( self, xmv:XMietverhaeltnis ):
         self._neuesMietvhView.setMietverhaeltnisData( xmv )
@@ -157,9 +165,10 @@ class MieterwechselView( QWidget, ModifyInfo ): # IccView ):
         return xmwcopy
 
     def applyChanges( self ):
-        self._neuesMietvhView.applyChanges()
-        # nur das Ende-Datum ist bei den Daten des alten MV änderbar
-        self._mieterwechsel.mietverhaeltnis_alt.bis = self._sdEndeMietverh.getDate()
+        if self.isChanged():
+            self._neuesMietvhView.applyChanges()
+            # nur das Ende-Datum ist bei den Daten des alten MV änderbar
+            self._mieterwechsel.mietverhaeltnis_alt.bis = self._sdEndeMietverh.getDate()
 
     def getModel( self ):
         return None

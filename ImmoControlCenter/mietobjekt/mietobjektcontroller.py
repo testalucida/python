@@ -1,12 +1,16 @@
 from typing import Any
 
+import jsonpickle
 from PySide2.QtWidgets import QApplication, QWidget
 
 from business import BusinessLogic
 from icc.icccontroller import IccController
 from interfaces import XMietobjektExt
 from mietobjekt.mietobjektauswahl import MietobjektAuswahl
+from mietobjekt.mietobjektlogic import MietobjektLogic
+from mietobjekt.mietobjektucc import MietobjektUcc
 from mietobjekt.mietobjektview import MietobjektView
+from returnvalue import ReturnValue
 
 
 class MietobjektController( IccController ):
@@ -27,30 +31,22 @@ class MietobjektController( IccController ):
         return self._view
 
     def isChanged( self ) -> bool:
-        return False
-        # todo
-        # changedObj = self._view.getMietobjektCopyWithChanges()
-        # return False if changedObj == self._mietobjekt else True
+        return self._view.isChanged()
 
     def getChanges( self ) -> Any:
         return None
 
     def clearChanges( self ) -> None:
-        self._view.clear()
+        pass
 
     def writeChanges( self, changes:Any=None ) -> bool:
-        #wird von _askWhatToDo gerufen
-        # if self._validateMieterwechsel():
-        #     self._view.applyChanges()
-        #     try:
-        #         BusinessLogic.inst().processMieterwechsel( self._mietverhaeltnisVorher.mv_id,
-        #                                                    self._view.getAltesMietverhaeltnisMietEnde(),
-        #                                                    self._mietverhaeltnisNachher )
-        #         return True
-        #     except Exception as ex:
-        #         self.showErrorMessage( "Mieterwechsel: Speichern fehlgeschlagen", str( ex ) )
-        #         return False
-        # return False
+        x:XMietobjektExt = self._view.getMietobjektCopyWithChanges()
+        ucc = MietobjektUcc()
+        msg = ucc.modifyObjekt( x )
+        if msg:
+            self.showErrorMessage( "Fehler beim Speichern der Daten", msg )
+            return False
+        self._view.resetChangeFlag()
         return True
 
     def getViewTitle( self ) -> str:

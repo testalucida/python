@@ -1,6 +1,7 @@
 
 
 ###################  MessageBox  #######################
+from PySide2.QtGui import QCursor
 from PySide2.QtWidgets import QMessageBox
 
 
@@ -22,6 +23,10 @@ class MessageBox( QMessageBox ):
             self.addButton( noText, QMessageBox.NoRole )
         if cancelText:
             self.addButton( cancelText, QMessageBox.YesRole )
+
+    def moveToCursor( self ):
+        crsr = QCursor.pos()
+        self.move( crsr.x(), crsr.y() )
 
     def exec_(self) -> int:
         rc = QMessageBox.exec_( self )

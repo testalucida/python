@@ -7,6 +7,7 @@ from typing import List
 
 from icc.icctablemodel import IccTableModel
 from interfaces import  XAbrechnung
+from modifiyinfo import ModifyInfo
 from qtderivates import SmartDateEdit, FloatEdit
 from sonstaus.sonstaustablemodel import SonstAusTableModel
 from tableviewext import TableViewExt
@@ -14,9 +15,10 @@ from datehelper import *
 
 
 #########################  AbrechnungenView  ##############################
-class AbrechnungenView( QWidget ):
+class AbrechnungenView( QWidget, ModifyInfo ):
     def __init__( self, parent=None ):
         QWidget.__init__( self, parent )
+        ModifyInfo.__init__( self )
         #self.setWindowTitle( "Sonstige Ausgaben: Rechnungen, Abgaben, Gebühren etc." )
         self._mainLayout = QtWidgets.QGridLayout( self )
         self._toolbarLayout = QHBoxLayout()
@@ -52,6 +54,7 @@ class AbrechnungenView( QWidget ):
         self._suspendCallbacks = False
 
         self._createGui()
+        self.connectWidgetsToChangeSlot( self.onChange, self.onResetChangeFlag )
 
     def _createGui( self ):
         self._assembleToolbar()
@@ -321,6 +324,12 @@ class AbrechnungenView( QWidget ):
         :return:
         """
         self._saveActionCallback = cbfnc
+
+    def onChange( self ):
+        self._btnSave.setEnabled( True )
+
+    def onResetChangeFlag( self ):
+        self._btnSave.setEnabled( False )
 
 ###################################################################
 

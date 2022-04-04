@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import QWidget
+#from PyQt5.QtWidgets import QWidget
 from PySide2.QtCore import Qt, Signal, QModelIndex
-from PySide2.QtWidgets import QDialog, QPushButton, QGridLayout, QApplication, QHBoxLayout, QLabel, QMessageBox
+from PySide2.QtWidgets import QDialog, QPushButton, QGridLayout, QApplication, QHBoxLayout, QLabel, QMessageBox, QWidget
 
 
 class OkCancelDialog( QDialog ):

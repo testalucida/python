@@ -166,8 +166,28 @@ class SmartDateEdit( QLineEdit ):
     def onDatumSelected( self, date:QDate ):
         self.setText( date.toString( "yyyy-MM-dd" ) )
 
+###################  AutoWidth  ########################
+class AutoWidth:
+    def setTextAndAdjustWidth( self, text:str ):
+        self.setText( text )
+        width = self.getTextWidth( text )
+        # font = self.font()
+        # # ps = font.pixelSize()  # --> -1
+        # font.setPixelSize( 0 )
+        # fm = QFontMetrics( font )
+        # width = fm.width( text )
+        self.setFixedWidth( width + 6 )
+
+    def getTextWidth( self, text:str ) -> int:
+        font = self.font()
+        # ps = font.pixelSize()  # --> -1
+        font.setPixelSize( 0 )
+        fm = QFontMetrics( font )
+        width = fm.width( text )
+        return width
+
 ######################  BaseLabel ##################################
-class BaseLabel( QLabel ):
+class BaseLabel( QLabel, AutoWidth ):
     def __init__( self, parent=None ):
         QLabel.__init__( self, parent )
 
@@ -175,9 +195,8 @@ class BaseLabel( QLabel ):
         # color in der Form "solid white"
         self.setStyleSheet( "background: " + color + ";" )
 
-
 #######################  BaseEdit  ###################################
-class BaseEdit( QLineEdit ):
+class BaseEdit( QLineEdit, AutoWidth ):
     key_pressed = Signal( int )
     def __init__( self, parent=None ):
         QLineEdit.__init__( self, parent )
@@ -193,14 +212,14 @@ class BaseEdit( QLineEdit ):
     # def on_change( self, s:str ):
     #     print( s )
 
-    def setTextAndAdjustWidth( self, text:str ):
-        self.setText( text )
-        font = self.font()
-        # ps = font.pixelSize()  # --> -1
-        font.setPixelSize( 0 )
-        fm = QFontMetrics( font )
-        width = fm.width( text )
-        self.setFixedWidth( width + 6 )
+    # def setTextAndAdjustWidth( self, text:str ):
+    #     self.setText( text )
+    #     font = self.font()
+    #     # ps = font.pixelSize()  # --> -1
+    #     font.setPixelSize( 0 )
+    #     fm = QFontMetrics( font )
+    #     width = fm.width( text )
+    #     self.setFixedWidth( width + 6 )
 
 #########################  FloatEdit  ################################
 class FloatEdit( BaseEdit ):
