@@ -4,14 +4,54 @@ import sys
 from typing import Dict
 from PySide2.QtGui import QIcon
 
-from screen import setScreenSize
-
 sys.path.append( "../common" )
+
+from ftp import FtpIni, Ftp
+from messagebox import ErrorBox, QuestionBox, InfoBox
+from screen import setScreenSize
 from PySide2.QtWidgets import QApplication, QMessageBox
 from PySide2 import QtCore
 from PySide2.QtWidgets import QWidget
 from icc.iccmainwindow import IccMainWindow
 from maincontroller import MainController
+
+
+def downloadDatabase() -> bool:
+    """
+    get immo.db from server
+    :return: True if
+        - download was successful OR
+        - download was not successful but user chose "Start Application Anyway".
+    """
+    ftpini = FtpIni( "ftp.ini" )
+    ftp = Ftp( ftpini )
+    try:
+        ftp.connect()
+        ftp.download( "immo.db", "immo.db" )
+    except Exception as ex:
+        box = ErrorBox( "File Transfer failed", "FTP failed.\n", str( ex ) )
+        box.exec_()
+        box = QuestionBox( "ICC", "Start ImmoControlCenter anyway (using local database)?", "YES", "NO" )
+        rc = box.exec_()
+        if rc == QMessageBox.No:
+            return False
+    return True
+
+def uploadDatabase() -> bool:
+    """
+    upload immo.db to server
+    :return: True if upload was successful
+    """
+    ftpini = FtpIni( "ftp.ini" )
+    ftp = Ftp( ftpini )
+    try:
+        ftp.connect()
+        ftp.upload( "immo.db", "immo.db" )
+        return True
+    except Exception as ex:
+        box = ErrorBox( "File Transfer failed", "FTP failed.\n", str( ex ) )
+        box.exec_()
+        return False
 
 
 class ShutDownFilter( QtCore.QObject ):
@@ -118,6 +158,9 @@ def terminate_if_running():
 
 def main():
     app = QApplication()
+    if not downloadDatabase():
+        # download not successful. Message not necessary, was provided by method downloadDatabase()
+        sys.exit( 2 )
     setScreenSize( app )
     env = "DEVELOP"
     if not runningInDev():
@@ -145,9 +188,26 @@ def main():
     app.setWindowIcon( icon )
 
     app.exec_()
+    if uploadDatabase():
+        box = InfoBox( "FTP Upload of Immo-Database successful", "Database was stored to server.", "", "OK" )
+        box.exec_()
+    else:
+        box = InfoBox( "FTP Upload of Immo-Database failed.", "No need to panic.\nApplication will be terminated normally.",
+                       "Database has to be uploaded manually, if need be.", "OK" )
+        box.exec_()
     if not runningInDev():
         deleteControlFile()
 
+
+def testUploadDatabase():
+    if not uploadDatabase():
+        print( "FTP failed." )
+
+def testDownloadDatabase():
+    app = QApplication()
+    if not downloadDatabase():
+        sys.exit( 2 )
+    app.quit()
 
 def testSaveDatabase():
     app = QApplication()
