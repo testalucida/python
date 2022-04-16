@@ -1,6 +1,7 @@
 from typing import Any
 
 import jsonpickle
+from PySide2.QtCore import QSize
 from PySide2.QtWidgets import QApplication, QWidget
 
 from business import BusinessLogic

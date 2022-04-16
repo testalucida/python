@@ -272,7 +272,7 @@ class MainController( QObject ):
         if not self._mietobjektDlg: return
         view:MietobjektView = self._mietobjektDlg.getView()
         #view.edit_verwaltung.connect( )
-        w = 900
+        w = 1000
         h = 550
         self._showDialog( self._mietobjektDlg, w, h )
 

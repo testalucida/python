@@ -158,13 +158,15 @@ def terminate_if_running():
 
 def main():
     app = QApplication()
-    if not downloadDatabase():
-        # download not successful. Message not necessary, was provided by method downloadDatabase()
-        sys.exit( 2 )
+
     setScreenSize( app )
     env = "DEVELOP"
     if not runningInDev():
-        terminate_if_running()
+        # release version running
+        terminate_if_running() # one instance only
+        if not downloadDatabase():
+            # download not successful. Message not necessary, was provided by method downloadDatabase()
+            sys.exit( 2 )
         createControlFile()
         env = "RELEASE"
     win = IccMainWindow( env )
@@ -188,14 +190,14 @@ def main():
     app.setWindowIcon( icon )
 
     app.exec_()
-    if uploadDatabase():
-        box = InfoBox( "FTP Upload of Immo-Database successful", "Database was stored to server.", "", "OK" )
-        box.exec_()
-    else:
-        box = InfoBox( "FTP Upload of Immo-Database failed.", "No need to panic.\nApplication will be terminated normally.",
-                       "Database has to be uploaded manually, if need be.", "OK" )
-        box.exec_()
     if not runningInDev():
+        if uploadDatabase():
+            box = InfoBox( "FTP Upload of Immo-Database successful", "Database was stored to server.", "", "OK" )
+            box.exec_()
+        else:
+            box = InfoBox( "FTP Upload of Immo-Database failed.", "No need to panic.\nApplication will be terminated normally.",
+                           "Database has to be uploaded manually, if need be.", "OK" )
+            box.exec_()
         deleteControlFile()
 
 
