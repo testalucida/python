@@ -58,10 +58,10 @@ class EncryptDecrypt:
         return self.decryptEncrypted( key, encrypted )
 
 def test():
-    path = "/home/martin/secrets/"
-    keyfile = "icc_ftp.key"
-    userfile = "icc_ftp_user.enc"
-    pwdfile = "icc_ftp_pwd.enc"
+    path = ""
+    keyfile = ""
+    userfile = ""
+    pwdfile = ""
     crypt = EncryptDecrypt()
     key = crypt.getKey( path + keyfile )
     user = crypt.getDecryptedFromFile( key, path + userfile ).decode()
