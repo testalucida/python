@@ -7,7 +7,7 @@ from PySide2.QtGui import QIcon
 sys.path.append( "../common" )
 
 from ftp import FtpIni, Ftp
-from messagebox import ErrorBox, QuestionBox, InfoBox
+from messagebox import ErrorBox, QuestionBox, InfoBox, WarningBox
 from screen import setScreenSize
 from PySide2.QtWidgets import QApplication, QMessageBox
 from PySide2 import QtCore
@@ -18,6 +18,9 @@ from maincontroller import MainController
 
 def downloadDatabase() -> bool:
     """
+    ******************
+    NO! function not used. Server database has to be downloaded manually if need be.
+    ******************
     get immo.db from server
     :return: True if
         - download was successful OR
@@ -71,7 +74,7 @@ class ShutDownFilter( QtCore.QObject ):
     def quit_app( self ):
         saveDatabase()
         geom = self._win.geometry()
-        print( 'CLEAN EXIT. x=%d - y=%d - w=%d - h=%d' % (geom.x(), geom.y(), geom.width(), geom.height()) )
+        #print( 'CLEAN EXIT. x=%d - y=%d - w=%d - h=%d' % (geom.x(), geom.y(), geom.width(), geom.height()) )
         writeGeometryOnShutdown( geom.x(), geom.y(), geom.width(), geom.height() )
         self._win.removeEventFilter( self )
         self._app.quit()
@@ -96,6 +99,15 @@ def writeGeometryOnShutdown( x, y, w, h ) -> None:
 
 
 def saveDatabase() -> None:
+    def try_copyfile():
+        try:
+            copyfile( src, dest )
+        except Exception as ex:
+            box = WarningBox( "Datenbank auf lokalen Datenträger sichern", "Sicherung nicht möglich",
+                              "Ist der Datenträger eingehängt?", "Nochmal versuchen", "Beenden" )
+            rc = box.exec_()
+            if rc == QMessageBox.Yes:
+                try_copyfile()
     from shutil import copyfile
     if runningInDev(): return
     scriptdir = os.path.dirname( os.path.realpath( __file__ ) )
@@ -111,17 +123,11 @@ def saveDatabase() -> None:
             box.setStandardButtons( QMessageBox.Save | QMessageBox.Cancel )
             r = box.exec_()
             if r == QMessageBox.Save:
-                try:
-                    copyfile( src, dest )
-                except Exception as ex:
-                    box.setIcon( QMessageBox.Critical )
-                    box.setWindowTitle( "Sicherung nicht möglich" )
-                    box.setText( str( ex ) )
-                    box.setInformativeText( "Ist das Speichermedium eingehängt?" )
-                    box.setStandardButtons( QMessageBox.Ok )
-                    box.exec_()
+                try_copyfile()
         else:
-            print( "NOPE, there's no file named immo.db" )
+            box = ErrorBox( "Datenbank auf lokalen Datenträger sichern", "Sicherung nicht möglich",
+                            "Es gibt keine Datenbank namens immo.db" )
+            box.exec_()
 
 
 def createControlFile():
@@ -164,9 +170,10 @@ def main():
     if not runningInDev():
         # release version running
         terminate_if_running() # one instance only
-        if not downloadDatabase():
-            # download not successful. Message not necessary, was provided by method downloadDatabase()
-            sys.exit( 2 )
+        # if not downloadDatabase(): ######### NO!! database on server might be older than local database.
+        #                                      If use of server database is necessary it must be downloaded manually.
+        #     # download not successful. Message not necessary, was provided by method downloadDatabase()
+        #     sys.exit( 2 )
         createControlFile()
         env = "RELEASE"
     win = IccMainWindow( env )

@@ -135,7 +135,7 @@ class Ftp:
 
 
 def testUpAndDownload():
-    ftpIni = FtpIni( "/home/martin/Projects/python/ImmoControlCenter/ftp.ini" )
+    ftpIni = FtpIni( "<path to ftp.ini" )
     ftp = Ftp( ftpIni )
     ftp.connect()
     #ftp.upload( "immo.db", "immodb.test" )
