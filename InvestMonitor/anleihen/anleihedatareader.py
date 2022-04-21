@@ -22,7 +22,7 @@ def getDKBAnleihen( df ) -> PopoTable:
     :return:
     """
     popoTable = None
-    idxIsin, idxBez, idxKurs = -1, -1, -1
+    idxIsin, idxBez, idxKurs, idxKurswert, idxBestand = -1, -1, -1, -1, -1
     for index, row in df.iterrows():
         # index: zero based row number
         # row: class 'pandas.core.series.Series'
@@ -37,15 +37,20 @@ def getDKBAnleihen( df ) -> PopoTable:
                 idxIsin = values.index( "ISIN / WKN" )
                 idxBez = values.index( "Bezeichnung" )
                 idxKurs = values.index( "Kurs" )
+                idxKurswert = values.index( "Kurswert in Euro" )
+                idxBestand = values.index( "Bestand" )
                 continue
             except:
                 continue
         else:
-            popo = PortfolioPosition()
-            popo.bezeichnung = values[idxBez]
-            popo.isin = values[idxIsin]
-            popo.kurs = values[idxKurs]
-            popoTable.addPopo( popo )
+            if not values[idxBez].startswith( "AMUNDI" ):
+                popo = PortfolioPosition()
+                popo.bezeichnung = values[idxBez]
+                popo.isin = values[idxIsin]
+                popo.kurs = values[idxKurs]
+                popo.kurswert = values[idxKurswert]
+                popo.nennwert = values[idxBestand]
+                popoTable.addPopo( popo )
     return popoTable
 
 def snapshotCompare( p1:PopoTable, p2:PopoTable ) -> int:
@@ -70,6 +75,8 @@ def getAllDKBAnleihen() -> List[PopoTable]:
     dirlist = os.listdir( path )
     for entry in dirlist:
         item = os.path.join( path, entry )
+        if not item.endswith( ".ods" ):
+            continue
         print( item )
         df = read_ods( item, sheet_idx )
         popotable = getDKBAnleihen( df )
