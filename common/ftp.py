@@ -129,16 +129,17 @@ class Ftp:
         except Exception as x:
             # delete (empty) tmp file:
             os.remove( tmpfile )
-            raise( Exception( "ftp.download(): Download %s to %s failed:\n%s" % ( remotepathnfile, localpathnfile, str( x ) ) ) )
+            raise( x )
+            #raise( Exception( "ftp.download(): Download %s to %s failed:\n%s" % ( remotepathnfile, localpathnfile, str( x ) ) ) )
 
 
 
 
 def testUpAndDownload():
-    ftpIni = FtpIni( "<path to ftp.ini" )
+    ftpIni = FtpIni( "../ImmoControlCenter/ftp.ini" )
     ftp = Ftp( ftpIni )
     ftp.connect()
     #ftp.upload( "immo.db", "immodb.test" )
-    ftp.download( "immodb.test", "immmmmmmo.dbtest" )
+    ftp.download( "immo_state", "immo_state" )
     ftp.quit()
 

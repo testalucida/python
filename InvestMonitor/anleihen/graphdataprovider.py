@@ -42,6 +42,7 @@ class GraphDataProvider:
                     path.setLegend( popo.bezeichnung +
                                     " (" + popo.isin + ", N=" + str(popo.nennwert) + ", W=" + str(popo.kurswert) + ")" )
                     last_used_color_idx += 1
+                    if last_used_color_idx >= len( colors ): last_used_color_idx = 0
                     path.setColor( colors[last_used_color_idx] )
                     graphData.addPath( path )
                 idx = isodates.index( popotable.getSnapshotDate() )

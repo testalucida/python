@@ -4,6 +4,8 @@ import sys
 from typing import Dict
 from PySide2.QtGui import QIcon
 
+import datehelper
+
 sys.path.append( "../common" )
 
 from ftp import FtpIni, Ftp
@@ -15,30 +17,189 @@ from PySide2.QtWidgets import QWidget
 from icc.iccmainwindow import IccMainWindow
 from maincontroller import MainController
 
+class ImmoState:
+    def __init__(self):
+        self.isInUse = False
+        self.lastUpdate = ""
 
-def downloadDatabase() -> bool:
+class IccStateHandler:
     """
-    ******************
-    NO! function not used. Server database has to be downloaded manually if need be.
-    ******************
-    get immo.db from server
-    :return: True if
-        - download was successful OR
-        - download was not successful but user chose "Start Application Anyway".
+    IccFileTransfer handles all ftp up- and downloads concerning the ImmoControlCenter application.
+    - beauskunftet den Status der immo-Datenbanken
+        a) auf dem Server
+        b) lokal
+        using file immo_state.
+        Uploads and downloads immo_state and immo.db.
+        Structure of file immo_state:
+            state=not_in_use
+            last_update=2021-04-22
+    - processes up- and donwloads as needed
     """
-    ftpini = FtpIni( "ftp.ini" )
-    ftp = Ftp( ftpini )
+    attributename_state = "state"
+    attributename_lastupdate = "last_update"
+    state_in_use = "in_use"
+    state_not_in_use = "not_in_use"
+    state_last_update_unknown = "unknown"
+    immostate_sep = "="
+    def __init__( self, ftpini_pathnfile:str ):
+        self._ftpini_pathnfile = ftpini_pathnfile
+        self.immostate_filename = "immo_state" # remote and local filename
+        self.immostate_localfilename_tmp = "immo_state.tmp" # local name after download
+        self.immo_dbname = "immo.db" # remote and local filename
+        self._ftp:Ftp = None
+        self._ftpini:FtpIni = None
+        self.currentState:ImmoState = None
+
+    def startApplication( self ):
+        """
+        Connects to FTP-Server.
+        Checks state.
+        Downloads database.
+        Might throw exception.
+        Don't forget calling stopApplication before exiting the application.
+        :return:
+        """
+        if self._ftp: # FTP connection already established
+            return
+        # get paths and filenames needed to establish a FTP connection:
+        self._ftpini = FtpIni( self._ftpini_pathnfile )
+        # initialize Ftp class and connect to FTP server
+        self._ftp = Ftp( self._ftpini )
+        self._ftp.connect()
+        # for comparing purposes download serverside immo_state
+        try:
+            serverstate:ImmoState = self._getServerState()
+        except Exception as ex:
+            raise Exception( "IccStateHandler.startApplication():\nCan't get serverside state:\n%s" % str(ex) )
+        if serverstate.isInUse:
+            raise Exception( "IccStateHandler.startApplication():\nCan't start application - Database is in use" )
+        try:
+            localstate:ImmoState = self._getLocalState()
+        except Exception as ex:
+            raise Exception( "IccStateHandler.startApplication():\nCan't get local state:\n%s" % str( ex ) )
+        # compare serverside and locas last updates and raise exception if local last update is newer than
+        # serverside last update
+        if serverstate.lastUpdate < localstate.lastUpdate:
+            raise Exception( "IccStateHandler.startApplication():\n"
+                             "Expected serverside last update to be newer than local last update but found:\n"
+                             "serverside = %s -- local = %s" % ( serverstate.lastUpdate, localstate.lastUpdate ) )
+        else:
+            # Everything is okay. We may download the serverside database now for local use.
+            try:
+                self._ftp.download( self.immo_dbname, self.immo_dbname )
+            except Exception as ex:
+                raise Exception( "IccStateHandler.startApplication():\n"
+                                 "Download of serverside immo.db failed:\n%s" % str(ex) )
+            # Set is-in-use state in local and serverside immo_state files.
+            # Attribute last_update remains unchanged.
+            localstate.isInUse = True
+            try:
+                self._setStateAndSave( localstate )
+            except Exception as ex:
+                raise Exception( "IccStateHandler.startApplication():\n"
+                                 "After download of serverside immo.db:\nFailed to set state:\n%s" % str( ex ) )
+
+    def stopApplication( self ):
+        """
+        Uploads database
+        Sets state and last_update attributes in immo_state.
+        Uploads immo_state
+        Disconnects from FTP-Server
+        Might throw exception.
+        :return:
+        """
+        try:
+            self._ftp.upload( self.immo_dbname, self.immo_dbname )
+        except Exception as ex:
+            raise Exception( "IccStateHandler.stopApplication():\n"
+                             "Upload immo.db failed:\n%s" % str(ex) )
+        state = ImmoState()
+        state.isInUse = False
+        state.lastUpdate = datehelper.getCurrentTimestampIso()
+        try:
+            self._setStateAndSave( state )
+        except Exception as ex:
+            raise Exception( "IccStateHandler.stopApplication():\n"
+                             "After upload of local immo.db:\nFailed to set state:\n%s" % str( ex ) )
+        self._ftp.quit()
+        self._ftp = None
+
+    def _getServerState( self ) -> ImmoState:
+        self._ftp.download( self.immostate_filename, self.immostate_localfilename_tmp )
+        localpathnfile_tmp = self._ftpini.getLocalPath() + self.immostate_localfilename_tmp
+        serverstate:ImmoState = self._readAttributesFromState( localpathnfile_tmp )
+        return serverstate
+
+    def _setStateAndSave( self, immoState:ImmoState ) -> None:
+        state = self.state_in_use if immoState.isInUse else self.state_not_in_use
+        last_update = immoState.lastUpdate
+        stateline = self.attributename_state + self.immostate_sep + state
+        lastupdateline = self.attributename_lastupdate + self.immostate_sep + last_update
+        self._setLocalAndServerStateAndSave( [stateline, "\n", lastupdateline] )
+
+    def _setLocalAndServerStateAndSave( self, lines:list ) -> None:
+        """
+
+        :param lines: attribute names and values to write into immo_state
+        :return:
+        """
+        pathnfile = self._ftpini.getLocalPath() + self.immostate_filename
+        try:
+            with open( pathnfile, "w" ) as statefile:
+                for line in lines:
+                    statefile.write( line )
+        except Exception as ex:
+            raise Exception( "IccStateHandler._setLocalAndServerStateAndSave():\n"
+                             "Local storage of file immo_state failed.\n%s" % str(ex) )
+        try:
+            self._ftp.upload( self.immostate_filename, self.immostate_filename )
+        except Exception as ex:
+            raise Exception("IccStateHandler._setLocalAndServerStateAndSave():\n"
+                             "Serverside storage of file immo_state failed.\n%s" % str(ex))
+
+    def _getLocalState( self ) -> ImmoState:
+        """
+        gets state attributes from local immo_state file
+        :return:
+        """
+        localpathnfile = self._ftpini.getLocalPath() + self.immostate_filename
+        localstate:ImmoState = self._readAttributesFromState( localpathnfile )
+        return localstate
+
+    def _readAttributesFromState( self, pathnfile:str ) -> ImmoState:
+        """
+        provides informations "database last update" and "database is in use" from file <pathnfile>
+        :param pathnfile: immo_state file server or local side in the prescribed structure (see class comment)
+        :return: an ImmoState object containing the attributes found in <pathnfile>
+        """
+        immostate = ImmoState()
+        serverstatefile = open( pathnfile, "r" )
+        content = serverstatefile.read()
+        serverstatefile.close()
+        lines = content.splitlines()
+        for line in lines:
+            parts = line.split( self.immostate_sep ) # list like so: ['state', 'not_in_use']
+            if len( parts ) != 2:
+                raise Exception( "IccFileTransfer._readAttributesFromState: Attribute invalid\n"
+                                 "Expected <attribute_name>=<attribute_value> -- found: %s" % parts )
+            if parts[0] == self.attributename_state:
+                immostate.isInUse = True if  parts[1] == self.state_in_use else False
+            elif parts[0] == self.attributename_lastupdate:
+                immostate.lastUpdate = parts[1]
+        return immostate
+
+
+def testStartStopApplication():
+    iccftp = IccStateHandler( "ftp.ini" )
     try:
-        ftp.connect()
-        ftp.download( "immo.db", "immo.db" )
+        iccftp.startApplication()
     except Exception as ex:
-        box = ErrorBox( "File Transfer failed", "FTP failed.\n", str( ex ) )
-        box.exec_()
-        box = QuestionBox( "ICC", "Start ImmoControlCenter anyway (using local database)?", "YES", "NO" )
-        rc = box.exec_()
-        if rc == QMessageBox.No:
-            return False
-    return True
+        print( str( ex ) )
+        return
+    try:
+        iccftp.stopApplication()
+    except Exception as ex:
+        print( str(ex) )
 
 def uploadDatabase() -> bool:
     """
@@ -119,7 +280,7 @@ def saveDatabase() -> None:
             box = QMessageBox()
             box.setIcon( QMessageBox.Question )
             box.setWindowTitle( "Sicherung der Datenbank" )
-            box.setText( "Datenbank\n\n   '%s'\nsichern in\n\n   '%s'?" % (scriptdir + "/immo.db", dest) )
+            box.setText( "Datenbank\n\n   '%s'\n\nsichern in\n\n   '%s'?" % (scriptdir + "/immo.db", dest) )
             box.setStandardButtons( QMessageBox.Save | QMessageBox.Cancel )
             r = box.exec_()
             if r == QMessageBox.Save:
@@ -164,17 +325,20 @@ def terminate_if_running():
 
 def main():
     app = QApplication()
-
+    iccstate = IccStateHandler( "ftp.ini")
     setScreenSize( app )
     env = "DEVELOP"
     if not runningInDev():
         # release version running
         terminate_if_running() # one instance only
-        # if not downloadDatabase(): ######### NO!! database on server might be older than local database.
-        #                                      If use of server database is necessary it must be downloaded manually.
-        #     # download not successful. Message not necessary, was provided by method downloadDatabase()
-        #     sys.exit( 2 )
-        createControlFile()
+        try:
+            iccstate.startApplication() # download immo.db from server and set is-in-use flag
+        except Exception as ex:
+            print( str(ex) )
+            box = ErrorBox( "ImmoControlCenter", "Failed starting application", str( ex ) )
+            box.exec_()
+            return
+        createControlFile() # flag file showing application is running
         env = "RELEASE"
     win = IccMainWindow( env )
     # see: https://stackoverflow.com/questions/53097415/pyside2-connect-close-by-window-x-to-custom-exit-method
@@ -190,33 +354,27 @@ def main():
     except:
         win.resize( 1900, 1000 )
 
-    ctrl = MainController( win )
-    # ctrl.showStartViews()
+    MainController( win )
 
     icon = QIcon( "./images/houses.png" )
     app.setWindowIcon( icon )
 
     app.exec_()
+
     if not runningInDev():
-        if uploadDatabase():
-            box = InfoBox( "FTP Upload of Immo-Database successful", "Database was stored to server.", "", "OK" )
+        try:
+            iccstate.stopApplication() # upload immo.db to server and set not-in-use flag
+        except Exception as ex:
+            print( str(ex) )
+            box = ErrorBox( "ImmoControlCenter", "Failed starting application", str( ex ) )
             box.exec_()
-        else:
-            box = InfoBox( "FTP Upload of Immo-Database failed.", "No need to panic.\nApplication will be terminated normally.",
-                           "Database has to be uploaded manually, if need be.", "OK" )
-            box.exec_()
-        deleteControlFile()
+        finally:
+            deleteControlFile()
 
 
 def testUploadDatabase():
     if not uploadDatabase():
         print( "FTP failed." )
-
-def testDownloadDatabase():
-    app = QApplication()
-    if not downloadDatabase():
-        sys.exit( 2 )
-    app.quit()
 
 def testSaveDatabase():
     app = QApplication()
@@ -237,8 +395,6 @@ def testSaveDatabasePermission() -> None:
 
 
 if __name__ == '__main__':
-    # testSaveDatabasePermission()
-    # testSaveDatabase()
     main()
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
