@@ -35,6 +35,7 @@ class SollzahlungenController( IccController, ABC ):
     def save( self ):
         changes: Dict[str, List] = self._tm.getChanges()
         self.writeChanges( changes )
+        self._view.resetChangeFlag()
 
     def writeChanges( self, changes ) -> None:
         for actionstring, xlist in changes.items():

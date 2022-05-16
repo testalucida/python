@@ -8,6 +8,7 @@ from generictable_stuff.customtableview import EditableTableViewWidget
 from generictable_stuff.okcanceldialog import OkCancelDialog
 from imagefactory import ImageFactory
 from interfaces import XNotiz
+from modifiyinfo import ModifyInfo
 from notizen.notizentablemodel import NotizenTableModel
 from qtderivates import BaseEdit, MultiLineEdit, CheckBox
 
@@ -132,7 +133,7 @@ class NotizenTableViewWidget( EditableTableViewWidget ):
         self.getTableView().setSortingEnabled( True )
 
 ########################  NotizenView  ###########################
-class NotizenView( QWidget ):
+class NotizenView( QWidget, ModifyInfo ):
     """
    Widget, das ein NotizenTableViewWidget enthält und zusätzlich einen Save-Button,
    um die Änderungen zu speichern
@@ -141,11 +142,13 @@ class NotizenView( QWidget ):
 
     def __init__(self, model:NotizenTableModel=None, parent=None ):
         QWidget.__init__( self, parent )
+        ModifyInfo.__init__( self )
         self._layout = QGridLayout()
         self._btnSave = QPushButton( self )
         self._btnSave.clicked.connect( self.saveNotiz.emit )
         self._ntv = NotizenTableViewWidget( model=model, parent=parent )
         self._createGui()
+        #self.connectWidgetsToChangeSlot( self.onChange, self.onResetChangeFlag )
 
     def _createGui( self ):
         r = c = 0
@@ -166,6 +169,12 @@ class NotizenView( QWidget ):
 
     def getNotizenTableViewWidget( self ) -> NotizenTableViewWidget:
         return self._ntv
+
+    def onChange( self ):
+        self._btnSave.setEnabled( True )
+
+    def onResetChangeFlag( self ):
+        self._btnSave.setEnabled( False )
 
 
 def test():

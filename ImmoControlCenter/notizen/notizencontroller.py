@@ -29,6 +29,7 @@ class NotizenController( IccController ):
         v.getNotizenTableViewWidget().getTableView().ctvDoubleClicked.connect( self.onEditNotiz )
         v.saveNotiz.connect( self.onSaveNotizen )
         self._model.setSortable( True )
+        v.setSaveButtonEnabled( False )
         self._view = v
         return v
 
@@ -138,6 +139,7 @@ class NotizenController( IccController ):
         try:
             BusinessLogic.inst().saveNotizen( self._model )
             self._view.setSaveButtonEnabled( False )
+            self._view.resetChangeFlag()
             return True
         except Exception as exc:
             self._view.showException( "Fehler beim Speichern", str( exc ) )

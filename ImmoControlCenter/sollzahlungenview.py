@@ -10,6 +10,7 @@ from PySide2.QtWidgets import QWidget, QGridLayout, QApplication, QHBoxLayout, Q
 from constants import SollType
 from datehelper import getDateParts
 from interfaces import XSollzahlung, XSollHausgeld, XSollMiete
+from modifiyinfo import ModifyInfo
 from sollzahlungentablemodel import SollzahlungenTableModel
 from tableviewext import TableViewExt
 from qtderivates import CalendarDialog, SmartDateEdit, FloatEdit
@@ -17,7 +18,8 @@ from qtderivates import CalendarDialog, SmartDateEdit, FloatEdit
 class SollViewMeta( type(QWidget), type(ABC) ):
     pass
 
-class SollzahlungenView( QWidget, ABC, metaclass=SollViewMeta ):
+# class SollzahlungenView( QWidget, ABC, metaclass=SollViewMeta ):
+class SollzahlungenView( QWidget, ModifyInfo ):
     """
     Ein View, der zweifach verwendet wird:
     - um die Soll-Mieten anzuzeigen (SollmietenView)
@@ -25,6 +27,7 @@ class SollzahlungenView( QWidget, ABC, metaclass=SollViewMeta ):
     """
     def __init__( self, parent=None ):
         QWidget.__init__( self, parent )
+        ModifyInfo.__init__( self )
         self._mainLayout = QGridLayout( self )
         self._toolbarLayout = QHBoxLayout()
         self._btnFilter = QPushButton( self )
@@ -49,6 +52,7 @@ class SollzahlungenView( QWidget, ABC, metaclass=SollViewMeta ):
         self._sollEdit:XSollzahlung = None
 
         self._createGui()
+        # self.connectWidgetsToChangeSlot( self.onChange, self.onResetChangeFlag )
 
     def _createGui( self ):
         self._assembleToolbar()
@@ -192,6 +196,12 @@ class SollzahlungenView( QWidget, ABC, metaclass=SollViewMeta ):
     def onSave( self ):
         if self._saveActionCallback:
             self._saveActionCallback()
+
+    def onChange( self ):
+        self._btnSave.setEnabled( True )
+
+    def onResetChangeFlag( self ):
+        self._btnSave.setEnabled( False )
 
     def setSaveActionCallback( self, cbfnc ) -> None:
         """

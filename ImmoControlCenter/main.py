@@ -4,10 +4,8 @@ import sys
 from typing import Dict
 from PySide2.QtGui import QIcon
 
-import datehelper
-
 sys.path.append( "../common" )
-
+import datehelper
 from ftp import FtpIni, Ftp
 from messagebox import ErrorBox, QuestionBox, InfoBox, WarningBox
 from screen import setScreenSize
@@ -331,13 +329,13 @@ def main():
     if not runningInDev():
         # release version running
         terminate_if_running() # one instance only
-        try:
-            iccstate.startApplication() # download immo.db from server and set is-in-use flag
-        except Exception as ex:
-            print( str(ex) )
-            box = ErrorBox( "ImmoControlCenter", "Failed starting application", str( ex ) )
-            box.exec_()
-            return
+        # try:
+        #     iccstate.startApplication() # download immo.db from server and set is-in-use flag
+        # except Exception as ex:
+        #     print( str(ex) )
+        #     box = ErrorBox( "ImmoControlCenter", "Failed starting application", str( ex ) )
+        #     box.exec_()
+        #     return
         createControlFile() # flag file showing application is running
         env = "RELEASE"
     win = IccMainWindow( env )
@@ -363,10 +361,11 @@ def main():
 
     if not runningInDev():
         try:
-            iccstate.stopApplication() # upload immo.db to server and set not-in-use flag
+            # iccstate.stopApplication() # upload immo.db to server and set not-in-use flag
+            pass
         except Exception as ex:
             print( str(ex) )
-            box = ErrorBox( "ImmoControlCenter", "Failed starting application", str( ex ) )
+            box = ErrorBox( "ImmoControlCenter", "Failed shutting down application", str( ex ) )
             box.exec_()
         finally:
             deleteControlFile()
