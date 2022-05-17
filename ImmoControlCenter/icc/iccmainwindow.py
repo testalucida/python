@@ -40,6 +40,8 @@ class MainWindowAction( Enum ):
     SHOW_TABLE_CONTENT = 23,
     OPEN_GESCHAEFTSREISE_VIEW = 24,
     SAMMELABGABE_DETAIL = 25,
+    EXPORT_DB_TO_SERVER = 26,
+    IMPORT_DB_FROM_SERVER = 27,
     EXIT=99
 
 
@@ -120,6 +122,18 @@ class IccMainWindow( QMainWindow ):
         action = QAction( self, text="Alle Änderungen speichern" )
         action.setShortcut( QKeySequence( "Ctrl+Shift+s" ) )
         action.triggered.connect( self.onSaveAll )
+        menu.addAction( action )
+
+        menu.addSeparator()
+
+        # Menü "Datenbank zum Server exportieren"
+        action = QAction( self, text="Datenbank zum Server exportieren" )
+        action.triggered.connect( self.onExportDatabaseToServer )
+        menu.addAction( action )
+
+        # Menü "Datenbank vom Server importieren"
+        action = QAction( self, text="Datenbank vom Server importieren" )
+        action.triggered.connect( self.onImportDatabaseFromServer )
         menu.addAction( action )
 
         menu.addSeparator()
@@ -440,6 +454,12 @@ class IccMainWindow( QMainWindow ):
 
     def onSaveAll( self ):
         self.doCallback( MainWindowAction.SAVE_ALL )
+
+    def onExportDatabaseToServer( self ):
+        self.doCallback( MainWindowAction.EXPORT_DB_TO_SERVER )
+
+    def onImportDatabaseFromServer( self ):
+        self.doCallback( MainWindowAction.IMPORT_DB_FROM_SERVER )
 
     def onFolgejahrEinrichten( self ):
         self.doCallback( MainWindowAction.FOLGEJAHR )

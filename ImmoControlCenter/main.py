@@ -323,7 +323,7 @@ def terminate_if_running():
 
 def main():
     app = QApplication()
-    iccstate = IccStateHandler( "ftp.ini")
+    #iccstate = IccStateHandler( "ftp.ini")
     setScreenSize( app )
     env = "DEVELOP"
     if not runningInDev():

@@ -2,11 +2,12 @@ from typing import List
 
 from PySide2.QtCore import QAbstractItemModel, QObject, Qt
 from PySide2.QtGui import QFont
-from PySide2.QtWidgets import QDialog, QApplication
+from PySide2.QtWidgets import QDialog, QApplication, QInputDialog, QLineEdit
 
 from anlage_v.anlagev_controller import AnlageVController
 from business import BusinessLogic
 from dictlisttablemodel import DictListTableModel
+from ftp import FtpIni, Ftp
 from generictable_stuff.customtableview import CustomTableView
 from geschaeftsreise.geschaeftsreisencontroller import GeschaeftsreisenController
 from icc.iccdialog import IccDialog
@@ -108,6 +109,8 @@ class MainController( QObject ):
             MainWindowAction.OPEN_MIETVERH_VIEW: self.showMietverhaeltnis,
             MainWindowAction.SAVE_ALL: self._saveAll,
             #MainWindowAction.PRINT_ACTIVE_VIEW: self._printActiveView,
+            MainWindowAction.EXPORT_DB_TO_SERVER: self._exportDatabaseToServer,
+            MainWindowAction.IMPORT_DB_FROM_SERVER: self._importDatabaseFromServer,
             MainWindowAction.OPEN_MIETE_VIEW: self.showMieteView,
             MainWindowAction.OPEN_HGV_VIEW: self.showHGVView,
             MainWindowAction.FOLGEJAHR: self.createFolgejahr,
@@ -160,6 +163,44 @@ class MainController( QObject ):
 
     def _saveAll( self ):
         self._setLetzteBuchung()
+
+    def _exportDatabaseToServer( self ):
+        ftpini = FtpIni( "ftp.ini" )
+        ftp = Ftp( ftpini )
+        try:
+            ftp.connect()
+            ftp.upload( "immo.db", "immo.db" )
+            box = InfoBox( "Immo-Datenbak exportieren", "Exportieren abgeschlossen.", "", "OK" )
+            box.exec_()
+        except Exception as ex:
+            box = ErrorBox( "File Transfer failed", "Can't export immo.db to server:\n", str(ex) )
+            box.exec_()
+        finally:
+            ftp.quit()
+
+    def _importDatabaseFromServer( self ):
+        ftpini = FtpIni( "ftp.ini" )
+        dlg = QInputDialog()
+        dlg.move( self._mainwin.cursor().pos() )
+        name, ok = dlg.getText( self._mainwin, "Immo-Datenbank importieren",
+                           "Datenbank wird ins Verzeichnis\n\n'%s'\n\n importiert.\n\n"
+                           "<<<<Sie wird nicht für die laufende Anwendung verwendet!!>>>>\n\n"
+                                "Lokalen Namen für die Datenbank angeben: " % ftpini.getLocalPath(),
+                    QLineEdit.Normal, "immo.db.imported" )
+
+        if not ( ok and name ): return
+        ftp = Ftp( ftpini )
+        try:
+            ftp.connect()
+            ftp.download( "immo.db", name )
+            box = InfoBox( "Immo-Datenbak importieren", "Importieren abgeschlossen.", "", "OK" )
+            box.move( self._mainwin.cursor().pos() )
+            box.exec_()
+        except Exception as ex:
+            box = ErrorBox( "File Transfer failed", "Can't export immo.db to server:\n", str( ex ) )
+            box.exec_()
+        finally:
+            ftp.quit()
 
     def _showDialog( self, dlg:IccDialog, w, h ):
         win = self._mainwin
@@ -362,6 +403,12 @@ class MainController( QObject ):
             self._mietenCtrl.addJahr( retval.returnvalue )
             self._hgvCtrl.addJahr( retval.returnvalue )
             self._mainwin.showInfo( "Folgejahr eingerichtet.", "Das Folgejahr wurde eingerichtet." )
+
+def testInputDialog():
+    from PySide2 import QtWidgets
+    app = QtWidgets.QApplication()
+    name, ok = QInputDialog.getText( app, "title", "Question:" )
+    print( "NAme:", name )
 
 def test():
     import sys
