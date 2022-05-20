@@ -167,6 +167,8 @@ class MainController( QObject ):
     def _exportDatabaseToServer( self ):
         ftpini = FtpIni( "ftp.ini" )
         ftp = Ftp( ftpini )
+        # store last booking
+        self._setLetzteBuchung()
         try:
             ftp.connect()
             ftp.upload( "immo.db", "immo.db" )

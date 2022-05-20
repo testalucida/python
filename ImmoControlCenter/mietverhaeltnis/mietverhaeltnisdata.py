@@ -220,10 +220,11 @@ class MietverhaeltnisData( DatabaseCommon ):
               "bemerkung1 = '%s', " \
               "bemerkung2 = '%s', " \
               "kaution = %d, " \
-              "kaution_bezahlt_am = '%s' " \
+              "kaution_bezahlt_am = '%s'," \
+              "IBAN = '%s' " \
               "where id = %d " % (
               x.von, x.bis, x.name, x.vorname, x.name2, x.vorname2, x.telefon, x.mobil, x.mailto,
-              x.anzahl_pers, x.bemerkung1, x.bemerkung2, x.kaution, x.kaution_bezahlt_am, x.id)
+              x.anzahl_pers, x.bemerkung1, x.bemerkung2, x.kaution, x.kaution_bezahlt_am, x.IBAN, x.id)
         return self.write( sql )
 
     def updateMietverhaeltnis2( self, id: int, column: str, newVal: str ):

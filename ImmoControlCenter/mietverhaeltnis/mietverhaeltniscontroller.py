@@ -1,6 +1,7 @@
 from typing import Any, List
 
 from PySide2.QtCore import QPoint
+from PySide2.QtGui import QCursor
 from PySide2.QtWidgets import QWidget, QApplication
 
 from business import BusinessLogic
@@ -47,9 +48,11 @@ class MietverhaeltnisController( IccController ):
         # busi = BusinessLogic.inst()
         # mv_id = busi.getAktuelleMietverhaeltnisId( mobj_id )
         # xmv:XMietverhaeltnis = busi.getAktuellesOderZukuenftigesMietverhaeltnis( mv_id )
-        if len( self._mvlist ) > 0:
+        mvlist_len = len( self._mvlist )
+        if mvlist_len > 0:
             self._mv = self._mvlist[0]
-            self._view = MietverhaeltnisView( self._mv , withSaveButton=True )
+            enableBrowsing = True if mvlist_len > 1 else False
+            self._view = MietverhaeltnisView( self._mv , withSaveButton=True, enableBrowsing=enableBrowsing )
             self._view.save.connect( self.writeChanges )
             self._view.prevMv.connect( self.onPrevMv )
             self._view.nextMv.connect( self.onNextMv )
@@ -69,6 +72,7 @@ class MietverhaeltnisController( IccController ):
     def _browse( self, next:bool ):
         if len( self._mvlist ) < 2:
             box = InfoBox( "Blättern in Mietverhältnissen", "Blättern nicht möglich.", "Es gibt nur ein Mietverhältnis.", "OK" )
+            box.moveToCursor()
             box.exec_()
             return
         idx = self._mvlist.index( self._mv )
@@ -77,6 +81,7 @@ class MietverhaeltnisController( IccController ):
             if idx == 0:
                 box = InfoBox( "Blättern in Mietverhältnissen", "Blättern nicht möglich.",
                                "Das jüngste Mietverhältnis wird angezeigt.", "OK" )
+                box.moveToCursor()
                 box.exec_()
                 return
             self._mv = self._mvlist[idx-1]
@@ -86,6 +91,7 @@ class MietverhaeltnisController( IccController ):
             if idx == max:
                 box = InfoBox( "Blättern in Mietverhältnissen", "Blättern nicht möglich.",
                                "Das älteste Mietverhältnis wird angezeigt.", "OK" )
+                box.moveToCursor()
                 box.exec_()
                 return
             self._mv = self._mvlist[idx+1]

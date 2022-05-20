@@ -90,6 +90,7 @@ Vermutlich wird nicht nur Tabelle sonstaus ausgewertet, sondern auch Tabelle zah
 
 34. Objektview:
     Speichern funktioniert nicht
+    --> erl.
 
 35. Zentralen Info-Mechanismus für die Abfrage von "isChanged" implementieren.
     Derzeit im IccView implementiert (connectWidgetsToChangeSlot).
@@ -98,3 +99,4 @@ Vermutlich wird nicht nur Tabelle sonstaus ausgewertet, sondern auch Tabelle zah
 
 36. MietverhaeltnisView:
     Vor-/Rück-Buttons einbauen, damit man zwischen den Mietverhältnissen "blättern" kann
+    --> erl.

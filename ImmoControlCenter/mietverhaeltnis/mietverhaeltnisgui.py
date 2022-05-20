@@ -41,6 +41,7 @@ class MietverhaeltnisView( QWidget, ModifyInfo ):
         self._edNkv = FloatEdit()
         self._edKaution = IntEdit()
         self._sdKautionBezahltAm = SmartDateEdit()
+        self._edIban = BaseEdit()
         self._txtBemerkung1 = MultiLineEdit()
         self._txtBemerkung2 = MultiLineEdit()
 
@@ -202,6 +203,11 @@ class MietverhaeltnisView( QWidget, ModifyInfo ):
         self._sdKautionBezahltAm.setMaximumWidth( 100 )
         l.addWidget( self._sdKautionBezahltAm, r, c )
 
+        c, r = 0, r+1
+        l.addWidget( BaseLabel( "IBAN: " ), r, c )
+        c+=1
+        l.addWidget( self._edIban, r, c )
+
         c=0
         r+=1
         l.addWidget( BaseLabel( "" ), r, c )
@@ -242,6 +248,7 @@ class MietverhaeltnisView( QWidget, ModifyInfo ):
         x.nkv = self._edNkv.getFloatValue()
         x.kaution = self._edKaution.getIntValue()
         x.kaution_bezahlt_am = self._sdKautionBezahltAm.getDate()
+        x.IBAN = self._edIban.text()
         x.bemerkung1 = self._txtBemerkung1.toPlainText()
         x.bemerkung2 = self._txtBemerkung2.toPlainText()
 
@@ -288,6 +295,8 @@ class MietverhaeltnisView( QWidget, ModifyInfo ):
             self._edKaution.setIntValue( mv.kaution )
         if mv.kaution_bezahlt_am:
             self._sdKautionBezahltAm.setDateFromIsoString( mv.kaution_bezahlt_am )
+        if mv.IBAN:
+            self._edIban.setText( mv.IBAN )
         self._txtBemerkung1.setText( mv.bemerkung1 )
         self._txtBemerkung2.setText( mv.bemerkung2 )
         self.resetChangeFlag()
@@ -307,6 +316,7 @@ class MietverhaeltnisView( QWidget, ModifyInfo ):
         self._edNkv.clear()
         self._edKaution.clear()
         self._sdKautionBezahltAm.clear()
+        self._edIban.clear()
         self._txtBemerkung1.clear()
         self._txtBemerkung2.clear()
 
