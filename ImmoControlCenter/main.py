@@ -9,7 +9,7 @@ import datehelper
 from ftp import FtpIni, Ftp
 from messagebox import ErrorBox, QuestionBox, InfoBox, WarningBox
 from screen import setScreenSize
-from PySide2.QtWidgets import QApplication, QMessageBox
+from PySide2.QtWidgets import QApplication, QMessageBox, QInputDialog, QLineEdit
 from PySide2 import QtCore
 from PySide2.QtWidgets import QWidget
 from icc.iccmainwindow import IccMainWindow
@@ -321,21 +321,25 @@ def terminate_if_running():
         box.exec_()
         sys.exit( 1 )
 
+def checkPwd() -> bool:
+    dlg = QInputDialog()
+    name, ok = dlg.getText( None, "Start ImmoControlCenter",
+                            "Anwendungspasswort eingeben: ",
+                            QLineEdit.EchoMode.Password )
+
+    if not (ok and name): return False
+
+    return True
+
 def main():
     app = QApplication()
-    #iccstate = IccStateHandler( "ftp.ini")
     setScreenSize( app )
     env = "DEVELOP"
     if not runningInDev():
         # release version running
         terminate_if_running() # one instance only
-        # try:
-        #     iccstate.startApplication() # download immo.db from server and set is-in-use flag
-        # except Exception as ex:
-        #     print( str(ex) )
-        #     box = ErrorBox( "ImmoControlCenter", "Failed starting application", str( ex ) )
-        #     box.exec_()
-        #     return
+        if not checkPwd(): # password check only when running release
+            exit( 3 )
         createControlFile() # flag file showing application is running
         env = "RELEASE"
     win = IccMainWindow( env )

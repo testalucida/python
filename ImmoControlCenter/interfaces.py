@@ -378,6 +378,10 @@ class XAbrechnung( XBase ):
     def getId( self ) -> int:
         pass
 
+    def clearJahreswerte( self ) -> None:
+        self.betrag = 0.0
+        self.ab_datum = self.buchungsdatum = self.bemerkung = ""
+
 class XNkAbrechnung( XAbrechnung ):
     def __init__( self ):
         XAbrechnung.__init__( self )
@@ -396,12 +400,17 @@ class XHgAbrechnung( XAbrechnung ):
         self.hga_id = 0
         self.vwg_id = 0
         self.weg_name_vw_id = ""
+        self.entnahme_rue = 0.0
 
     def getName( self ) -> str:
         return self.weg_name_vw_id
 
     def getId( self ) -> int:
         return self.hga_id
+
+    def clearJahreswerte( self ) -> None:
+        super().clearJahreswerte()
+        self.entnahme_rue = 0.0
 
 ##################### SonstAusSummen ###################################
 class XSonstAusSummen( XBase ):

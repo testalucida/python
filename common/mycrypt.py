@@ -57,6 +57,12 @@ class EncryptDecrypt:
             encrypted = enc_file.read()
         return self.decryptEncrypted( key, encrypted )
 
+def testEncrypt():
+    key = b"_="
+    ed = EncryptDecrypt()
+    pwd_enc = ed.encrypt( key, "" )
+    print( pwd_enc.decode() )
+
 def test():
     path = ""
     keyfile = ""

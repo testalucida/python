@@ -25,7 +25,8 @@ class AbrechnungenController( IccController ):
         self._deleteAction: QAction = QAction( "Lösche diese Abrechnung" )
 
     def createView( self ) -> QWidget:
-        self._view = abrview = AbrechnungenView()
+        kennung:constants.abrechnung = self.getKennung()
+        self._view = abrview = AbrechnungenView( kennung )
         abrview.setWindowTitle( self.getViewTitle() )
         jahre = self._getExistingAbrechnungsjahre()
         if not self._jahr - 1 in jahre:
@@ -50,6 +51,16 @@ class AbrechnungenController( IccController ):
 
     def getViewSize( self ) -> (int, int):
         return 1050, 1000
+
+    def getKennung( self ) -> constants.abrechnung:
+        """
+        Methode kann von den abgeleiteten Kontrollern überschrieben werden.
+        Der Wert, der hier zurückgegeben wird, wird an die View übergeben,
+        die dann z.B. zusätzliche Felder in den Edit-Teil unterhalb der Tabelle
+        einfügt.
+        :return:
+        """
+        pass
 
     def _createModel( self, jahr:int ) -> AbrechnungenTableModel:
         pass
@@ -213,6 +224,9 @@ class NkAbrechnungenController( AbrechnungenController ):
     def __init__( self ):
         AbrechnungenController.__init__( self )
 
+    def getKennung( self ) -> constants.abrechnung:
+        return constants.abrechnung.NK
+
     def getViewTitle( self ) -> str:
         return "Nebenkostenabrechnungen"
 
@@ -235,6 +249,9 @@ class NkAbrechnungenController( AbrechnungenController ):
 class HgAbrechnungenController( AbrechnungenController ):
     def __init__( self ):
         AbrechnungenController.__init__( self )
+
+    def getKennung( self ) -> constants.abrechnung:
+        return constants.abrechnung.HG
 
     def getViewTitle( self ) -> str:
         return "Hausgeldabrechnungen"

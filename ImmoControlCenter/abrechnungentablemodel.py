@@ -12,12 +12,12 @@ class AbrechnungenTableModel( IccTableModel ):
     def __init__( self, abrechList:List[XAbrechnung] ):
         IccTableModel.__init__( self )
         self._abrechlist:List[XAbrechnung] = abrechList
-        """
-        Gewünschte Spaltenfolge: 
-        mobj_id | mv_id oder weg_name_vw_id | von | bis | ab_jahr | betrag | ab_datum | buchungsdatum | bemerkung
-        """
-        self._headers = ("Wohnung", "Name", "MV von", "MV bis", "Jahr", "Betrag", "Abr.-Datum", "Buchungsdatum", "Bemerkung")
-        self._keylist = ("mobj_id", "", "von", "bis", "ab_jahr", "betrag", "ab_datum", "buchungsdatum", "bemerkung")
+        # """
+        # Gewünschte Spaltenfolge:
+        # mobj_id | mv_id oder weg_name_vw_id | von | bis | ab_jahr | betrag | ab_datum | buchungsdatum | bemerkung
+        # """
+        # self._headers = ("Wohnung", "Name", "MV von", "MV bis", "Jahr", "Betrag", "Abr.-Datum", "Buchungsdatum", "Bemerkung")
+        # self._keylist = ("mobj_id", "", "von", "bis", "ab_jahr", "betrag", "ab_datum", "buchungsdatum", "bemerkung")
         # Änderungslog vorbereiten:
         self._changes:Dict[str, List[XAbrechnung]] = {}
         for s in constants.actionList:
@@ -160,13 +160,12 @@ class AbrechnungenTableModel( IccTableModel ):
         return False
 
     def delete( self, x:XAbrechnung ):
-        x.betrag = 0.0
-        x.ab_datum = x.buchungsdatum = x.bemerkung = ""
+        x.clearJahreswerte()
         self.update( x, deleteFlag=True )
 
     def update( self, x:XAbrechnung, deleteFlag:bool=False ):
         x.deleteFlag = deleteFlag
-        l = self._abrechlist
+        #l = self._abrechlist
         cols = len( self._headers )
         row = self.getRow( x )
         idxfrom = self.index( row, 0 )
@@ -220,6 +219,13 @@ class AbrechnungenTableModel( IccTableModel ):
 class NkAbrechnungenTableModel( AbrechnungenTableModel ):
     def __init__( self, abrechList: List[XNkAbrechnung] ):
         AbrechnungenTableModel.__init__( self, abrechList )
+        """
+        Gewünschte Spaltenfolge: 
+        mobj_id | mv_id oder weg_name_vw_id | von | bis | ab_jahr | betrag | ab_datum | buchungsdatum | bemerkung
+        """
+        self._headers = (
+        "Wohnung", "Name", "MV von", "MV bis", "Jahr", "Betrag", "Abr.-Datum", "Buchungsdatum", "Bemerkung")
+        self._keylist = ("mobj_id", "", "von", "bis", "ab_jahr", "betrag", "ab_datum", "buchungsdatum", "bemerkung")
 
     def getNameColumnHeader( self ) -> str:
         return "Mieter"
@@ -237,15 +243,28 @@ class NkAbrechnungenTableModel( AbrechnungenTableModel ):
 class HgAbrechnungenTableModel( AbrechnungenTableModel ):
     def __init__( self, abrechList: List[XHgAbrechnung] ):
         AbrechnungenTableModel.__init__( self, abrechList )
+        """
+        Gewünschte Spaltenfolge: 
+        mobj_id | mv_id oder weg_name_vw_id | von | bis | ab_jahr | betrag | ab_datum | buchungsdatum | entnahme_rue | bemerkung
+        """
+        self._headers = ("Wohnung", "Name", "MV von", "MV bis", "Jahr", "Betrag", "Abr.-Datum", "Buchungsdatum", "Entnahme Rü.", "Bemerkung")
+        self._keylist = ("mobj_id", "", "von", "bis", "ab_jahr", "betrag", "ab_datum", "buchungsdatum", "entnahme_rue", "bemerkung")
+        self._columnEntnahmeRue = 8
 
     def getNameColumnHeader( self ) -> str:
         return "WEG"
 
     def getNameColumnKey( self ) -> str:
-        return "weg_name_vw_id"
+        return "weg_name_vw_id"   # sic!
 
     def getId( self, x:XHgAbrechnung ) -> str:
         return x.hga_id
 
     def getName( self, x:XHgAbrechnung ) -> str:
         return x.vwg_id
+
+    def getAlignment( self, indexrow: int, indexcolumn: int ):
+        align = super().getAlignment( indexrow, indexcolumn )
+        if indexcolumn == self._columnEntnahmeRue:
+            align = int( Qt.AlignRight | Qt.AlignVCenter )
+        return align

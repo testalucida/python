@@ -813,7 +813,7 @@ class DbAccess:
         :return:
         """
         sql = "select hga_id, hga.vwg_id, vw.vw_id, vwg.mobj_id, vwg.weg_name, vwg.von, coalesce(vwg.bis, '') as bis, ab_jahr, " \
-              "betrag, ab_datum, coalesce(buchungsdatum, '') as buchungsdatum, coalesce(hga.bemerkung, '') as bemerkung " \
+              "betrag, entnahme_rue, ab_datum, coalesce(buchungsdatum, '') as buchungsdatum, coalesce(hga.bemerkung, '') as bemerkung " \
               "from hg_abrechnung hga " \
               "inner join verwaltung vwg on vwg.vwg_id = hga.vwg_id " \
               "inner join verwalter vw on vw.vw_id = vwg.vw_id " \
@@ -831,6 +831,7 @@ class DbAccess:
             x.bis = d["bis"]
             x.ab_jahr = d["ab_jahr"]
             x.betrag = d["betrag"]
+            x.entnahme_rue = d["entnahme_rue"]
             x.ab_datum = d["ab_datum"]
             x.buchungsdatum = d["buchungsdatum"]
             x.bemerkung = d["bemerkung"]
@@ -1191,23 +1192,26 @@ class DbAccess:
         return self._doWrite( sql, commit )
 
     def insertHgAbrechnung( self, x: XHgAbrechnung, commit: bool = True ) -> int:
+        x.entnahme_rue = 0.0 if x.entnahme_rue is None else x.entnahme_rue
         sql = "insert into hg_abrechnung " \
-              "(ab_jahr, vwg_id, betrag, ab_datum, buchungsdatum, bemerkung) " \
+              "(ab_jahr, vwg_id, betrag, entnahme_rue, ab_datum, buchungsdatum, bemerkung) " \
               "values" \
-              "(%d,      %d,   %.2f,     '%s',   '%s',          '%s')" % \
-              (x.ab_jahr, x.vwg_id, x.betrag, x.ab_datum, x.buchungsdatum, x.bemerkung)
+              "(%d,      %d,     %.2f,     %.2f,         '%s',     '%s',          '%s')" % \
+              (x.ab_jahr, x.vwg_id, x.betrag, x.entnahme_rue, x.ab_datum, x.buchungsdatum, x.bemerkung)
         return self._doWrite( sql, commit )
 
     def updateHgAbrechnung( self, x: XHgAbrechnung, commit: bool = True ) -> int:
+        x.entnahme_rue = 0.0 if x.entnahme_rue is None else x.entnahme_rue
         sql = "update hg_abrechnung " \
               "set ab_jahr = %d, " \
               "vwg_id = %d, " \
               "betrag = %.2f, " \
+              "entnahme_rue = %.2f, " \
               "ab_datum = '%s', " \
               "buchungsdatum = '%s', " \
               "bemerkung = '%s' " \
               "where hga_id = %d" % \
-              (x.ab_jahr, x.vwg_id, x.betrag, x.ab_datum, x.buchungsdatum, x.bemerkung, x.hga_id)
+              (x.ab_jahr, x.vwg_id, x.betrag, x.entnahme_rue, x.ab_datum, x.buchungsdatum, x.bemerkung, x.hga_id)
         return self._doWrite( sql, commit )
 
     def deleteHgAbrechnung( self, hga_id: int, commit: bool = True ) -> int:

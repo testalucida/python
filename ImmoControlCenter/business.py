@@ -776,6 +776,7 @@ class BusinessLogic:
                     x.ab_jahr = ab_jahr
                     x.hga_id = abr.hga_id
                     x.betrag = abr.betrag
+                    x.entnahme_rue = abr.entnahme_rue
                     x.ab_datum = abr.ab_datum
                     x.buchungsdatum = abr.buchungsdatum
                     x.bemerkung = abr.bemerkung

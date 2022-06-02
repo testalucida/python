@@ -5,6 +5,7 @@ from PySide2.QtWidgets import QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QT
     QAbstractItemView, QFrame
 from typing import List
 
+import constants
 from icc.icctablemodel import IccTableModel
 from interfaces import  XAbrechnung
 from modifiyinfo import ModifyInfo
@@ -16,10 +17,11 @@ from datehelper import *
 
 #########################  AbrechnungenView  ##############################
 class AbrechnungenView( QWidget, ModifyInfo ):
-    def __init__( self, parent=None ):
+    def __init__( self, kennung:constants.abrechnung, parent=None ):
         QWidget.__init__( self, parent )
         ModifyInfo.__init__( self )
         #self.setWindowTitle( "Sonstige Ausgaben: Rechnungen, Abgaben, Gebühren etc." )
+        self._kennung = kennung
         self._mainLayout = QtWidgets.QGridLayout( self )
         self._toolbarLayout = QHBoxLayout()
         self._btnSave = QPushButton( self )
@@ -39,6 +41,7 @@ class AbrechnungenView( QWidget, ModifyInfo ):
         self._name = QLabel( self, text="" )
         self._cboAbrechnungsjahr = QtWidgets.QComboBox( self )
         self._feBetrag: FloatEdit = FloatEdit( self )
+        self._feEntnahmeRue = FloatEdit()
 
         self._teBemerkung = QTextEdit( self )
         self._btnOk = QPushButton( self )
@@ -137,7 +140,7 @@ class AbrechnungenView( QWidget, ModifyInfo ):
         self._buchungsdatumLayout.addWidget( self._btnClearBuchungsdatum )
 
     def _assembleAbrechnungInfo( self ):
-        lbl = QLabel( self, text="Mieter/Verwalter: " )
+        lbl = QLabel( self, text="Mieter: " if self._kennung == constants.abrechnung.NK else "Verwalter: " )
         lbl.setFixedWidth( 130 )
         self._abrechnungInfoLayout.addWidget( lbl )
 
@@ -154,6 +157,13 @@ class AbrechnungenView( QWidget, ModifyInfo ):
         self._feBetrag.setToolTip( "'+' für Einnahme, '-' für Ausgabe")
         self._feBetrag.setFixedWidth( 60 )
         self._abrechnungInfoLayout.addWidget( self._feBetrag )
+
+        if self._kennung == constants.abrechnung.HG:
+            # Entnahme aus Rücklage
+            lbl = QLabel( self, text="Entnahme Rücklage: " )
+            self._abrechnungInfoLayout.addWidget( lbl )
+            self._feEntnahmeRue.setFixedWidth( 60 )
+            self._abrechnungInfoLayout.addWidget( self._feEntnahmeRue )
 
         self._teBemerkung.setPlaceholderText( "Bemerkung zur Zahlung" )
         self._teBemerkung.setMaximumSize( QtCore.QSize( 16777215, 50 ) )
@@ -229,6 +239,8 @@ class AbrechnungenView( QWidget, ModifyInfo ):
         x.ab_datum = self._sdAbrechnungsdatum.getDate()
         x.buchungsdatum = self._sdBuchungsdatum.getDate()
         x.betrag = self._feBetrag.getFloatValue()
+        if self._kennung == constants.abrechnung.HG:
+            x.entnahme_rue = self._feEntnahmeRue.getFloatValue()
         x.bemerkung = self._teBemerkung.toPlainText()
         return x
 
@@ -262,6 +274,7 @@ class AbrechnungenView( QWidget, ModifyInfo ):
         self._sdBuchungsdatum.clear()
         self._name.clear()
         self._feBetrag.clear()
+        self._feEntnahmeRue.clear()
         self._teBemerkung.clear()
         self._justEditing = None
         self._suspendCallbacks = False
@@ -281,6 +294,11 @@ class AbrechnungenView( QWidget, ModifyInfo ):
             self._feBetrag.setText( "0" )
         else:
             self._feBetrag.setText( str( x.betrag ) )
+        if self._kennung == constants.abrechnung.HG:
+            if x.entnahme_rue == 0.0:
+                self._feEntnahmeRue.setText( "0" )
+            else:
+                self._feEntnahmeRue.setText( str( x.entnahme_rue ) )
         self._teBemerkung.setText( x.bemerkung )
         self._suspendCallbacks = False
 
