@@ -116,9 +116,10 @@ class AnlageV_Print_Logic( AnlageV_Base_Logic):
         :return:
         """
         o = self.getObjekt( master_name )
-        x = self._createAnlageV_Zeile( "lfdnr", o.lfdnr )
-        x.previewFlag = False
-        anlagev_zeilen.append( x )
+        # wir drucken die "lfd. Nr. der Anlage" nicht
+        # x = self._createAnlageV_Zeile( "lfdnr", o.lfdnr )
+        # x.previewFlag = False
+        # anlagev_zeilen.append( x )
 
         x = self._createAnlageV_Zeile( "obj_str_hnr", o.strasse_hnr )
         anlagev_zeilen.append( x )

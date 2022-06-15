@@ -20,6 +20,7 @@ class AnlageV_Base_Logic:
         self._objektStammdatenList:List[XObjektStammdaten] = list()
         self._anlageV_zeilendefinitionen:List[XZeilendefinition] = list()
         self.jahr = jahr
+        self.pauschalen:XPauschale = None
         self._prepare()
 
     def _prepare(self):
@@ -123,7 +124,7 @@ class AnlageV_Base_Logic:
         #Hausgeldvorauszahlungen saldiert mit HG-Abrechnungen
         x.hg_ohne_ruezufue = self.getHGohneRueZuFueMitAbrechng( master_name )
         #Geschäftsreisen:
-        x.reisekosten = self.getReisekosten( master_name )
+        x.reisekosten = int( round( self.getReisekosten( master_name ) ) )
         # bei einigen Objekten fehlen jetzt noch die Kosten, die von der Gemeinde
         # im Paket abgebucht wurden.
         # (Betrifft derzeit nur Gemeinden Neunkirchen und Ottweiler)
@@ -174,18 +175,31 @@ class AnlageV_Base_Logic:
             block.betrag += aus.betrag
         return l
 
+    def computeReisekosten( self, reise:XGeschaeftsreise ) -> float:
+        """
+        Berechnet km-Kosten u. Vpfl-Pauschale für eine Geschäftsreise.
+        Der errechnete Betrag wird als negative Zahl zurückgegeben.
+        :param reise:
+        :return:
+        """
+        if not self.pauschalen:
+            self.pauschalen = self._db.getPauschalen( self.jahr )
+        dauer: int = datehelper.getNumberOfDays2( reise.von, reise.bis, self.jahr )
+        return ((dauer * self.pauschalen.vpfl * reise.personen) + (reise.km * self.pauschalen.km)) * -1
+
     def getReisekosten( self, master_name:str ) -> float:
-        jahr = self.jahr
+        """
+        Ermittelt die Reisekosten ungleich Übernachtung, also km-Kosten und Verpflegungspauschalen.
+        Hotelkosten werden bei der Ermittlung der "sonstigen Kosten" aus der Tabelle <sonstaus> ermittelt.
+        :param master_name:
+        :return:
+        """
         reiselogic = GeschaeftsreiseLogic()
-        xpausch:XPauschale = self._db.getPauschalen( jahr )
-        xreisen:List[XGeschaeftsreise] = reiselogic.getGeschaeftsreisen( master_name, jahr )
-        dauer, km, hotel = 0, 0, 0.0
+        xreisen:List[XGeschaeftsreise] = reiselogic.getGeschaeftsreisen( master_name, self.jahr )
+        reisekosten_gesamt = 0.0
         for reise in xreisen:
-            dauer += datehelper.getNumberOfDays2( reise.von, reise.bis, jahr )
-            km += reise.km
-            hotel += reise.uebernacht_kosten
-        reisekosten = (dauer * xpausch.vpfl) + (km * xpausch.km) + hotel
-        return int( round( reisekosten ) )
+            reisekosten_gesamt += self.computeReisekosten( reise )
+        return reisekosten_gesamt
 
     def getVerteiltenErhaltungsaufwand( self, master_name:str, jahr:int ) -> XAufwandVerteilt:
         """
@@ -251,6 +265,10 @@ class AnlageV_Base_Logic:
         return kosten
 
 
+def test3():
+    logic = AnlageV_Base_Logic( 2021 )
+    rk = logic.getReisekosten( "HOM_Remigius" )
+    print( rk )
 
 def test2():
     logic = AnlageV_Base_Logic( 2021 )

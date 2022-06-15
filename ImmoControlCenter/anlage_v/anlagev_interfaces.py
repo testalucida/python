@@ -125,7 +125,7 @@ class XWerbungskosten:
         self.allgemeine_kosten_summe = 0
         self.allgemeine_kosten_gruppiert:List[XAusgabeKurz] = list() # Kosten der Kostenart "allgemein"
         self.sonstige_kosten = 0
-        self.reisekosten = 0.0 # siehe Tabelle <geschaeftsreise>
+        self.reisekosten = 0 # siehe Tabelle <geschaeftsreise>
 
     def getSummeAllgemeineKosten( self ) -> int:
         # Liefert die Summe der allgemeinen Kosten (Hauskosten, die auf die Mieter umgelegt werden können)
@@ -141,7 +141,8 @@ class XWerbungskosten:
                av.aufwand_vj_minus_3 + av.aufwand_vj_minus_4 + \
                self.hg_ohne_ruezufue + \
                self.getSummeAllgemeineKosten() + \
-               self.sonstige_kosten
+               self.sonstige_kosten + \
+               self.reisekosten
         return int( round( sum ) )
 
     def getSummeSonstigeKosten( self ) -> int:

@@ -7,6 +7,9 @@ from anlage_v.anlagev_interfaces import XMieteinnahme, \
     XWerbungskosten, XAfA, XAufwandVerteilt, XAusgabeKurz, XVerteilterAufwand, XErhaltungsaufwand, XSammelAbgabeDetail
 from anlage_v.anlagev_tablemodel import AnlageVTableModel, PreviewRow
 from constants import Sonstaus_Kostenart, DetailLink
+from geschaeftsreise.geschaeftsreiselogic import GeschaeftsreiseLogic, GeschaeftsreiseUcc
+from geschaeftsreise.geschaeftsreisentablemodel import GeschaeftsreisenTableModel
+from interfaces import XGeschaeftsreise
 
 
 class AnlageV_Preview_Logic( AnlageV_Base_Logic):
@@ -124,11 +127,13 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         self._createPreviewRowSeparator( "", previewRows )
         self._createPreviewRowsFromHausgeld( int( round( x.hg_ohne_ruezufue ) ), previewRows )
         self._createPreviewRowsFromAllgemeineKostenDetailliert(
-            x.grundsteuer, x.abwasser, x.strassenreinigung, x.versicherungen, x.allgemeine_kosten_gruppiert, previewRows )
+            x.grundsteuer, x.abwasser, x.strassenreinigung, x.versicherungen,
+            x.allgemeine_kosten_gruppiert, previewRows )
         self._createPreviewRowSeparator( "", previewRows )
-        self._createPreviewRowFromAllgemeineKosten( int( round( x.getSummeAllgemeineKosten() ) ), previewRows )
+        # in die Zeile 47 packen wir die Allgemeinen Kosten und das Hausgeld ohne RüZuFü
+        self._createPreviewRowFromAllgemeineKosten( int( round( x.getSummeAllgemeineKosten() + x.hg_ohne_ruezufue ) ), previewRows )
         self._createPreviewRowSeparator( "", previewRows )
-        self._createPreviewRowFromSonstigeKosten( int( round( x.sonstige_kosten ) ), previewRows )
+        self._createPreviewRowFromSonstigeKosten( int( round( x.sonstige_kosten + x.reisekosten ) ), previewRows )
 
     def _createPreviewRowsFromAfA( self, afa:XAfA, previewRows:List[PreviewRow] ) -> None:
         zdef = self._getZeilenDef( "afa_linear" )
@@ -203,8 +208,8 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
     def _createPreviewRowsFromHausgeld( self, hg_ohne_ruezufue:int, previewRows:List[PreviewRow] ) -> None:
         r = PreviewRow()
         r.zeile = self._getZeilenDef( "hauskosten_allg" ) # Auf der Anlage V wird das Hausgeld summiert mit allg. Hauskosten
-        r.text = "Hausgeld mit Abrechnungen ohne Rücklagenzuführung"
-        r.wert2 = hg_ohne_ruezufue
+        r.text = "Hausgeld mit Abrechnungen ohne Rücklagenzuführung >> zu übertragen in Zeile 47"
+        r.wert1 = hg_ohne_ruezufue
         r.isSumme = False
         previewRows.append( r )
 
@@ -256,7 +261,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
             previewRows.append( r )
         r = PreviewRow()
         zdef = self._getZeilenDef( "hauskosten_allg" )
-        r.text = "       SUMME dieser Posten: " + str( int( round( summe ) ) ) + " Euro >> zu übertragen in Zeile " + \
+        r.text = "       SUMME allg. Kosten: " + str( int( round( summe ) ) ) + " Euro >> zu übertragen in Zeile " + \
                  str( zdef.zeile )
         previewRows.append( r )
 
@@ -264,7 +269,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         zdef = self._getZeilenDef( "hauskosten_allg" )
         r = PreviewRow()
         r.zeile = zdef.zeile
-        r.text = "Grundsteuer, Str.reinigg, Müllabfuhr, Allg.strom etc"
+        r.text = "Summe der Kosten aus obigem Detail-Block"
         r.wert2 = allgKosten
         r.isSumme = False
         previewRows.append( r )
@@ -274,6 +279,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         r = PreviewRow()
         r.zeile = zdef.zeile
         r.text = "Sonstige Kosten: Übernachtungen, Post, Provisionen, ..."
+        r.detailLink = DetailLink.SONSTIGE_KOSTEN.value[0]
         r.wert2 = sonstKosten
         r.isSumme = False
         previewRows.append( r )
@@ -319,6 +325,28 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
             xauslist = self._mapXSammelAbgabeDetail2XAusgabeKurz( xsam )
             l.extend( xauslist )
         tm:AnlageV_AusgabenTableModel = AnlageV_AusgabenTableModel( master_name, self.jahr, l )
+        tm.setHeaders( ["Kreditor", "Wohng", "Buchungstext", "Buch.datum", "Kostenart", "Betrag", "Summe"] )
+        tm.setKeys( ["kreditor", "mobj_id", "buchungstext", "buchungsdatum", "kostenart", "betrag", ""] )
+        tm.addColumnFunction( 6, self.getKreditorSumme )
+        return tm
+
+    def getSonstigeAusgabenModel( self, master_name:str ) -> AnlageV_AusgabenTableModel:
+        l:List[XAusgabeKurz] = self._db.getAusgaben( master_name, self.jahr, [Sonstaus_Kostenart.SONSTIGE,] )
+        reiselist:List[XGeschaeftsreise] = GeschaeftsreiseUcc.inst().getGeschaeftsreisen( master_name, self.jahr )
+        for reise in reiselist:
+            xaus = XAusgabeKurz()
+            xaus.master_name = master_name
+            xaus.master_id = reise.master_id
+            xaus.mobj_id = reise.mobj_id
+            xaus.kreditor = reise.uebernachtung
+            xaus.buchungstext = "Reise " + reise.von + " - " + reise.bis + "; Grund: " + reise.ziel + "; " + reise.zweck
+            xaus.betrag = self.computeReisekosten( reise )
+            xaus.kostenart = Sonstaus_Kostenart.SONSTIGE.value[0]
+            l.append( xaus )
+
+        l = sorted( l, key=lambda xaus: xaus.kreditor )
+
+        tm: AnlageV_AusgabenTableModel = AnlageV_AusgabenTableModel( master_name, self.jahr, l )
         tm.setHeaders( ["Kreditor", "Wohng", "Buchungstext", "Buch.datum", "Kostenart", "Betrag", "Summe"] )
         tm.setKeys( ["kreditor", "mobj_id", "buchungstext", "buchungsdatum", "kostenart", "betrag", ""] )
         tm.addColumnFunction( 6, self.getKreditorSumme )
@@ -404,6 +432,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         :return:
         """
         thisKreditor = tm.getValue( indexrow, 0 )
+        if not thisKreditor: return None
         nextKreditor = tm.getValue( indexrow + 1, 0 )
         if nextKreditor is None or nextKreditor != thisKreditor:
             sum = 0
@@ -428,12 +457,13 @@ masterobjekte = [ "ILL_Eich", "SB_Hohenzoll", "SB_Kaiser" ]
 
 def testPreview():
     app = QApplication()
-    busi = AnlageV_Preview_Logic()
-    # v = AnlageVView()
-    # v.setMinimumSize( 1000, 1100 )
-    # tm = busi.getAnlageVTableModel( "SB_Kaiser", 2021 )
-    # v.setAnlageVTableModel( tm )
-    #v.show()
+    busi = AnlageV_Preview_Logic( 2021 )
+    from anlage_v.anlagev_gui import AnlageVView, AnlageVTableView
+    v = AnlageVTableView()
+    v.setMinimumSize( 1000, 1100 )
+    tm = busi.getAnlageVTableModel( "SB_Kaiser" )
+    v.setAnlageVTableModel( tm )
+    v.show()
     app.exec_()
 
 if __name__ == "__main__":

@@ -144,7 +144,8 @@ class AnlageVController( IccController ):
                     tm:AnlageV_AusgabenTableModel = self._busi.getReparaturausgabenVerteilt( master_objekt )
                     self._showAusgabenDialog( tm, "Anteilig anzusetzende Erhaltungsaufwendungen" )
                 elif linkvalue == DetailLink.SONSTIGE_KOSTEN.value[0]:
-                    pass
+                    tm:AnlageV_AusgabenTableModel = self._busi.getSonstigeAusgabenModel( master_objekt )
+                    self._showAusgabenDialog( tm, "Sonstige Ausgaben" )
 
     def _showAusgabenDialog( self, tm:AnlageV_AusgabenTableModel, title:str ):
         dlg = GenericTableViewDialog( tm )
@@ -181,8 +182,8 @@ def testPreview():
     app = QApplication()
     ctrl = AnlageVController( )
     # ctrl.testPrinting( "ILL_Eich", 2021 )
-    # tm:AusgabenModel = ctrl._busi.getAusgabenModel( "ILL_Eich", 2021 )
-    # ctrl._showAusgabenDialog( tm )
+    #tm:AusgabenModel = ctrl._busi.getAusgabenModel( "ILL_Eich", 2021 )
+    #ctrl._showAusgabenDialog( tm )
     win = ctrl.createView()
     #win.resize( 900, 900 )
     win.setGeometry( 1700, 50, 1400, 1300 )

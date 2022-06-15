@@ -23,7 +23,7 @@ class AnlageVTableModel( QAbstractTableModel ):
         self._rows = zeilen
         self._headers: List = ["Zeile", "Text", "Wert1", "Wert Anl.V VJ", "Details", "Bemerkung"]
         self._keys:List = ["zeile", "text", "wert1", "wert2", "detailLink", "bemerkung"]
-        self._wertColumns:List = [2, 3]
+        self._wertColumns:List = [3]
         self._detailLinkColumn = 4
         self._negNumberBrush = QBrush( Qt.red )
         self._separatorForeground = QBrush( Qt.white )
@@ -84,8 +84,9 @@ class AnlageVTableModel( QAbstractTableModel ):
 
     def getFont(self, indexrow:int, indexcolumn:int ) -> QFont or None:
         row = self.getPreviewRow( indexrow )
-        # if row.text.startswith( "Hausgeld" ):
-        #     print( "JJ")
+        if row.text.startswith( "Hausgeld" ) and indexcolumn == 2:
+            value = self.getValue( indexrow, indexcolumn )
+            print( "value=", value)
         if row.isSeparator:
             return self._boldFont
         if row.zeile:
