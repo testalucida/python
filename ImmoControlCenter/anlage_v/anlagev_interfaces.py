@@ -50,6 +50,19 @@ class XAusgabeKurz:
         if valuedict:
             setFromDict( self, valuedict )
 
+class XEinnahmeKurz( XAusgabeKurz ):
+    # die Klasse brauchen wir nur, damit wir die Einzel-Mieteinnahmen für die Detail-Anzeige nicht in Objekten
+    # namens XAusgabeKurz liefern müssen.
+    def __init__( self, valuedict:Dict=None ):
+        XAusgabeKurz.__init__( self, valuedict )
+        self.kennung = ""
+        self.mobj_id_mv_id = ""
+
+class XNebenkostenabrechnung( XEinnahmeKurz ):
+    def __init__( self, valuedict:Dict=None ):
+        XEinnahmeKurz.__init__( self, valuedict )
+        self.nka_id = 0
+
 class XVerteilterAufwand( XAusgabeKurz ):
     def __init__( self, valuedict:Dict ):
         XAusgabeKurz.__init__( self, valuedict )

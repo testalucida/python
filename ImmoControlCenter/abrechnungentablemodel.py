@@ -14,9 +14,9 @@ class AbrechnungenTableModel( IccTableModel ):
         self._abrechlist:List[XAbrechnung] = abrechList
         # """
         # Gewünschte Spaltenfolge:
-        # mobj_id | mv_id oder weg_name_vw_id | von | bis | ab_jahr | betrag | ab_datum | buchungsdatum | bemerkung
+        # mobj_id | mv_id oder weg_name_vw_id | von | bis | betrag | ab_datum | buchungsdatum | bemerkung
         # """
-        # self._headers = ("Wohnung", "Name", "MV von", "MV bis", "Jahr", "Betrag", "Abr.-Datum", "Buchungsdatum", "Bemerkung")
+        # self._headers = ("Wohnung", "Name", "MV von", "MV bis", "Betrag", "Abr.-Datum", "Buchungsdatum", "Bemerkung")
         # self._keylist = ("mobj_id", "", "von", "bis", "ab_jahr", "betrag", "ab_datum", "buchungsdatum", "bemerkung")
         # Änderungslog vorbereiten:
         self._changes:Dict[str, List[XAbrechnung]] = {}
@@ -40,8 +40,8 @@ class AbrechnungenTableModel( IccTableModel ):
         self._columnName = 1
         self._columnVon = 2
         self._columnBis = 3
-        self._columnBuchungsdatum = 7
-        self._columnBetrag = 5
+        self._columnBuchungsdatum = 6 #7
+        self._columnBetrag = 4 #5
         self._sortable = False
 
     def getHeader( self, col:int ) -> str:
@@ -221,11 +221,11 @@ class NkAbrechnungenTableModel( AbrechnungenTableModel ):
         AbrechnungenTableModel.__init__( self, abrechList )
         """
         Gewünschte Spaltenfolge: 
-        mobj_id | mv_id oder weg_name_vw_id | von | bis | ab_jahr | betrag | ab_datum | buchungsdatum | bemerkung
+        mobj_id | mv_id oder weg_name_vw_id | von | bis | betrag | ab_datum | buchungsdatum | bemerkung
         """
         self._headers = (
-        "Wohnung", "Name", "MV von", "MV bis", "Jahr", "Betrag", "Abr.-Datum", "Buchungsdatum", "Bemerkung")
-        self._keylist = ("mobj_id", "", "von", "bis", "ab_jahr", "betrag", "ab_datum", "buchungsdatum", "bemerkung")
+        "Wohnung", "Name", "MV von", "MV bis", "Betrag", "Abr.-Datum", "Buchungsdatum", "Bemerkung")
+        self._keylist = ("mobj_id", "", "von", "bis", "betrag", "ab_datum", "buchungsdatum", "bemerkung")
 
     def getNameColumnHeader( self ) -> str:
         return "Mieter"
@@ -245,11 +245,11 @@ class HgAbrechnungenTableModel( AbrechnungenTableModel ):
         AbrechnungenTableModel.__init__( self, abrechList )
         """
         Gewünschte Spaltenfolge: 
-        mobj_id | mv_id oder weg_name_vw_id | von | bis | ab_jahr | betrag | ab_datum | buchungsdatum | entnahme_rue | bemerkung
+        mobj_id | mv_id oder weg_name_vw_id | von | bis | betrag | ab_datum | buchungsdatum | entnahme_rue | bemerkung
         """
-        self._headers = ("Wohnung", "Name", "MV von", "MV bis", "Jahr", "Betrag", "Abr.-Datum", "Buchungsdatum", "Entnahme Rü.", "Bemerkung")
-        self._keylist = ("mobj_id", "", "von", "bis", "ab_jahr", "betrag", "ab_datum", "buchungsdatum", "entnahme_rue", "bemerkung")
-        self._columnEntnahmeRue = 8
+        self._headers = ("Wohnung", "Name", "MV von", "MV bis", "Betrag", "Abr.-Datum", "Buchungsdatum", "Entnahme Rü.", "Bemerkung")
+        self._keylist = ("mobj_id", "", "von", "bis", "betrag", "ab_datum", "buchungsdatum", "entnahme_rue", "bemerkung")
+        self._columnEntnahmeRue = 7 #8
 
     def getNameColumnHeader( self ) -> str:
         return "WEG"

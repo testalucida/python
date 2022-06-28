@@ -6,10 +6,12 @@ from anlage_v.anlagev_base_logic import AnlageV_Base_Logic
 from anlage_v.anlagev_interfaces import XMieteinnahme, \
     XWerbungskosten, XAfA, XAufwandVerteilt, XAusgabeKurz, XVerteilterAufwand, XErhaltungsaufwand, XSammelAbgabeDetail
 from anlage_v.anlagev_tablemodel import AnlageVTableModel, PreviewRow
+from business import BusinessLogic
 from constants import Sonstaus_Kostenart, DetailLink
 from geschaeftsreise.geschaeftsreiselogic import GeschaeftsreiseLogic, GeschaeftsreiseUcc
 from geschaeftsreise.geschaeftsreisentablemodel import GeschaeftsreisenTableModel
-from interfaces import XGeschaeftsreise
+from interfaces import XGeschaeftsreise, XHausgeldZahlungJahr
+from verwaltung.verwaltunglogic import VerwaltungLogic
 
 
 class AnlageV_Preview_Logic( AnlageV_Base_Logic):
@@ -115,6 +117,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         r.text = "Summe der Einnahmen"
         r.wert2 = int( round( self.getSummeEinnahmenAusXMieteinnahme( x ) ) )
         r.isSumme = True
+        r.detailLink = DetailLink.MIETEN.value[0]
         previewRows.append( r )
 
     def _createPreviewRowsFromWerbungskosten( self, x:XWerbungskosten, previewRows:List[PreviewRow] ) -> None:
@@ -209,6 +212,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         r = PreviewRow()
         r.zeile = self._getZeilenDef( "hauskosten_allg" ) # Auf der Anlage V wird das Hausgeld summiert mit allg. Hauskosten
         r.text = "Hausgeld mit Abrechnungen ohne Rücklagenzuführung >> zu übertragen in Zeile 47"
+        r.detailLink = DetailLink.HAUSGELD.value[0]
         r.wert1 = hg_ohne_ruezufue
         r.isSumme = False
         previewRows.append( r )
@@ -316,6 +320,24 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         r.isSeparator = True
         previewRows.append( r )
 
+    def getMietenModel( self, master_name:str ) -> AnlageV_AusgabenTableModel:
+        """
+        Ermittelt die Daten für die Mieteinnahmen-Detail-Anzeige:
+        - die monatlichen Brutto-Mieteinnahmen
+        - den Jahresgesamtbetrag der Nebenkosten-Vorauszahlungen, der von der Summe der Brutto-ME abezogen wird
+        - die Zahlung im Rahmen der NK-Abrechnung (die im Jahr <self.jahr> erfolgt sein muss
+        :param master_name:
+        :return:
+        """
+        bruttomieten = self._db.getMietenEinzeln( master_name, self.jahr )
+        nkalist = self._db.getNKA2( master_name, self.jahr )
+        gesamtlist = bruttomieten + nkalist
+        tm = AnlageV_AusgabenTableModel( master_name, self.jahr, gesamtlist )
+        tm.setHeaders( ["Ein-/Auszahl.art", "Objekt",        "Zeitpunkt",     "Betrag", "Summe"] )
+        tm.setKeys( [   "kennung",          "mobj_id_mv_id", "buchungsdatum", "betrag", ""] )
+        tm.addColumnFunction( 4, self.getGruppenSumme, 3 )
+        return tm
+
     def getAllgemeineAusgabenModel( self, master_name:str ) -> AnlageV_AusgabenTableModel:
         l:List[XAusgabeKurz] = self._db.getAusgaben( master_name, self.jahr, [Sonstaus_Kostenart.GRUNDSTEUER,
                                                                           Sonstaus_Kostenart.ALLGEMEIN,
@@ -327,7 +349,48 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         tm:AnlageV_AusgabenTableModel = AnlageV_AusgabenTableModel( master_name, self.jahr, l )
         tm.setHeaders( ["Kreditor", "Wohng", "Buchungstext", "Buch.datum", "Kostenart", "Betrag", "Summe"] )
         tm.setKeys( ["kreditor", "mobj_id", "buchungstext", "buchungsdatum", "kostenart", "betrag", ""] )
-        tm.addColumnFunction( 6, self.getKreditorSumme )
+        tm.addColumnFunction( 6, self.getGruppenSumme, 5 )
+        return tm
+
+    def getHausgeldModel( self, master_name:str ) -> AnlageV_AusgabenTableModel:
+        """
+        Ermittelt die Daten für die Hausgeld-Detail-Anzeige:
+        - die monatlichen Brutto-HGV
+        - den Jahresgesamtbetrag der Rücklagenzuführung, der von der Summe der Brutto-HGV abgezogen wird
+        - die Zahlungen im Rahmen von HG-Abrechnungen, bei denen es nicht auf das Abrechnungsjahr ankommt,
+          sondern auf den Zeitpunkt der Zahlung (zahlung muss gleich <self.jahr> sein).
+        :param master_name:
+        :return:
+        """
+        def _getHausgeldZahlung( master_id:int, master_name:str, kreditor:str ) -> XAusgabeKurz:
+            vwlogic = VerwaltungLogic()
+            xhgjahr: XHausgeldZahlungJahr = vwlogic.getHausgeldzahlung( master_name, self.jahr )
+            x = XAusgabeKurz()
+            x.master_id = master_id
+            x.mobj_id = "alle"
+            x.master_name = master_name
+            x.kreditor = "ich"
+            x.kostenart = "davon Jahres-RüZuFü"
+            x.betrag = xhgjahr.rueZuFue * (-1) # muss positiv sein, damit es von den Brutto-HGV abgezogen wird
+            return x
+
+        # alle Brutto-HGV-Zahlungen des Jahres holen:
+        hgvlist:List[XAusgabeKurz] = self._db.getHGVEinzeln( master_name, self.jahr )
+        if len( hgvlist ) > 0:
+            # die RüZuFü separat ausweisen
+            tmp:XAusgabeKurz = hgvlist[0]
+            ruezufue:XAusgabeKurz = _getHausgeldZahlung( tmp.master_id, tmp.master_name, tmp.kreditor )
+            hgvlist.append( ruezufue )
+
+        # HG-Abrechnungsbeträge ermitteln
+        hgalist:List[XAusgabeKurz] = self._db.getHGAbrechnungszahlungen( master_name, self.jahr )
+        hglist = hgvlist + hgalist
+        tm = AnlageV_AusgabenTableModel( master_name, self.jahr, hglist )
+        # tm.setHeaders( ["Kreditor", "Objekt", "Whg", "Monat", "Art", "Betrag", "Summe"] )
+        # tm.setKeys( ["kreditor", "master_name", "mobj_id", "buchungsdatum", "kostenart", "betrag", ""] )
+        tm.setHeaders( ["Kreditor", "Objekt", "Ein-/Auszahlung", "Art", "Abrechnung", "Betrag", "Summe"] )
+        tm.setKeys( ["kreditor", "master_name", "buchungsdatum", "kostenart", "buchungstext", "betrag", ""] )
+        tm.addColumnFunction( 6, self.getGruppenSumme, 5 )
         return tm
 
     def getSonstigeAusgabenModel( self, master_name:str ) -> AnlageV_AusgabenTableModel:
@@ -349,7 +412,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         tm: AnlageV_AusgabenTableModel = AnlageV_AusgabenTableModel( master_name, self.jahr, l )
         tm.setHeaders( ["Kreditor", "Wohng", "Buchungstext", "Buch.datum", "Kostenart", "Betrag", "Summe"] )
         tm.setKeys( ["kreditor", "mobj_id", "buchungstext", "buchungsdatum", "kostenart", "betrag", ""] )
-        tm.addColumnFunction( 6, self.getKreditorSumme )
+        tm.addColumnFunction( 6, self.getGruppenSumme, 5 )
         return tm
 
     def _mapXSammelAbgabeDetail2XAusgabeKurz( self, xsam:XSammelAbgabeDetail ) -> List[XAusgabeKurz]:
@@ -373,11 +436,26 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         return l
 
     def getReparaturausgabenNichtVerteilt( self, master_name:str ) -> AnlageV_AusgabenTableModel:
+        # die auf einmal anzusetzenden Reparaturen:
         l: List[XAusgabeKurz] = self._db.getAusgaben( master_name, self.jahr, [Sonstaus_Kostenart.REPARATUR,] )
+        # plus eine etwaige Entnahme aus den Rücklagen:
+        entn = self.getRuecklagenEntnahme( master_name, self.jahr )
+        x = XAusgabeKurz()
+        x.master_name = master_name
+        if len( l ) == 0:
+            x.master_id = BusinessLogic.inst().getMasteridFromMastername( master_name )
+        else:
+            x.master_id = l[0].master_id
+        x.mobj_id = x.buchungsdatum = "" # hoffen wir mal, dass das niemand braucht in der Anlage V
+        x.kreditor = "Hausverwaltung"
+        x.kostenart = "r"
+        x.buchungstext = "Entnahme Rücklage"
+        x.betrag = entn
+        l.append( x )
         tm:AnlageV_AusgabenTableModel = AnlageV_AusgabenTableModel( master_name, self.jahr, l )
         tm.setHeaders( ["Kreditor", "Wohng", "Buchungstext", "Buch.datum", "Kostenart", "Betrag", "Summe"] )
         tm.setKeys( ["kreditor", "mobj_id", "buchungstext", "buchungsdatum", "kostenart", "betrag", ""] )
-        tm.addColumnFunction( 6, self.getKreditorSumme )
+        tm.addColumnFunction( 6, self.getGruppenSumme, 5 )
         return tm
 
     def getReparaturausgabenVerteilt( self, master_name:str ) -> AnlageV_AusgabenTableModel:
@@ -388,7 +466,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         tm:AnlageV_AusgabenTableModel = AnlageV_AusgabenTableModel( master_name, jahr, l )
         tm.setHeaders( ["Jahr", "Kreditor", "Whg", "Buch.Text", "Betrag", "Summe"] )
         tm.setKeys( ["buchungsjahr", "kreditor", "mobj_id", "buchungstext", "betrag", ""] )
-        tm.addColumnFunction( 5, self.getJahressumme )
+        tm.addColumnFunction( 5, self.getJahressumme, 5 )
         return tm
 
     def getZuVerteilendeAufwaende( self, master_name:str ) -> AnlageV_AusgabenTableModel:
@@ -401,7 +479,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         tm:AnlageV_AusgabenTableModel = AnlageV_AusgabenTableModel( master_name, self.jahr, awlist )
         tm.setHeaders( ["Jahr", "Kreditor", "Whg", "Buch.Text", "Betrag", "Summe"] )
         tm.setKeys( ["buchungsjahr", "kreditor", "mobj_id", "buchungstext", "betrag", ""] )
-        tm.addColumnFunction( 5, self.getJahressumme )
+        tm.addColumnFunction( 5, self.getJahressumme, 5 )
         return tm
 
     def getJahressumme( self, tm:AnlageV_AusgabenTableModel, row:int, col:int ) -> int:
@@ -422,7 +500,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
             return sum
         return None
 
-    def getKreditorSumme( self, tm:AnlageV_AusgabenTableModel, indexrow: int, indexcolumn:int ) -> float or None:
+    def getGruppenSumme( self, tm:AnlageV_AusgabenTableModel, indexrow: int, indexcolumn:int, columnIdxToAdd ) -> float or None:
         """
         Callback function für AusgabenModel
         Prüfen, ob ein Gruppenwechsel bezüglich Kreditor bevorsteht.
@@ -438,7 +516,8 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
             sum = 0
             startrow = tm.getStartRow( thisKreditor, indexrow, 0 )
             for r in range( startrow, indexrow + 1 ):
-                sum += tm.getValue( r, 5 )
+                #sum += tm.getValue( r, 5 )
+                sum += tm.getValue( r, columnIdxToAdd )
             return sum
         return None
 
@@ -455,14 +534,19 @@ masterobjekte = [ "ILL_Eich", "SB_Hohenzoll", "SB_Kaiser" ]
 ################### TEST GEGEN TEST-DATENBANK !!!!!!!!!!1 ############
 ##############
 
+def test():
+    logic = AnlageV_Preview_Logic( 2022 )
+    tm = logic.getHausgeldModel( "SB_Kaiser")
+
+
 def testPreview():
     app = QApplication()
-    busi = AnlageV_Preview_Logic( 2021 )
+    busi = AnlageV_Preview_Logic( 2022 )
     from anlage_v.anlagev_gui import AnlageVView, AnlageVTableView
     v = AnlageVTableView()
     v.setMinimumSize( 1000, 1100 )
     tm = busi.getAnlageVTableModel( "SB_Kaiser" )
-    v.setAnlageVTableModel( tm )
+    v.setModel( tm )
     v.show()
     app.exec_()
 

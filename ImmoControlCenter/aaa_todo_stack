@@ -100,3 +100,9 @@ Vermutlich wird nicht nur Tabelle sonstaus ausgewertet, sondern auch Tabelle zah
 36. MietverhaeltnisView:
     Vor-/Rück-Buttons einbauen, damit man zwischen den Mietverhältnissen "blättern" kann
     --> erl.
+
+37. AnlageV: Ermittlung NK und HG mit Abrechnungen
+    Vereinfachen:
+    Nur noch mit VJ arbeiten, nciht mehr mit VJ-1. Mit dem VJ in der Tabelle <zahlung> nach
+    zahlart = {hgv, hga, nkv, nka} suchen, die in jahr=VJ angefallen sind. Aus hgx die Rücklagen-Anteile
+    extrahieren. (Wie soll das bei hga funktionieren? Am besten, man ignoriert bei hga den Rücklagen-Teil.)

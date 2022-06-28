@@ -192,12 +192,12 @@ class MietenController( CheckController ):
         #model = tv.getTableModel()
         model = tv.getModel()
         index = tv.indexAt( point )
-        if not index.column() in (model.nameColumnIdx, model.sollColumnIdx ):
+        if not index.triggerColumn() in (model.nameColumnIdx, model.sollColumnIdx):
             return
 
         mv_id = model.getId( index.row() )
         menu = QMenu( tv )
-        if index.column() == model.nameColumnIdx:
+        if index.triggerColumn() == model.nameColumnIdx:
             action = QAction( "Dieses Mietverhältnis beenden" )
             action.setData( "K" )
             menu.addAction( action )
@@ -209,14 +209,14 @@ class MietenController( CheckController ):
             action = QAction( "Nettomiete und NKV anzeigen" )
             menu.addAction( action )
         action = menu.exec_( tv.viewport().mapToGlobal( point ) )
-        if action and index.column() == model.nameColumnIdx:
+        if action and index.triggerColumn() == model.nameColumnIdx:
             if action.data() == "K":
                 c = MiniKuendigungsController( self._view )
                 c.mietverhaeltnisGekuendigt.connect( onGekuendigt )
                 c.kuendigeMietverhaeltnisUsingMiniDialog( mv_id )
             else:
                 self._showMietverhaeltnis( mv_id, point )
-        elif action and index.column() == model.sollColumnIdx:
+        elif action and index.triggerColumn() == model.sollColumnIdx:
             netto, nkv = BusinessLogic.inst().getNettomieteUndNkv( mv_id, self._currentYear, self._currentCheckMonth )
             box = QMessageBox()
             box.setWindowTitle( "Teile der Bruttomiete" )

@@ -177,7 +177,7 @@ class CheckTableModel( DictListTableModel, IccTableModel ):
         ididx = self.index( index.row(), self._meinausidIdx )
         meinaus_id = self.data( ididx, Qt.DisplayRole )
         # get column name
-        header = self.headerData( index.column(), Qt.Horizontal, Qt.DisplayRole )
+        header = self.headerData( index.triggerColumn(), Qt.Horizontal, Qt.DisplayRole )
         if not meinaus_id in self._changes:
             self._changes[meinaus_id] = {}
         self._changes[meinaus_id][header] = value

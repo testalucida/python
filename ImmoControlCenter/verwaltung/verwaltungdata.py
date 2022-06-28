@@ -1,5 +1,6 @@
 from typing import List, Dict
 
+from anlage_v.anlagev_interfaces import XAusgabeKurz
 from databasecommon import DatabaseCommon
 from interfaces import XVerwaltung, XSollHausgeld
 
@@ -80,6 +81,28 @@ class VerwaltungData( DatabaseCommon ):
         li = [x[0] for x in tuplelist]
         return li[0]
 
+    def getRuecklagenEntnahme( self, master_name: str, jahr: int ) -> float:
+        """
+        Liefert die Entnahme aus den Rücklagen, die in der Abrechnung für das Jahr <jahr> ausgewiesen wurde.
+        :param master_name:
+        :param jahr:
+        :return: die Summe aller Gutschriften bzw. Nachzahlungen für Masterobjekt <master_name> im Jahr <jahr>
+        """
+        sql = "select coalesce(sum(entnahme_rue), 0) as entnahme_rue " \
+              "from hg_abrechnung hga " \
+              "inner join verwaltung vwg on vwg.vwg_id = hga.vwg_id " \
+              "inner join masterobjekt master on master.master_id = vwg.master_id " \
+              "where hga.ab_jahr = %d " \
+              "and master.master_name = '%s'" % (jahr, master_name )
+        tuplelist = self.read( sql )
+        li = [x[0] for x in tuplelist]
+        return li[0]
+
+def test5():
+    data = VerwaltungData()
+    entn = data.getRuecklagenEntnahme( "ER_Heuschlag", 2021 )
+    print( entn )
+
 def test4():
     data = VerwaltungData()
     s = data.getSollHausgeld( "NK_Volkerstal", 2021 )
@@ -93,7 +116,7 @@ def test3():
 
 def test1():
     data = VerwaltungData()
-    s = data.getHGVSumme( "HOM_Remigius", 2021 )
+    s = data.getHGVSumme( "SB_Kaiser", 2022 )
     print( s )
 
 def test2():

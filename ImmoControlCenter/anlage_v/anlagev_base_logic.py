@@ -116,7 +116,8 @@ class AnlageV_Base_Logic:
         jahr = self.jahr
         x:XWerbungskosten = XWerbungskosten( master_name, jahr )
         x.afa = self._db.getAfA( master_name )
-        x.erhalt_aufwand = self._db.getNichtVerteiltenErhaltungsaufwandSumme( master_name, jahr )
+        x.erhalt_aufwand = self.getRuecklagenEntnahme( master_name, jahr )
+        x.erhalt_aufwand += self._db.getNichtVerteiltenErhaltungsaufwandSumme( master_name, jahr )
         x.erhalt_aufwand_verteilt = self.getVerteiltenErhaltungsaufwand( master_name, jahr )
         x.kostenart_a = self._db.getAusgabenSumme( master_name, jahr, Sonstaus_Kostenart.ALLGEMEIN )
         x.versicherungen = self._db.getAusgabenSumme( master_name, jahr, Sonstaus_Kostenart.VERSICHERUNG )
@@ -201,6 +202,10 @@ class AnlageV_Base_Logic:
             reisekosten_gesamt += self.computeReisekosten( reise )
         return reisekosten_gesamt
 
+    def getRuecklagenEntnahme( self, master_name:str, jahr:int ) -> int:
+        logic = VerwaltungLogic()
+        return round( int( logic.getRuecklagenEntnahme( master_name, jahr ) ) )
+
     def getVerteiltenErhaltungsaufwand( self, master_name:str, jahr:int ) -> XAufwandVerteilt:
         """
         Ermittelt eine Liste mit allen zu verteilenden Aufwänden.
@@ -269,6 +274,11 @@ def test3():
     logic = AnlageV_Base_Logic( 2021 )
     rk = logic.getReisekosten( "HOM_Remigius" )
     print( rk )
+
+def testHG():
+    logic = AnlageV_Base_Logic( 2021 )
+    hg = logic.getHGohneRueZuFueMitAbrechng( "SB_Gruelings" )
+    print( hg )
 
 def test2():
     logic = AnlageV_Base_Logic( 2021 )

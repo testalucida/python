@@ -41,5 +41,7 @@ class DetailLink( Enum ):
     ZU_VERTEIL_GESAMTKOSTEN_VJ = "VJ_GES", # Zu verteilende Aufwände, die im Veranlag.jahr entstanden sind
     ERHALTUNGSKOSTEN_VERTEILT = "VREP",   # Teilbeträge der im Veranlagg.jahr zu berücksichtigenden Aufwände, die im VJ
                                          # oder in den zurückliegenden 4 Jahren entstanden und zu verteilen sind.
+    MIETEN = "ME",
+    HAUSGELD = "HG",
     ALLGEMEINE_KOSTEN = "AK",
     SONSTIGE_KOSTEN = "SK"

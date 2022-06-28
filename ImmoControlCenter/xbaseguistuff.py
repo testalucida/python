@@ -54,7 +54,7 @@ class XBaseGuiBuilder:
 
     def _populateView( self ):
         for gi in self._guiInfoList:
-            self._layout.addWidget( gi.widget, gi.row, gi.column )
+            self._layout.addWidget( gi.widget, gi.row, gi.triggerColumn )
 
 
 def test():

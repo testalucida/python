@@ -1,7 +1,7 @@
 from typing import List, Dict, Tuple
 
 from anlage_v.anlagev_interfaces import XObjektStammdaten, XZeilendefinition, XAfA, XErhaltungsaufwand, \
-    XAllgemeineKosten, XSammelAbgabeDetail, XAusgabeKurz, XVerteilterAufwand
+    XAllgemeineKosten, XSammelAbgabeDetail, XAusgabeKurz, XVerteilterAufwand, XEinnahmeKurz, XNebenkostenabrechnung
 from constants import Zahlart, zahlartstrings, Sonstaus_Kostenart
 from dbaccess import DbAccess
 from interfaces import XSollMiete, XGeschaeftsreise, XPauschale, XSollHausgeld
@@ -168,6 +168,28 @@ class AnlageV_DataAccess( DbAccess ):
         l = self._doRead( sql )
         sum = l[0][0]
         return 0.0 if sum is None else sum
+
+    def getNKA2( self, master_name:str, jahr:int ) -> List[XNebenkostenabrechnung]:
+        sql = "select z.master_id, z.mobj_id, z.nka_id, z.jahr, z.betrag, nka.mv_id, nka.buchungsdatum " \
+              "from zahlung z " \
+              "inner join masterobjekt master on master.master_id = z.master_id " \
+              "inner join nk_abrechnung nka on nka.nka_id = z.nka_id " \
+              "where z.jahr = %d " \
+              "and z.zahl_art = 'nka' " \
+              "and master.master_name = '%s' " % (jahr, master_name)
+        dictlist = self._doReadAllGetDict( sql )
+        l:List[XNebenkostenabrechnung] = list()
+        for dic in dictlist:
+            x = XNebenkostenabrechnung()
+            x.master_id = dic["master_id"]
+            x.master_name = master_name
+            x.kennung = "NKA"
+            x.nka_id = dic["nka_id"]
+            x.mobj_id_mv_id = dic["mobj_id"] + " / " + dic["mv_id"]
+            x.betrag = dic["betrag"]
+            x.buchungsdatum = dic["buchungsdatum"]
+            l.append( x )
+        return l
 
     def getNKA( self, master_name:str, jahr:int ) -> float:
         sql = "select sum( betrag ) " \
@@ -336,6 +358,130 @@ class AnlageV_DataAccess( DbAccess ):
         sum = l[0][0]
         return 0 if sum is None else round( sum )
 
+    def getMietenEinzeln( self, master_name:str, jahr:int ) -> List[XEinnahmeKurz]:
+        """
+        Liefert alle Brutto-Mieten für <master_name> im Jahr <jahr> als Liste von XEinnahmeKurz
+        Wird von AnlageV_Preview_Logic.get
+
+        :param master_name:
+        :param jahr:
+        :return:
+        """
+        sql = "select z.master_id, z.mobj_id, monat, betrag " \
+              "from zahlung z " \
+              "inner join masterobjekt master on master.master_id = z.master_id " \
+              "where zahl_art = 'bruttomiete' " \
+              "and master.master_name = '%s' " \
+              "and z.jahr = %d " % (master_name, jahr)
+        dictList = self._doReadAllGetDict( sql )
+        l: List[XEinnahmeKurz] = list()
+        sjahr = str( jahr )
+        for dic in dictList:
+            x = XEinnahmeKurz()
+            x.kennung = "Bruttomiete"
+            x.master_id = dic["master_id"]
+            x.master_name = master_name
+            x.mobj_id_mv_id = dic["mobj_id"]
+            x.betrag = dic["betrag"]
+            x.buchungsdatum = dic["monat"] + " / " + sjahr
+            l.append( x )
+        return l
+
+    def getHGVEinzeln( self, master_name:str, jahr:int ) -> List[XAusgabeKurz]:
+        """
+        Liefert alle Brutto-Hausgeldvorauszahlungen (inkl. RüZuFü)
+        für <master_name> im Jahr <jahr> als Liste von XAusgabeKurz.
+        Wird von AnlageV_Preview_Logic.getHausgeldModel(..) benötigt.
+        :param master_name:
+        :param jahr:
+        :return:
+        """
+        def createXAusgabeKurzList( dic:Dict, jahr:int ) -> List[XAusgabeKurz]:
+            """
+            Das hier übergebene <dic> enthält einen Satz aus <mtleinaus>. Dieser enthält 0 bis 12
+            HG-Vorauszahlungen (Spalten <jan> bis <dez>).
+            Für jeden Wert ungleich 0 und ungleich None wird ein XAusgabeKurz-Objekt erstellt, welcher
+            der Rückgabeliste hinzugefügt wird.
+            :param dic:
+            :return: eine Liste mit XAusgabeKurz-Objekten oder eine leere Liste, wenn kein XAusgabeKurz-Objekt
+                    erstellt wurde. Niemals None.
+            """
+            l:List[XAusgabeKurz] = list()
+            columns = ("jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dez")
+            for m in range(0, 12):
+                col = columns[m]
+                if dic[col] and dic[col] != 0:
+                    x = XAusgabeKurz()
+                    x.master_name = dic["master_name"]
+                    x.master_id = dic["master_id"]
+                    x.mobj_id = "alle"
+                    x.kostenart = "HG-Voraus"
+                    x.kreditor = dic["weg_name"] + " / " + dic["vw_id"]
+                    x.betrag = dic[col]
+                    x.buchungsdatum = col + " / " + str( jahr )
+                    l.append( x )
+            return l
+
+        sql = "select master.master_name, master.master_id, vwg.vw_id, vwg.weg_name, mea.vwg_id, " \
+              "jan, feb, mrz, apr, mai, jun, jul, aug, sep, okt, nov, dez " \
+              "from mtleinaus mea " \
+              "inner join verwaltung vwg on vwg.vwg_id = mea.vwg_id " \
+              "inner join masterobjekt master on master.master_id = vwg.master_id " \
+              "where mea.jahr = %d " \
+              "and master.master_name = '%s' " % (jahr, master_name )
+        dictList = self._doReadAllGetDict( sql )
+        l:List[XAusgabeKurz] = list()
+        for dic in dictList:
+            # wir haben dann mehrere dic's, wenn es einen unterjährigen Verwalterwechsel gegeben hat
+            ltmp = createXAusgabeKurzList( dic, jahr ) # aus jeder Monatszahlung wird ein XAusgabeKurz-Objekt
+            l.extend( ltmp )
+        return l
+
+    def getHGAbrechnungszahlungen( self, master_name:str, jahr:int ) -> List[XAusgabeKurz]:
+        """
+        Liefert aus <zahlung> die Zahlungen <zahl_art> == 'hga'
+        für <master_name> und <jahr> in einer Liste von XAusgabeKurz-OBjekten.
+        Beachte: <jahr> bezieht sich auf das Jahr der Zahlung, nicht auf das mit der HGA abgerechnete Jahr.
+        :param master_name:
+        :param jahr:
+        :return: Eine Liste mit 0 bis n XAusgabeKurz-Objekten. Niemals None
+        """
+        def createXAusgabeKurz( dic:Dict ) -> XAusgabeKurz:
+            """
+            Das hier übergebene <dic> enthält einen Satz aus Spalten von <zahlung> und von <hg_abrechnung>.
+            Aus ihm wird ein XAusgabeKurz-Objekt erzeugt und zurückgeliefert.
+            :param dic:
+            :return:
+            """
+            x = XAusgabeKurz()
+            x.master_name = dic["master_name"]
+            x.master_id = dic["master_id"]
+            x.mobj_id = "alle"
+            x.kostenart = "HG-Abrechnung"
+            x.kreditor = dic["weg_name"] + " / " + dic["vw_id"]
+            x.betrag = dic["betrag"]
+            x.buchungstext = "Abrechng.jahr: " + str( dic["ab_jahr"] )
+            #x.buchungsdatum = "Zahljahr: " + str( dic["jahr"] )
+            x.buchungsdatum = dic["buchungsdatum"]
+            return x
+
+        sql = "select master.master_name, master.master_id, vwg.vw_id, vwg.weg_name, " \
+              "hga.ab_jahr, hga.buchungsdatum, z.jahr, z.betrag " \
+              "from zahlung z " \
+              "inner join hg_abrechnung hga on hga.hga_id = z.hga_id " \
+              "inner join verwaltung vwg on vwg.vwg_id = hga.vwg_id " \
+              "inner join masterobjekt master on master.master_id = vwg.master_id " \
+              "where z.jahr = %d " \
+              "and z.zahl_art = 'hga' " \
+              "and master.master_name = '%s' " % ( jahr, master_name )
+        dictList = self._doReadAllGetDict( sql )
+        l: List[XAusgabeKurz] = list()
+        for dic in dictList:
+            # wir haben dann mehrere dic's, wenn es Zahlungen zu mehreren Abrechnungen gegeben hat (Corona!)
+            x = createXAusgabeKurz( dic )  # aus jeder Monatszahlung wird ein XAusgabeKurz-Objekt
+            l.append( x )
+        return l
+
     def getAusgaben( self, master_name:str, jahr:int, kostenarten:List[Sonstaus_Kostenart] ) -> List[XAusgabeKurz]:
         """
         Liefert die Ausgaben der gewünschten Kostenarten.
@@ -345,7 +491,8 @@ class AnlageV_DataAccess( DbAccess ):
         :param master_name:
         :param jahr:
         :param kostenarten:
-        :return:
+        :return: Eine Liste mit XAusgabeKurz-Objekten. Wurde keine Ausgabe gefunden, wird eine leere Liste
+                zurückgegeben.
         """
         k_arten = ""
         for art in kostenarten:
@@ -537,6 +684,21 @@ class AnlageV_DataAccess( DbAccess ):
     #         x = XSammelAbgabeDetail( d )
     #         return x
     #     return None
+
+
+def test9():
+    data = AnlageV_DataAccess( "../immo.db" )
+    data.open()
+    l = data.getMietenEinzeln( "ER_Heuschlag", 2021 )
+    print( l )
+
+
+def test8():
+    data = AnlageV_DataAccess( "../immo.db" )
+    data.open()
+    #l = data.getHGVEinzeln( "SB_Kaiser", 2022 )
+    l = data.getHGAbrechnungszahlungen( "ER_Heuschlag", 2021 )
+    print( l )
 
 def test7():
     av = AnlageV_DataAccess( "../immo.db" )

@@ -1,5 +1,5 @@
 import numbers
-from typing import List, Any
+from typing import List, Any, Callable
 from PySide2.QtCore import QAbstractTableModel, QModelIndex, Qt
 from PySide2.QtGui import QFont, QBrush
 
@@ -8,8 +8,9 @@ from interfaces import XSonstAus
 
 class ColumnFunction:
     def __init__(self):
-        self.column:int = -1
+        self.triggerColumn:int = -1
         self.fnc = None
+        self.arg = None
 
 class AnlageV_AusgabenTableModel( QAbstractTableModel ):
     def __init__( self, master_name:str, jahr:int, rowList: List[Any] ):
@@ -27,15 +28,18 @@ class AnlageV_AusgabenTableModel( QAbstractTableModel ):
         self._boldFont = QFont( "Arial", 11, QFont.Bold )
         self._columnfunctions:List[ColumnFunction] = list()
 
-    def addColumnFunction( self, column:int, fnc ):
+    def addColumnFunction( self, triggercolumn:int, fnc, arg ):
         cf = ColumnFunction()
-        cf.column = column
+        cf.triggerColumn = triggercolumn
         cf.fnc = fnc
+        cf.arg = arg
         self._columnfunctions.append( cf )
 
-    def _getColumnFunction( self, column:int ):
-        l = [x.fnc for x in self._columnfunctions if x.column == column]
-        return l[0] if len( l ) > 0 else None
+    def _getColumnFunction( self, column:int ) -> ColumnFunction or None:
+        #l = [x.fnc for x in self._columnfunctions if x.column == column]
+        #return l
+        l = [cf for cf in self._columnfunctions if cf.triggerColumn == column]
+        return l[0]
 
     def getMasterName( self ) -> str:
         return self._master_name
@@ -75,10 +79,12 @@ class AnlageV_AusgabenTableModel( QAbstractTableModel ):
             x = self._rowList[indexrow]
             key = self._keys[indexcolumn]
             if key == "":
-                fnc = self._getColumnFunction( indexcolumn )
-                if fnc:
-                    return fnc( self, indexrow, indexcolumn )
-                #return self._getKreditorSumme( indexrow )
+                # fnc = self._getColumnFunction( indexcolumn )
+                # if fnc:
+                #     return fnc( self, indexrow, indexcolumn )
+                colfnc = self._getColumnFunction( indexcolumn )
+                if colfnc:
+                    return colfnc.fnc( self, indexrow, indexcolumn, colfnc.arg )
             val = x.__dict__[key]
             return val
 

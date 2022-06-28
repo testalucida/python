@@ -129,7 +129,10 @@ class AnlageVController( IccController ):
             tm = self._getAnlageVTableModel( master_objekt )
             linkvalue = tm.getValue( row, column )
             if linkvalue:
-                if linkvalue == DetailLink.ALLGEMEINE_KOSTEN.value[0]:
+                if linkvalue == DetailLink.MIETEN.value[0]:
+                    tm:AnlageV_AusgabenTableModel = self._busi.getMietenModel( master_objekt )
+                    self._showAusgabenDialog( tm, "Nebenkosten - Vorauszahlg. u. Abrechng." )
+                elif linkvalue == DetailLink.ALLGEMEINE_KOSTEN.value[0]:
                     tm:AnlageV_AusgabenTableModel = self._busi.getAllgemeineAusgabenModel( master_objekt )
                     self._showAusgabenDialog( tm, "Allgemeine Hauskosten" )
                 elif linkvalue == DetailLink.ERHALTUNGSKOSTEN.value[0]:
@@ -143,6 +146,9 @@ class AnlageVController( IccController ):
                     # Anzusetzende Teilbeträge der Aufwände, die im VJ und den vergangenen 4 Jahren entstanden sind
                     tm:AnlageV_AusgabenTableModel = self._busi.getReparaturausgabenVerteilt( master_objekt )
                     self._showAusgabenDialog( tm, "Anteilig anzusetzende Erhaltungsaufwendungen" )
+                elif linkvalue == DetailLink.HAUSGELD.value[0]:
+                    tm: AnlageV_AusgabenTableModel = self._busi.getHausgeldModel( master_objekt )
+                    self._showAusgabenDialog( tm, "Hausgeld mit Abrechnung ohne Entnahme Rücklagen (siehe Erhaltungskosten)" )
                 elif linkvalue == DetailLink.SONSTIGE_KOSTEN.value[0]:
                     tm:AnlageV_AusgabenTableModel = self._busi.getSonstigeAusgabenModel( master_objekt )
                     self._showAusgabenDialog( tm, "Sonstige Ausgaben" )

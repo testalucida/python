@@ -12,6 +12,9 @@ class VerwaltungLogic:
     def getAktiveVerwaltungen( self, jahr:int ) -> List[XVerwaltung]:
         return self._db.getAktiveVerwaltungen( jahr )
 
+    def getRuecklagenEntnahme( self, master_name:str, jahr:int ) -> float:
+        return self._db.getRuecklagenEntnahme( master_name, jahr )
+
     def getHausgeldzahlung( self, master_name:str, jahr:int ) -> XHausgeldZahlungJahr:
         """
         Liefert die tatsächlich getätigten Zahlungen in einem XHausgeldZahlungJahr-Objekt:
