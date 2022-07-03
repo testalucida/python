@@ -98,6 +98,43 @@ class VerwaltungData( DatabaseCommon ):
         li = [x[0] for x in tuplelist]
         return li[0]
 
+    def getAbgabetermin( self, vj:int ) -> str or None:
+        """
+        Liest für <vj> das Abgabedatum aus tabelle <est_abgabe>
+        :param vj:
+        :return: das Abgabedatum im Format YYYY-MM-DD
+        """
+        sql = "select abgegeben_am " \
+              "from est_abgabe " \
+              "where vj = " + str(vj)
+        tuplelist = self.read( sql )
+        if tuplelist and len(tuplelist) > 0:
+            return tuplelist[0][0]
+        return None
+
+    def getRuecklagenEntnahmeNachzuegler( self, master_name:str, abgegeben_nach:str, vj: int ):
+        sql = "select master.master_name, hga.ab_jahr, hga.entnahme_rue, hga.ab_datum " \
+              "from hg_abrechnung hga " \
+              "inner join verwaltung vwg on vwg.vwg_id = hga.vwg_id " \
+              "inner join masterobjekt master on master.master_id = vwg.master_id " \
+              "where hga.ab_jahr = %d " \
+              "and hga.ab_datum > '%s' " \
+              "and entnahme_rue is not NULL and entnahme_rue != 0 " \
+              "and master.master_name = '%s' " % (vj, abgegeben_nach, master_name )
+        dictlist = self.readAllGetDict( sql )
+        return dictlist
+
+def test7():
+    data = VerwaltungData()
+    t = data.getRuecklagenEntnahmeNachzuegler( "N_Lamm", "2021-10-15", 2020 )
+    print( t )
+
+def test6():
+    data = VerwaltungData()
+    t = data.getAbgabetermin( 2026 )
+    print( t )
+
+
 def test5():
     data = VerwaltungData()
     entn = data.getRuecklagenEntnahme( "ER_Heuschlag", 2021 )

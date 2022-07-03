@@ -1,6 +1,7 @@
 from typing import List
 
 import datehelper
+from anlage_v.anlagev_interfaces import XErhaltungsaufwand
 from interfaces import XVerwaltung, XHausgeldZahlungJahr, XSollHausgeld
 from verwaltung.verwaltungdata import VerwaltungData
 
@@ -14,6 +15,42 @@ class VerwaltungLogic:
 
     def getRuecklagenEntnahme( self, master_name:str, jahr:int ) -> float:
         return self._db.getRuecklagenEntnahme( master_name, jahr )
+
+    def getRuecklagenEntnahmeNachzuegler( self, master_name:str, jahr:int ) -> List[XErhaltungsaufwand]:
+        """
+        Ein Nachzügler ist eine HG-Abrechnung für das Jahr X, die im Jahr X+1 zugestellt wurde,
+        nachdem die Steuererklärung für das Jahr X bereits abgegeben wurde.
+        Ein solcher Nachzügler ist nur interessant, wenn er eine Entnahme aus der Rücklage ausweist:
+        Diese hätte eigentlich in der schon abgegebenen Steuererklärung für Jahr X enthalten sein müssen.
+        Um sie nicht unberücksichtigt zu lassen, wird sie (unerlaubterweise) im Jahr X+2 berücksichtigt.
+        Als Referenzdatum dient der Abgabetermin für die StE X im Jahr X+1, der in der Tabelle <est_abgabe>
+        gespeichert wird. (Siehe auch "Vorgehen")
+
+        ***BEACHTE***:
+        Nachzügler, die mehr als 1 Jahr zu spät zugestellt werden (Hausverwaltung Hehn),
+        können aus programmiertechnischen Gründen nicht berücksichtigt werden. Man müsste sonst für jede Abrechnung
+        speichern, in welchem Jahr sie in der StE berücksichtigt wurde.
+        *************
+
+        Vorgehen:
+        1.) Lies est_abgabe.abgegeben_am für est_abgabe.vj = <jahr>-1
+        2.) Lies alle Abrechnungen,
+            wo hg_abrechnung.ab_jahr = <jahr> - 1
+            UND hg_abrechnung.ab_datum > est_abgabe.abgegeben_am
+            UND hg_abrechnung.entnahme_rue != 0
+        :param master_name:
+        :param jahr: das Veranlagungsjahr
+        :return: eine Liste mit XErhaltungsaufwand-Objekten, je eines für jede Entnahme
+        """
+        letztesVj = jahr-1
+        abgabeLetztesVj = self._db.getAbgabetermin( letztesVj )
+        diclist = self._db.getRuecklagenEntnahmeNachzuegler( master_name, abgabeLetztesVj, letztesVj )
+        li:List[XErhaltungsaufwand] = list()
+        for dic in diclist:
+            x = XErhaltungsaufwand()
+            li.append( x )
+        return li #todo: das Ergebnis brauchen wir beim Erhaltungsaufwand (Z. 40 und in der Detail-Tabelle zum
+                    # Erhaltungsaufwand
 
     def getHausgeldzahlung( self, master_name:str, jahr:int ) -> XHausgeldZahlungJahr:
         """

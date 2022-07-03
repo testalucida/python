@@ -1310,7 +1310,7 @@ class DbAccess:
         cur.execute( sql )
         return cur.fetchone()
 
-    def _doReadAllGetDict( self, sql: str ) -> Dict or None:
+    def _doReadAllGetDict( self, sql: str ) -> List[Dict] or None:
         self._con.row_factory = self.dict_factory
         cur = self._con.cursor()
         cur.execute( sql )

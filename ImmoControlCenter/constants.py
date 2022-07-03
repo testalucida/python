@@ -1,5 +1,9 @@
 from enum import Enum, IntEnum
 
+# Monatsnamen, die den Spaltennamen in Tabelle <mtleinaus> entsprechen und in die Spalte zahlung.monat
+# eingetragen werden:
+mea_monthnames = ("jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dez" )
+
 class einausart( Enum ):
     MIETE = 1,
     HGV = 2

@@ -1,10 +1,12 @@
 import os
 from typing import List, Dict, Any
 
+import constants
 import datehelper
 from anlage_v.anlagev_dataacess import AnlageV_DataAccess
 from anlage_v.anlagev_interfaces import XObjektStammdaten, XAnlageV_Zeile, XZeilendefinition, XMieteinnahme, \
-    XWerbungskosten, XAfA, XErhaltungsaufwand, XAufwandVerteilt, XAllgemeineKosten, XSammelAbgabeDetail, XAusgabeKurz
+    XWerbungskosten, XAfA, XErhaltungsaufwand, XAufwandVerteilt, XAllgemeineKosten, XSammelAbgabeDetail, XAusgabeKurz, \
+    XNebenkostenabrechnung, XSollMiete2, XEinnahmeKurz, XBruttomiete
 from constants import Zahlart, Sonstaus_Kostenart
 from datehelper import getNumberOfMonths
 from definitions import DATABASE
@@ -65,7 +67,40 @@ class AnlageV_Base_Logic:
         raise Exception( "AnlageV_Logic.getObjekt(): "
                          "Objekt '%s' nicht in der Objektliste gefunden." % (master_name) )
 
-    def getMieteinnahmenUndNebenkosten( self, master_name:str ) -> XMieteinnahme:
+    def getMieteinnahmenUndNebenkosten( self, master_name: str ) -> XMieteinnahme:
+        def split( brutto:float, jjjj:int, monat:str, smlist:List[XSollMiete2] ) -> Dict:
+            mon = constants.mea_monthnames.index( monat ) + 1
+            zahlg_am = "01." + "%02d." % mon + str(jjjj)
+            for sm in smlist:
+                von = datehelper.convertIsoToEur( sm.von )
+                bis = '' if not sm.bis else datehelper.convertIsoToEur( sm.bis )
+                if datehelper.isWithin( zahlg_am, von, bis ):
+                    nkv = sm.nkv
+                    netto = brutto - nkv
+                    return {"netto" : netto, "nkv" : nkv }
+            raise Exception( "AnlageV_Base_Logic.getMieteinnahmenUndNebenkosten.split():\n"
+                             "Kann für Mietzahlung im %s/%d kein Sollmieten-Intervall finden."
+                             % (monat, jjjj))
+
+        jahr = self.jahr
+        xme = XMieteinnahme()
+        xme.master_name = master_name
+        # wir brauchen die Bruttomieten, die Sollmieten, um die Netto-Mieten und die NKV auszurechnen
+        # und die Nebenkostenabrechnungen, um sie mit den NKV zu saldieren.
+        bruttomieten: List[XBruttomiete] = self._db.getMietenEinzeln( master_name, self.jahr )
+        sollmieten: List[XSollMiete2] = self._db.getSollmietenMasterEinzeln( master_name, self.jahr )
+        # jede Bruttomiete splitten wir auf in Netto- und NKV-Bestandteil
+        for bm in bruttomieten:
+            dic = split( bm.betrag, bm.jahr, bm.monat, sollmieten )
+            xme.bruttoMiete += bm.betrag
+            xme.nettoMiete += dic["netto"]
+            xme.nkv += dic["nkv"]
+        # Abschließend ermitteln wir den Nebenkostenabrechnungsbetrag:
+        nka_list: List[XNebenkostenabrechnung] = self._db.getNKA2( master_name, self.jahr )
+        xme.nka = sum([nka.betrag for nka in nka_list])
+        return xme
+
+    def getMieteinnahmenUndNebenkosten__( self, master_name:str ) -> XMieteinnahme:
         """
         Hier werden die Zeilen für die Netto-Miete und die Nebenkosten versorgt.
         Die Nebenkosten (NK) teilen sich auf in NK-Vorauszahlungen (NKV) und NK-Abrechnungen (NKA).
@@ -282,7 +317,8 @@ def testHG():
 
 def test2():
     logic = AnlageV_Base_Logic( 2021 )
-    xmieteinnahme = logic.getMieteinnahmenUndNebenkosten( "BUEB_Saargemuend" )
+    xmieteinnahme = logic.getMieteinnahmenUndNebenkosten__( "BUEB_Saargemuend" )
+    xmi = logic.getMieteinnahmenUndNebenkosten( "BUEB_Saargemuend" )
     print( xmieteinnahme )
 
 def test1():

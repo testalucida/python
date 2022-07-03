@@ -1,6 +1,6 @@
 from typing import Any, List, Dict
 
-from interfaces import XBase, setFromDict
+from interfaces import XBase, setFromDict, XSollzahlung
 
 
 class XSteuerpflichtiger:
@@ -16,6 +16,26 @@ class ZahlungsIntervall:
         anzMonate:int = 0
         netto:float = 0.0 # Netto-ME bzw. HG-netto
         zusatz:float = 0.0 # NKV bzw. RüZuFü
+
+class XBruttomiete():
+    def __init__(self):
+        self.master_id = 0
+        self.master_name = ""
+        self.mobj_id = ""
+        self.jahr = 0
+        self.monat = "" # {"jan", "feb", ...}
+        self.betrag = 0.0
+
+class XSollMiete2:
+    def __init__( self ):
+        self.master_id = 0
+        self.master_name = ""
+        self.mobj_id = ""
+        self.mv_id = ""
+        self.von = ""
+        self.bis = ""
+        self.netto = 0.0
+        self.nkv: float = 0.0
 
 class XMieteinnahme:
     def __init__(self, master_name:str=""):
@@ -57,6 +77,8 @@ class XEinnahmeKurz( XAusgabeKurz ):
         XAusgabeKurz.__init__( self, valuedict )
         self.kennung = ""
         self.mobj_id_mv_id = ""
+        self.jahr = 0
+        self.monat = ""  # {'jan', 'feb', 'mrz', ....}
 
 class XNebenkostenabrechnung( XEinnahmeKurz ):
     def __init__( self, valuedict:Dict=None ):

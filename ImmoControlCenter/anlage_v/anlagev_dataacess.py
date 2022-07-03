@@ -1,7 +1,8 @@
 from typing import List, Dict, Tuple
 
 from anlage_v.anlagev_interfaces import XObjektStammdaten, XZeilendefinition, XAfA, XErhaltungsaufwand, \
-    XAllgemeineKosten, XSammelAbgabeDetail, XAusgabeKurz, XVerteilterAufwand, XEinnahmeKurz, XNebenkostenabrechnung
+    XAllgemeineKosten, XSammelAbgabeDetail, XAusgabeKurz, XVerteilterAufwand, XEinnahmeKurz, XNebenkostenabrechnung, \
+    XSollMiete2, XBruttomiete
 from constants import Zahlart, zahlartstrings, Sonstaus_Kostenart
 from dbaccess import DbAccess
 from interfaces import XSollMiete, XGeschaeftsreise, XPauschale, XSollHausgeld
@@ -168,6 +169,34 @@ class AnlageV_DataAccess( DbAccess ):
         l = self._doRead( sql )
         sum = l[0][0]
         return 0.0 if sum is None else sum
+
+    def getSollmietenMasterEinzeln( self, master_name:str, jahr:int ) -> List[XSollMiete2]:
+        von, bis = str(jahr) + "-12-31", str(jahr) + "-01-01" # sic!
+        sql = "select soll.mv_id, soll.von, coalesce(soll.bis, '') as bis, " \
+              "soll.netto, soll.nkv, mobj.mobj_id, master.master_id, master.master_name " \
+            "from sollmiete soll " \
+            "inner join mietverhaeltnis mv on mv.mv_id = soll.mv_id " \
+            "inner join mietobjekt mobj on mobj.mobj_id = mv.mobj_id " \
+            "inner join masterobjekt master on master.master_id = mobj.master_id " \
+            "where master.master_name = '%s' " \
+            "and soll.von < '%s' " \
+            "and (soll.bis is NULL or soll.bis = '' or soll.bis > '%s') " \
+            "order by soll.von asc " % (master_name, von, bis)
+        dictlist = self._doReadAllGetDict( sql )
+        l:List[XSollMiete2] = list()
+        for dic in dictlist:
+            x = XSollMiete2()
+            x.master_name = dic["master_name"]
+            x.master_id = dic["master_id"]
+            x.mobj_id = dic["mobj_id"]
+            x.mv_id = dic["mv_id"]
+            x.von = dic["von"]
+            x.bis = dic["bis"]
+            x.netto = dic["netto"]
+            x.nkv = dic["nkv"]
+            l.append( x )
+        return l
+
 
     def getNKA2( self, master_name:str, jahr:int ) -> List[XNebenkostenabrechnung]:
         sql = "select z.master_id, z.mobj_id, z.nka_id, z.jahr, z.betrag, nka.mv_id, nka.buchungsdatum " \
@@ -375,15 +404,16 @@ class AnlageV_DataAccess( DbAccess ):
               "and z.jahr = %d " % (master_name, jahr)
         dictList = self._doReadAllGetDict( sql )
         l: List[XEinnahmeKurz] = list()
-        sjahr = str( jahr )
         for dic in dictList:
             x = XEinnahmeKurz()
-            x.kennung = "Bruttomiete"
+            x.kennung = "bruttomiete"
             x.master_id = dic["master_id"]
             x.master_name = master_name
-            x.mobj_id_mv_id = dic["mobj_id"]
+            x.mobj_id = dic["mobj_id"]
+            x.mobj_id_mv_id = x.mobj_id
             x.betrag = dic["betrag"]
-            x.buchungsdatum = dic["monat"] + " / " + sjahr
+            x.jahr = jahr
+            x.monat = dic["monat"]
             l.append( x )
         return l
 
@@ -458,8 +488,8 @@ class AnlageV_DataAccess( DbAccess ):
             x.master_id = dic["master_id"]
             x.mobj_id = "alle"
             x.kostenart = "HG-Abrechnung"
-            x.kreditor = dic["weg_name"] + " / " + dic["vw_id"]
             x.betrag = dic["betrag"]
+            x.kreditor = "Vermieter" if x.betrag >= 0 else dic["weg_name"] + " / " + dic["vw_id"]
             x.buchungstext = "Abrechng.jahr: " + str( dic["ab_jahr"] )
             #x.buchungsdatum = "Zahljahr: " + str( dic["jahr"] )
             x.buchungsdatum = dic["buchungsdatum"]

@@ -100,14 +100,14 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         previewRows.append( r )
 
         r = PreviewRow()
-        r.text = "NK-Abrechnung aus VJ-1 (Rückzahlung: '-')"
+        r.text = "NK-Abrechnung (Rückzahlung: '-')"
         r.wert1 = x.nka
         previewRows.append( r )
 
         zdef = self._getZeilenDef( "umlagen" )
         r = PreviewRow()
         r.zeile = zdef.zeile
-        r.text = "NKV saldiert mit NKA aus VJ-1"
+        r.text = "NKV saldiert mit NKA"
         r.wert2 = int( round( self.getSaldoNebenkostenAusXMieteinnahme( x ) ) )
         previewRows.append( r )
 
@@ -369,7 +369,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
             x.master_id = master_id
             x.mobj_id = "alle"
             x.master_name = master_name
-            x.kreditor = "ich"
+            x.kreditor = "Vermieter"
             x.kostenart = "davon Jahres-RüZuFü"
             x.betrag = xhgjahr.rueZuFue * (-1) # muss positiv sein, damit es von den Brutto-HGV abgezogen wird
             return x

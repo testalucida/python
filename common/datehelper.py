@@ -217,13 +217,15 @@ def isWithin(datestring2check: str, startdatestring: str, enddatestring: str) ->
     checks if datestring2check is part of the given interval.
     datestring2check being equal startdatestring or enddatestring means it is
     part of the interval
-    :param datestring2check: date in eur string format
+    :param datestring2check: date in eur string format (dd.mm.yyyy)
     :param startdatestring: date in eur string format
-    :param enddatestring: date in eur string format
+    :param enddatestring: date in eur string format or '' or None - will then be replaced by '9999-12-31'
     :return:
     """
-    if compareEurDates(datestring2check, startdatestring) < 0:
+    if not enddatestring:
+        enddatestring = '31.12.9999'
 
+    if compareEurDates(datestring2check, startdatestring) < 0:
         return False
     if compareEurDates(datestring2check, enddatestring) > 0:
         return False
