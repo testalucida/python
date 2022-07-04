@@ -3,7 +3,7 @@ from typing import List
 import datehelper
 from constants import einausart
 from interfaces import XVerwaltung
-from mietverhaeltnis.mietverhaeltnislogic import MietverhaeltnisLogic
+#from mietverhaeltnis.mietverhaeltnislogic import MietverhaeltnisLogic
 from mtleinaus.mtleinausdata import MtlEinAusData
 from verwaltung.verwaltunglogic import VerwaltungLogic
 
@@ -34,6 +34,8 @@ class MtlEinAusLogic:
         Macht abschließend einen Commit.
         :return: das neu angelegte Jahr
         """
+        from mietverhaeltnis.mietverhaeltnislogic import MietverhaeltnisLogic # wg. Zirkelreferenz in
+                                                                        # mietverhaeltnislogic.py
         folgejahr = datehelper.getCurrentYear() # aktuelles jahr
         # mit aktuellem Jahr prüfen (wenn Meth. im Jan. des neuen Jahres aufgerufen wird:
         if self.existsEinAusSet( einausart.MIETE, folgejahr ):
