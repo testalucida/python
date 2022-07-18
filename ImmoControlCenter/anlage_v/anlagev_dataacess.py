@@ -414,6 +414,7 @@ class AnlageV_DataAccess( DbAccess ):
             x.betrag = dic["betrag"]
             x.jahr = jahr
             x.monat = dic["monat"]
+            x.buchungsdatum = x.monat + "/" + str( x.jahr )
             l.append( x )
         return l
 

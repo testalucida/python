@@ -1,6 +1,6 @@
 from typing import List
 
-from databasecommon import DatabaseCommon
+from base.databasecommon import DatabaseCommon
 from interfaces import XGeschaeftsreise
 
 

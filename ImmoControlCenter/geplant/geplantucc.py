@@ -1,11 +1,9 @@
 #import json
 import jsonpickle
-from typing import List
 
 from geplant.geplantlogic import GeplantLogic
-from interfaces import XGeplant
 from returnvalue import ReturnValue
-from transaction import BEGIN_TRANSACTION, ROLLBACK_TRANSACTION, COMMIT_TRANSACTION
+from base.transaction import BEGIN_TRANSACTION, ROLLBACK_TRANSACTION, COMMIT_TRANSACTION
 
 
 class GeplantUcc:

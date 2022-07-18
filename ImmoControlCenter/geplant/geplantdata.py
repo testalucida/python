@@ -1,8 +1,8 @@
 
-from typing import Dict, List
+from typing import List
 
-from databasecommon import DatabaseCommon
-from interfaces import XMietobjektExt, XGeplant
+from base.databasecommon import DatabaseCommon
+from interfaces import XGeplant
 
 
 class GeplantData( DatabaseCommon ):

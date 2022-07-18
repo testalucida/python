@@ -87,7 +87,7 @@ class AnlageV_Base_Logic:
         xme.master_name = master_name
         # wir brauchen die Bruttomieten, die Sollmieten, um die Netto-Mieten und die NKV auszurechnen
         # und die Nebenkostenabrechnungen, um sie mit den NKV zu saldieren.
-        bruttomieten: List[XBruttomiete] = self._db.getMietenEinzeln( master_name, self.jahr )
+        bruttomieten: List[XEinnahmeKurz] = self._db.getMietenEinzeln( master_name, self.jahr )
         sollmieten: List[XSollMiete2] = self._db.getSollmietenMasterEinzeln( master_name, self.jahr )
         # jede Bruttomiete splitten wir auf in Netto- und NKV-Bestandteil
         for bm in bruttomieten:
@@ -152,6 +152,10 @@ class AnlageV_Base_Logic:
         x:XWerbungskosten = XWerbungskosten( master_name, jahr )
         x.afa = self._db.getAfA( master_name )
         x.erhalt_aufwand = self.getRuecklagenEntnahme( master_name, jahr )
+        # etwaige Nachzügler berücksichtigen:
+        vwlogic = VerwaltungLogic()
+        [entn_sum, erhaltaufwlist] = vwlogic.getRuecklagenEntnahmeNachzuegler( master_name, self.jahr )
+        x.erhalt_aufwand += entn_sum
         x.erhalt_aufwand += self._db.getNichtVerteiltenErhaltungsaufwandSumme( master_name, jahr )
         x.erhalt_aufwand_verteilt = self.getVerteiltenErhaltungsaufwand( master_name, jahr )
         x.kostenart_a = self._db.getAusgabenSumme( master_name, jahr, Sonstaus_Kostenart.ALLGEMEIN )

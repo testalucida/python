@@ -4,7 +4,7 @@ import datehelper
 from geschaeftsreise.geschaeftsreisedata import GeschaeftsreiseData
 from geschaeftsreise.geschaeftsreisentablemodel import GeschaeftsreisenTableModel
 from interfaces import XGeschaeftsreise
-from transaction import BEGIN_TRANSACTION, COMMIT_TRANSACTION, ROLLBACK_TRANSACTION
+from base.transaction import BEGIN_TRANSACTION, COMMIT_TRANSACTION, ROLLBACK_TRANSACTION
 
 
 class GeschaeftsreiseUcc:

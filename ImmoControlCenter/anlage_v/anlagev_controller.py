@@ -155,6 +155,8 @@ class AnlageVController( IccController ):
 
     def _showAusgabenDialog( self, tm:AnlageV_AusgabenTableModel, title:str ):
         dlg = GenericTableViewDialog( tm )
+        dlgw = dlg.width()
+        dlg.setMinimumWidth( dlgw )
         dlg.setWindowTitle( "%s für %s" % (title, tm.getMasterName()) )
         dlg.setCancelButtonVisible( False )
         dlg.setOkButtonText( "Schließen" )

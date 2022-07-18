@@ -140,10 +140,10 @@ def test3():
 
 class FatLabel( BaseLabel ):
     def __init__( self, text:str="", parent=None ):
-        BaseLabel.__init__( self, parent )
+        BaseLabel.__init__( self, text, parent )
         self._font = QFont( "Arial", 12, weight=QFont.Bold )
         self.setFont( self._font )
-        self.setText( text )
+        #self.setText( text )
 
 ############### MieterwechselView ########################
 

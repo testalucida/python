@@ -1,4 +1,4 @@
-from databasecommon import DatabaseCommon, DatabaseConnection
+from base.databasecommon import DatabaseConnection
 
 
 def BEGIN_TRANSACTION():

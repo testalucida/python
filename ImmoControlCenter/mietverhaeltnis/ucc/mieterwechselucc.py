@@ -1,7 +1,7 @@
 from interfaces import XMieterwechsel
 from mietverhaeltnis.mietverhaeltnislogic import MietverhaeltnisLogic
 from returnvalue import ReturnValue
-from transaction import *
+from base.transaction import *
 
 
 class MieterwechselUcc:

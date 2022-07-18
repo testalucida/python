@@ -1,6 +1,6 @@
 from mtleinaus.mtleinauslogic import MtlEinAusLogic
 from returnvalue import ReturnValue
-from transaction import *
+from base.transaction import *
 
 class FolgejahrNeuUcc:
     def __init__(self):

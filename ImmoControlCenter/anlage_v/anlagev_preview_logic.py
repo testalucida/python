@@ -436,22 +436,30 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         return l
 
     def getReparaturausgabenNichtVerteilt( self, master_name:str ) -> AnlageV_AusgabenTableModel:
+        def createAusgabeKurzFromEntnahmeRue( entnahme:float, text:str ) -> XAusgabeKurz:
+            x = XAusgabeKurz()
+            x.master_name = master_name
+            x.master_id = master_id
+            x.mobj_id = x.buchungsdatum = ""  # hoffen wir mal, dass das niemand braucht in der Anlage V
+            x.kreditor = "unbekannte Firma"
+            x.kostenart = "r"
+            x.buchungstext = text
+            x.betrag = entnahme
+            return x
+
+        master_id = BusinessLogic.inst().getMasteridFromMastername( master_name )
         # die auf einmal anzusetzenden Reparaturen:
         l: List[XAusgabeKurz] = self._db.getAusgaben( master_name, self.jahr, [Sonstaus_Kostenart.REPARATUR,] )
         # plus eine etwaige Entnahme aus den Rücklagen:
         entn = self.getRuecklagenEntnahme( master_name, self.jahr )
-        x = XAusgabeKurz()
-        x.master_name = master_name
-        if len( l ) == 0:
-            x.master_id = BusinessLogic.inst().getMasteridFromMastername( master_name )
-        else:
-            x.master_id = l[0].master_id
-        x.mobj_id = x.buchungsdatum = "" # hoffen wir mal, dass das niemand braucht in der Anlage V
-        x.kreditor = "Hausverwaltung"
-        x.kostenart = "r"
-        x.buchungstext = "Entnahme Rücklage"
-        x.betrag = entn
+        x = createAusgabeKurzFromEntnahmeRue( entn, "Entnahme Rücklage " + str( self.jahr ) )
         l.append( x )
+        # Ruecklagenentnahme Nachzügler berücksichtigen:
+        vwlogic = VerwaltungLogic()
+        erh_aufw_sum, erh_aufw_list = vwlogic.getRuecklagenEntnahmeNachzuegler( master_name, self.jahr )
+        for au in erh_aufw_list:
+            x = createAusgabeKurzFromEntnahmeRue( au.betrag, "Entnahme Rücklage Nachzügler " + str( self.jahr-1 ) )
+            l.append( x )
         tm:AnlageV_AusgabenTableModel = AnlageV_AusgabenTableModel( master_name, self.jahr, l )
         tm.setHeaders( ["Kreditor", "Wohng", "Buchungstext", "Buch.datum", "Kostenart", "Betrag", "Summe"] )
         tm.setKeys( ["kreditor", "mobj_id", "buchungstext", "buchungsdatum", "kostenart", "betrag", ""] )

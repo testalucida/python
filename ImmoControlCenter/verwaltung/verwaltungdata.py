@@ -1,7 +1,6 @@
-from typing import List, Dict
+from typing import List
 
-from anlage_v.anlagev_interfaces import XAusgabeKurz
-from databasecommon import DatabaseCommon
+from base.databasecommon import DatabaseCommon
 from interfaces import XVerwaltung, XSollHausgeld
 
 

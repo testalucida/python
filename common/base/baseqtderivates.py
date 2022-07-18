@@ -8,19 +8,78 @@ from PySide2.QtGui import QDoubleValidator, QIntValidator, QFont, QGuiApplicatio
 from PySide2.QtWidgets import QDialog, QCalendarWidget, QVBoxLayout, QBoxLayout, QLineEdit, QGridLayout, QPushButton, \
     QHBoxLayout, QApplication, QListView, QComboBox, QLabel, QTextEdit, QCheckBox, QFrame, QWidget
 
-from definitions import ICON_DIR
+from base.directories import BASE_IMAGES_DIR
+from base.interfaces import XAttribute
+#from definitions import ICON_DIR
 
 from datehelper import isValidIsoDatestring, isValidEurDatestring, getRelativeQDate, getQDateFromIsoString
 
-class EditButton( QPushButton ):
-    def __init__( self, size:QSize=None, parent=None ):
-        QPushButton.__init__( self, parent )
-        thissize = size if size else QSize( 28, 28 )
-        self.setFixedSize( thissize )
-        self.setIcon( QIcon( ICON_DIR + "edit_30x30.png" ) )
+#################  BaseWidget  ########################
+class BaseWidget( QWidget ):
+    def __init__( self, parent=None, flags=Qt.WindowFlags() ):
+        QWidget.__init__( self, parent, flags )
+        self._isChanged = False
+        self.ident = None
 
-##################  CalendarWindow  ###########################
-from tableviewext import TableViewExt
+    def setChanged( self, changed:bool ) -> None:
+        self._isChanged = changed
+
+    def isChanged( self ) -> bool:
+        return self._isChanged
+
+#################  BaseDialog  ########################
+class BaseComboBox( QComboBox ):
+    def __init__(self, parent=None ):
+        QComboBox.__init__( self )
+
+#################  BaseDialog  ########################
+class BaseDialog( QDialog ):
+    def __init__(self, parent=None, flags=Qt.WindowFlags() ):
+        QDialog.__init__( self, parent, flags )
+
+################  BaseButton  ##########################
+class BaseButton( QPushButton ):
+    def __init__( self, text= "", parent=None ):
+        QPushButton.__init__( self, text=text, parent= parent )
+
+################  BaseIconButton  #####################
+class BaseIconButton( BaseButton ):
+    def __init__( self, icon:QIcon, size=QSize(28, 28), parent=None ):
+        BaseButton.__init__( self, "", parent )
+        self.setIcon( icon )
+        self.setFixedSize( size )
+
+####################  BaseIconTextButton  ################
+class BaseIconTextButton( BaseButton ):
+    def __init__( self, icon:QIcon, text:str, parent=None ):
+        BaseButton.__init__( self, text, parent )
+        self.setText( text )
+
+#################  NewIconButton  #########################
+class NewIconButton( BaseIconButton ):
+    def __init__( self, parent=None ):
+        BaseIconButton.__init__( self, QIcon( BASE_IMAGES_DIR + "new.png" ), QSize(28, 28), parent )
+
+#################  EditIconButton  ########################
+class EditIconButton( BaseIconButton ):
+    def __init__( self, parent=None ):
+        BaseIconButton.__init__( self, QIcon( BASE_IMAGES_DIR + "edit_30x30.png" ), QSize(28, 28), parent )
+
+##################### DeleteIconButton  ####################
+class DeleteIconButton( BaseIconButton ):
+    def __init__( self, parent=None ):
+        BaseIconButton.__init__( self, QIcon( BASE_IMAGES_DIR + "delete.png" ), QSize( 28, 28 ), parent )
+
+#################  SortIconButton  #####################
+class SortIconButton( BaseIconButton ):
+    def __init__( self, parent=None ):
+        BaseIconButton.__init__( self, QIcon( BASE_IMAGES_DIR + "sort.png" ), QSize( 28, 28 ), parent )
+
+#################  SettingsIconButton  #####################
+class SettingsIconButton( BaseIconButton ):
+    def __init__( self, parent=None ):
+        BaseIconButton.__init__( self, QIcon( BASE_IMAGES_DIR + "settings.png" ), QSize( 28, 28 ), parent )
+        self.setToolTip( "Öffnet den Einstellungen-Dialog" )
 
 #################   BaseGridLayout  #########################
 class BaseGridLayout( QGridLayout ):
@@ -188,13 +247,31 @@ class AutoWidth:
 
 ######################  BaseLabel ##################################
 class BaseLabel( QLabel, AutoWidth ):
-    def __init__( self, text="", parent=None ):
+    def __init__( self, text:str="", parent=None ):
         QLabel.__init__( self, parent )
         self.setText( text )
 
     def setBackground( self, color ):
         # color in der Form "solid white"
         self.setStyleSheet( "background: " + color + ";" )
+
+#########################  BaseCheckBox  #############################
+class BaseCheckBox( QCheckBox ):
+    def __init__( self, parent = None ):
+        QCheckBox.__init__( self, parent )
+
+##########################  BoolSwitch  ################################
+class BoolSwitch(QComboBox, AutoWidth):
+    """
+    Eine ComboBox mit 2 Werten True und False
+    """
+    def __init__( self, initBool:bool=True ):
+        QComboBox.__init__( self )
+        self.addItems( (str(True), str(False) ) )
+        self.setCurrentText( str( initBool ) )
+
+    def setBool( self, boolVal:bool ):
+        self.setCurrentText( str( boolVal ) )
 
 #######################  BaseEdit  ###################################
 class BaseEdit( QLineEdit, AutoWidth ):
@@ -328,58 +405,6 @@ class LineEdit( BaseEdit ):
 class MultiLineEdit( QTextEdit ):
     def __init__( self, parent=None ):
         QTextEdit.__init__( self, parent )
-
-################ TableViewDialog ##################
-class TableViewDialog( QDialog ):
-    def __init__( self, parent=None ):
-        QDialog.__init__( self, parent )
-        self.setModal( True )
-        self._selectedCallback = None
-
-        self._tv = TableViewExt( self )
-        self._btnOk = QPushButton( self, text = "Übernehmen zur Bearbeitung" )
-        self._btnOk.clicked.connect( self._onOk )
-        self._btnClose = QPushButton( self, text="Schließen" )
-        self._btnClose.clicked.connect( self._onClose )
-
-        vlayout = QVBoxLayout( self )
-        vlayout.addWidget( self._tv )
-        hlayout = QHBoxLayout()
-        hlayout.addWidget( self._btnOk )
-        hlayout.addWidget( self._btnClose )
-        vlayout.addLayout( hlayout )
-
-        self.setLayout( vlayout )
-
-    def getTableView( self ) -> TableViewExt:
-        return self._tv
-
-    def setSelectedCallback( self, cbfnc ):
-        """
-        Callback function must accept a list of QModelIndex representing the selected rows/columns
-        :param cbfnc:
-        :return:
-        """
-        self._selectedCallback = cbfnc
-
-    def setTableModel( self, model:QAbstractTableModel ):
-        self._tv.setModel( model )
-        self._tv.setSizeAdjustPolicy( QtWidgets.QAbstractScrollArea.AdjustToContents )
-        self._tv.resizeColumnsToContents()
-
-    def _onOk( self ):
-        if self._selectedCallback:
-            sel_list = self._tv.selectedIndexes()
-            self._selectedCallback( sel_list )
-        self._onClose()
-
-    def _onClose( self ):
-        self.close()
-
-###############  CheckBox  ########################
-class CheckBox( QCheckBox ):
-    def __init__( self, parent=None ):
-        QCheckBox.__init__( self, parent )
 
 ################ SumDialog ########################
 class SumDialog( QDialog ):
@@ -607,7 +632,7 @@ class FontArialBold12( QFont ):
 
 
 class BaseBoldEdit( BaseEdit ):
-    def __init__( self, text:str=None ):
+    def __init__( self, text:str="" ):
         BaseEdit.__init__( self, parent=None )
         if text:
             self.setText( text )
@@ -617,31 +642,27 @@ class LabelTimes12( BaseLabel ):
     def __init__( self, text:str="", parent=None ):
         BaseLabel.__init__( self, text, parent )
         self.setFont( QFont( "Times New Roman", 12 ) )
-        # if text:
-        #     self.setText( text )
+        if text:
+            self.setText( text )
 
 
 class LabelTimesBold12( BaseLabel ):
     def __init__( self, text:str="", parent=None ):
         BaseLabel.__init__( self, text, parent )
         self.setFont( QFont( "Times New Roman", 12, weight=QFont.Bold ) )
-        # if text:
-        #     self.setText( text )
+        if text:
+            self.setText( text )
 
 class LabelArial12( BaseLabel ):
     def __init__( self, text:str="", parent=None ):
         BaseLabel.__init__( self, text, parent )
         self.setFont( QFont( "Arial", 12 ) )
-        # if text:
-        #     self.setText( text )
 
 class LabelArialBold12( BaseLabel ):
     def __init__( self, text:str="", background:str=None, parent=None ):
         # background in der Form "solid white"
-        BaseLabel.__init__( self, text, parent )
+        BaseLabel.__init__( self, text. parent )
         self.setFont( QFont( "Arial", 12, weight=QFont.Bold ) )
-        # if text:
-        #     self.setText( text )
         if background:
             self.setBackground( background )
 
@@ -651,6 +672,164 @@ class FatLabel( BaseLabel ):
         self._font = QFont( "Arial", 12, weight=QFont.Bold )
         self.setFont( self._font )
 
+class AttributeDialog( QDialog ):
+    """
+    Mit diesem Dialog können Attribute geändert werden.
+    Ein Attribut ist zum Beispiel ein Datenbankwert oder ein Settings-Wert wie Höhe, Breite, Font, etc.
+    Je Attribut wird im Dialog eine Zeile verwendet.
+    Der Dialog wird mit einer Attributliste List[XAttribute] instanziert und enthält so viele Zeilen,
+    wie Attribute in der Attributliste vorhanden sind.
+    """
+    def __init__( self, attributes:List[XAttribute], title:str= "SettingsDialog" ):
+        QDialog.__init__( self )
+        self._attributes = attributes
+        self._btnOk = QPushButton( text="OK" )
+        self._btnCancel = QPushButton( text="Abbrechen" )
+        self.setWindowTitle( title )
+        self._layout = QGridLayout()
+        self.setLayout( self._layout )
+        self._createGui()
+
+    def _createGui( self ):
+        l = self._layout
+        r = 0
+        for s in self._attributes:
+            lbl = BaseLabel()
+            lbl.setText( s.label + ": " )
+            l.addWidget( lbl, r, 0 )
+            l.addWidget( self._createEditWidget( s.type, s.value ), r, 1 )
+            if len( s.options ) > 0:
+                combo = QComboBox()
+                combo.addItems( s.options )
+                l.addWidget( combo, r, 2 )
+            r += 1
+
+        dummy = QLabel()
+        dummy.setFixedHeight( 3 )
+        l.addWidget( dummy, r, 0 )
+        r += 1
+        self._btnOk.setDefault( True )
+        self._btnOk.clicked.connect( self.accept )
+        self._btnCancel.clicked.connect( self.reject )
+        l.addWidget( self._btnOk, r, 0 )
+        l.addWidget( self._btnCancel, r, 1 )
+
+    def _createEditWidget( self, type:str, value ) -> QWidget:
+        if type == "int":
+            e = IntEdit()
+            if value:
+                e.setIntValue( value )
+            return e
+        if type == "float":
+            f = FloatEdit()
+            if value:
+                f.setFloatValue( value )
+            return f
+        if type == "str":
+            e = LineEdit()
+            if value:
+                e.setText( value )
+            return e
+        if type == "bool":
+            b = BoolSwitch()
+            if value:
+                b.setBool( value )
+            return b
+        else:
+            raise ValueError( "AttributDialog._createEditWidget(): type " + type + " unbekannt." )
+
+
+class SearchField( BaseEdit ):
+    doSearch = Signal( str )
+    searchTextChanged = Signal()
+
+    def __init__( self ):
+        BaseEdit.__init__( self )
+        self.setMaximumWidth( 200 )
+        self.setPlaceholderText( "Suchbegriff" )
+        self.returnPressed.connect( self._onReturn )
+        self.textChanged.connect( self._onTextChanged )
+        self._textChangedAfterReturn = False
+        self._backgroundColor = ""
+
+    def _onReturn( self ):
+        self._textChangedAfterReturn = False
+        text = self.text()
+        if len( text ) > 0:
+            self.doSearch.emit( text )
+
+    def _onTextChanged( self ):
+        if not self._textChangedAfterReturn:
+            self.searchTextChanged.emit()
+            self._textChangedAfterReturn = True
+
+    def setBackgroundColor( self, htmlColor:str ) -> None:
+        if htmlColor != self._backgroundColor:
+            self.setStyleSheet( "background-color: " + htmlColor + ";" )
+            self._backgroundColor = htmlColor
+
+class SearchWidget( BaseWidget ):
+    doSearch = Signal( str )
+    searchtextChanged = Signal()
+    openSettings = Signal()
+
+    def __init__( self ):
+        BaseWidget.__init__( self )
+        self._layout = QHBoxLayout()
+        self._searchfield = SearchField()
+        # forward signals from searchfield:
+        self._searchfield.doSearch.connect( self.doSearch.emit )
+        self._searchfield.searchTextChanged.connect( self.searchtextChanged.emit )
+        self._btnSettings = SettingsIconButton()
+        self._btnSettings.clicked.connect( self.openSettings.emit )
+        self._createGui()
+
+    def _createGui( self ):
+        l = self._layout
+        self.setLayout( l )
+        l.setContentsMargins( 0, 0, 0, 0 )
+        l.addWidget( self._searchfield, alignment=Qt.AlignLeft )
+        self._btnSettings.setFixedSize( QSize(25, 25) )
+        self._btnSettings.setFlat( True )
+        self._btnSettings.setToolTip( "Öffnet den Dialog zum Einstellen der Suchmethodik")
+        l.addWidget( self._btnSettings, alignment=Qt.AlignLeft )
+
+    def setSearchFieldBackgroundColor( self, htmlColor:str ) -> None:
+        self._searchfield.setBackgroundColor( htmlColor )
+
+    def setFocusToSearchField( self ):
+        self._searchfield.setFocus()
+
+
+##########################  TEST  TEST  TEST  ################################
+
+def onSearch( txt ):
+    print( "onSearch: ", txt )
+
+def onSearchTextChanged():
+    print( "search text changed" )
+
+def onOpenSettings():
+    print( "open settings" )
+
+def testSearchWidget():
+    app = QApplication()
+    sw = SearchWidget()
+    sw.doSearch.connect( onSearch )
+    sw.searchtextChanged.connect( onSearchTextChanged )
+    sw.openSettings.connect( onOpenSettings )
+    sw.show()
+    app.exec_()
+
+
+
+def testSearchField():
+    app = QApplication()
+    sf = SearchField()
+    sf.doSearch.connect( onSearch )
+    sf.searchTextChanged.connect( onSearchTextChanged )
+    sf.show()
+    app.exec_()
 
 def testAuswahlDialog():
     app = QApplication()
@@ -667,6 +846,55 @@ def testAuswahlDialog():
 
 def onClick( l:List[str] ):
     print( l )
+
+
+def createAttributes() -> List[XAttribute]:
+    l = list()
+    s = XAttribute()
+    s.key = "width"
+    s.type = int.__name__
+    s.label = "Breite"
+    s.value = 400
+
+    l.append( s )
+
+    s = XAttribute()
+    s.key = "height"
+    s.type = int.__name__
+    s.label = "Höhe"
+    s.value = 300
+
+    l.append( s
+              )
+    s = XAttribute()
+    s.key = "case_sensitiv"
+    s.type = bool.__name__
+    s.label = "Case Sensitiv"
+    s.value = False
+
+    l.append( s )
+    return l
+
+def testAttributeDialog():
+    app = QApplication()
+    dlg = AttributeDialog( createAttributes(), "Einstellungen für die Suche" )
+    if dlg.exec_() == QDialog.Accepted:
+        print( "accepted" )
+    else:
+        print( "cancelled" )
+
+    #app.exec_()
+
+def testButtons():
+    app = QApplication()
+    #btn = BaseButton( "Click Me" )
+    btn = NewIconButton()
+    #btn = EditIconButton()
+    #btn = DeleteIconButton()
+    # btn.setText( "Edit")
+    # btn.setFixedWidth( 100 )
+    btn.show()
+    app.exec_()
 
 def test():
     app = QApplication()

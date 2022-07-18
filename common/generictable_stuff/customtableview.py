@@ -189,6 +189,11 @@ class TableViewContextMenuHandler:
 
 ###################  EditableTableViewWidget  #########################
 class EditableTableViewWidget( QWidget ):
+    """
+    Ein Widget, das im oberen Bereich ein CustomTableView enthält und darunter
+    3 Buttons, mit denen man ein Item neu anlegen oder ein in der Tabelle ausgewähltes Item
+    bearbeiten oder löschen kann.
+    """
     createItem = Signal()
     editItem = Signal( QModelIndex )
     deleteItem = Signal( QModelIndex )
@@ -454,6 +459,7 @@ def test():
     # #dlg.setCancelButtonVisible( False )
     # dlg.setOkButtonText( "Speichern" )
     # dlg.show()
+
     v = EditableTableViewWidget( tm, isEditable=True )
     tv = v.getTableView()
     #tv.ctvCellEnter.connect( onCellEnter )

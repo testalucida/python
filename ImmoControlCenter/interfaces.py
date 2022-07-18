@@ -1,32 +1,33 @@
 from abc import abstractmethod
 from typing import Dict, List, Any
+from base.interfaces import XBase
 
-
-class XBase:
-    def __init__( self, valuedict:Dict=None ):
-        if valuedict:
-            self.setFromDict( valuedict )
-
-    def getValue( self, key ) -> Any:
-        return self.__dict__[key]
-
-    def setValue( self, key, value ):
-        self.__dict__[key] = value
-
-    def setFromDict( self, d: Dict ):
-        _d = self.__dict__
-        for k, v in d.items():
-            _d[k] = v
-
-    def equals( self, other ) -> bool:
-        if other is None: return False
-        return True if self.__dict__ == other.__dict__ else False
-
-    def getKeys( self ) -> List:
-        return self.__dict__.keys()
+# class XBase:
+#     def __init__( self, valuedict:Dict=None ):
+#         if valuedict:
+#             self.setFromDict( valuedict )
+#
+#     def getValue( self, key ) -> Any:
+#         return self.__dict__[key]
+#
+#     def setValue( self, key, value ):
+#         self.__dict__[key] = value
+#
+#     def setFromDict( self, d: Dict ):
+#         _d = self.__dict__
+#         for k, v in d.items():
+#             _d[k] = v
+#
+#     def equals( self, other ) -> bool:
+#         if other is None: return False
+#         return True if self.__dict__ == other.__dict__ else False
+#
+#     def getKeys( self ) -> List:
+#         return self.__dict__.keys()
 
 
 #################################################################
+
 def setFromDict( object, valuedict:Dict ):
     d = object.__dict__
     for k, v in valuedict.items():

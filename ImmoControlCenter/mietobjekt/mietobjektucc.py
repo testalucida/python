@@ -1,10 +1,9 @@
 import jsonpickle
 
 from interfaces import XMietobjektExt
-from messagebox import ErrorBox
 from mietobjekt.mietobjektlogic import MietobjektLogic
 from returnvalue import ReturnValue
-from transaction import BEGIN_TRANSACTION, COMMIT_TRANSACTION, ROLLBACK_TRANSACTION
+from base.transaction import BEGIN_TRANSACTION, COMMIT_TRANSACTION, ROLLBACK_TRANSACTION
 
 
 class MietobjektUcc:

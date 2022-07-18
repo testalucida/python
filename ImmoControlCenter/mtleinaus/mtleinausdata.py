@@ -1,5 +1,5 @@
 from constants import einausart
-from databasecommon import DatabaseCommon
+from base.databasecommon import DatabaseCommon
 from dbaccess import mon_dbnames
 from interfaces import XMtlEinAus
 

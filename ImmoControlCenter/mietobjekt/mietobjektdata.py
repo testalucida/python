@@ -1,7 +1,7 @@
 
 from typing import Dict, List
 
-from databasecommon import DatabaseCommon
+from base.databasecommon import DatabaseCommon
 from interfaces import XMietobjektExt, XMasterobjekt, XMietobjekt
 
 

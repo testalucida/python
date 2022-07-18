@@ -1,8 +1,8 @@
 from typing import List, Dict
 
-from databasecommon import DatabaseCommon
+from base.databasecommon import DatabaseCommon
 from interfaces import XSollMiete
-from transaction import BEGIN_TRANSACTION, ROLLBACK_TRANSACTION, COMMIT_TRANSACTION
+from base.transaction import BEGIN_TRANSACTION, ROLLBACK_TRANSACTION, COMMIT_TRANSACTION
 
 
 class SollmieteData( DatabaseCommon ):

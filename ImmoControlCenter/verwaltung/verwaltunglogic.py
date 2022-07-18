@@ -16,7 +16,7 @@ class VerwaltungLogic:
     def getRuecklagenEntnahme( self, master_name:str, jahr:int ) -> float:
         return self._db.getRuecklagenEntnahme( master_name, jahr )
 
-    def getRuecklagenEntnahmeNachzuegler( self, master_name:str, jahr:int ) -> List[XErhaltungsaufwand]:
+    def getRuecklagenEntnahmeNachzuegler( self, master_name:str, jahr:int ) -> [float,List[XErhaltungsaufwand]]:
         """
         Ein Nachzügler ist eine HG-Abrechnung für das Jahr X, die im Jahr X+1 zugestellt wurde,
         nachdem die Steuererklärung für das Jahr X bereits abgegeben wurde.
@@ -39,17 +39,30 @@ class VerwaltungLogic:
             UND hg_abrechnung.ab_datum > est_abgabe.abgegeben_am
             UND hg_abrechnung.entnahme_rue != 0
         :param master_name:
-        :param jahr: das Veranlagungsjahr
-        :return: eine Liste mit XErhaltungsaufwand-Objekten, je eines für jede Entnahme
+        :param jahr: das aktuell zu veranlagende Jahr, d.h.: wenn <jahr> =2021 übergeben wird, wird hier nach
+                    Nachzüglern aus dem Jahr 2020 gesucht.
+        :return: die Summe der Entnahmen und eine Liste mit XErhaltungsaufwand-Objekten, je eines für jede Entnahme
         """
         letztesVj = jahr-1
         abgabeLetztesVj = self._db.getAbgabetermin( letztesVj )
         diclist = self._db.getRuecklagenEntnahmeNachzuegler( master_name, abgabeLetztesVj, letztesVj )
         li:List[XErhaltungsaufwand] = list()
+        entn_sum = 0
         for dic in diclist:
             x = XErhaltungsaufwand()
+            x.master_name = dic["master_name"]
+            x.kreditor = "Hausverwaltung"
+            x.buchungstext = "Entnahme Rücklage"
+
+            x.betrag = dic["entnahme_rue"]
+            # x. = dic[""]
+            # x. = dic[""]
+            # x. = dic[""]
+            # x. = dic[""]
+            entn_sum += x.betrag
             li.append( x )
-        return li #todo: das Ergebnis brauchen wir beim Erhaltungsaufwand (Z. 40 und in der Detail-Tabelle zum
+
+        return [entn_sum, li] #todo: das Ergebnis brauchen wir beim Erhaltungsaufwand (Z. 40 und in der Detail-Tabelle zum
                     # Erhaltungsaufwand
 
     def getHausgeldzahlung( self, master_name:str, jahr:int ) -> XHausgeldZahlungJahr:
