@@ -1,8 +1,8 @@
 import decimal
 import numbers
 from functools import cmp_to_key
-from PySide2.QtCore import QAbstractTableModel, SIGNAL, Qt, QModelIndex, QSize
-from typing import Any, List, Dict, Tuple, Iterator
+from PySide2.QtCore import QAbstractTableModel, SIGNAL, Qt, QModelIndex, QSize, Signal
+from typing import Any, List, Dict, Tuple, Iterator, Iterable
 from PySide2.QtGui import QColor, QBrush, QFont, QPixmap
 
 from base.interfaces import XBase
@@ -16,6 +16,7 @@ class KeyHeaderMapping:
 
 ##################  BaseTableModel  ##################
 class BaseTableModel( QAbstractTableModel ):
+    sorting_finished = Signal()
     def __init__( self, rowList:List[XBase]=None, jahr:int=None ):
         QAbstractTableModel.__init__( self )
         self.rowList:List[XBase] = rowList
@@ -60,6 +61,15 @@ class BaseTableModel( QAbstractTableModel ):
         self.headers = [x.header for x in mappings]
         self.keys = [x.key for x in mappings]
 
+    def setHeaders( self, headerlist:Iterable[str] ):
+        """
+        Definiert die Spalten-Überschriften.
+        Die Reihenfolge muss der Reihenfolge der Keys (Attribute) des XBase-Objekts entsprechen.
+        :param headerlist:
+        :return:
+        """
+        self.headers = headerlist
+
     def getColumnIndex( self, header ) -> int:
         return self.headers.index( header )
 
@@ -103,6 +113,10 @@ class BaseTableModel( QAbstractTableModel ):
     def getValueByName( self, indexrow:int, attrName:str ) -> Any:
         e:XBase = self.getElement( indexrow )
         return e.getValue( attrName )
+
+    def getValueByColumnName( self, indexrow:int, colname:str ) -> Any:
+        colidx = self.headers.index( colname )
+        return self.getValue( indexrow, colidx )
 
     def setValue( self, indexrow:int, indexcolumn:int, value:Any, writeChangeLog:bool=True ) -> None:
         """
@@ -252,6 +266,7 @@ class BaseTableModel( QAbstractTableModel ):
         self.sort_col = col
         self.sort_ascending = True if order == Qt.SortOrder.AscendingOrder else False
         self.rowList = sorted( self.rowList, key=cmp_to_key( self.compare ) )
+        self.sorting_finished.emit()
         self.layoutChanged.emit()
 
     def compare( self, x1:XBase, x2:XBase ) -> int:

@@ -5,8 +5,7 @@ from anlage_v.anlagev_interfaces import XSammelAbgabeDetail
 from constants import einausart
 from datehelper import getNumberOfDays, getCurrentTimestampIso
 from interfaces import XSonstAus, XZahlung, XSollHausgeld, XSollMiete, XNkAbrechnung, XHgAbrechnung, \
-    XMietverhaeltnis, XOffenerPosten, XNotiz, XZahlung2, XZahlung3, XWertebereich, XBase, XMietobjektExt, \
-    XGeschaeftsreise
+    XMietverhaeltnis, XOffenerPosten, XNotiz, XZahlung2, XZahlung3, XWertebereich, XBase, XMietobjektExt
 
 mon_dbnames = ("jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dez")
 

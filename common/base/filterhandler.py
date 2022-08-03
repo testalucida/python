@@ -1,3 +1,4 @@
+import numbers
 from functools import cmp_to_key
 from typing import List, Dict
 
@@ -17,6 +18,10 @@ class FilterCondition:
         self.op = "=" # Vergleichsopeartor {'=', '>=', '<=', '>', '<'}
         self.exactMatch = False
         self.caseSensitive = False
+
+    def toString( self ):
+        return "Column: " + self.header + " - op: '" + self.op + "' - comp.value: " + self.value + \
+               " - exactMatch: " + str( self.exactMatch ) + " - caseSensitive: " + str( self.caseSensitive )
 
 class DefinitionRow:
     """
@@ -126,51 +131,51 @@ class FilterHandler( QObject ):
     def __init__( self, tv:BaseTableView ):
         QObject.__init__( self )
         self._tv = tv
-        #self._tv.horizontalHeader().setMouseTracking( True )
-        self._tv.horizontalHeader().sectionClicked.connect( self.onSectionClicked )
         self._tm = tv.model()
-        self._sortKeys:List[str] = list()
-        self._sort_reverse = False
         self._dlg = None
 
-    def onSectionClicked( self, logicalIndex ):
-        if self._tv.isSortingEnabled():
-            self._tv.horizontalHeader().setSortIndicatorShown( True )
-
-    def onMultiSort( self ):
-        headers:List[str] = self._tm.getHeaders()
+    def onFilter( self ):
+        """
+        callback Funktion, die den Filterdialog öffnet.
+        Wenn im Filterdialog eine gültige Auswahl getroffen und auf OK geklickt wurde,
+        wird dem Model bescheidgesagt, alle Zeilen auszublenden, die nicht den Filterkriterien entsprechen.
+        :return:
+        """
         if not self._dlg:
-            self._dlg = FilterDialog( headers )
+            self._dlg = FilterDialog( self._tm.getHeaders() )
         if self._dlg.exec_() == QDialog.Accepted:
-            self._sort_reverse = False if self._dlg.getSortOrder() == "Aufsteigend" else True
-            sortColumns = self._dlg.getSortColumns()
-            self._provideKeysFromColumns( sortColumns )
-            self._doSort()
-            self._sortKeys = list()
-            self._tv.horizontalHeader().setSortIndicatorShown( False )
+            condlist = self._dlg.getFilterConditions()
+            # rowlist_orig = self._tm.getRowList()
+            rowlist_filtered = list()
+            for r in range( 0, self._tm.rowCount() ):
+                match = True
+                for cond in condlist:
+                    # print( cond.toString() )
+                    if not self._satisfiesCondition( r, cond ):
+                        match = False
+                        break
+                if match:
+                    elem = self._tm.getElement( r )
+                    rowlist_filtered.append( elem )
+            tm_filtered = BaseTableModel( rowlist_filtered )
+            self._tv.setModel( tm_filtered )
 
-    def _provideKeysFromColumns( self, sortColumns:List[str] ) -> List[str]:
-        for header in sortColumns:
-            self._sortKeys.append( self._tm.getKeyByHeader( header ) )
+    def _satisfiesCondition( self, row:int, cond:FilterCondition ) -> bool:
+        value = self._tm.getValueByColumnName( row, cond.header )
+        compValue = cond.value
+        op = cond.op
+        if not value and not compValue: return True
+        if not value and compValue: return False
+        if value and not compValue: return False
+        if op == "=": return value == compValue
+        if op == "<": return value < compValue
+        if op == ">": return value > compValue
+        if op == "<=": return value <= compValue
+        if op == ">=": return value >= compValue
+        if op == "in": return value in compValue
 
-    def _doSort( self ):
-        rowlist:List[XBase] = self._tm.getRowList()
-        self._tm.emit( SIGNAL( "layoutAboutToBeChanged()" ) )
-        self._sort_reverse = not self._sort_reverse
-        rowlist = sorted( rowlist, key=cmp_to_key( self._compareMultiple ) )
-        self._tm.receiveSortedList( rowlist )
-        self.emit( SIGNAL( "layoutChanged()" ) )
-
-    def _compareMultiple( self, x1:XBase, x2:XBase ):
-        for key in self._sortKeys:
-            v1 = x1.__dict__[key]
-            v2 = x2.__dict__[key]
-            if isinstance( v1, str ):
-                v1 = v1.lower()
-                v2 = v2.lower()
-            if v1 < v2: return -1 if self._sort_reverse else 1
-            if v1 > v2: return 1 if self._sort_reverse else -1
-        return 0
+    def onResetFilter( self ):
+        self._tv.setModel( self._tm )
 
 
 ########################   TEST  TEST  TEST  TEST   ####################################

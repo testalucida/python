@@ -717,6 +717,12 @@ class AnlageV_DataAccess( DbAccess ):
     #     return None
 
 
+def test10():
+    av = AnlageV_DataAccess( "../immo.db" )
+    av.open()
+    l = av.getVerteilteErhaltungsaufwendungen( "SB_Kaiser", 2024 )
+    print( l )
+
 def test9():
     data = AnlageV_DataAccess( "../immo.db" )
     data.open()

@@ -108,6 +108,8 @@ class BaseTableView( QTableView ):
         self.showSortIndicator( False ) # ...aber wir wollen noch keinen Sort-Indicator sehen, weil noch nicht sortiert ist.
         model.layoutChanged.emit()
         model.setSortable( sortable )
+        model.sorting_finished.connect( self.showSortIndicator )
+        #model.layoutChanged.connect( self.resizeRowsToContents )
 
     def mouseMoveEvent(self, event:QMouseEvent):
         super().mouseMoveEvent( event )
@@ -165,7 +167,7 @@ class BaseTableView( QTableView ):
         sm = self.selectionModel()
         indexes:List[QModelIndex] = sm.selectedRows()  ## Achtung missverständlicher Methodenname
         l = list( indexes )
-        print( indexes[0].row() )
+        #print( indexes[0].row() )
         rows = [i.row() for i in l]
         return rows
 

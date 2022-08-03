@@ -1,16 +1,16 @@
 
 from typing import Dict, List
 
-from base.databasecommon import DatabaseCommon
+from icc.iccdata import IccData
 from interfaces import XMietobjektExt, XMasterobjekt, XMietobjekt
 
 
-class MietobjektData( DatabaseCommon ):
+class MietobjektData( IccData ):
     """
     Enthält die DB-Zugriffe für Miet- UND Masterobjekte
     """
     def __init__(self):
-        DatabaseCommon.__init__( self )
+        IccData.__init__( self )
 
     def getMasterobjektNamen( self ) -> List[str]:
         sql = "select master_name " \

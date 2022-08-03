@@ -3,10 +3,11 @@ from typing import List, Callable
 from PySide2 import QtCore
 from PySide2.QtCore import Signal, Qt
 from PySide2.QtGui import QColor
-from PySide2.QtWidgets import QWidget, QGridLayout, QToolBar, QComboBox, QApplication, QAction, QLabel
+from PySide2.QtWidgets import QWidget, QGridLayout, QToolBar, QComboBox, QApplication, QAction, QLabel, QHBoxLayout
 
+from base.filterhandler import FilterHandler
 from base.interfaces import TestItem
-from base.baseqtderivates import BaseEdit, BaseWidget, SearchWidget
+from base.baseqtderivates import BaseEdit, BaseWidget, SearchWidget, NewIconButton, EditIconButton, DeleteIconButton
 from base.basetablemodel import BaseTableModel
 from base.basetableview import BaseTableView
 
@@ -35,6 +36,7 @@ class BaseTableViewToolBar( QToolBar ):
         self._sortActionId = "sort"
         self._filterActionId = "filter"
         self._resetFilterActionId = "reset_filter"
+        self._exportActionId = "export"
         self._actions:List[QAction] = list()
         self._searchWidget = None
 
@@ -42,14 +44,15 @@ class BaseTableViewToolBar( QToolBar ):
         combo = QComboBox()
         for y in years:
             combo.addItem( str( y ) )
-        combo.currentIndexChanged.connect( callback )
+        combo.currentIndexChanged.connect( lambda: callback(int( self._yearCombo.currentText() ) ) )
         self.addWidget( combo )
         self._yearCombo = combo
 
     def addMonthCombo( self, callback:Callable ) -> None:
         combo = QComboBox()
         combo.addItems( monthnames )
-        combo.currentIndexChanged.connect( callback )
+        combo.currentIndexChanged.connect( lambda: callback( self._monthCombo.currentIndex()+1,
+                                                             self._monthCombo.currentText() ) )
         self.addWidget( combo )
         self._monthCombo = combo
 
@@ -94,6 +97,15 @@ class BaseTableViewToolBar( QToolBar ):
 
     def addFilterAction( self, tooltip:str, filter:Callable, resetFilter:Callable,
                          enabled:bool=True, separatorBefore:bool=True ) -> None:
+        """
+
+        :param tooltip:
+        :param filter: callback, wenn auf den Filter-Button gedrückt wird. Funktion ohne Parameter
+        :param resetFilter: callback, wenn auf den Reset-Filter-Button gedrückt wird. Funktion ohne Parameter
+        :param enabled:
+        :param separatorBefore:
+        :return:
+        """
         if separatorBefore:
             self.addSeparator()
         icon = IconFactoryS.inst().getIcon( BASE_IMAGES_DIR + "filter.png" )
@@ -115,6 +127,15 @@ class BaseTableViewToolBar( QToolBar ):
         self.addWidget( self._searchWidget )
         return self._searchWidget
 
+    def addExportAction( self, tooltip:str, callback:Callable, separatorBefore:bool=True ) -> None:
+        if separatorBefore:
+            self.addSeparator()
+        icon = IconFactoryS.inst().getIcon( BASE_IMAGES_DIR + "calc.png" )
+        action = self.addAction( icon, tooltip, callback )
+        action.setData( self._exportActionId )
+        action.setEnabled( True )
+        self._actions.append( action )
+
     def setFocusToSearchfield( self ):
         self._searchWidget.setFocusToSearchField()
 
@@ -122,20 +143,47 @@ class BaseTableViewToolBar( QToolBar ):
 class BaseTableViewFrame( BaseWidget ):
     """
     Ein Widget, das eine BaseTableView enthält und eine erweiterbare Toolbar (BaseTableViewFrame.getToolBar()).
+    Auf Wunsch (withEditButtons = True) wird unterhalb der Tabelle eine Buttonleiste angezeigt,
+    die einen "Neu"-, "Ändern"- und "Delete"-Button enthält.
+    Wird auf einen dieser Buttons gedrückt, wird ein entsprechendes Signal gesendet.
     """
-    def __init__(self, tableView:BaseTableView ):
+    newItem = Signal()
+    editItem = Signal( int ) # row number (index.row of index)
+    deleteItem = Signal( list ) # list of ints, each representing a row number (index.row of index)
+    def __init__(self, tableView:BaseTableView, withEditButtons:bool=False ):
         QWidget.__init__( self )
         self._tv = tableView
         self._layout = QGridLayout()
         self._toolbar = BaseTableViewToolBar()
-        self._createGui()
+        self._editBtn = None
+        self._newBtn = None
+        self._deleteBtn = None
+        self._createGui( withEditButtons )
 
-    def _createGui( self ):
+    def _createGui( self, withEditButtons ):
         l = self._layout
         self.setLayout( l )
         l.addWidget( self._toolbar, 0, 0, alignment=QtCore.Qt.AlignTop )
-        l.setContentsMargins( 0, 0, 0, 0 )
+        # l.setContentsMargins( 0, 0, 0, 0 )
+        l.setContentsMargins( 2, 0, 2, 2 )
         l.addWidget( self._tv, 1, 0 )
+        if withEditButtons:
+            hbox = QHBoxLayout()
+            self._newBtn = NewIconButton()
+            self._newBtn.clicked.connect( self.newItem.emit )
+            self._editBtn = EditIconButton()
+            self._editBtn.clicked.connect( self._onEditItem )
+            self._deleteBtn = DeleteIconButton()
+            self._deleteBtn.clicked.connect( lambda: self.deleteItem.emit( self._tv.getSelectedRows() ) )
+            hbox.addWidget( self._newBtn, stretch=0, alignment=Qt.AlignLeft )
+            hbox.addWidget( self._editBtn, stretch=0, alignment=Qt.AlignLeft )
+            hbox.addWidget( self._deleteBtn, stretch=0, alignment=Qt.AlignLeft )
+            self._layout.addLayout( hbox, 2, 0, 1, 1, Qt.AlignLeft )
+
+    def _onEditItem( self ):
+        sel_rows = self._tv.getSelectedRows()
+        if len( sel_rows ) > 0:
+            self.editItem.emit( sel_rows[0] )
 
     def getToolBar( self ) -> BaseTableViewToolBar:
         return self._toolbar
@@ -175,44 +223,61 @@ def makeTestModel() -> BaseTableModel:
 def onSave():
     print( "onSave" )
 
-def onYearChanged( newIndex ):
-    print( "year changed: ", newIndex )
+def onYearChanged( newYear ):
+    print( "year changed: ", newYear )
 
-def onMonthChanged( newIndex ):
-    print( "month changed: ", newIndex )
+def onMonthChanged( newMonthIdx, newMonth ):
+    print( "month changed: ", newMonthIdx, ": ", newMonth )
 
 def onSearch( search ):
     print( "search for: ", search )
 
 def onSort():
     print( "sort" )
+#
+# def onFilter():
+#     print( "filter" )
+#
+# def onResetFilter():
+#     print( "reset filter" )
 
-def onFilter():
-    print( "filter" )
+def onNewItem():
+    print( "onNewItem" )
 
-def onResetFilter():
-    print( "reset filter" )
+def onEditItem( ix ):
+    print( ix )
+
+def onDeleteItems( intlist ):
+    print( intlist )
+
 
 def testFrame():
     app = QApplication()
     tm = makeTestModel()
     tv = BaseTableView()
     tv.setModel( tm )
-    f = BaseTableViewFrame( tv )
+    f = BaseTableViewFrame( tv, withEditButtons=True )
+    f.newItem.connect( onNewItem )
+    f.editItem.connect( onEditItem )
+    f.deleteItem.connect( onDeleteItems )
     tb = f.getToolBar()
+    # save
     tb.addSaveAction( "Änderungen speichern", onSave, separatorBefore=False )
     tb.addSeparator()
     tb.addYearCombo( (2022, 2021, 2020), onYearChanged )
     tb.addMonthCombo( onMonthChanged )
-
+    # sort
     sortHandler = MultiSortHandler( tv )
     tb.addSortAction( "Öffnet den Dialog zur Definition mehrfacher Sortierkriterien", sortHandler.onMultiSort )
-
-    tb.addFilterAction( "Öffnet den Filterdialog zur Eingabe der Filterkriterien", onFilter, onResetFilter )
+    # filter
+    fh = FilterHandler( tv )
+    tb.addFilterAction( "Öffnet den Filterdialog zur Eingabe der Filterkriterien", fh.onFilter, fh.onResetFilter )
+    #search
     searchwidget = tb.addSearchWidget( True )
     sh = SearchHandler( tv, searchwidget )
 
     f.show()
+    #tb.setSaveActionEnabled( True )
     tb.setFocusToSearchfield()
     app.exec_()
 
@@ -231,6 +296,9 @@ def testToolBar():
     def onSearch():
         pass
 
+    def onExport():
+        print( "onExport" )
+
     app = QApplication()
     w = QWidget()
     w.setWindowTitle( "TestContainter für BaseTableViewToolBar" )
@@ -241,6 +309,7 @@ def testToolBar():
     tb.addYearCombo( (2022, 2021, 2020), onYearChanged )
     tb.addMonthCombo( onMonthChanged )
     tb.addSaveAction( "Änderungen speichern", onSave, enabled=True )
-    tb.addSearchFacility( onSearch )
+    tb.addSearchWidget( onSearch )
+    tb.addExportAction( "Exportiere diese Tabelle in Calc", onExport )
     w.show()
     app.exec_()

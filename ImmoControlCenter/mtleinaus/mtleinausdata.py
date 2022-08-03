@@ -1,12 +1,12 @@
 from constants import einausart
-from base.databasecommon import DatabaseCommon
+from icc.iccdata import IccData
 from dbaccess import mon_dbnames
 from interfaces import XMtlEinAus
 
 
-class MtlEinAusData( DatabaseCommon ):
+class MtlEinAusData( IccData ):
     def __init__( self ):
-        DatabaseCommon.__init__( self )
+        IccData.__init__( self )
 
     def existsEinAusArt( self, eaart: einausart, jahr: int ) -> bool:
         id_ = "mv_id" if eaart == einausart.MIETE else "vwg_id"

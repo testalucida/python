@@ -1,12 +1,12 @@
 from typing import List
 
-from base.databasecommon import DatabaseCommon
+from icc.iccdata import IccData
 from interfaces import XGeschaeftsreise
 
 
-class GeschaeftsreiseData( DatabaseCommon ):
+class GeschaeftsreiseData( IccData ):
     def __init__(self):
-        DatabaseCommon.__init__( self )
+        IccData.__init__( self )
 
     def getDistinctJahre( self ) -> List[int]:
         sql = "select distinct jahr from geschaeftsreise order by jahr desc "

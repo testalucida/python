@@ -1,12 +1,12 @@
 from typing import List
 
-from base.databasecommon import DatabaseCommon
+from icc.iccdata import IccData
 from interfaces import XVerwaltung, XSollHausgeld
 
 
-class VerwaltungData( DatabaseCommon ):
+class VerwaltungData( IccData ):
     def __init__( self ):
-        DatabaseCommon.__init__( self )
+        IccData.__init__( self )
 
     def getAktiveVerwaltungen( self, jahr: int, orderby: str = None ) -> List[XVerwaltung]:
         """

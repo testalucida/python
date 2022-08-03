@@ -1,13 +1,13 @@
 from typing import List, Dict
 
-from base.databasecommon import DatabaseCommon
+from icc.iccdata import IccData
 from interfaces import XSollMiete
 from base.transaction import BEGIN_TRANSACTION, ROLLBACK_TRANSACTION, COMMIT_TRANSACTION
 
 
-class SollmieteData( DatabaseCommon ):
+class SollmieteData( IccData ):
     def __init__( self ):
-        DatabaseCommon.__init__( self )
+        IccData.__init__( self )
 
     def getCurrentSollmiete( self, mv_id:str ) -> XSollMiete:
         """

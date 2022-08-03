@@ -59,16 +59,19 @@ class BaseIconTextButton( BaseButton ):
 class NewIconButton( BaseIconButton ):
     def __init__( self, parent=None ):
         BaseIconButton.__init__( self, QIcon( BASE_IMAGES_DIR + "new.png" ), QSize(28, 28), parent )
+        self.setToolTip( "Neues Element anlegen" )
 
 #################  EditIconButton  ########################
 class EditIconButton( BaseIconButton ):
     def __init__( self, parent=None ):
         BaseIconButton.__init__( self, QIcon( BASE_IMAGES_DIR + "edit_30x30.png" ), QSize(28, 28), parent )
+        self.setToolTip( "Ausgewähltes Element bearbeiten" )
 
 ##################### DeleteIconButton  ####################
 class DeleteIconButton( BaseIconButton ):
     def __init__( self, parent=None ):
         BaseIconButton.__init__( self, QIcon( BASE_IMAGES_DIR + "delete.png" ), QSize( 28, 28 ), parent )
+        self.setToolTip( "Ausgewählte Elemente löschen" )
 
 #################  SortIconButton  #####################
 class SortIconButton( BaseIconButton ):

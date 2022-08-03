@@ -1,16 +1,16 @@
 
 from typing import List
 
-from base.databasecommon import DatabaseCommon
+from icc.iccdata import IccData
 from interfaces import XGeplant
 
 
-class GeplantData( DatabaseCommon ):
+class GeplantData( IccData ):
     """
     Datenzugriffe auf die Tabelle <geplant>
     """
     def __init__(self):
-        DatabaseCommon.__init__( self )
+        IccData.__init__( self )
 
     def getPlanungen( self, jahr:int=None ) -> List[XGeplant]:
         sql = "select id, master_id, mobj_id, leistung, firma, kosten, kostenvoranschlag, jahr, monat, " \

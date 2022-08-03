@@ -1,12 +1,11 @@
 from typing import Dict, List
-
-from base.databasecommon import DatabaseCommon
+from icc.iccdata import IccData
 from interfaces import XMietverhaeltnis, XMietverhaeltnisKurz
 
 
-class MietverhaeltnisData( DatabaseCommon ):
+class MietverhaeltnisData( IccData ):
     def __init__(self):
-        DatabaseCommon.__init__( self )
+        IccData.__init__( self )
 
     def getAktuellesMietverhaeltnis( self, mv_id: str ) -> XMietverhaeltnis or None:
         """

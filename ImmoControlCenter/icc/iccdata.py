@@ -1,6 +1,7 @@
 from typing import List
 
 from base.databasecommon import DatabaseCommon
+from definitions import DATABASE
 from interfaces import XHandwerkerKurz
 
 
@@ -9,7 +10,7 @@ class IccData( DatabaseCommon ):
     Enthält die DB-Zugriffe für Miet- UND Masterobjekte
     """
     def __init__(self):
-        DatabaseCommon.__init__( self )
+        DatabaseCommon.__init__( self, DATABASE )
 
     def getKreditoren( self ) -> List[str]:
         sql = "select distinct kreditor from kreditorleistung order by kreditor "
