@@ -110,6 +110,10 @@ class BaseTableModel( QAbstractTableModel ):
         e:XBase = self.getElement( indexrow )
         return e.getValue( self.keys[indexcolumn] )
 
+    def getText( self, indexrow: int, indexcolumn: int ) -> str:
+        item = self.getValue( indexrow, indexcolumn )
+        return item if isinstance( item, str ) else str(item)
+
     def getValueByName( self, indexrow:int, attrName:str ) -> Any:
         e:XBase = self.getElement( indexrow )
         return e.getValue( attrName )

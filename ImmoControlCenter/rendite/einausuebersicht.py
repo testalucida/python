@@ -10,6 +10,7 @@ from anlage_v.anlagev_dataacess import AnlageV_DataAccess
 from base.basetablemodel import BaseTableModel
 from base.databasecommon import DatabaseCommon
 from base.interfaces import XBase
+from base.printhandler import PrintHandler
 from definitions import DATABASE
 from icc.iccdata import IccData
 
@@ -50,7 +51,12 @@ class EinAusTableModel( BaseTableModel ):
             elif indexcolumn == self._colIdxErtrag:
                 return self._summeErtrag
             else:
-                return None
+                return ""
+        # elif indexrow == self._rowCount - 2:
+        #     if indexcolumn == self.columnCount() - 1:
+        #         return "\n"
+        #     else:
+        #         return None
 
         e:XMasterEinAus = self.getElement( indexrow )
         return e.getValue( self.keys[indexcolumn] )
@@ -244,8 +250,11 @@ def test():
     tv.setAlternatingRowColors( True )
     tv.setContextMenuCallbacks( onProvideContext, onSelectedAction )
     frame = BaseTableViewFrame( tv )
+    frame.setWindowTitle( "Ertragsübersicht" )
     tb = frame.getToolBar()
     tb.addYearCombo( (2021, 2022), onChangeYear )
     tb.addExportAction( "Tabelle nach Calc exportieren", onExport )
+    ph = PrintHandler( tv )
+    tb.addPrintAction( "Druckvorschau für diese Tabelle öffnen...", ph.handlePreview )
     frame.show()
     app.exec_()

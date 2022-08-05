@@ -13,6 +13,7 @@ from base.basetableview import BaseTableView
 
 from base.constants import monthnames
 from base.directories import BASE_IMAGES_DIR
+from base.printhandler import PrintHandler
 from base.searchhandler import SearchHandler
 from base.multisorthandler import MultiSortHandler
 from iconfactory import IconFactoryS
@@ -32,6 +33,8 @@ class BaseTableViewToolBar( QToolBar ):
         self._saveEnabledIcon = None
         self._saveDisabledIcon = None
         self._saveActionId = "save"
+        self._printIcon = None
+        self._printActionId = "print"
         self._searchActionId = "search"
         self._sortActionId = "sort"
         self._filterActionId = "filter"
@@ -64,6 +67,15 @@ class BaseTableViewToolBar( QToolBar ):
         icon = self._saveEnabledIcon if enabled else self._saveDisabledIcon
         action = self.addAction( icon, tooltip, callback )
         action.setData( self._saveActionId )
+        action.setEnabled( enabled )
+        self._actions.append( action )
+
+    def addPrintAction( self, tooltip:str, callback:Callable, enabled:bool=True, separatorBefore:bool=True ):
+        if separatorBefore:
+            self.addSeparator()
+        self._printIcon = IconFactoryS.inst().getIcon( BASE_IMAGES_DIR + "print.png" )
+        action = self.addAction( self._printIcon, tooltip, callback )
+        action.setData( self._printActionId )
         action.setEnabled( enabled )
         self._actions.append( action )
 
@@ -250,6 +262,8 @@ def onEditItem( ix ):
 def onDeleteItems( intlist ):
     print( intlist )
 
+def onPrint():
+    print( "print..." )
 
 def testFrame():
     app = QApplication()
@@ -275,7 +289,8 @@ def testFrame():
     #search
     searchwidget = tb.addSearchWidget( True )
     sh = SearchHandler( tv, searchwidget )
-
+    ph = PrintHandler( tv )
+    tb.addPrintAction( "Öffne Druckvorschau für diese Tabelle...", ph.handlePreview )
     f.show()
     #tb.setSaveActionEnabled( True )
     tb.setFocusToSearchfield()
