@@ -490,7 +490,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
         tm.addColumnFunction( 5, self.getJahressumme, 5 )
         return tm
 
-    def getJahressumme( self, tm:AnlageV_AusgabenTableModel, row:int, col:int ) -> int:
+    def getJahressumme( self, tm:AnlageV_AusgabenTableModel, row:int, col:int, arg=None ) -> int:
         """
         Callback function für AusgabenModel
         :param tm:

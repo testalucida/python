@@ -277,7 +277,7 @@ class AnlageV_DataAccess( DbAccess ):
         l:List[XErhaltungsaufwand] = list()
         for d in dictlist:
             x = XErhaltungsaufwand( d )
-            l.append( d )
+            l.append( x )
         return l
 
     def getVerteilteErhaltungsaufwendungen( self, master_name:str, jahr:int ) -> List[XErhaltungsaufwand]:

@@ -28,6 +28,9 @@ class AnlageV_AusgabenTableModel( QAbstractTableModel ):
         self._boldFont = QFont( "Arial", 11, QFont.Bold )
         self._columnfunctions:List[ColumnFunction] = list()
 
+    def getObjectList( self ) -> List:
+        return self._rowList
+
     def addColumnFunction( self, triggercolumn:int, fnc, arg ):
         cf = ColumnFunction()
         cf.triggerColumn = triggercolumn

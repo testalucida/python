@@ -51,6 +51,9 @@ class BaseTableViewToolBar( QToolBar ):
         self.addWidget( combo )
         self._yearCombo = combo
 
+    def setYear( self, year:int ) -> None:
+        self._yearCombo.setCurrentText( str(year) )
+
     def addMonthCombo( self, callback:Callable ) -> None:
         combo = QComboBox()
         combo.addItems( monthnames )

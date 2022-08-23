@@ -44,8 +44,8 @@ class BaseTableModel( QAbstractTableModel ):
         Per default verwenden wir die Keys eines der übergebenen Dictionaries als Keys und Headers
         :return:
         """
-        XBase = self.rowList[0]
-        for k in XBase.getKeys():
+        x:XBase = self.rowList[0]
+        for k in x.getKeys():
             self.keys.append( k )
             self.headers.append( k )
 
@@ -60,6 +60,10 @@ class BaseTableModel( QAbstractTableModel ):
     def setKeyHeaderMappings( self, mappings:List[KeyHeaderMapping] ):
         self.headers = [x.header for x in mappings]
         self.keys = [x.key for x in mappings]
+
+    def setKeyHeaderMappings2( self, keys:Iterable[str], headers:Iterable[str] ):
+        self.keys = keys
+        self.headers = headers
 
     def setHeaders( self, headerlist:Iterable[str] ):
         """
@@ -283,3 +287,47 @@ class BaseTableModel( QAbstractTableModel ):
         if v1 < v2: return 1 if self.sort_ascending else -1
         if v1 > v2: return -1 if self.sort_ascending else 1
         if v1 == v2: return 0
+
+##################  SumTableModel  #########################
+class SumTableModel( BaseTableModel ):
+    """
+    A BaseTableModel displaying a sum row below all other rows
+    """
+    def __init__( self, objectList:List[XBase], colsToSum:Iterable[str] ):
+        BaseTableModel.__init__( self, objectList )
+        self._colsToSum = colsToSum # Liste mit den keys (Attributnamen des XBase-Objekts) der Spalten,
+                                    # die summiert werden sollen
+        self._summen:List[Dict] = list() # enthält die Summen,
+                                         # die unter den in _colsToSum spezifierten Spalten anzuzeigen sind
+        self._rowCount = len( objectList ) + 1  # wegen Summenzeile
+        self._fontSumme = QFont( "Arial", 12, weight=QFont.Bold )
+        for col in self._colsToSum:
+            summe = sum([e.getValue( col ) for e in objectList])
+            dic = {"key": col, "sum" : summe}
+            self._summen.append( dic )
+
+    def rowCount( self, parent: QModelIndex = None ) -> int:
+        return self._rowCount
+
+    def getValue( self, indexrow: int, indexcolumn: int ) -> Any:
+        if indexrow == self._rowCount - 1:
+            if indexcolumn == 0:
+                return "SUMME"
+            else:
+                key = self.keys[indexcolumn]
+                if key in self._colsToSum: # die Summe der Spalte, die die Werte von key enthält, soll angezeigt werden
+                    dic = [d for d in self._summen if d["key"] == key][0]
+                    return dic["sum"]
+                else:
+                    return ""
+        e:XBase = self.getElement( indexrow )
+        return e.getValue( self.keys[indexcolumn] )
+
+    def getFont( self, indexrow: int, indexcolumn: int ) -> QFont or None:
+        if indexrow == self._rowCount - 1:
+            key = self.keys[indexcolumn]
+            if key in self._colsToSum:
+                return self._fontSumme
+            else:
+                return None
+

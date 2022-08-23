@@ -57,7 +57,7 @@ class XAfA:
         self.afa_wie_vorjahr: bool = True
         self.afa: float = 0.0
 
-class XAusgabeKurz:
+class XAusgabeKurz(XBase):
     def __init__(self, valuedict:Dict=None):
         self.master_name = ""
         self.master_id = 0
@@ -101,7 +101,7 @@ class XAufwandVerteilt:
         self.aufwand_vj_minus_2: int = 0
         self.aufwand_vj_minus_1: int = 0
 
-class XErhaltungsaufwand:
+class XErhaltungsaufwand ( XBase ):
     def __init__(self, valuedict:Dict=None ):
         self.master_name:str = ""
         self.master_id:int = 0

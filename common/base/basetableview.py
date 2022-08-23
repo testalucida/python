@@ -152,6 +152,7 @@ class BaseTableView( QTableView ):
                         menu.addAction( action )
                     selectedAction = menu.exec_( self.viewport().mapToGlobal( point ) )
                     if selectedAction:
+                        #todo: umstellen auf BaseAction und hier gleich die callback function aufrufen
                         self._contextMenuActionActor( selectedAction )
 
     def onLeftClick( self, index:QModelIndex ):

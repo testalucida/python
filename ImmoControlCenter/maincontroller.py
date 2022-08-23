@@ -5,6 +5,7 @@ from PySide2.QtGui import QFont
 from PySide2.QtWidgets import QDialog, QApplication, QInputDialog, QLineEdit
 
 from anlage_v.anlagev_controller import AnlageVController
+from base.baseqtderivates import BaseDialogWithButtons
 from business import BusinessLogic
 from dictlisttablemodel import DictListTableModel
 from ftp import FtpIni, Ftp
@@ -53,6 +54,7 @@ class MainController( QObject ):
         self._nkaDlg:IccDialog = None
         self._hgaDlg:IccDialog = None
         self._notizenDlg:IccDialog = None
+        self._ertragDlg:BaseDialogWithButtons = None
         self._renditeDlg:IccDialog = None
         self._anlageVDlg:IccDialog = None
         self._mieterWechselDlg:IccDialog = None
@@ -76,6 +78,7 @@ class MainController( QObject ):
         self._hgaCtrl = HgAbrechnungenController()
         self._oposCtrl:OffenePostenController = OffenePostenController()
         self._notizenCtrl:NotizenController = NotizenController()
+        self._ertragCtrl:ErtragController = ErtragController()
         self._renditeCtrl:RenditeController = RenditeController()
         self._anlageVCtrl: AnlageVController = None
         self._mieterWechselCtrl:MieterwechselController = None
@@ -281,6 +284,12 @@ class MainController( QObject ):
         w = 1200
         h = 800
         self._showDialog( self._notizenDlg, w, h )
+
+    def showErtragView( self ):
+        self._ertragDlg = self._ertragCtrl.createDialog( self._mainwin )
+        w = 1100
+        h = 900
+        self._showDialog( self._ertragDlg, w, h )
 
     def showRenditeView( self ):
         self._renditeDlg = self._renditeCtrl.createDialog( self._mainwin )

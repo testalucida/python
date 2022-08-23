@@ -1,18 +1,28 @@
 import numbers
-from typing import Any, List, Tuple
+from typing import Any, List, Tuple, Callable, Iterable
 
 from PySide2 import QtWidgets, QtCore
 from PySide2.QtCore import QDate, Qt, QAbstractTableModel, QRect, Signal, QSize
 from PySide2.QtGui import QDoubleValidator, QIntValidator, QFont, QGuiApplication, QStandardItemModel, QStandardItem, \
     QMouseEvent, QTextDocument, QIcon, QFontMetrics
 from PySide2.QtWidgets import QDialog, QCalendarWidget, QVBoxLayout, QBoxLayout, QLineEdit, QGridLayout, QPushButton, \
-    QHBoxLayout, QApplication, QListView, QComboBox, QLabel, QTextEdit, QCheckBox, QFrame, QWidget
+    QHBoxLayout, QApplication, QListView, QComboBox, QLabel, QTextEdit, QCheckBox, QFrame, QWidget, QAction
 
 from base.directories import BASE_IMAGES_DIR
 from base.interfaces import XAttribute
 #from definitions import ICON_DIR
 
 from datehelper import isValidIsoDatestring, isValidEurDatestring, getRelativeQDate, getQDateFromIsoString
+#################  BaseAction  ########################
+class BaseAction( QAction ):
+    def __init__( self, text:str, tooltip:str="", ident:Any=None, icon:QIcon=None, parent=None ):
+        QAction.__init__( self )
+        if icon: self.setIcon( icon )
+        self.setText( text )
+        self.setToolTip( tooltip )
+        self.setParent( parent )
+        self.ident = ident
+        #self.callback = callback
 
 #################  BaseWidget  ########################
 class BaseWidget( QWidget ):
@@ -37,10 +47,85 @@ class BaseDialog( QDialog ):
     def __init__(self, parent=None, flags=Qt.WindowFlags() ):
         QDialog.__init__( self, parent, flags )
 
+###########################   BaseDialogWithButtons  etc.  #############################
+class BaseButtonDefinition:
+    def __init__( self, text, tooltip:str, callback:Callable, callbackData:Any=None, icon:QIcon=None ):
+        self.text = text
+        self.icon:QIcon = icon
+        self.tooltip = tooltip
+        self.callback:Callable = callback
+        self.callbackData:Any = callbackData
+        self.default = False
+        self.width = -1 # autowidth
+        self.height = -1 # autoheight
+
+#########################
+def getOkCancelButtonDefinitions( okCallback:Callable, cancelCallback:Callable ):
+        ok = BaseButtonDefinition( "  OK  ", "Übernimmt die Änderungen und schließt das Fenster.",
+                                        okCallback )
+        cancel = BaseButtonDefinition( "Abbrechen", "Bricht die Änderungen ab, ohne sie zu übernehmen "
+                                                    "und schließt das Fenster.",
+                                        cancelCallback )
+        return ( ok, cancel )
+
+def getCloseButtonDefinition( callback: Callable ):
+    defi = BaseButtonDefinition( "Schließen", "Schließt das Fenster.", callback )
+    return (defi,)
+
+#########################
+class BaseDialogWithButtons( BaseDialog ):
+    def __init__( self, title:str, buttonDefinitions:Iterable[BaseButtonDefinition], parent=None, flags=Qt.WindowFlags() ):
+        BaseDialog.__init__( self, parent, flags )
+        self.setWindowTitle( title )
+        self._layout = BaseGridLayout()
+        self.setLayout( self._layout )
+        self._buttonList:List[BaseButton] = list()
+        self._mainrow = 0
+        self._buttonrow = 1
+        self._createGui( buttonDefinitions )
+
+    def _createGui( self, buttonDefinitions:[BaseButtonDefinition] ):
+        col = 0
+        for defi in buttonDefinitions:
+            btn = BaseButton()
+            if defi.text:
+                btn.setText( defi.text )
+            if defi.icon:
+                btn.setIcon( defi.icon )
+            btn.setToolTip( defi.tooltip )
+            btn.setDefault( defi.default )
+            if defi.width > -1:
+                btn.setFixedWidth( defi.width )
+            if defi.height > -1:
+                btn.setFixedHeight( defi.height )
+            if defi.callback:
+                btn.setCallback( defi.callback, defi.callbackData )
+            self._layout.addWidget( btn, self._buttonrow, col )
+            col += 1
+
+    def setMainWidget( self, widget:BaseWidget ):
+        self._layout.addWidget( widget, self._mainrow, 0 )
+
+
 ################  BaseButton  ##########################
 class BaseButton( QPushButton ):
-    def __init__( self, text= "", parent=None ):
+    def __init__( self, text= "", parent=None, callback:Callable=None, callbackData:Any=None ):
         QPushButton.__init__( self, text=text, parent= parent )
+        self._callback:Callable = None
+        self._callbackData:Any = None
+        if callback:
+            self.setCallback( callback, callbackData )
+
+    def setCallback( self, callback:Callable, callbackData:Any=None ):
+        self._callback: Callable = callback
+        self._callbackData: Any = callbackData
+        self.clicked.connect( self._doCallback )
+
+    def _doCallback( self ):
+        if self._callbackData:
+            self._callback( self._callbackData )
+        else:
+            self._callback()
 
 ################  BaseIconButton  #####################
 class BaseIconButton( BaseButton ):
@@ -805,6 +890,40 @@ class SearchWidget( BaseWidget ):
 
 
 ##########################  TEST  TEST  TEST  ################################
+
+
+def testBaseDialogWithButtons3():
+    def onClose():
+        print( "Close" )
+        dlg.accept()
+
+    app = QApplication()
+    dlg = BaseDialogWithButtons( "Testdialog", getCloseButtonDefinition( onClose ) )
+    dlg.exec_()
+
+def testBaseDialogWithButtons2():
+    def onOk( arg ):
+        print( "OK: ", arg )
+    def onCancel():
+        print( "Brich ab" )
+
+    app = QApplication()
+    b1def = BaseButtonDefinition( "Na gut", "TT!", onOk, "Heavy Data" )
+    b2def = BaseButtonDefinition( "War nix", "TTTTTT", onCancel )
+    dlg = BaseDialogWithButtons( "Testdialog", (b1def, b2def) )
+    dlg.exec_()
+
+def testBaseDialogWithButtons():
+    def onOk():
+        print( "OK" )
+    def onCancel():
+        print( "Cancel" )
+
+    app = QApplication()
+    dlg = BaseDialogWithButtons( "Testdialog", getOkCancelButtonDefinitions( onOk, onCancel ) )
+    dlg.exec_()
+    #app.exec_()
+
 
 def onSearch( txt ):
     print( "onSearch: ", txt )

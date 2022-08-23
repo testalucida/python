@@ -25,7 +25,7 @@ class AnlageV_Preview( QMainWindow ):
     def paintEvent( self, event: PySide2.QtGui.QPaintEvent ):
         painter = QPainter( self )
         for z in self._zeilen:
-            print( "drawing at %d, %d: '%s'" % (z.printX, z.printY, z.value ) )
+            #print( "drawing at %d, %d: '%s'" % (z.printX, z.printY, z.value ) )
             painter.drawText( z.printX * 3, z.printY * 3, z.value )
 
     def paintEvent__( self, event:PySide2.QtGui.QPaintEvent ):

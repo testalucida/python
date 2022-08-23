@@ -5,9 +5,13 @@ from PySide2.QtGui import QFont
 from PySide2.QtWidgets import QAction
 
 import datehelper
+from anlage_v.anlagev_ausgabentablemodel import AnlageV_AusgabenTableModel
 from anlage_v.anlagev_base_logic import AnlageV_Base_Logic
 from anlage_v.anlagev_dataacess import AnlageV_DataAccess
-from base.basetablemodel import BaseTableModel
+from anlage_v.anlagev_interfaces import XErhaltungsaufwand, XAllgemeineKosten
+from anlage_v.anlagev_preview_logic import AnlageV_Preview_Logic
+from base.baseqtderivates import BaseAction, BaseDialogWithButtons, getCloseButtonDefinition
+from base.basetablemodel import BaseTableModel, SumTableModel
 from base.databasecommon import DatabaseCommon
 from base.interfaces import XBase
 from base.printhandler import PrintHandler
@@ -32,52 +36,23 @@ class XMasterEinAus( XBase ):
         self.ertrag = 0
 
 #######################  EinAusTableModel  #############################
-class EinAusTableModel( BaseTableModel ):
+class ErtragTableModel( SumTableModel ):
     def __init__( self, einauslist:List[XMasterEinAus] ):
-        BaseTableModel.__init__( self, einauslist )
-        self._rowCount = len( einauslist ) + 1  # wegen Summenzeile
-        self._fontSumme = QFont( "Arial", 12, weight=QFont.Bold )
-        self._colIdxNettoQm = 5
-        self._colIdxErtrag = 11
-        self._summeErtrag = sum([e.ertrag for e in einauslist])
-
-    def rowCount( self, parent: QModelIndex = None ) -> int:
-        return self._rowCount
-
-    def getValue( self, indexrow: int, indexcolumn: int ) -> Any:
-        if indexrow == self._rowCount - 1:
-            if indexcolumn == 0:
-                return "SUMME"
-            elif indexcolumn == self._colIdxErtrag:
-                return self._summeErtrag
-            else:
-                return ""
-        # elif indexrow == self._rowCount - 2:
-        #     if indexcolumn == self.columnCount() - 1:
-        #         return "\n"
-        #     else:
-        #         return None
-
-        e:XMasterEinAus = self.getElement( indexrow )
-        return e.getValue( self.keys[indexcolumn] )
-
-    def getFont( self, indexrow: int, indexcolumn: int ) -> QFont or None:
-        if indexrow == self._rowCount - 1:
-            if indexcolumn in (0, self._colIdxErtrag):
-                return self._fontSumme
-            else:
-                return None
-
+        SumTableModel.__init__( self, einauslist, ("qm", "einnahmen", "hg", "allg_kosten", "rep_kosten", "sonst_kosten",
+                                                   "ertrag") )
+        self.colIdxAllgKosten = 8
+        self.colIdxRep = 9
+        self.colIdxSonstKosten = 10
 
 #######################  EinAusLogic  #############################
-class EinAusLogic:
+class ErtragLogic:
     def __init__( self ):
-        self._eadata = EinAusData()
+        self._eadata = ErtragData()
         # die zu verteilenden Rep.-Aufwendungen holen wir über AnlageV_DataAccess:
         self._avdata = AnlageV_DataAccess( DATABASE )
         self._avdata.open()
 
-    def getDaten( self, jahr:int ) -> EinAusTableModel:
+    def getDaten( self, jahr:int ) -> ErtragTableModel:
         masters = self._eadata.getMasterobjekte()
         # die Einnahmen holen wir aus der Tabelle zahlung
         # die Kosten holen wir aus der Anlage V Geschäftslogik:
@@ -103,10 +78,42 @@ class EinAusLogic:
             l.append( x )
 
         l = sorted( l, key=lambda x: x.ertrag, reverse=True ) # größter Ertrag oben
-        tm = EinAusTableModel( l )
+        tm = ErtragTableModel( l )
         tm.setHeaders( ("id", "Master", "qm", "Anz.\nMonate", "Einnahmen\n(Netto+NKV+NKA)", "netto\nje qm",
                         "HG+HGA\n(inkl. RüZuFü)", "Sonder",
                         "Allg.\nKosten", "Rep.", "Sonst.\nKosten", "Ertrag") )
+        return tm
+
+    def getReparaturenEinzeln( self, master_name, jahr ) -> SumTableModel:
+        l:List[XErhaltungsaufwand] = self._avdata.getNichtVerteilteErhaltungsaufwendungen( master_name, jahr )
+        for x in l:
+            x.__dict__["verteilt"] = ""
+        l2:List[XErhaltungsaufwand] = self._avdata.getVerteilteErhaltungsaufwendungen( master_name, jahr )
+        for x in l2:
+            x.betrag = x.betrag / x.verteilen_auf_jahre
+            x.__dict__["verteilt"] = "x"
+        l += l2
+        tm = SumTableModel( l, ("betrag",) )
+        tm.setKeyHeaderMappings2( ( "mobj_id", "kreditor", "rgtext", "verteilt", "betrag"),
+                                  ("Objekt", "Kreditor", "Reparatur", "vert.", "Betrag") )
+        return tm
+
+    def getAllgemeineKostenEinzeln( self, master_name, jahr ) -> SumTableModel:
+        av_prev_logic = AnlageV_Preview_Logic( jahr )
+        av_ausg_tm:AnlageV_AusgabenTableModel = av_prev_logic.getAllgemeineAusgabenModel( master_name )
+        l = av_ausg_tm.getObjectList()
+        tm = SumTableModel( l, ("betrag",) )
+        tm.setKeyHeaderMappings2( ("kreditor", "mobj_id", "buchungstext", "kostenart", "betrag"),
+                                  ("Kreditor", "Objekt", "Buchungstext", "Kostenart", "Betrag") )
+        return tm
+
+    def getSonstigeKostenEinzeln( self, master_name, jahr ) -> SumTableModel:
+        av_prev_logic = AnlageV_Preview_Logic( jahr )
+        av_ausg_tm:AnlageV_AusgabenTableModel = av_prev_logic.getSonstigeAusgabenModel( master_name )
+        l = av_ausg_tm.getObjectList()
+        tm = SumTableModel( l, ("betrag",) )
+        tm.setKeyHeaderMappings2( ("kreditor", "mobj_id", "buchungsdatum", "buchungstext", "kostenart", "betrag"),
+                                  ("Kreditor", "Objekt", "Datum", "Buchungstext", "Kostenart", "Betrag") )
         return tm
 
     def _getSummeVerteilteErhaltungsaufwendungen( self, master_name:str, jahr:int ) -> int:
@@ -122,7 +129,7 @@ class EinAusLogic:
         return float( format(nettojeqm, "0.2f") )
 
 #######################  EinAusData  #############################
-class EinAusData( IccData ):
+class ErtragData( IccData ):
     def __init__( self ):
         IccData.__init__( self )
 
@@ -233,17 +240,53 @@ def test():
     def onExport():
         print( "onExport")
 
-    def onProvideContext( index:QModelIndex, point:QPoint, selectedIndexes ) -> List[QAction]:
+    def showDetails():
+        print( "showDetails" )
+
+    def onProvideContext( index:QModelIndex, point:QPoint, selectedIndexes:List[QModelIndex] ) -> List[BaseAction]:
         l = list()
-        action = QAction( "Details..." )
-        l.append( action )
+        col = index.column()
+        x:XMasterEinAus = tm.getElement( selectedIndexes[0].row() )
+        if col == tm.colIdxAllgKosten:
+            action = BaseAction( "Details...", ident="allg" )
+            action.setData( x )
+            l.append( action )
+        elif col == tm.colIdxRep:
+            action = BaseAction( "Details...", ident="rep" )
+            action.setData( x )
+            l.append( action )
+        elif col == tm.colIdxSonstKosten:
+            action = BaseAction( "Details...", ident="sonst" )
+            action.setData( x )
+            l.append( action )
         return l
 
-    def onSelectedAction( action:QAction ):
-        print( action.text() )
+    def onSelectedAction( action:BaseAction ):
+        def onClose():
+            dlg.accept()
 
-    ealogic = EinAusLogic()
-    tm = ealogic.getDaten( 2021 )
+        x:XMasterEinAus = action.data()
+        title = ""
+        detail_tv = BaseTableView()
+        tm:SumTableModel = None
+        if action.ident == "rep":
+            tm = ealogic.getReparaturenEinzeln( x.master_name, jahr )
+            title = "Reparaturen '%s' " % x.master_name + "im Detail"
+        elif action.ident == "allg":
+            tm = ealogic.getAllgemeineKostenEinzeln( x.master_name, jahr )
+            title = "Allgemeine Kosten '%s' " % x.master_name + "im Detail"
+        elif action.ident == "sonst":
+            tm = ealogic.getSonstigeKostenEinzeln( x.master_name, jahr )
+            title = "Sonstige Kosten '%s' " % x.master_name + "im Detail"
+        detail_tv.setModel( tm )
+        dlg = BaseDialogWithButtons( title, getCloseButtonDefinition( onClose ) )
+        dlg.setMainWidget( detail_tv )
+        dlg.exec_()
+
+
+    jahr = 2021
+    ealogic = ErtragLogic()
+    tm = ealogic.getDaten( jahr )
     app = QApplication()
     tv = BaseTableView()
     tv.setModel( tm )
