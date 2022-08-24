@@ -23,6 +23,7 @@ from mtleinaus.mtleinausservices import MtlEinAusServices
 from notizen.notizencontroller import NotizenController
 from offene_posten.offenepostencontroller import OffenePostenController
 from qtderivates import AuswahlDialog
+from rendite.ertragcontroller import ErtragController
 from rendite.renditecontroller import RenditeController
 from returnvalue import ReturnValue
 from sollzahlungencontroller import SollmietenController, SollHgvController
@@ -130,6 +131,7 @@ class MainController( QObject ):
             MainWindowAction.MIETERWECHSEL: self.showMieterwechselDialog,
             MainWindowAction.OPEN_GESCHAEFTSREISE_VIEW: self.showGeschaeftsreiseDialog,
             MainWindowAction.SAMMELABGABE_DETAIL: self.showSammelAbgabeDialog,
+            MainWindowAction.OPEN_ERTRAG_VIEW:self.showErtragView,
             MainWindowAction.EXIT: self.exit
         }
 

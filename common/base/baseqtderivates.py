@@ -32,10 +32,10 @@ class BaseWidget( QWidget ):
         self.ident = None
 
     def setChanged( self, changed:bool ) -> None:
-        self._isChanged = changed
+        self._isChangedd = changed
 
     def isChanged( self ) -> bool:
-        return self._isChanged
+        return self._isChangedd
 
 #################  BaseDialog  ########################
 class BaseComboBox( QComboBox ):

@@ -42,6 +42,7 @@ class MainWindowAction( Enum ):
     SAMMELABGABE_DETAIL = 25,
     EXPORT_DB_TO_SERVER = 26,
     IMPORT_DB_FROM_SERVER = 27,
+    OPEN_ERTRAG_VIEW = 28,
     EXIT=99
 
 
@@ -268,6 +269,9 @@ class IccMainWindow( QMainWindow ):
         menu.addSeparator()
         action = QAction( self, text="Renditevergleich..." )
         action.triggered.connect( self.onRenditeVergleich )
+        menu.addAction( action )
+        action = QAction( self, text="Ertragsübersicht..." )
+        action.triggered.connect( self.onErtragUebersicht )
         menu.addAction( action )
         menu.addSeparator()
         action = QAction( self, text="Exportiere aktive Tabelle in Calc" )
@@ -505,6 +509,9 @@ class IccMainWindow( QMainWindow ):
 
     def onRenditeVergleich( self ):
         self.doCallback( MainWindowAction.RENDITE_VIEW )
+
+    def onErtragUebersicht( self ):
+        self.doCallback( MainWindowAction.OPEN_ERTRAG_VIEW )
 
     def onViewRechnungen( self ):
         self.doCallback( MainWindowAction.OPEN_SONST_EIN_AUS_VIEW )

@@ -20,7 +20,6 @@ class ErtragController( IccController ):
         self._view = BaseTableView()
         self._printHandler:PrintHandler = None
         self._logic = ErtragLogic()
-        self._model:ErtragTableModel = None
         self._jahr = 0
 
     def createView( self ) -> QWidget:
@@ -33,9 +32,9 @@ class ErtragController( IccController ):
             else:
                 jahr = jahre[0]
         self._jahr = jahr
-        self._model = self._logic.getDaten( jahr )
+        model = self._logic.getDaten( jahr )
         v = self._view
-        v.setModel( self._model )
+        v.setModel( model )
         v.setAlternatingRowColors( True )
         v.setContextMenuCallbacks( self.onProvideContext, self.onSelectedAction )
         frame = BaseTableViewFrame( v )
@@ -60,7 +59,7 @@ class ErtragController( IccController ):
         print( "showDetails" )
 
     def onProvideContext( self, index:QModelIndex, point:QPoint, selectedIndexes:List[QModelIndex] ) -> List[BaseAction]:
-        tm = self._model
+        tm = self._view.model()
         l = list()
         col = index.column()
         x:XMasterEinAus = tm.getElement( selectedIndexes[0].row() )

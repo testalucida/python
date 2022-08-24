@@ -246,7 +246,8 @@ def test():
     def onProvideContext( index:QModelIndex, point:QPoint, selectedIndexes:List[QModelIndex] ) -> List[BaseAction]:
         l = list()
         col = index.column()
-        x:XMasterEinAus = tm.getElement( selectedIndexes[0].row() )
+        model = tv.model()
+        x:XMasterEinAus = model.getElement( selectedIndexes[0].row() )
         if col == tm.colIdxAllgKosten:
             action = BaseAction( "Details...", ident="allg" )
             action.setData( x )
