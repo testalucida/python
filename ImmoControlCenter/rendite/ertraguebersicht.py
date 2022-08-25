@@ -53,7 +53,7 @@ class ErtragLogic:
         self._avdata.open()
 
     def getDaten( self, jahr:int ) -> ErtragTableModel:
-        masters = self._eadata.getMasterobjekte()
+        masters = self._eadata.getMasterobjekte( jahr )
         # die Einnahmen holen wir aus der Tabelle zahlung
         # die Kosten holen wir aus der Anlage V Geschäftslogik:
         avlogic = AnlageV_Base_Logic( jahr )
@@ -207,10 +207,11 @@ class ErtragData( IccData ):
         summe = tuplelist[0][0]
         return summe if summe else 0.0
 
-    def getMasterobjekte( self ) -> List[Dict]:
+    def getMasterobjekte( self, jahr:int ) -> List[Dict]:
+        refdat = "'" + str(jahr) + "-01-01'"
         sql = "select master_id, master_name, gesamt_wfl " \
               "from masterobjekt " \
-              "where (veraeussert_am is NULL or veraeussert_am = '') " \
+              "where (veraeussert_am is NULL or veraeussert_am = '' or veraeussert_am > " + refdat + ") " \
               "and master_name not like '*%' " \
               "order by master_name "
         dictlist = self.readAllGetDict( sql )
@@ -290,15 +291,19 @@ def test():
     tm = ealogic.getDaten( jahr )
     app = QApplication()
     tv = BaseTableView()
-    tv.setModel( tm )
-    tv.setAlternatingRowColors( True )
-    tv.setContextMenuCallbacks( onProvideContext, onSelectedAction )
+    # tv.setModel( tm )
+    # tv.setAlternatingRowColors( True )
+    # tv.setContextMenuCallbacks( onProvideContext, onSelectedAction )
     frame = BaseTableViewFrame( tv )
     frame.setWindowTitle( "Ertragsübersicht" )
     tb = frame.getToolBar()
     tb.addYearCombo( (2021, 2022), onChangeYear )
+    tb.setYear( 2021 )
     tb.addExportAction( "Tabelle nach Calc exportieren", onExport )
     ph = PrintHandler( tv )
     tb.addPrintAction( "Druckvorschau für diese Tabelle öffnen...", ph.handlePreview )
+    tv.setModel( tm )
+    tv.setAlternatingRowColors( True )
+    tv.setContextMenuCallbacks( onProvideContext, onSelectedAction )
     frame.show()
     app.exec_()

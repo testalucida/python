@@ -79,8 +79,8 @@ class AnlageV_Base_Logic:
                     netto = brutto - nkv
                     return {"netto" : netto, "nkv" : nkv }
             raise Exception( "AnlageV_Base_Logic.getMieteinnahmenUndNebenkosten.split():\n"
-                             "Kann für Mietzahlung im %s/%d kein Sollmieten-Intervall finden."
-                             % (monat, jjjj))
+                             "Kann für Mietzahlung für Objekt '%s' im %s/%d kein Sollmieten-Intervall finden."
+                             % (master_name, monat, jjjj))
 
         jahr = self.jahr
         xme = XMieteinnahme()

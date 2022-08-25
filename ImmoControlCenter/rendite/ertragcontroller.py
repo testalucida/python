@@ -55,9 +55,6 @@ class ErtragController( IccController ):
     def onExport( self ):
         print( "onExport")
 
-    def showDetails( self ):
-        print( "showDetails" )
-
     def onProvideContext( self, index:QModelIndex, point:QPoint, selectedIndexes:List[QModelIndex] ) -> List[BaseAction]:
         tm = self._view.model()
         l = list()

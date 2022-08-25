@@ -730,6 +730,12 @@ def test9():
     print( l )
 
 
+def test9():
+    data = AnlageV_DataAccess( "../immo.db" )
+    data.open()
+    l = data.getMietenEinzeln( "SB_Gruelings", 2021 )
+    print( l )
+
 def test8():
     data = AnlageV_DataAccess( "../immo.db" )
     data.open()
