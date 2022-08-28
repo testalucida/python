@@ -704,12 +704,18 @@ class BusinessLogic:
     def getSummen( self, jahr:int=None ) -> Tuple[int, int, int]:
         y = jahr if jahr else datehelper.getCurrentYear()
         sumMiete:float = self._db.getSummeZahlungen( "bruttomiete", y )
-        sumSonstAus:float = self._db.getSummeZahlungen( "sonstaus", y )
         sumNka:float = self._db.getSummeZahlungen( "nka", y )
+        sumHGV: float = self._db.getSummeZahlungen( "hgv", y )
         sumHga:float = self._db.getSummeZahlungen( "hga", y )
-        sumAusgaben: float = sumSonstAus + sumNka + sumHga
-        sumHGV:float = self._db.getSummeZahlungen( "hgv", y )
-        return ( int(sumMiete), int(sumAusgaben), int(sumHGV) )
+        sumSonstAus: float = self._db.getSummeZahlungen( "sonstaus", y )
+
+        #neu
+        sumMiete += sumNka
+        sumHGV += sumHga
+
+        #sumAusgaben: float = sumSonstAus + sumNka + sumHga
+        # sumHGV:float = self._db.getSummeZahlungen( "hgv", y )
+        return ( int(sumMiete), int(sumSonstAus), int(sumHGV) )
 
     def getNkAbrechnungenTableModel( self, ab_jahr:int ) -> NkAbrechnungenTableModel:
         """

@@ -1,7 +1,7 @@
-from typing import List
+from typing import List, Dict
 
 from icc.iccdata import IccData
-from interfaces import XGeschaeftsreise
+from interfaces import XGeschaeftsreise, XPauschale
 
 
 class GeschaeftsreiseData( IccData ):
@@ -40,6 +40,14 @@ class GeschaeftsreiseData( IccData ):
               "and jahr = %d " % ( master_name, jahr )
         xlist = self.readAllGetObjectList( sql, XGeschaeftsreise )
         return xlist
+
+    def getPauschalen( self, jahr:int ) -> XPauschale:
+        sql = "select km, vpfl_8, vpfl_24 " \
+              "from pauschale " \
+              "where jahr_von <= %d " \
+              "and (jahr_bis >= %d or jahr_bis is NULL) " % (jahr, jahr)
+        x = self.readOneGetObject( sql, XPauschale )
+        return x
 
     def insertGeschaeftsreise( self, x:XGeschaeftsreise ) -> int:
         uebernachtung = x.uebernachtung if x.uebernachtung > " " else ""

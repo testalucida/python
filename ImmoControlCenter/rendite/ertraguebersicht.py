@@ -58,6 +58,7 @@ class ErtragLogic:
         # die Kosten holen wir aus der Anlage V Geschäftslogik:
         avlogic = AnlageV_Base_Logic( jahr )
         l = list()
+        #testsumme = 0
         for master in masters:
             x = XMasterEinAus()
             x.master_id = master["master_id"]
@@ -70,7 +71,15 @@ class ErtragLogic:
             x.hg = self._eadata.getSummeHausgeld( x.master_id, jahr )
             x.sonder_u = self._eadata.getSummeSonderumlagen( x.master_id, jahr )
             x.rep_kosten = self._eadata.getSummeReparaturen( x.master_id, jahr )
-            x.rep_kosten += self._getSummeVerteilteErhaltungsaufwendungen( x.master_name, jahr )
+            # testsumme += x.rep_kosten
+            #print( x.master_name, "\tRep.:\t", x.rep_kosten, "\tSumme Rep.:\t", testsumme )
+            ### !!! Verteilte Rep.kosten werden hier nicht berücksichtigt !!!
+            ###     Hier geht es nur um echte Zu - und Abflüsse im betreffenden Jahr,
+            ###     wohingegen die Kostenverteilung ein rein steuerliches Ding ist.
+            #vert_rep = self._getSummeVerteilteErhaltungsaufwendungen( x.master_name, jahr )
+            # testsumme += vert_rep
+            #print( x.master_name, "\tvert.R.:\t", vert_rep, "\tSumme Rep.:\t", testsumme )
+            #x.rep_kosten += vert_rep
             wk = avlogic.getWerbungskosten( x.master_name )
             x.allg_kosten = wk.getSummeAllgemeineKosten() # grundsteuer + wk.strassenreinigung + wk.abwasser
             x.sonst_kosten = wk.getSummeSonstigeKosten()
@@ -166,11 +175,9 @@ class ErtragData( IccData ):
     def getSummeReparaturen( self, master_id:int, jahr:int ) -> int:
         sql = "select sum(z.betrag) " \
               "from zahlung z " \
-              "inner join sonstaus sa on sa.saus_id = z.saus_id " \
               "where z.master_id = %d " \
               "and z.jahr = %d " \
-              "and z.kostenart = 'r' " \
-              "and sa.verteilen_auf_jahre = 1 "  % ( master_id, jahr )
+              "and z.kostenart = 'r' "  % ( master_id, jahr )
         tuplelist = self.read( sql )
         summe = tuplelist[0][0]
         return int( round( summe ) ) if summe else 0.0
@@ -219,6 +226,7 @@ class ErtragData( IccData ):
 
 
 ###############################################################################
+
 def test():
     from PySide2.QtWidgets import QApplication
     from base.basetableview import BaseTableView
@@ -286,7 +294,7 @@ def test():
         dlg.exec_()
 
 
-    jahr = 2021
+    jahr = 2022
     ealogic = ErtragLogic()
     tm = ealogic.getDaten( jahr )
     app = QApplication()
@@ -297,8 +305,8 @@ def test():
     frame = BaseTableViewFrame( tv )
     frame.setWindowTitle( "Ertragsübersicht" )
     tb = frame.getToolBar()
-    tb.addYearCombo( (2021, 2022), onChangeYear )
-    tb.setYear( 2021 )
+    tb.addYearCombo( (jahr,), onChangeYear )
+    tb.setYear( jahr )
     tb.addExportAction( "Tabelle nach Calc exportieren", onExport )
     ph = PrintHandler( tv )
     tb.addPrintAction( "Druckvorschau für diese Tabelle öffnen...", ph.handlePreview )

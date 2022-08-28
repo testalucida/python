@@ -1,6 +1,8 @@
 from PySide2.QtCore import Signal, QObject
 
+import datehelper
 from business import BusinessLogic
+from geschaeftsreise.geschaeftsreiselogic import GeschaeftsreiseLogic
 from qtderivates import IntDisplay
 
 class SumFieldsProvider( QObject ):
@@ -28,15 +30,19 @@ class SumFieldsProvider( QObject ):
 
     def setSumFields( self ):
         try:
-            sumMieten, sumAusgaben, sumHGV = BusinessLogic.inst().getSummen()
+            y = datehelper.getCurrentYear()
+            sumMieten, sumAusgaben, sumHGV = BusinessLogic.inst().getSummen( y )
+            reiselogic = GeschaeftsreiseLogic()
+            reisekosten = int( round( reiselogic.getSummeGeschaeftsreisekosten( y ) ) )
         except Exception as ex:
             sumMieten = 0
             sumAusgaben = 0
             sumHGV = 0
+            reisekosten = 0
             self._errorCallback( str( ex ) )
 
         self.setSumMieten( sumMieten )
-        self.setSumAusgaben( sumAusgaben )
+        self.setSumAusgaben( sumAusgaben + reisekosten )
         self.setSumHGV( sumHGV )
 
     def getSumMieten( self ) -> int:

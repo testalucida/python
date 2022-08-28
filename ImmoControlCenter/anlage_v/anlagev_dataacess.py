@@ -660,7 +660,7 @@ class AnlageV_DataAccess( DbAccess ):
         :param jahr:
         :return:
         """
-        sql = "select id, coalesce(jahr_bis, 9999) as jahr_bis, km, vpfl " \
+        sql = "select id, jahr_von, coalesce(jahr_bis, 9999) as jahr_bis, km, vpfl_8, vpfl_24 " \
               "from pauschale "
         dictlist =  self._doReadAllGetDict( sql )
         # dictlist sortieren nach jahr_bis und den für <jahr> passenden Satz zurückliefern.

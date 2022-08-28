@@ -396,6 +396,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
     def getSonstigeAusgabenModel( self, master_name:str ) -> AnlageV_AusgabenTableModel:
         l:List[XAusgabeKurz] = self._db.getAusgaben( master_name, self.jahr, [Sonstaus_Kostenart.SONSTIGE,] )
         reiselist:List[XGeschaeftsreise] = GeschaeftsreiseUcc.inst().getGeschaeftsreisen( master_name, self.jahr )
+        reiselogic = GeschaeftsreiseLogic()
         for reise in reiselist:
             xaus = XAusgabeKurz()
             xaus.master_name = master_name
@@ -403,7 +404,7 @@ class AnlageV_Preview_Logic( AnlageV_Base_Logic):
             xaus.mobj_id = reise.mobj_id
             xaus.kreditor = reise.uebernachtung
             xaus.buchungstext = "Reise " + reise.von + " - " + reise.bis + "; Grund: " + reise.ziel + "; " + reise.zweck
-            xaus.betrag = self.computeReisekosten( reise )
+            xaus.betrag = reiselogic.getGeschaeftsreisekosten2( reise )
             xaus.kostenart = Sonstaus_Kostenart.SONSTIGE.value[0]
             l.append( xaus )
 

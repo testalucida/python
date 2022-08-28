@@ -215,31 +215,27 @@ class AnlageV_Base_Logic:
             block.betrag += aus.betrag
         return l
 
-    def computeReisekosten( self, reise:XGeschaeftsreise ) -> float:
-        """
-        Berechnet km-Kosten u. Vpfl-Pauschale für eine Geschäftsreise.
-        Der errechnete Betrag wird als negative Zahl zurückgegeben.
-        :param reise:
-        :return:
-        """
-        if not self.pauschalen:
-            self.pauschalen = self._db.getPauschalen( self.jahr )
-        dauer: int = datehelper.getNumberOfDays2( reise.von, reise.bis, self.jahr )
-        return ((dauer * self.pauschalen.vpfl * reise.personen) + (reise.km * self.pauschalen.km)) * -1
+    # def computeReisekosten( self, reise:XGeschaeftsreise ) -> float:
+    #     """
+    #     Berechnet km-Kosten u. Vpfl-Pauschale für eine Geschäftsreise.
+    #     Der errechnete Betrag wird als negative Zahl zurückgegeben.
+    #     :param reise:
+    #     :return:
+    #     """
+    #     if not self.pauschalen:
+    #         self.pauschalen = self._db.getPauschalen( self.jahr )
+    #     dauer: int = datehelper.getNumberOfDays2( reise.von, reise.bis, self.jahr )
+    #     return ((dauer * self.pauschalen.vpfl * reise.personen) + (reise.km * self.pauschalen.km)) * -1
 
     def getReisekosten( self, master_name:str ) -> float:
         """
-        Ermittelt die Reisekosten ungleich Übernachtung, also km-Kosten und Verpflegungspauschalen.
-        Hotelkosten werden bei der Ermittlung der "sonstigen Kosten" aus der Tabelle <sonstaus> ermittelt.
+        Ermittelt die Reisekosten für einen Master: km-Kosten, Übernachtungskosten (sofern Hotel) und Verpflegungspauschalen.
         :param master_name:
         :return:
         """
         reiselogic = GeschaeftsreiseLogic()
-        xreisen:List[XGeschaeftsreise] = reiselogic.getGeschaeftsreisen( master_name, self.jahr )
-        reisekosten_gesamt = 0.0
-        for reise in xreisen:
-            reisekosten_gesamt += self.computeReisekosten( reise )
-        return reisekosten_gesamt
+        kosten = reiselogic.getGeschaeftsreisekosten( master_name, self.jahr )
+        return kosten
 
     def getRuecklagenEntnahme( self, master_name:str, jahr:int ) -> int:
         logic = VerwaltungLogic()
