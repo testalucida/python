@@ -1,3 +1,4 @@
+import numbers
 from typing import Dict, Any, List
 
 class XBase:
@@ -30,6 +31,20 @@ class XBase:
 
     def getKeys( self ) -> List:
         return list( self.__dict__.keys() )
+
+    def toString( self ):
+        s = ""
+        d = self.__dict__
+        for k, v in d.items():
+            if not v:
+                v = ""
+            if isinstance( v, numbers.Number ):
+                v = str( v )
+            s += ( k + ": " + v + "\n" )
+        return s
+
+    def print( self ):
+        print( self.toString() )
 
 
 class XAttribute( XBase ):

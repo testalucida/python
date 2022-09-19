@@ -11,7 +11,7 @@ class SumFieldsProvider( QObject ):
 
     def __init__( self, sumMieten:IntDisplay, sumAusgaben:IntDisplay, sumHGV:IntDisplay, saldo:IntDisplay, errorCallback ):
         QObject.__init__( self )
-        if SumFieldsProvider.__instance != None:
+        if SumFieldsProvider.__instance:
             raise Exception( "You can't instantiate SumFieldsAccess more than once." )
         else:
             SumFieldsProvider.__instance = self
@@ -24,7 +24,7 @@ class SumFieldsProvider( QObject ):
 
     @staticmethod
     def inst() -> __instance:
-        if SumFieldsProvider.__instance == None:
+        if SumFieldsProvider.__instance is None:
            raise Exception( "SumFieldsAccess not yet constructed." )
         return SumFieldsProvider.__instance
 

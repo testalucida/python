@@ -19,6 +19,9 @@ from definitions import DATABASE
 from icc.iccdata import IccData
 
 #######################  XMasterEinAus  #############################
+from interfaces import XAusgabe
+
+
 class XMasterEinAus( XBase ):
     def __init__( self, valuedict:Dict=None ):
         XBase.__init__( self, valuedict )
@@ -37,8 +40,8 @@ class XMasterEinAus( XBase ):
 
 #######################  EinAusTableModel  #############################
 class ErtragTableModel( SumTableModel ):
-    def __init__( self, einauslist:List[XMasterEinAus] ):
-        SumTableModel.__init__( self, einauslist, ("qm", "einnahmen", "hg", "allg_kosten", "rep_kosten", "sonst_kosten",
+    def __init__( self, einauslist:List[XMasterEinAus], jahr:int ):
+        SumTableModel.__init__( self, einauslist, jahr, ("qm", "einnahmen", "hg", "allg_kosten", "rep_kosten", "sonst_kosten",
                                                    "ertrag") )
         self.colIdxAllgKosten = 8
         self.colIdxRep = 9
@@ -87,31 +90,31 @@ class ErtragLogic:
             l.append( x )
 
         l = sorted( l, key=lambda x: x.ertrag, reverse=True ) # größter Ertrag oben
-        tm = ErtragTableModel( l )
+        tm = ErtragTableModel( l, jahr )
         tm.setHeaders( ("id", "Master", "qm", "Anz.\nMonate", "Einnahmen\n(Netto+NKV+NKA)", "netto\nje qm",
                         "HG+HGA\n(inkl. RüZuFü)", "Sonder",
                         "Allg.\nKosten", "Rep.", "Sonst.\nKosten", "Ertrag") )
         return tm
 
     def getReparaturenEinzeln( self, master_name, jahr ) -> SumTableModel:
-        l:List[XErhaltungsaufwand] = self._avdata.getNichtVerteilteErhaltungsaufwendungen( master_name, jahr )
-        for x in l:
-            x.__dict__["verteilt"] = ""
-        l2:List[XErhaltungsaufwand] = self._avdata.getVerteilteErhaltungsaufwendungen( master_name, jahr )
-        for x in l2:
-            x.betrag = x.betrag / x.verteilen_auf_jahre
-            x.__dict__["verteilt"] = "x"
-        l += l2
-        tm = SumTableModel( l, ("betrag",) )
-        tm.setKeyHeaderMappings2( ( "mobj_id", "kreditor", "rgtext", "verteilt", "betrag"),
-                                  ("Objekt", "Kreditor", "Reparatur", "vert.", "Betrag") )
+        """
+        Auf verteilte Kosten wird keine Rücksicht genommen. Es gilt das Abflussprinzip: der volle Betrag wird
+        dem Jahr zugerechnet, in dem die Rechnung bezahlt wurde.
+        :param master_name:
+        :param jahr:
+        :return:
+        """
+        l:List[XAusgabe] = self._eadata.getReparaturenEinzeln( master_name, jahr )
+        tm = SumTableModel( l, jahr, ("betrag",) )
+        tm.setKeyHeaderMappings2( ( "mobj_id", "kreditor", "buchungsdatum", "buchungstext", "betrag"),
+                                  ("Objekt", "Kreditor", "Datum", "Reparatur", "Betrag") )
         return tm
 
     def getAllgemeineKostenEinzeln( self, master_name, jahr ) -> SumTableModel:
         av_prev_logic = AnlageV_Preview_Logic( jahr )
         av_ausg_tm:AnlageV_AusgabenTableModel = av_prev_logic.getAllgemeineAusgabenModel( master_name )
         l = av_ausg_tm.getObjectList()
-        tm = SumTableModel( l, ("betrag",) )
+        tm = SumTableModel( l, jahr, ("betrag",) )
         tm.setKeyHeaderMappings2( ("kreditor", "mobj_id", "buchungstext", "kostenart", "betrag"),
                                   ("Kreditor", "Objekt", "Buchungstext", "Kostenart", "Betrag") )
         return tm
@@ -120,17 +123,17 @@ class ErtragLogic:
         av_prev_logic = AnlageV_Preview_Logic( jahr )
         av_ausg_tm:AnlageV_AusgabenTableModel = av_prev_logic.getSonstigeAusgabenModel( master_name )
         l = av_ausg_tm.getObjectList()
-        tm = SumTableModel( l, ("betrag",) )
+        tm = SumTableModel( l, jahr, ("betrag",) )
         tm.setKeyHeaderMappings2( ("kreditor", "mobj_id", "buchungsdatum", "buchungstext", "kostenart", "betrag"),
                                   ("Kreditor", "Objekt", "Datum", "Buchungstext", "Kostenart", "Betrag") )
         return tm
 
-    def _getSummeVerteilteErhaltungsaufwendungen( self, master_name:str, jahr:int ) -> int:
-        su = 0
-        replist = self._avdata.getVerteilteErhaltungsaufwendungen( master_name, jahr )
-        for rep in replist:
-            su += ( rep.betrag / rep.verteilen_auf_jahre )
-        return int( round( su ) )
+    # def _getSummeVerteilteErhaltungsaufwendungen( self, master_name:str, jahr:int ) -> int:
+    #     su = 0
+    #     replist = self._avdata.getVerteilteErhaltungsaufwendungen( master_name, jahr )
+    #     for rep in replist:
+    #         su += ( rep.betrag / rep.verteilen_auf_jahre )
+    #     return int( round( su ) )
 
     def _getAktuelleNettoMieteJeQm( self, master_id:int, qm:int ) -> float:
         sumnetto =self._eadata.getNettomieteAktuell( master_id )
@@ -182,6 +185,16 @@ class ErtragData( IccData ):
         summe = tuplelist[0][0]
         return int( round( summe ) ) if summe else 0.0
 
+    def getReparaturenEinzeln( self, master_name:str, jahr:int ) -> List[XAusgabe]:
+        sql = "select mobj_id, kreditor, buchungsdatum, buchungstext, kostenart, betrag " \
+              "from zahlung z " \
+              "inner join masterobjekt mo on mo.master_id = z.master_id " \
+              "where jahr = %d " \
+              "and mo.master_name = '%s' " \
+              "and kostenart = 'r' " % (jahr, master_name)
+        reps = self.readAllGetObjectList( sql, XAusgabe )
+        return reps
+
     def getSummeHausgeld( self, master_id:int, jahr:int ) -> int:
         sql = "select sum(betrag) " \
               "from zahlung " \
@@ -226,6 +239,11 @@ class ErtragData( IccData ):
 
 
 ###############################################################################
+def test2():
+    data = ErtragData()
+    reps = data.getReparaturenEinzeln( "SB_Kaiser", 2021 )
+    print( reps )
+
 
 def test():
     from PySide2.QtWidgets import QApplication

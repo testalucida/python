@@ -11,7 +11,7 @@ from base.baseqtderivates import BaseEdit, BaseWidget, SearchWidget, NewIconButt
 from base.basetablemodel import BaseTableModel
 from base.basetableview import BaseTableView
 
-from base.constants import monthnames
+from base.constants import monthLongNames
 from base.directories import BASE_IMAGES_DIR
 from base.printhandler import PrintHandler
 from base.searchhandler import SearchHandler
@@ -28,8 +28,8 @@ class SortKeyValue:
 class BaseTableViewToolBar( QToolBar ):
     def __init__( self ):
         QToolBar.__init__( self )
-        self._yearCombo = None
-        self._monthCombo = None
+        self._yearCombo:QComboBox = None
+        self._monthCombo:QComboBox = None
         self._saveEnabledIcon = None
         self._saveDisabledIcon = None
         self._saveActionId = "save"
@@ -44,6 +44,12 @@ class BaseTableViewToolBar( QToolBar ):
         self._searchWidget = None
 
     def addYearCombo( self, years:List[int], callback:Callable ) -> None:
+        """
+        Fügt der ToolBar eine Combobox mit den übergebenen Jahreswerten hinzu.
+        :param years: Jahre, die in der Combobox angezeigt werden sollen
+        :param callback: Funktion, die gerufen wird, wenn der User das in der Combobox eingestellte Jahr ändert.
+                         Die Funktion muss das neu eingestellte Jahr entgegen nehmen.
+        """
         combo = QComboBox()
         for y in years:
             combo.addItem( str( y ) )
@@ -55,12 +61,26 @@ class BaseTableViewToolBar( QToolBar ):
         self._yearCombo.setCurrentText( str(year) )
 
     def addMonthCombo( self, callback:Callable ) -> None:
+        """
+        Fügt der ToolBar eine Combobox mit 12 Monatswerten hinzu.
+        :param callback: Funktion, die gerufen wird, wenn der User den in der Combobox eingestellten Monat ändert.
+                         Die Funktion muss den Index des Monats entgegen nehmen (bei 0 beginnend) sowie den Langnamen
+                         ("September").
+        :return:
+        """
         combo = QComboBox()
-        combo.addItems( monthnames )
-        combo.currentIndexChanged.connect( lambda: callback( self._monthCombo.currentIndex()+1,
+        combo.addItems( monthLongNames )
+        combo.currentIndexChanged.connect( lambda: callback( self._monthCombo.currentIndex(),
                                                              self._monthCombo.currentText() ) )
         self.addWidget( combo )
         self._monthCombo = combo
+
+    def setMonthIdx( self, monthIdx:int ):
+        """
+        :param monthIdx: 0 = Januar etc.
+        :return:
+        """
+        self._monthCombo.setCurrentIndex( monthIdx )
 
     def addSaveAction( self, tooltip:str, callback:Callable, enabled:bool=False, separatorBefore:bool=True ):
         if separatorBefore:
@@ -165,8 +185,8 @@ class BaseTableViewFrame( BaseWidget ):
     newItem = Signal()
     editItem = Signal( int ) # row number (index.row of index)
     deleteItem = Signal( list ) # list of ints, each representing a row number (index.row of index)
-    def __init__(self, tableView:BaseTableView, withEditButtons:bool=False ):
-        QWidget.__init__( self )
+    def __init__(self, tableView:BaseTableView, withEditButtons=False ):
+        BaseWidget.__init__( self )
         self._tv = tableView
         self._layout = QGridLayout()
         self._toolbar = BaseTableViewToolBar()

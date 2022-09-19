@@ -54,8 +54,8 @@ class BaseTableModel( QAbstractTableModel ):
         if len( rowList ) > 0:
             self._setDefaultKeyHeaderMapping()
 
-    def receiveSortedList( self, li:List[XBase] ) -> None:
-        self.rowList = li
+    # def receiveSortedList( self, li:List[XBase] ) -> None:
+    #     self.rowList = li
 
     def setKeyHeaderMappings( self, mappings:List[KeyHeaderMapping] ):
         self.headers = [x.header for x in mappings]
@@ -76,6 +76,9 @@ class BaseTableModel( QAbstractTableModel ):
 
     def getColumnIndex( self, header ) -> int:
         return self.headers.index( header )
+
+    def getColumnIndexByKey( self, key:str ) -> int:
+        return self.keys.index( key )
 
     def getHeaders( self ) -> List[str]:
         return self.headers
@@ -126,12 +129,11 @@ class BaseTableModel( QAbstractTableModel ):
         colidx = self.headers.index( colname )
         return self.getValue( indexrow, colidx )
 
-    def setValue( self, indexrow:int, indexcolumn:int, value:Any, writeChangeLog:bool=True ) -> None:
+    def setValue( self, indexrow:int, indexcolumn:int, value:Any ) -> None:
         """
         Ändert einen Wert in dem durch indexrow spezifiz. XBase-Element und
         schreibt das Change-Log
-        Löst *kein* dataChanged-Signal aus.
-        Um ein dataChanged-Signal auszulösen, muss die setData-Methode verwendet werden.
+        Löst ein dataChanged-Signal aus.
         :param indexrow:
         :param indexcolumn:
         :param value:
@@ -142,10 +144,11 @@ class BaseTableModel( QAbstractTableModel ):
         e:XBase = self.getElement( indexrow )
         key = self.keys[indexcolumn]
         e.setValue( key, value )
-        if writeChangeLog:
-            self.addChange( e, key, oldval, value )
+        index = self.createIndex( indexrow, indexcolumn )
+        self.dataChanged.emit( index, index, [Qt.DisplayRole] )
+        self.writeChange( e, key, oldval, value )
 
-    def addChange( self, e:XBase, key, oldval, value ):
+    def writeChange( self, e:XBase, key, oldval, value ):
         self._changes.addChange( e, key, oldval, value )
 
     def rowCount( self, parent:QModelIndex=None ) -> int:
@@ -293,8 +296,8 @@ class SumTableModel( BaseTableModel ):
     """
     A BaseTableModel displaying a sum row below all other rows
     """
-    def __init__( self, objectList:List[XBase], colsToSum:Iterable[str] ):
-        BaseTableModel.__init__( self, objectList )
+    def __init__( self, objectList:List[XBase], jahr:int, colsToSum:Iterable[str] ):
+        BaseTableModel.__init__( self, objectList, jahr )
         self._colsToSum = colsToSum # Liste mit den keys (Attributnamen des XBase-Objekts) der Spalten,
                                     # die summiert werden sollen
         self._summen:List[Dict] = list() # enthält die Summen,
@@ -320,7 +323,17 @@ class SumTableModel( BaseTableModel ):
                     return dic["sum"]
                 else:
                     return ""
-        e:XBase = self.getElement( indexrow )
+        return self.internalGetValue( indexrow, indexcolumn )
+
+    def internalGetValue( self, indexrow:int, indexcolumn:int ) -> Any:
+        """
+        For internal use only.
+        May be overridden by inherited classes
+        :param indexrow:
+        :param indexcolumn:
+        :return:
+        """
+        e: XBase = self.getElement( indexrow )
         return e.getValue( self.keys[indexcolumn] )
 
     def getFont( self, indexrow: int, indexcolumn: int ) -> QFont or None:

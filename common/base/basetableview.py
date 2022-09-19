@@ -28,7 +28,7 @@ class BaseHeaderView( QHeaderView ):
     def mouseMoveEvent(self, evt:QMouseEvent):
         self.bhvMouseMove.emit( evt )
 
-#####################  CustomTableView  ####################
+#####################  BaseTableView  ####################
 class BaseTableView( QTableView ):
     """
     Eine TableView, die eine Liste von XBase-Objekten anzeigt.
@@ -76,9 +76,11 @@ class BaseTableView( QTableView ):
     def setContextMenuCallbacks( self, provider:Callable, onSelected:Callable ) -> None:
         """
         Registriert zwei callback-functions:
-        Die eine, provider, wird von BaseTableView nach einem rechten Mausklick mit relevanten Paramtern aufgerufen.
+        Die eine, provider, wird von BaseTableView nach einem rechten Mausklick mit relevanten Paramtern
+         (siehe param provider) aufgerufen.
         Dieser callback muss eine Liste von QActions zurückgeben, die dann im Kontextmenü angezeigt werden.
-        Die andere, actor, wird von BaseTableView nach Auswahl eines Kontextmenüpunktes aufgerufen.
+        Die andere, onSelected (siehe param onSelected), wird von BaseTableView nach Auswahl
+        eines Kontextmenüpunktes aufgerufen.
         :param provider: callback function, die folgende Argumente akzeptieren muss:
                 index:QModelIndex, point:QPoint, selectedIndexes
                 Zurückgeben muss sie eine List[QAction] oder None
@@ -98,12 +100,11 @@ class BaseTableView( QTableView ):
         if selectRows:
             self.setSelectionBehavior( QTableView.SelectRows )
         else:
-            #keep default behaviour
-            pass
+            self.setSelectionBehavior( QTableView.SelectItems )
         if singleSelection:
             self.setSelectionMode( QAbstractItemView.SingleSelection )
         else:
-            self.setSelectionMode( QTableView.SelectionMode.MultiSelection )
+            self.setSelectionMode( QTableView.SelectionMode.ContiguousSelection )
         self.setSortingEnabled( True ) # Sortieren soll grundsätzlich möglich sein...
         self.showSortIndicator( False ) # ...aber wir wollen noch keinen Sort-Indicator sehen, weil noch nicht sortiert ist.
         model.layoutChanged.emit()
@@ -152,7 +153,6 @@ class BaseTableView( QTableView ):
                         menu.addAction( action )
                     selectedAction = menu.exec_( self.viewport().mapToGlobal( point ) )
                     if selectedAction:
-                        #todo: umstellen auf BaseAction und hier gleich die callback function aufrufen
                         self._contextMenuActionActor( selectedAction )
 
     def onLeftClick( self, index:QModelIndex ):

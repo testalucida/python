@@ -574,8 +574,9 @@ class XRendite:
         self.afa = 0
         self.ueberschuss_m_afa = 0
 
-class XAusgabe:
-    def __init__(self):
+class XAusgabe( XBase ):
+    def __init__(self, valuedict:Dict=None):
+        XBase.__init__( self )
         self.master_name = ""
         self.mobj_id = ""
         self.kreditor = ""
@@ -583,6 +584,8 @@ class XAusgabe:
         self.buchungsdatum = ""
         self.kostenart = ""
         self.buchungstext = ""
+        if valuedict:
+            setFromDict( self, valuedict )
 
 class XKontoEintrag:
     mobj_id = ""         # Name des Objekts, z.B. ww224, ist Name des Kontos (der Tabelle)

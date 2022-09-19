@@ -109,7 +109,7 @@ class MultiSortHandler( QObject ):
         self._tm.emit( SIGNAL( "layoutAboutToBeChanged()" ) )
         self._sort_reverse = not self._sort_reverse
         rowlist = sorted( rowlist, key=cmp_to_key( self._compareMultiple ) )
-        self._tm.receiveSortedList( rowlist )
+        self._tm.rowList = rowlist
         self.emit( SIGNAL( "layoutChanged()" ) )
 
     def _compareMultiple( self, x1:XBase, x2:XBase ):

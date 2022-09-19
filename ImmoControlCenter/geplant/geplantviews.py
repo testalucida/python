@@ -6,6 +6,7 @@ from PySide2.QtGui import QIcon
 from PySide2.QtWidgets import QWidget, QComboBox, QCheckBox, QApplication, QPushButton
 
 import datehelper
+from base.constants import monthLongNames
 from definitions import ICON_DIR
 from generictable_stuff.okcanceldialog import OkCancelDialog2
 from generictable_stuff.xbasetablemodel import XBaseTableModel
@@ -50,7 +51,7 @@ class GeplantEditView( QWidget ):
         self._cbKostenvoranschlag = QCheckBox()
         self._cboJahr = QComboBox()
         self._cboMonat = QComboBox()
-        self._cboMonat.addItems( datehelper.monthList )
+        self._cboMonat.addItems( monthLongNames )
         self._cbBeauftragt = QCheckBox()
         self._sdErledigtAm = SmartDateEdit()
         self._txtBemerkung = MultiLineEdit()
@@ -170,7 +171,7 @@ class GeplantEditView( QWidget ):
         self._feKosten.setFloatValue( x.kosten )
         self._cbKostenvoranschlag.setChecked( True if x.kostenvoranschlag > 0 else False )
         self._cboJahr.setCurrentText( str( x.jahr ) )
-        monat = datehelper.monthList[x.monat-1]
+        monat = monthLongNames[x.monat - 1]
         self._cboMonat.setCurrentText( monat )
         self._sdErledigtAm.setDateFromIsoString( x.erledigtDatum )
         self._txtBemerkung.setText( x.bemerkung )
@@ -183,7 +184,7 @@ class GeplantEditView( QWidget ):
         x.kostenvoranschlag = 1 if self._cbKostenvoranschlag.isChecked() else 0
         x.jahr = int( self._cboJahr.currentText() )
         monat = self._cboMonat.getCurrentText()
-        monIdx = datehelper.monthList.index( monat ) + 1
+        monIdx = monthLongNames.index( monat ) + 1
         x.monat = monIdx
         x.erledigtDatum = self._sdErledigtAm.getDate()
         x.bemerkung = self._txtBemerkung.toPlainText()

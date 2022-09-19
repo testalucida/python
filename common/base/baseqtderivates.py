@@ -6,7 +6,8 @@ from PySide2.QtCore import QDate, Qt, QAbstractTableModel, QRect, Signal, QSize
 from PySide2.QtGui import QDoubleValidator, QIntValidator, QFont, QGuiApplication, QStandardItemModel, QStandardItem, \
     QMouseEvent, QTextDocument, QIcon, QFontMetrics
 from PySide2.QtWidgets import QDialog, QCalendarWidget, QVBoxLayout, QBoxLayout, QLineEdit, QGridLayout, QPushButton, \
-    QHBoxLayout, QApplication, QListView, QComboBox, QLabel, QTextEdit, QCheckBox, QFrame, QWidget, QAction
+    QHBoxLayout, QApplication, QListView, QComboBox, QLabel, QTextEdit, QCheckBox, QFrame, QWidget, QAction, QTabWidget, \
+    QToolBar, QMenuBar, QStatusBar
 
 from base.directories import BASE_IMAGES_DIR
 from base.interfaces import XAttribute
@@ -36,6 +37,26 @@ class BaseWidget( QWidget ):
 
     def isChanged( self ) -> bool:
         return self._isChanged
+
+##################  BaseTabbedWindow  #################
+class BaseTabWidget( QTabWidget ):
+    def __init__( self, parent=None ):
+        QTabWidget.__init__( self, parent )
+
+#################  BaseToolBar  #######################
+class BaseToolBar( QToolBar ):
+    def __init__( self, parent=None ):
+        QToolBar.__init__( self, parent )
+
+#################  BaseMenuBar  #######################
+class BaseMenuBar( QMenuBar ):
+    def __init__( self, parent=None ):
+        QMenuBar.__init__( self, parent )
+
+#################  BaseStatusBar  #######################
+class BaseStatusBar( QStatusBar ):
+    def __init__( self, parent=None ):
+        QStatusBar.__init__( self, parent )
 
 #################  BaseDialog  ########################
 class BaseComboBox( QComboBox ):

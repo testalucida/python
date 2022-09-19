@@ -4,27 +4,10 @@ from PySide2.QtCore import QDate
 from dateutil.relativedelta import relativedelta
 from typing import Tuple, Dict
 
-
-monthList = ("Januar", "Februar", "März", "April", "Mai", "Juni",
-             "Juli", "August", "September", "Oktober", "November", "Dezember")
-
-monatsletzter = {
-    "Januar": 31,
-    "Februar": 28,
-    "März": 31,
-    "April": 30,
-    "Mai": 31,
-    "Juni": 30,
-    "Juli": 31,
-    "August": 31,
-    "September": 30,
-    "Oktober": 31,
-    "November": 30,
-    "Dezember": 31
-}
+from base.constants import monthLongNames, monatsletzter
 
 def getNumberOfDays( month:int ) -> int:
-    return monatsletzter[monthList[month-1] ]
+    return monatsletzter[monthLongNames[month - 1]]
 
 def currentDateIso() -> str:
     """
@@ -41,6 +24,11 @@ def getCurrentDateIso() -> str:
     return datetime.now().strftime( "%Y-%m-%d" )
 
 def getCurrentYearAndMonth() -> Dict:
+    """
+    Returns a dictionary containing current year and month.
+    :return: a dictionary with key "year" containing the current year as an Integer
+                          and  key "month" containing the month as an Integer where *1* (!!) represents January and so on.
+    """
     d = { }
     d["month"] = datetime.now().month
     d["year"] = datetime.now().year
@@ -73,11 +61,11 @@ def getFirstOfFollowingMonth( isodate:str ) -> str:
 def getMonthIndex( month:str ) -> int:
     """
     returns index of month given as (german) string, e.g.: return 1 if month == "Januar"
-    :param month: "Januar", "Februar",... according to monthlist
+    :param month: "Januar", "Februar",... according to monthLongNames in base/constants.py
     :return: index of given month
     """
-    for i in range( len( monthList ) ):
-        if monthList[i] == month:
+    for i in range( len( monthLongNames ) ):
+        if monthLongNames[i] == month:
             return i+1
     raise Exception( "Wrong month name: '%s'" % (month) )
 
@@ -176,7 +164,7 @@ def getLastOfMonthAsIsoString() -> str:
     d = getCurrentYearAndMonth()
     monthIdx = d["month"]
     year = d["year"]
-    month = monthList[monthIdx-1]
+    month = monthLongNames[monthIdx - 1]
     lastofmonth = monatsletzter[month]
     lastDayInMonth = "%d-%2d-%2d" % (year, monthIdx, lastofmonth )
     return lastDayInMonth
@@ -189,7 +177,7 @@ def getLastOfMonth() -> date:
     d = getCurrentYearAndMonth()
     monthIdx = d["month"]
     year = d["year"]
-    month = monthList[monthIdx - 1]
+    month = monthLongNames[monthIdx - 1]
     lastofmonth = monatsletzter[month]
     return date( year, monthIdx, lastofmonth )
 
@@ -217,13 +205,20 @@ def isWithin(datestring2check: str, startdatestring: str, enddatestring: str) ->
     checks if datestring2check is part of the given interval.
     datestring2check being equal startdatestring or enddatestring means it is
     part of the interval
-    :param datestring2check: date in eur string format (dd.mm.yyyy)
-    :param startdatestring: date in eur string format
-    :param enddatestring: date in eur string format or '' or None - will then be replaced by '9999-12-31'
+    :param datestring2check: date in eur or iso string format (dd.mm.yyyy or yyyy-mm-dd)
+    :param startdatestring: date in eur or iso string format (dd.mm.yyyy or yyyy-mm-dd)
+    :param enddatestring: date in eur or iso string format or '' or None - will then be replaced by '9999-12-31'
     :return:
     """
+    if not isValidEurDatestring( datestring2check ):
+        datestring2check = convertIsoToEur( datestring2check )
+    if not isValidEurDatestring( startdatestring ):
+        startdatestring = convertIsoToEur( startdatestring )
     if not enddatestring:
         enddatestring = '31.12.9999'
+    else:
+        if not isValidEurDatestring( enddatestring ):
+            enddatestring = convertIsoToEur( enddatestring )
 
     if compareEurDates(datestring2check, startdatestring) < 0:
         return False
@@ -309,7 +304,7 @@ def getNumberOfDays2( d1:str, d2:str, year:int ):
 def getLastMonth() -> Tuple[int, str]:
     monat = datetime.now().month
     monat = 12 if monat == 1 else monat-1
-    smonat = monthList[monat-1]
+    smonat = monthLongNames[monat - 1]
     return monat, smonat
 
 def getRelativeQDate( monthdelta:int, day:int ) -> QDate:

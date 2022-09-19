@@ -10,15 +10,12 @@ from abrechnungentablemodel import NkAbrechnungenTableModel, HgAbrechnungenTable
 from anlage_v.anlagev_interfaces import XSammelAbgabeDetail
 from buchungstextmatchmodel import BuchungstextMatchModel
 from dbaccess import DbAccess
-from typing import List, Union
+from typing import List
 from constants import einausart, Zahlart, zahlartstrings
-from definitions import DATABASE_DIR, DATABASE
-from geschaeftsreise.geschaeftsreisentablemodel import GeschaeftsreisenTableModel
-from interfaces import XSonstAus, XSonstAusSummen, XZahlung, XSollHausgeld, XSollMiete, XBuchungstextMatch, \
-    XNkAbrechnung, XAbrechnung, XHgAbrechnung, XMietverhaeltnis, XOffenerPosten, XNotiz, XZahlung2, XRendite, XAusgabe, \
-    XZahlung3, XKostenart, XWertebereich, XMietobjektExt, XGeschaeftsreise, XMasterobjekt, XMieterwechsel
-#from monthlist import monthList, monatsletzter
-#from datehelper import monthList, monatsletzter, getLastMonth
+from definitions import DATABASE
+from interfaces import XSonstAus, XZahlung, XSollHausgeld, XSollMiete, XBuchungstextMatch, \
+    XNkAbrechnung, XAbrechnung, XHgAbrechnung, XMietverhaeltnis, XOffenerPosten, XNotiz, XZahlung2, XRendite, \
+    XZahlung3, XKostenart, XWertebereich, XMietobjektExt, XMasterobjekt
 from datehelper import *
 from datetime import datetime
 
@@ -513,7 +510,7 @@ class BusinessLogic:
         return getLastMonth()
 
     def getMonatsletzter( self, monatidx:int ) -> int:
-        smonat = monthList[monatidx-1]
+        smonat = monthLongNames[monatidx - 1]
         return monatsletzter[smonat]
 
     def getMasterobjekte( self ) -> List[str]:
