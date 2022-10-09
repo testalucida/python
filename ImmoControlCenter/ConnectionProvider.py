@@ -6,7 +6,7 @@ class ConnectionProvider:
 
     def __init__( self ):
         self._connection:Connection = None
-        if ConnectionProvider.__instance != None:
+        if ConnectionProvider.__instance:
             raise Exception( "You can't instantiate ConnectionProvider more than once." )
         else:
             ConnectionProvider.__instance = self
@@ -17,7 +17,7 @@ class ConnectionProvider:
 
     @staticmethod
     def inst() -> __instance:
-        if ConnectionProvider.__instance == None:
+        if ConnectionProvider.__instance is None:
             ConnectionProvider()
         return ConnectionProvider.__instance
 

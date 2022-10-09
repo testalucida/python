@@ -19,17 +19,17 @@ class XEinAus( XBase ):
         self.ea_id = 0
         self.master_name = ""
         self.mobj_id = ""
-        self.debitor = ""  ## NAME NICHT VERÄNDERN, wird als key in __dict__ verwendet
-        self.kreditor = "" ## NAME NICHT VERÄNDERN, wird als key in __dict__ verwendet
+        self.debi_kredi = ""
         self.jahr = 0
         self.monat = ""
         self.betrag = 0.0
         self.ea_art = ""
-        self.verteilt_auf = 1
-        self.umlegbar = False
+        self.verteilt_auf = None
+        self.umlegbar = None
         self.buchungsdatum = ""
         self.buchungstext = ""
         self.mehrtext = ""
+        self.write_time = ""
         if valuedict:
             self.setFromDict( valuedict )
 

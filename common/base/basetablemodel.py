@@ -1,12 +1,12 @@
 import decimal
 import numbers
+import sys
 from functools import cmp_to_key
 from PySide2.QtCore import QAbstractTableModel, SIGNAL, Qt, QModelIndex, QSize, Signal
-from typing import Any, List, Dict, Tuple, Iterator, Iterable
+from typing import Any, List, Dict, Tuple, Iterator, Iterable, Type
 from PySide2.QtGui import QColor, QBrush, QFont, QPixmap
 
-from base.interfaces import XBase
-from base.change import ChangeLog
+from base.interfaces import XBase, Action
 
 ##################  KeyHeaderMapping  ################
 class KeyHeaderMapping:
@@ -35,9 +35,9 @@ class BaseTableModel( QAbstractTableModel ):
         self.sortable = False
         self.sort_col = 0
         self.sort_ascending = False
-        self._changes = ChangeLog()
         if rowList:
             self.setRowList( rowList )
+        #self._changelog:ChangeLog = ChangeLog.inst()
 
     def _setDefaultKeyHeaderMapping( self ):
         """
@@ -129,27 +129,132 @@ class BaseTableModel( QAbstractTableModel ):
         colidx = self.headers.index( colname )
         return self.getValue( indexrow, colidx )
 
-    def setValue( self, indexrow:int, indexcolumn:int, value:Any ) -> None:
+    # def setValue( self, indexrow:int, indexcolumn:int, value:Any, writeLog=True ) -> None:
+    #     """
+    #     Ändert einen Wert in dem durch indexrow spezifiz. XBase-Element.
+    #     Löst ein dataChanged-Signal aus. (Damit die View sich updaten kann.)
+    #     Schreibt ein XChange-Objekt ins ChangeLog, wenn writeLog==True.
+    #     *** ACHTUNG ***
+    #     Leider kann nicht verhindert werden, dass XBase-Objekte, die Bestandteil dieses Models sind,
+    #     außerhalb des Models verändert werden.
+    #     Da das Model von einer solchen Änderung keine Kenntnis erhält, wird auch kein ChangeLog geschrieben!
+    #     Wenn es notwendig ist, Objekte außerhalb des Models zu ändern, die View aber trotzdem aktualisiert
+    #     werden soll, muss nach der externen Änderung die Methode objectUpdatedExternally(...) aufgerufen werden.
+    #     Mit dem Parameter writeLog kann dabei gesteuert werden, ob das ChangeLog geschrieben werden soll
+    #     - allerdings nicht auf Attributebene, weil hier nicht bekannt ist,
+    #     welche Attribute geändert wurden - aber wenigstens auf Objekt-Ebene.
+    #     ***************
+    #     :param indexrow: Spezifiziert die Zeile der zu ändernden Zelle
+    #     :param indexcolumn: Spezifiziert die Spalte der zu ändernden Zelle
+    #     :param value: der neue Wert, der an dieser Stelle zu setzen ist.
+    #     :param writeLog: wenn True, wird das ChangeLog geschrieben.
+    #     :return:
+    #     """
+    #     oldval = self.getValue( indexrow, indexcolumn )
+    #     if oldval == value: return
+    #     e:XBase = self.getElement( indexrow )
+    #     key = self.keys[indexcolumn]
+    #     e.setValue( key, value )
+    #     index = self.createIndex( indexrow, indexcolumn )
+    #     self.dataChanged.emit( index, index, [Qt.DisplayRole] )
+    #     if writeLog:
+    #         method = sys._getframe().f_code.co_name
+    #         self._changelog.addChange( classtype=self.__class__, method=method, action=Action.UPDATE, x=e,
+    #                                    key=key, oldval=oldval, newval=value )
+
+    # def objectUpdatedExternally( self, x:XBase, writeLog:bool=True, classtype:Type=None, method="",
+    #                              action=Action.UPDATE,
+    #                              key="", oldval=None, newval=None ) -> None:
+    #     """
+    #     Diese Methode behandelt ein XBase-Objekt, das außerhalb dieses Models geändert wurde.
+    #     Sie löst ein dataChanged-Signal aus und schreibt das ChangeLog, wenn <writeLog> == True.
+    #     Das ChangeLog wird allerdings nur auf Objekt- nicht auf Attributebene geschrieben.
+    #     Ist das Korn "Attributebene" gewünscht, muss die Methode setValue(...) - gegebenenfalls mehrfach -
+    #     aufgerufen werden.
+    #     :param x: das geänderte XBase-Objekt
+    #     :param writeLog: wenn True, wird das ChangeLog geschrieben
+    #     :param classtype: Typ der externen Klasse, in der das Objekt geändert wurde
+    #     :param method: Name der Methode der externen Klasse, in der das OBjekt gäendert wurde
+    #     :param action: INSERT, UPDATE, DELETE
+    #     :param key: Name des Attributs, das geändert wurde (nur bei UPDATE)
+    #     :param oldval: Alter Wert des Attributs
+    #     :param newval: Neuer Wert des Attributs
+    #     :return: None
+    #     """
+    #     row = self.getRow( x )
+    #     indexA = self.createIndex( row, 0 )
+    #     indexZ = self.createIndex( row, self.columnCount() - 1 )
+    #     self.dataChanged.emit( indexA, indexZ, [Qt.DisplayRole] )
+    #     if writeLog:
+    #         if not oldval: oldval = str( None )
+    #         if not newval: newval = str( None )
+    #         self._changelog.addChange( classtype, method, action, x, key, oldval, newval )
+
+    def setValue( self, indexrow: int, indexcolumn: int, value: Any ) -> None:
         """
-        Ändert einen Wert in dem durch indexrow spezifiz. XBase-Element und
-        schreibt das Change-Log
-        Löst ein dataChanged-Signal aus.
-        :param indexrow:
-        :param indexcolumn:
-        :param value:
+        Ändert einen Wert in dem durch indexrow spezifiz. XBase-Element.
+        Löst ein dataChanged-Signal aus. (Damit die View sich updaten kann.)
+        *** ACHTUNG ***
+        Leider kann nicht verhindert werden, dass XBase-Objekte, die Bestandteil dieses Models sind,
+        außerhalb des Models verändert werden.
+        Da das Model von einer solchen Änderung keine Kenntnis erhält, wird auch kein dataChanged-Signal ausgelöst!
+        Wenn es notwendig ist, Objekte außerhalb des Models zu ändern, die View aber trotzdem aktualisiert
+        werden soll, muss nach der externen Änderung die Methode objectUpdatedExternally(...) aufgerufen werden.
+        ***************
+        :param indexrow: Spezifiziert die Zeile der zu ändernden Zelle
+        :param indexcolumn: Spezifiziert die Spalte der zu ändernden Zelle
+        :param value: der neue Wert, der an dieser Stelle zu setzen ist.
         :return:
         """
         oldval = self.getValue( indexrow, indexcolumn )
         if oldval == value: return
-        e:XBase = self.getElement( indexrow )
+        e: XBase = self.getElement( indexrow )
         key = self.keys[indexcolumn]
         e.setValue( key, value )
         index = self.createIndex( indexrow, indexcolumn )
         self.dataChanged.emit( index, index, [Qt.DisplayRole] )
-        self.writeChange( e, key, oldval, value )
 
-    def writeChange( self, e:XBase, key, oldval, value ):
-        self._changes.addChange( e, key, oldval, value )
+    def objectUpdatedExternally( self, x:XBase ):
+        """
+        Diese Methode behandelt ein XBase-Objekt, das außerhalb dieses Models geändert wurde.
+        Sie löst ein dataChanged-Signal aus, damit die Anzeige aktualisiert wird.
+        """
+        row = self.getRow( x )
+        indexA = self.createIndex( row, 0 )
+        indexZ = self.createIndex( row, self.columnCount() - 1 )
+        self.dataChanged.emit( indexA, indexZ, [Qt.DisplayRole] )
+
+    def insertObject( self, x:XBase ):
+        """
+        Wird aufgerufen, um ein neues Objekt (eine neue Tabellenzeile) hinzuzufügen.
+        Löst ein dataChanged- und ein layoutChanged-Signal aus.
+        :param x: das neue Objekt
+        :return:
+        """
+        self.rowList.append( x )
+        row = self.rowCount() - 1
+        indexA = self.createIndex( row, 0 )
+        indexZ = self.createIndex( row, self.columnCount()-1 )
+        self.dataChanged.emit( indexA, indexZ, [Qt.DisplayRole] )
+        # method = sys._getframe().f_code.co_name
+        # self._changelog.addChange( self.__class__, method, Action.INSERT, x )
+        self.layoutChanged.emit() # muss hier aufgerufen werden, damit in der View eine neue Row angezeigt wird.
+
+    def deleteObject( self, x:XBase ):
+        """
+        Wird aufgerufen, um ein Objekt (eine Tabellenzeile) aus der Tabelle zu löschen.
+        Löst ein dataChanged- und ein layoutChanged-Signal aus.
+        :param x: das zu löschende Objekt
+        :return:
+        """
+        row = self.getRow( x )
+        self.rowList.remove( x )
+        indexA = self.createIndex( row, 0 )
+        indexZ = self.createIndex( row, self.columnCount()-1 )
+        self.dataChanged.emit( indexA, indexZ, [Qt.DisplayRole] )
+        # method = sys._getframe().f_code.co_name
+        # self._changelog.addChange( self.__class__, method, Action.DELETE, x )
+        self.layoutChanged.emit() # muss hier aufgerufen werden, damit in der View eine Zeile weniger angezeigt wird.
 
     def rowCount( self, parent:QModelIndex=None ) -> int:
         return len( self.rowList )
@@ -261,8 +366,8 @@ class BaseTableModel( QAbstractTableModel ):
     def isChanged( self ) -> bool:
         return self._changes.hasChanges()
 
-    def getChanges( self ) -> ChangeLog:
-        return self._changes
+    # def getChanges( self ) -> ChangeLog:
+    #     return self._changes
 
     def clearChanges( self ):
         self._changes.clear()
@@ -344,3 +449,50 @@ class SumTableModel( BaseTableModel ):
             else:
                 return None
 
+################################################################
+def test():
+    class X(XBase):
+        def __init__(self, v1, v2 ):
+            XBase.__init__( self )
+            self.var1 = v1
+            self.var2 = v2
+
+    def onNewItem():
+        xn = X( "Gustav", 99 )
+        tm.insertObject( xn )
+
+    def onDeleteItem( rowlist ):
+        if len( rowlist ) > 0:
+            obj = tm.getElement( rowlist[0] )
+            tm.deleteObject( obj )
+
+    def onEditItem( row ):
+        obj = tm.getElement( row )
+        ## so nicht:
+        #obj.var1 = "Meister Karl"  # Mist!! Es wird kein ChangeLog geschrieben und
+                                   # die Änderung wird nicht in der Tabelle angezeigt bis zum nächsten
+                                   # layoutChanged-Signal
+        ## entweder so:
+        ##col = tm.getColumnIndexByKey( "var1" )
+        ##tm.setValue( row, col, "Master Karl" )
+        ## oder so:
+        obj.var1 = "Meister Karl"
+        tm.objectUpdatedExternally( obj )
+
+    x1 = X( "Otto", 34 )
+    x2 = X( "Paul", 57 )
+    l = [x1, x2]
+    tm = BaseTableModel( l )
+
+    from PySide2.QtWidgets import QApplication
+    from base.basetableview import BaseTableView
+    from base.basetableviewframe import BaseTableViewFrame
+    app = QApplication()
+    v = BaseTableView()
+    v.setModel( tm )
+    frame = BaseTableViewFrame( v, True )
+    frame.newItem.connect( onNewItem )
+    frame.editItem.connect( onEditItem )
+    frame.deleteItems.connect( onDeleteItem )
+    frame.show()
+    app.exec_()

@@ -1,13 +1,15 @@
 
 ##################  MieteTableView  ##############
 from abc import abstractmethod
-from typing import List
+from typing import List, Callable
 
 from PySide2 import QtWidgets
 from PySide2.QtCore import Signal, QModelIndex, Qt
 from PySide2.QtGui import QDoubleValidator
-from PySide2.QtWidgets import QDialog, QGridLayout, QPushButton
+from PySide2.QtWidgets import QDialog, QGridLayout, QPushButton, QApplication, QWidget, QHBoxLayout
 
+from base.baseqtderivates import BaseEdit, BaseDialog, BaseDialogWithButtons, getOkCancelButtonDefinitions
+from v2.einaus.einausview import EinAusTableView, EinAusTableViewFrame
 from v2.icc.iccwidgets import IccTableView, IccCheckTableViewFrame
 from v2.mtleinaus.mtleinauslogic import MieteTableModel
 
@@ -57,63 +59,124 @@ class MieteTableViewFrame( IccCheckTableViewFrame ):
     def __init__( self, tableView:MieteTableView ):
         IccCheckTableViewFrame.__init__( self, tableView )
 
+################   MtlZahlungEditDialog   ###########
+class MtlZahlungEditDialog( BaseDialogWithButtons ):
+    def __init__( self, tv:EinAusTableView ):
+        BaseDialogWithButtons.__init__( self, "Ändern einzelner Zahlungen",
+                                        getOkCancelButtonDefinitions( self.onOk, self.onCancel ) )
+        #self._validationCallback = validationCallback
+        self._tv:EinAusTableView = tv
+        self._tvframe:EinAusTableViewFrame = EinAusTableViewFrame( self._tv, withEditButtons=True )
+        self.setMainWidget( self._tvframe )
+
+    def getTableViewFrame( self ) -> EinAusTableViewFrame:
+        return self._tvframe
+
+    def onOk( self ):
+            self.accept()
+
+    def onCancel( self ):
+        print( "onCancel")
+        self.close()
+
 ################ ValueDialog ########################
 class ValueDialog( QDialog ):
     def __init__( self, parent=None ):
         QDialog.__init__( self, parent )
+        self._callback:Callable = None
         self.setModal( True )
-        self.setWindowTitle( "Abweichender Betrag" )
+        self.setWindowTitle( "Monatszahlung erfassen" )
         layout = QGridLayout( self )
-        self.label = QtWidgets.QLabel( self )
-        self.setLabelText( "Betrag eingeben:" )
-        layout.addWidget( self.label, 0, 0 )
+        row = 0
 
         self._numEntry = QtWidgets.QLineEdit( self )
-        layout.addWidget( self._numEntry, 1, 0 )
+        self._numEntry.setPlaceholderText( "Betrag" )
+        layout.addWidget( self._numEntry, row, 0 )
         self._numEntry.setAlignment( Qt.AlignRight | Qt.AlignTrailing | Qt.AlignVCenter )
         self._numEntry.setValidator( QDoubleValidator( -9999, 9999, 2, self ) )
         self._numEntry.setFocus()
 
-        self.btnAdd = QPushButton( self, text="+" )
-        layout.addWidget( self.btnAdd, 0, 1 )
-        self.btnAdd.clicked.connect( self._add )
+        # self.btnAdd = QPushButton( self, text="+" )
+        # layout.addWidget( self.btnAdd, row, 1 )
+        # self.btnAdd.clicked.connect( self._add )
+        #
+        row += 1
+        self._txtEntry = BaseEdit()
+        self._txtEntry.setPlaceholderText( "Bemerkung" )
+        layout.addWidget( self._txtEntry, row, 0 )
+        #
+        # self.btnSub = QPushButton( self, text="-" )
+        # layout.addWidget( self.btnSub, row, 1 )
+        # self.btnSub.clicked.connect( self._sub )
+        #
+        # row += 1
+        # self.btnRepl = QPushButton( self, text="=" )
+        # layout.addWidget( self.btnRepl, row, 1 )
+        # self.btnRepl.clicked.connect( self._replace )
 
-        self.btnSub = QPushButton( self, text="-" )
-        layout.addWidget( self.btnSub, 1, 1 )
-        self.btnSub.clicked.connect( self._sub )
-
-        self.btnRepl = QPushButton( self, text="=" )
-        layout.addWidget( self.btnRepl, 2, 1 )
-        self.btnRepl.clicked.connect( self._replace )
+        row += 1
+        self._hboxLayout = QHBoxLayout()
+        self.btnOk = QPushButton( self, text="OK" )
+        self.btnOk.clicked.connect( self._ok )
+        self._hboxLayout.addWidget( self.btnOk )
 
         self.btnCancel = QPushButton( self, text="Cancel" )
-        layout.addWidget( self.btnCancel, 2, 0 )
         self.btnCancel.clicked.connect( self._cancel )
+        self._hboxLayout.addWidget( self.btnCancel )
 
+        layout.addLayout( self._hboxLayout, row, 0 )
         self.setLayout( layout )
 
+        #QWidget.setTabOrder( self._txtEntry, self.btnAdd )
+
     def setCallback( self, fnc ):
+        """
+        Callback nach Button-Click "+", "-", "-"
+        Die Callback-Function muss folgende Signatur haben: value:float, command:str, text:str
+        :param fnc:
+        :return:
+        """
         self._callback = fnc
 
     def setLabelText( self, text:str ) -> None:
         self.label.setText( text )
 
-    def _doCallback( self, command:str ):
+    def _doCallback( self ):
         if self._callback:
             num = self._numEntry.text()
             if num is None or num == '': num = "0"
             num = num.replace( ",", "." )
-            self._callback( float( num ), command )
+            self._callback( float( num ), self._txtEntry.text() )
         self.close()
 
-    def _add(self):
-        self._doCallback( "add" )
-
-    def _sub(self):
-        self._doCallback( "sub" )
-
-    def _replace(self):
-        self._doCallback( "replace" )
+    # def _add(self):
+    #     self._doCallback( "add" )
+    #
+    # def _sub(self):
+    #     self._doCallback( "sub" )
+    #
+    # def _replace(self):
+    #     self._doCallback( "replace" )
 
     def _cancel( self ):
         self.close()
+
+    def _ok( self ):
+        self._doCallback()
+
+###################  TEST   TEST   TEST   #################
+
+def test2():
+    # def validation() -> bool:
+    #     #return True
+    #     return False
+
+    app = QApplication()
+    dlg = MtlZahlungEditDialog( EinAusTableView() )
+    if dlg.exec_() == QDialog.Accepted:
+        print( "storing modifications")
+
+def test():
+    app = QApplication()
+    dlg = ValueDialog()
+    dlg.exec_()

@@ -4,11 +4,13 @@ from typing import List, Any, Iterable
 from PySide2.QtGui import QBrush, Qt
 
 import datehelper
+from base.basetablemodel import BaseTableModel
 from v2.einaus.einausdata import EinAusData
+from v2.einaus.einauslogic import EinAusTableModel, EinAusLogic
 from v2.icc import constants
 from v2.icc.constants import EinAusArt, iccMonthShortNames
 from v2.icc.iccdata import IccData
-from v2.icc.icclogic import IccSumTableModel, IccTableModel
+from v2.icc.icclogic import IccSumTableModel, IccTableModel, IccLogic
 from v2.icc.interfaces import XMtlZahlung, XEinAus, XMietverhaeltnisKurz, XSollMiete
 from v2.mtleinaus.mietedata import MieteData
 
@@ -22,7 +24,7 @@ class MtlEinAusTableModel( IccSumTableModel ):
         :param rowList: Liste mit XBase-Objekten. Jedes XBase-Objekt wird in der TableView durch eine Row repräsentiert.
         :param jahr:
         :param editablemonthIdx: Repräsentiert den Index des Monats, dessen Monatswert nach dem Klicken auf die OK-Spalte
-                                 geändert wird.
+                                 geändert wird. 0=Januar, 11=Dezember
         :param colsToSum: Zu summierende Spalten
         """
         IccSumTableModel.__init__( self, rowList, jahr, colsToSum )
@@ -49,9 +51,20 @@ class MtlEinAusTableModel( IccSumTableModel ):
     def getDebiKrediHeader( self ) -> str:
         pass
 
+    def getMietobjekt( self, row:int ) -> str:
+        objIdx = self.keys.index( "mobj_id" )
+        return self.getValue( row, objIdx )
+
+    def getDebiKredi( self, row ) -> str:
+        colIdx = self.keys.index( self.getDebiKrediKey() )
+        return self.getValue( row, colIdx )
+
     def setValue( self, row:int, col:int, value:float ) -> None:
         """
-        Setzt einen Monatswert und korrigiert die Summe entsprechend
+        Setzt einen Monatswert und korrigiert die Summe entsprechend.
+        Annahme hierbei: vom User können in dieser Tabelle ausschließlich Monatswerte geändert werden.
+        Überschreibt die Methode der Basisklasse, weil nach einer Änderung eines Monatswerts
+        auch der Summenwert angepasst werden muss. Es finden hier also 2 Aufrufe von BaseTableModel.setValue() statt.
         :param row: Row-Index der zu ändernden Zelle
         :param col: Column-Index der zu ändernden Zelle
         :param value: Neuer Wert
@@ -98,6 +111,20 @@ class MtlEinAusTableModel( IccSumTableModel ):
         idxE = self.createIndex( self.rowCount()-1, self._idxEditableColumn )
         self.dataChanged.emit( idxA, idxE, [Qt.BackgroundColorRole] )
 
+    def getSelectedMonthIdx( self ) -> int:
+        """
+        Liefert den Index des Monats, der zur Bearbeitung ausgewählt ist (0=Januar,...)
+        :return:
+        """
+        return self._idxEditableColumn - self._idxJanuarColumn
+
+    def getSelectedYear( self ) -> int:
+        """
+        Liefert das Jahr, das zur Bearbeitung ausgewählt ist
+        :return:
+        """
+        return self.getJahr()
+
     def getEditableColumnIdx( self ) -> int:
         """
         liefert den Index der Spalte, die den bearbeitbaren Monat repräsentiert
@@ -116,6 +143,7 @@ class MtlEinAusTableModel( IccSumTableModel ):
             return self._nokBrush
         elif indexcolumn == self._idxEditableColumn:
             return self._editBrush
+        #todo: den Diagonal-Brush einbauen, wenn das Mietverhältnis im betreff. Monat nicht aktiv war
         return None
 
 ###############  MieteTableModel  #############
@@ -130,12 +158,34 @@ class MieteTableModel( MtlEinAusTableModel ):
         return "Mieter"
 
 ################  MtlEinAusLogic  ############################
-class MtlEinAusLogic:
+class MtlEinAusLogic( IccLogic ):
+    """
+    Beinhaltet die Logik, die für die Zusammenstellung der Daten notwendig ist, die in den Miet- und Hausgeldzahlungs-
+    TableViews angezeigt werden.
+    Konkret: in der Tabelle einaus gibt es nur einzelne Zahlungen. Für die Anzeige in der Miet- u. HG-Tableview
+    müssen aber Monatswerte angezeigt werden, welche sich möglicherweise aus mehreren Einzelzahlungen zusammensetzen.
+    MtlEinAusLogic bzw. ihre erbenden Klassen sind dafür verantwortlich, die Einzelzahlungen auf Monatswerte zu
+    verdichten.
+    Stellt abstrakte Methoden bereit, die von den erbenden Klassen MieteLogic und HausgeldLogic implementiert werden
+    müssen.
+    """
     def __init__( self ):
-        self.einausData = EinAusData()
+        #self.einausData = EinAusData()
+        pass
 
-    def getJahre( self ) -> List[int]:
-        return self.einausData.getJahre()
+    @abstractmethod
+    def getEinAusArt( self ) -> EinAusArt:
+        pass
+
+    def addMonatsZahlung( self, mobj_id:str, debikredi:str, selectedYear:int, selectedMonth:int, value:float, text:str= "" ):
+        ealogic = EinAusLogic()
+        ealogic.addZahlung( self.getEinAusArt(), mobj_id, debikredi, selectedYear, selectedMonth, value, text )
+
+    def getZahlungenModelObjektMonat( self, mobj_id, year:int, monthIdx:int ) -> EinAusTableModel:
+        ea_art = self.getEinAusArt()
+        ealogic = EinAusLogic()
+        return ealogic.getZahlungenModel2( ea_art, year, monthIdx, mobj_id )
+
 
 #####################  MtlMieteLogic SINGLETON  ############################
 class MieteLogic( MtlEinAusLogic ):
@@ -144,7 +194,7 @@ class MieteLogic( MtlEinAusLogic ):
         if MieteLogic.__instance:
             raise Exception( "You can't instantiate MieteLogic more than once." )
         else:
-            MtlEinAusLogic.__init__( self )
+            MtlEinAusLogic.__init__( self ) # call to super class
             self._mieteData = MieteData()
             MieteLogic.__instance = self
 
@@ -153,6 +203,9 @@ class MieteLogic( MtlEinAusLogic ):
         if not MieteLogic.__instance:
             MieteLogic()
         return MieteLogic.__instance
+
+    def getEinAusArt( self ) -> EinAusArt:
+        return EinAusArt.BRUTTOMIETE.value[0]
 
     def getMietzahlungenModel( self, jahr: int, checkmonatIdx:int=None ) -> MieteTableModel:
         l:List[XMtlZahlung] = self.getMietzahlungen( jahr, checkmonatIdx )
@@ -169,24 +222,24 @@ class MieteLogic( MtlEinAusLogic ):
                          der UI-Tabelle angezeigt.
         :return:
         """
-        eadata = EinAusData()
-        einausList: List[XEinAus] = eadata.getEinAusZahlungen( EinAusArt.BRUTTOMIETE, jahr )
+        ealogic = EinAusLogic()
+        einausList: List[XEinAus] = ealogic.getZahlungen( EinAusArt.BRUTTOMIETE, jahr )
         # Annahme: in einausList können mehrere Zahlungsvorgänge eines Debitors/Kreditors sein, die den gleichen Monat
         # betreffen.
         # Deshalb muss die einausList zunächst auf Monate verdichtet werden,
         # und vor dem Verdichten wird sie nach Mietern (Debitoren) sortiert.
-        einausList = self._getCondensedEinAusList( einausList, True )
+        einausList = self._getCondensedEinAusList( einausList )
         # einausList enthält nun je Mieter (Debitor) und Monat ein XEinAus-Objekt und ist nach Mietern sortiert.
         # Nicht für jeden Monat muss ein XEinAus-Objekt vorhanden sein.
 
         # Die Liste der XEinAus-Objekte muss nun in eine Liste von XMtlZahlung-Objekte umgewandelt werden (für das
         # TableModel).
         # Dafür müssen wir zuerst eine Liste der in <jahr> aktiven Mietverhältnisse holen:
-        mvlist: List[XMietverhaeltnisKurz] = self.logic__getUniqueMietverhaeltnisse( jahr )
+        mvlist: List[XMietverhaeltnisKurz] = self._getUniqueMietverhaeltnisse( jahr )
         # je XMietverhaeltnisKurz-Objekt in mvlist ein XMtlZahlung-OBjekt anlegen und in die XMtlZahlung-Liste packen:
-        mzlist = self._convertMietVhToMtlZahlg( mvlist, jahr )
+        mzlist:List[XMtlZahlung] = self._convertMietVhToMtlZahlg( mvlist, jahr )
         # die XMtlZahlung-Objekte in mzlist müssen jetzt noch mit den Zahlungsdaten versorgt werden:
-        self._provideZahlungen( mzlist, einausList, debitor=True )
+        self._provideZahlungen( mzlist, einausList )
         self.provideSollMieten( jahr, constants.iccMonthShortNames[checkmonatIdx], mzlist )
         return mzlist
 
@@ -269,51 +322,45 @@ class MieteLogic( MtlEinAusLogic ):
             mzlist.append( x )
         return mzlist
 
-    def _getCondensedEinAusList( self, einausList: List[XEinAus], isMieter: bool ) -> List[XEinAus]:
-        if isMieter:
-            einausList = sorted( einausList, key=lambda x: x.debitor )
-            debikredi = "debitor"
-        else:
-            einausList = sorted( einausList, key=lambda x: x.kreditor )
-            debikredi = "kreditor"
+    def _getCondensedEinAusList( self, einausList: List[XEinAus] ) -> List[XEinAus]:
+        einausList = sorted( einausList, key=lambda x: x.debi_kredi )
 
         for ea in einausList:
             for ea2 in einausList:
                 if not ea == ea2 \
                         and ea.monat == ea2.monat \
-                        and ea.mobj_id == ea2.mobj_id and ea.debitor == ea2.debitor and ea.kreditor == ea2.kreditor:
+                        and ea.mobj_id == ea2.mobj_id and ea.debi_kredi == ea2.debi_kredi:
                     ea.betrag += ea2.betrag
                     einausList.remove( ea2 )
         return einausList
 
-    def _provideZahlungen( self, mzlist: List[XMtlZahlung], einausList: List[XEinAus], debitor: bool ) -> None:
+    def _provideZahlungen( self, mzlist: List[XMtlZahlung], einausList: List[XEinAus] ) -> None:
         """
         Versorgt jedes XMtlZahlung-Objekt in <mzlist> mit den Zahlungsdaten der korrespondierenden
         XEinAus-Objekte aus <einausList>.
         :param mzlist:
         :param einausList:
-        :param debitor: True, wenn Zahlungen eines Mieters versorgt werden sollen, False, wenn es es sich um
-                        Hausgeldzahlungen handelt.
         :return:
         """
         def getZahlungen( key: str, value: str ) -> List[XEinAus]:
-            # key ist "debitor" oder "kreditor", je nachdem, ob es sich um Miet- oder Hausgeldzahlungen handelt
+            # key ist "debi_kredi"
             retlist = list()
             for x in einausList:
                 if x.__dict__[key] == value:
                     retlist.append( x )
             return retlist
 
-        key = "debitor" if debitor else "weg"
+        key = "debi_kredi"
         for mz in mzlist:
             ealist: List[XEinAus] = getZahlungen( key, mz.mv_id )
             for ea in ealist:
                 mz.__dict__[ea.monat] += ea.betrag
                 mz.summe += ea.betrag
 
-    def logic__getUniqueMietverhaeltnisse( self, jahr: int ) -> List[XMietverhaeltnisKurz]:
+    def _getUniqueMietverhaeltnisse( self, jahr: int ) -> List[XMietverhaeltnisKurz]:
         data = IccData()
         return data.getMietverhaeltnisseKurz( jahr, orderby="mv_id" )
+
 
 #####################  MtlHausgeldLogic ############################
 class MtlHausgeldLogic( MtlEinAusLogic ):

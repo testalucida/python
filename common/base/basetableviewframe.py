@@ -184,7 +184,7 @@ class BaseTableViewFrame( BaseWidget ):
     """
     newItem = Signal()
     editItem = Signal( int ) # row number (index.row of index)
-    deleteItem = Signal( list ) # list of ints, each representing a row number (index.row of index)
+    deleteItems = Signal( list ) # list of ints, each representing a row number (index.row of index)
     def __init__(self, tableView:BaseTableView, withEditButtons=False ):
         BaseWidget.__init__( self )
         self._tv = tableView
@@ -209,7 +209,7 @@ class BaseTableViewFrame( BaseWidget ):
             self._editBtn = EditIconButton()
             self._editBtn.clicked.connect( self._onEditItem )
             self._deleteBtn = DeleteIconButton()
-            self._deleteBtn.clicked.connect( lambda: self.deleteItem.emit( self._tv.getSelectedRows() ) )
+            self._deleteBtn.clicked.connect( lambda: self.deleteItems.emit( self._tv.getSelectedRows() ) )
             hbox.addWidget( self._newBtn, stretch=0, alignment=Qt.AlignLeft )
             hbox.addWidget( self._editBtn, stretch=0, alignment=Qt.AlignLeft )
             hbox.addWidget( self._deleteBtn, stretch=0, alignment=Qt.AlignLeft )
@@ -296,7 +296,7 @@ def testFrame():
     f = BaseTableViewFrame( tv, withEditButtons=True )
     f.newItem.connect( onNewItem )
     f.editItem.connect( onEditItem )
-    f.deleteItem.connect( onDeleteItems )
+    f.deleteItems.connect( onDeleteItems )
     tb = f.getToolBar()
     # save
     tb.addSaveAction( "Änderungen speichern", onSave, separatorBefore=False )

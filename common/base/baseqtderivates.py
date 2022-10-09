@@ -125,7 +125,10 @@ class BaseDialogWithButtons( BaseDialog ):
             col += 1
 
     def setMainWidget( self, widget:BaseWidget ):
-        self._layout.addWidget( widget, self._mainrow, 0 )
+        self._layout.addWidget( widget, self._mainrow, 0, 1, self._layout.columnCount() )
+
+    def getColumnCount( self ) -> int:
+        return self._layout.columnCount()
 
 
 ################  BaseButton  ##########################
@@ -908,6 +911,7 @@ class SearchWidget( BaseWidget ):
 
     def setFocusToSearchField( self ):
         self._searchfield.setFocus()
+
 
 
 ##########################  TEST  TEST  TEST  ################################
