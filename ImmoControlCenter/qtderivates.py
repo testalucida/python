@@ -192,6 +192,8 @@ class BaseLabel( QLabel, AutoWidth ):
         QLabel.__init__( self, parent )
         self.setText( text )
 
+
+
     def setBackground( self, color ):
         # color in der Form "solid white"
         self.setStyleSheet( "background: " + color + ";" )

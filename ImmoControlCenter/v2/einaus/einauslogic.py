@@ -1,5 +1,6 @@
 from typing import List
 
+import datehelper
 from v2.einaus.einausdata import EinAusData
 from v2.icc.constants import iccMonthShortNames, EinAusArt
 from v2.icc.icclogic import IccTableModel, IccLogic
@@ -40,10 +41,23 @@ class EinAusLogic(IccLogic):
         tm = EinAusTableModel( l, jahr )
         return tm
 
+    def getZahlungenModel3( self, ea_art, jahr:int, monthIdx:int, mv_id:str ) -> EinAusTableModel:
+        month_sss = iccMonthShortNames[monthIdx]
+        l: List[XEinAus] = self._einausData.getEinAuszahlungen3( ea_art, jahr, month_sss, mv_id )
+        for x in l:
+            x.write_time = x.write_time[0:10]
+        tm = EinAusTableModel( l, jahr )
+        return tm
+
     def getZahlungen( self, ea_art:EinAusArt, jahr:int ) -> List[XEinAus]:
         return self._einausData.getEinAusZahlungen( ea_art.value[0], jahr )
 
-    def addZahlung( self, ea_art, mobj_id:str, debikredi:str, jahr:int, monthIdx:int, value:float, text:str= "" ):
+    def addZahlung( self, ea_art, mobj_id:str, debikredi:str,
+                    jahr:int, monthIdx:int, value:float,
+                    buchungsdatum:str=None, buchungstext:str=None, mehrtext:str= None ) -> XEinAus:
+        if buchungsdatum:
+            if not datehelper.isValidIsoDatestring( buchungsdatum ):
+                raise ValueError( "EinAusLogic.addZahlung():\nBuchungsdatum '%s' ist nicht im ISO-Format." )
         x = XEinAus()
         x.master_name = self._einausData.getMastername( mobj_id )
         x.mobj_id = mobj_id
@@ -52,7 +66,23 @@ class EinAusLogic(IccLogic):
         x.jahr = jahr
         x.monat = iccMonthShortNames[monthIdx]
         x.betrag = value
-        x.mehrtext = text
+        x.buchungstext = buchungstext
+        x.buchungsdatum = buchungsdatum
+        x.mehrtext = mehrtext
         ea_id = self._einausData.insertEinAusZahlung( x )
-        self._einausData.commit()
         x.ea_id = ea_id
+        return x
+
+    def updateZahlung( self, x:XEinAus ) -> int:
+        rowsAffected = self._einausData.updateEinAusZahlung( x )
+        return rowsAffected
+
+    def deleteZahlungen( self, xlist:List[XEinAus] ):
+        for x in xlist:
+            self._einausData.deleteEinAusZahlung( x.ea_id )
+
+    def commit( self ):
+        self._einausData.commit()
+
+    def rollback( self ):
+        self._einausData.rollback()

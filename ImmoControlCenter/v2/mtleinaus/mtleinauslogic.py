@@ -55,6 +55,10 @@ class MtlEinAusTableModel( IccSumTableModel ):
         objIdx = self.keys.index( "mobj_id" )
         return self.getValue( row, objIdx )
 
+    def getMieter( self, row:int ) -> str:
+        objIdx = self.keys.index( "mv_id" )
+        return self.getValue( row, objIdx )
+
     def getDebiKredi( self, row ) -> str:
         colIdx = self.keys.index( self.getDebiKrediKey() )
         return self.getValue( row, colIdx )
@@ -170,21 +174,63 @@ class MtlEinAusLogic( IccLogic ):
     müssen.
     """
     def __init__( self ):
-        #self.einausData = EinAusData()
-        pass
+        self._ealogic = EinAusLogic()
 
     @abstractmethod
     def getEinAusArt( self ) -> EinAusArt:
         pass
 
-    def addMonatsZahlung( self, mobj_id:str, debikredi:str, selectedYear:int, selectedMonth:int, value:float, text:str= "" ):
-        ealogic = EinAusLogic()
-        ealogic.addZahlung( self.getEinAusArt(), mobj_id, debikredi, selectedYear, selectedMonth, value, text )
+    @abstractmethod
+    def getDebiKrediKey( self ) -> Any:
+        pass
+
+    # @abstractmethod
+    # def getMonatsZahlung( debikredi:str, month_sss:str, year:int ) -> XMtlZahlung:
+    #     pass
+
+    def addMonatsZahlung( self, mobj_id:str, debikredi:str,
+                          selectedYear:int, selectedMonth:int, value:float, mehrtext:str= "" ) -> XEinAus:
+        xeinaus = self._ealogic.addZahlung( self.getEinAusArt(), mobj_id, debikredi,
+                                            selectedYear, selectedMonth, value, mehrtext=mehrtext )
+        self._ealogic.commit()
+        return xeinaus
+
+    def updateMonatsZahlung( self, x:XEinAus ):
+        self._ealogic.updateZahlung( x )
+        self._ealogic.commit()
 
     def getZahlungenModelObjektMonat( self, mobj_id, year:int, monthIdx:int ) -> EinAusTableModel:
         ea_art = self.getEinAusArt()
-        ealogic = EinAusLogic()
-        return ealogic.getZahlungenModel2( ea_art, year, monthIdx, mobj_id )
+        return self._ealogic.getZahlungenModel2( ea_art, year, monthIdx, mobj_id )
+
+    def getZahlungenModelMieterMonat( self, mv_id:str, year:int, monthIdx:int ) -> EinAusTableModel:
+        ea_art = self.getEinAusArt()
+        return self._ealogic.getZahlungenModel3( ea_art, year, monthIdx, mv_id )
+
+    def deleteZahlungen( self, ealist:List[XEinAus], model:MtlEinAusTableModel ):
+        """
+        Die XEinAus-Objekte aus <xlist> werden aus der Datenbank, Tabelle <einaus> gelöscht.
+        Aus <model> müssen dann die XMtlZahlung-Objekte entfernt, neu berechnet und wieder eingefügt werden,
+        die von der Löschung der Einzelzahlungen betroffen sind.
+        Die XMtlZahlung-Objekte werden anhand debi_kredi, jahr und monat gefunden.
+        :param xlist:
+        :param model:
+        :return:
+        """
+        self._ealogic.deleteZahlungen( ealist )
+        self._ealogic.commit()
+        # wir sind noch hier, also hat die DB-Löschung der Einzelzahlungen funktioniert.
+        # aus dem Model die betroffenen XMTlZahlung-Objekte finden
+        mtlZlist:List[XMtlZahlung] = model.getRowList()
+        debikredikey = self.getDebiKrediKey()
+        for ea in ealist: # ea: eine einzelne Zahlung, die gerade aus der Tabelle einaus gelöscht wurde
+            for mtlZ in mtlZlist: # mtlZ: Monatszahlung ggf. bestehend aus mehreren Einzelzahlungen
+                if mtlZ.getValue( debikredikey ) == ea.debi_kredi:
+                    mtlZ.__dict__[ea.monat] -= ea.betrag
+                    model.objectUpdatedExternally( mtlZ )
+                    # model.removeObject( mtlZ )
+                    # mtlZneu = self.getMonatsZahlung( mtlZ.getValue( debikredikey ), ea.monat, ea.jahr )
+
 
 
 #####################  MtlMieteLogic SINGLETON  ############################
@@ -207,6 +253,12 @@ class MieteLogic( MtlEinAusLogic ):
     def getEinAusArt( self ) -> EinAusArt:
         return EinAusArt.BRUTTOMIETE.value[0]
 
+    def getDebiKrediKey( self ) -> Any:
+        return "mv_id"
+
+    # def getMonatsZahlung( debikredi:str, month_sss:str, year:int ) -> XMtlZahlung:
+    #     #todo
+
     def getMietzahlungenModel( self, jahr: int, checkmonatIdx:int=None ) -> MieteTableModel:
         l:List[XMtlZahlung] = self.getMietzahlungen( jahr, checkmonatIdx )
         tm = MieteTableModel( l, jahr, checkmonatIdx )
@@ -222,8 +274,7 @@ class MieteLogic( MtlEinAusLogic ):
                          der UI-Tabelle angezeigt.
         :return:
         """
-        ealogic = EinAusLogic()
-        einausList: List[XEinAus] = ealogic.getZahlungen( EinAusArt.BRUTTOMIETE, jahr )
+        einausList: List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.BRUTTOMIETE, jahr )
         # Annahme: in einausList können mehrere Zahlungsvorgänge eines Debitors/Kreditors sein, die den gleichen Monat
         # betreffen.
         # Deshalb muss die einausList zunächst auf Monate verdichtet werden,

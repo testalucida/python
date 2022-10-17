@@ -110,6 +110,12 @@ class BaseTableModel( QAbstractTableModel ):
     def getElement( self, indexrow: int ) -> XBase:
         return self.rowList[indexrow]
 
+    def getElements( self, indexrows:List[int] ) -> List[XBase]:
+        retlist = list()
+        for r in indexrows:
+            retlist.append( self.rowList[r] )
+        return retlist
+
     def getKey( self, indexcolumn:int ):
         return self.keys[indexcolumn]
 
@@ -224,7 +230,7 @@ class BaseTableModel( QAbstractTableModel ):
         indexZ = self.createIndex( row, self.columnCount() - 1 )
         self.dataChanged.emit( indexA, indexZ, [Qt.DisplayRole] )
 
-    def insertObject( self, x:XBase ):
+    def addObject( self, x:XBase ):
         """
         Wird aufgerufen, um ein neues Objekt (eine neue Tabellenzeile) hinzuzufügen.
         Löst ein dataChanged- und ein layoutChanged-Signal aus.
@@ -240,7 +246,7 @@ class BaseTableModel( QAbstractTableModel ):
         # self._changelog.addChange( self.__class__, method, Action.INSERT, x )
         self.layoutChanged.emit() # muss hier aufgerufen werden, damit in der View eine neue Row angezeigt wird.
 
-    def deleteObject( self, x:XBase ):
+    def removeObject( self, x:XBase ):
         """
         Wird aufgerufen, um ein Objekt (eine Tabellenzeile) aus der Tabelle zu löschen.
         Löst ein dataChanged- und ein layoutChanged-Signal aus.
@@ -255,6 +261,10 @@ class BaseTableModel( QAbstractTableModel ):
         # method = sys._getframe().f_code.co_name
         # self._changelog.addChange( self.__class__, method, Action.DELETE, x )
         self.layoutChanged.emit() # muss hier aufgerufen werden, damit in der View eine Zeile weniger angezeigt wird.
+
+    def removeObjects( self, xlist:List[XBase] ):
+        for x in xlist:
+            self.removeObject( x )
 
     def rowCount( self, parent:QModelIndex=None ) -> int:
         return len( self.rowList )
@@ -459,12 +469,12 @@ def test():
 
     def onNewItem():
         xn = X( "Gustav", 99 )
-        tm.insertObject( xn )
+        tm.addObject( xn )
 
     def onDeleteItem( rowlist ):
         if len( rowlist ) > 0:
             obj = tm.getElement( rowlist[0] )
-            tm.deleteObject( obj )
+            tm.removeObject( obj )
 
     def onEditItem( row ):
         obj = tm.getElement( row )

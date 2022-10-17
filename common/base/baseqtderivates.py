@@ -1,4 +1,5 @@
 import numbers
+from abc import abstractmethod
 from typing import Any, List, Tuple, Callable, Iterable
 
 from PySide2 import QtWidgets, QtCore
@@ -53,15 +54,31 @@ class BaseMenuBar( QMenuBar ):
     def __init__( self, parent=None ):
         QMenuBar.__init__( self, parent )
 
+##################   GetSet   ###################
+class GetSetValue:
+    @abstractmethod
+    def getValue( self ) -> Any:
+        pass
+
+    @abstractmethod
+    def setValue( self, value: Any ) -> None:
+        pass
+
 #################  BaseStatusBar  #######################
 class BaseStatusBar( QStatusBar ):
     def __init__( self, parent=None ):
         QStatusBar.__init__( self, parent )
 
 #################  BaseDialog  ########################
-class BaseComboBox( QComboBox ):
+class BaseComboBox( QComboBox, GetSetValue ):
     def __init__(self, parent=None ):
         QComboBox.__init__( self )
+
+    def getValue( self ) -> str:
+        return self.currentText()
+
+    def setValue( self, currentText: str ) -> None:
+        self.setCurrentText( currentText )
 
 #################  BaseDialog  ########################
 class BaseDialog( QDialog ):
@@ -277,7 +294,7 @@ class CalendarDialog( QDialog ):
         self.hide()
 
 #########################  SmartDateEdit  #####################################
-class SmartDateEdit( QLineEdit ):
+class SmartDateEdit( QLineEdit, GetSetValue ):
     def __init__( self, parent=None ):
         QLineEdit.__init__( self, parent )
 
@@ -306,6 +323,12 @@ class SmartDateEdit( QLineEdit ):
             return ds
         else:
             return ""
+
+    def setValue( self, isostring:str ):
+        self.setDateFromIsoString( isostring )
+
+    def getValue( self ) -> str:
+        return self.getDate()
 
     def isDateValid( self ) -> bool:
         """
@@ -358,19 +381,31 @@ class AutoWidth:
         return width
 
 ######################  BaseLabel ##################################
-class BaseLabel( QLabel, AutoWidth ):
+class BaseLabel( QLabel, AutoWidth, GetSetValue ):
     def __init__( self, text:str="", parent=None ):
         QLabel.__init__( self, parent )
-        self.setText( text )
+        self.setValue( text )
+
+    def getValue( self ) -> str:
+        return self.text()
+
+    def setValue( self, value:str ):
+        self.setText( value )
 
     def setBackground( self, color ):
         # color in der Form "solid white"
         self.setStyleSheet( "background: " + color + ";" )
 
 #########################  BaseCheckBox  #############################
-class BaseCheckBox( QCheckBox ):
+class BaseCheckBox( QCheckBox, GetSetValue ):
     def __init__( self, parent = None ):
         QCheckBox.__init__( self, parent )
+
+    def getValue( self ) -> bool:
+        return self.isChecked()
+
+    def setValue( self, value: bool ):
+        self.setChecked( value )
 
 ##########################  BoolSwitch  ################################
 class BoolSwitch(QComboBox, AutoWidth):
@@ -386,11 +421,17 @@ class BoolSwitch(QComboBox, AutoWidth):
         self.setCurrentText( str( boolVal ) )
 
 #######################  BaseEdit  ###################################
-class BaseEdit( QLineEdit, AutoWidth ):
+class BaseEdit( QLineEdit, AutoWidth, GetSetValue ):
     key_pressed = Signal( int )
     def __init__( self, parent=None ):
         QLineEdit.__init__( self, parent )
         #self.textChanged.connect( self.on_change )
+
+    def getValue( self ) -> str:
+        return self.text()
+
+    def setValue( self, value: str ):
+        self.setText( value )
 
     def mousePressEvent(self, evt:QMouseEvent):
         self.setSelection( 0, len( self.text() ) )
@@ -427,6 +468,12 @@ class FloatEdit( BaseEdit ):
             val = val.replace( ",", "." )
         return float( val )
 
+    def setValue( self, val:float ):
+        self.setFloatValue( val )
+
+    def getValue( self ) -> float:
+        return self.getFloatValue()
+
     def setFloatValue( self, val:float ):
         self.setText( str( val ) )
         if val < 0:
@@ -461,6 +508,12 @@ class IntEdit( BaseEdit ):
             self.setStyleSheet( "color: red;" )
         else:
             self.setStyleSheet( "color: green;" )
+
+    def setValue( self, val: int ):
+        self.setIntValue( val )
+
+    def getValue( self ) -> float:
+        return self.getIntValue()
 
     def setIntStringValue( self, val:str ):
         try:
@@ -514,9 +567,15 @@ class LineEdit( BaseEdit ):
         return self.text()
 
 ################  MultiLineEdit  ##################
-class MultiLineEdit( QTextEdit ):
+class MultiLineEdit( QTextEdit, GetSetValue ):
     def __init__( self, parent=None ):
         QTextEdit.__init__( self, parent )
+
+    def getValue( self ) -> str:
+        return self.toPlainText()
+
+    def setValue( self, text:str ):
+        self.setText( text )
 
 ################ SumDialog ########################
 class SumDialog( QDialog ):

@@ -14,24 +14,87 @@ class EinAusData( IccData ):
     def insertEinAusZahlung( self, x:XEinAus ) -> int:
         """
         Fügt der Tabelle <einaus> eine Zahlung hinzu.
+        Macht keinen Commit.
         :param x: Daten der Zahlung
         :return: die id des neu angelegten einaus-Satzes
         """
-        verteilt_auf = "NULL" if not x.verteilt_auf else x.verteilt_auf
-        umlegbar = "NULL" if not x.umlegbar else x.umlegbar
+        verteilt_auf = "NULL" if not x.verteilt_auf else str( x.verteilt_auf )
+        umlegbar = "NULL" if not x.umlegbar else str( x.umlegbar )
+        buchungsdatum = "NULL" if not x.buchungsdatum else "'" + x.buchungsdatum + "'"
+        buchungstext = "NULL" if not x.buchungstext else "'" + x.buchungstext + "'"
+        mehrtext = "NULL" if not x.mehrtext else "'" + x.mehrtext + "'"
         writetime = datehelper.getCurrentTimestampIso()
         sql = "insert into einaus " \
               "( master_name, mobj_id, debi_kredi, jahr, monat, betrag, ea_art, verteilt_auf, umlegbar, " \
               "  buchungsdatum, buchungstext, mehrtext, write_time ) " \
               "values" \
               "(   '%s',      '%s',       '%s',     %d,   '%s',    %.2f,   '%s',     %s,           %s," \
-              "    '%s',      '%s',       '%s',    '%s' ) " % ( x.master_name, x.mobj_id, x.debi_kredi,
+              "    %s,         %s,         %s,     '%s' ) " % ( x.master_name, x.mobj_id, x.debi_kredi,
                                                                    x.jahr, x.monat, x.betrag,
                                                                    x.ea_art, verteilt_auf, umlegbar,
-                                                                   x.buchungsdatum, x.buchungstext, x.mehrtext,
+                                                                   buchungsdatum, buchungstext, mehrtext,
                                                                    writetime )
-        inserted_id = self.writeAndLog( sql, DbAction.INSERT, "einaus", "ea_id", 0, x.toString( printWithClassname=True ) )
+        inserted_id = self.writeAndLog( sql, DbAction.INSERT, "einaus", "ea_id", 0,
+                                        newvalues=x.toString( printWithClassname=True ), oldvalues=None )
         return inserted_id
+
+    def updateEinAusZahlung( self, x:XEinAus ) -> int:
+        """
+        Ändert die Ein-Aus-Zahlung mit der ID x.ea_id mit den in <x> enthaltenen Werten.
+        :param x:
+        :return: die Anzahl der geänderten Sätze, also 1 bzw. 0, wenn es die angegebene x.ea_id nicht gibt.
+        """
+        # den alten Zustand lesen, er wird in die Log-Tabelle geschrieben
+        oldX = self.getEinAusZahlung( x.ea_id )
+        verteilt_auf = "NULL" if not x.verteilt_auf else str( x.verteilt_auf )
+        umlegbar = "NULL" if not x.umlegbar else str( x.umlegbar )
+        buchungsdatum = "NULL" if not x.buchungsdatum else "'" + x.buchungsdatum + "'"
+        buchungstext = "NULL" if not x.buchungstext else "'" + x.buchungstext + "'"
+        mehrtext = "NULL" if not x.mehrtext else "'" + x.mehrtext + "'"
+        writetime = datehelper.getCurrentTimestampIso()
+        sql = "update einaus " \
+              "set " \
+              "master_name = '%s', " \
+              "mobj_id = '%s', " \
+              "debi_kredi = '%s', " \
+              "jahr = %d, " \
+              "monat = '%s', " \
+              "betrag = %.2f, " \
+              "ea_art = '%s', " \
+              "verteilt auf = %s, " \
+              "umlegbar = %s, " \
+              "buchungsdatum = %s, " \
+              "buchungstext = %s, " \
+              "mehrtext = %s, " \
+              "write_time = '%s' " \
+              "where ea_id = %d " % (x.master_name, x.mobj_id, x.debi_kredi,
+                                       x.jahr, x.monat, x.betrag,
+                                       x.ea_art, verteilt_auf, umlegbar,
+                                       buchungsdatum, buchungstext, mehrtext,
+                                       writetime, x.ea_id )
+        rowsAffected = self.writeAndLog( sql, DbAction.UPDATE, "einaus", "ea_id", x.ea_id,
+                                         newvalues=x.toString( True ), oldvalues=oldX.toString( True ) )
+        return rowsAffected
+
+    def deleteEinAusZahlung( self, ea_id:int ):
+        """
+        Löscht eine Zahlung aus <einaus>.
+        Macht keinen Commit.
+        :param ea_id:
+        :return:
+        """
+        x = self.getEinAusZahlung( ea_id )
+        sql = "delete from einaus where ea_id = %d" % ea_id
+        self.writeAndLog( sql, DbAction.DELETE, "einaus", "ea_id", ea_id,
+                          newvalues=None, oldvalues=x.toString( printWithClassname=True )  )
+
+    def getEinAusZahlung( self, ea_id:int ) -> XEinAus:
+        sql = "select ea_id, master_name, mobj_id, debi_kredi, jahr, monat, betrag, ea_art, verteilt_auf, " \
+              "umlegbar, buchungsdatum, buchungstext, mehrtext, write_time " \
+              "from einaus " \
+              "where ea_id = %d " % ea_id
+        x = self.readOneGetObject( sql, XEinAus )
+        return x
 
     def getEinAuszahlungenJahr( self, jahr:int ) -> List[XEinAus]:
         """
@@ -77,6 +140,25 @@ class EinAusData( IccData ):
               "and monat = '%s' " \
               "and mobj_id = '%s' " \
               "and ea_art = '%s' " % (jahr, monat, mobj_id, ea_art)
+        xlist = self.readAllGetObjectList( sql, XEinAus )
+        return xlist
+
+    def getEinAuszahlungen3( self, ea_art:str, jahr:int, monat:str, mv_id:str ) -> List[XEinAus]:
+        """
+        Liefert eine Liste von XEinAus-Objekten, die den gegebenen Kriterien genügen
+        :param ea_art: EinAusArt
+        :param jahr: yyyy
+        :param monat: z.B. "jan", "mrz",... siehe iccMonthShortNames
+        :param mv_id: ID des Mieters
+        :return: List[XEinAus]
+        """
+        sql = "select ea_id, master_name, mobj_id, debi_kredi, jahr, monat, betrag, ea_art, verteilt_auf, " \
+              "umlegbar, buchungsdatum, buchungstext, mehrtext, write_time " \
+              "from einaus " \
+              "where jahr = %d " \
+              "and monat = '%s' " \
+              "and debi_kredi = '%s' " \
+              "and ea_art = '%s' " % (jahr, monat, mv_id, ea_art)
         xlist = self.readAllGetObjectList( sql, XEinAus )
         return xlist
 

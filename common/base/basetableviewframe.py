@@ -209,7 +209,8 @@ class BaseTableViewFrame( BaseWidget ):
             self._editBtn = EditIconButton()
             self._editBtn.clicked.connect( self._onEditItem )
             self._deleteBtn = DeleteIconButton()
-            self._deleteBtn.clicked.connect( lambda: self.deleteItems.emit( self._tv.getSelectedRows() ) )
+            # self._deleteBtn.clicked.connect( lambda: self.deleteItems.emit( self._tv.getSelectedRows() ) )
+            self._deleteBtn.clicked.connect( self._onDeleteItems )
             hbox.addWidget( self._newBtn, stretch=0, alignment=Qt.AlignLeft )
             hbox.addWidget( self._editBtn, stretch=0, alignment=Qt.AlignLeft )
             hbox.addWidget( self._deleteBtn, stretch=0, alignment=Qt.AlignLeft )
@@ -219,6 +220,11 @@ class BaseTableViewFrame( BaseWidget ):
         sel_rows = self._tv.getSelectedRows()
         if len( sel_rows ) > 0:
             self.editItem.emit( sel_rows[0] )
+
+    def _onDeleteItems( self ):
+        sel_rows = self._tv.getSelectedRows()
+        if len( sel_rows ) > 0:
+            self.deleteItems.emit( sel_rows )
 
     def getToolBar( self ) -> BaseTableViewToolBar:
         return self._toolbar

@@ -1,7 +1,7 @@
 import numbers
 from datetime import datetime
 from enum import Enum
-from typing import Dict, Any, List, Type
+from typing import Dict, Any, List, Type, Iterable
 
 
 class XBase:
@@ -30,6 +30,16 @@ class XBase:
 
     def equals( self, other ) -> bool:
         if other is None: return False
+        # for key in self.__dict__.keys():
+        #     try:
+        #         selfval = self.__dict__[key]
+        #         otherval = other.__dict__[key]
+        #         if selfval and not otherval: return False
+        #         if otherval and not selfval: return False
+        #         if selfval and otherval and selfval != otherval: return False
+        #     except:
+        #         return False
+        # return True
         return True if self.__dict__ == other.__dict__ else False
 
     def getKeys( self ) -> List:
@@ -43,16 +53,119 @@ class XBase:
     def print( self ):
         print( self.toString( printWithClassname=True ) )
 
+class VisibleAttribute:
+    #def __init__( self, key:str="", type:Type=str, label:str="", editable=True, nextRow=True ):
+    def __init__( self, key:str, type_:Type, label:str, editable=True, widgetWidth=-1, widgetHeight=-1, nextRow=True ):
+        self.key = key
+        self.type = type_
+        self.label = label
+        self._comboValues:List[str] = None
+        self.editable = editable
+        self.nextRow = nextRow
+        #self._textrows = 1 # nur für Textfelder interessant:Anzahl der Textzeilen
+        self._widgetHeight = widgetHeight # default -1: Qt bestimmt die Höhe
+        self._widgetWidth = widgetWidth  # default -1: Qt bestimmt die Breite
+
+    def setTextSpec( self, widgetWidth:int, widgetHeight:int ):
+        self._widgetHeight = widgetHeight
+        self._widgetWidth = widgetWidth
+
+    def setComboValues( self, valueList:List[str] ):
+        self._comboValues = valueList
+
+    def getWidgetHeight( self ) -> int:
+        return self._widgetHeight
+
+    def getComboValues( self ) -> List[str]:
+        return self._comboValues
+
+    def getWidgetWidth( self ) -> int:
+        return self._widgetWidth
+
 class XBaseUI:
     def __init__( self, xbase:XBase ):
-        self.editable = list()
-        self.visible = list()
+        self._xbase = xbase
+        self._attrList:List[VisibleAttribute] = list()
+
+    def getXBase( self ) -> XBase:
+        return self._xbase
+
+    def addVisibleAttribute( self, attr:VisibleAttribute ):
+        self._attrList.append( attr )
+
+    def addVisibleAttributes( self, attrList:Iterable[VisibleAttribute] ):
+        for attr in attrList:
+            self._attrList.append( attr )
+
+    def getVisibleAttributes( self ) -> List[VisibleAttribute]:
+        return self._attrList
+
+class XBaseUI_:
+    def __init__( self, xbase:XBase ):
+        self._xbase = xbase
+        self._editables = list()
+        self._visibles = list()
+        self._bools = list()
+        self._ints = list()
+        self._floats = list()
+        self._strings = list()
+
+    def getXBase( self ) -> XBase:
+        return self._xbase
+
+    def setEditable( self, label:str, key:str, type:Type ):
+        self._editables.append( self.__dict__[key] )
+        self._setType( key, type )
+
+    def setEditables( self, keyTypeList:Iterable[Iterable] ):
+        """
+        :param keyTypeList: Eine Liste, die aus kleinen Listen besteht: (label:str, key:str, type:Type)
+        :return:
+        """
+        for l in keyTypeList:
+            label, key, type = l[0], l[1], l[2]
+            self.setEditable( key )
+            self._setType( key, type )
+
+    def _setType( self, key:str, type:Type ):
+        if type == str:
+            self._strings.append( key )
+        elif type == int:
+            self._ints.append( key )
+        elif type == float:
+            self._floats.append( key )
+        elif type == bool:
+            self._bools.append( key )
+
+    def getEditables( self ) -> List[str]:
+        return self._editables
+
+    def setVisible( self, key:str, type:Type ):
+        self._visibles.append( key )
+        self._setType( key, type )
+
+    def setVisibles( self, keyTypelist:List[List] ):
+        """
+        :param keyTypeList: Eine Liste, die aus kleinen Listen besteht: (key, type)
+        :return:
+        """
+        for l in keyTypelist:
+            key, type = l[0], l[1]
+            self.setVisible( key )
+            self._setType( key, type )
+
+    def getVisibles( self ) -> List[str]:
+        return self._visibles
 
     def isEditable( self, key:str ) -> bool:
-        return key in self.editable
+        return key in self._editables
 
     def isVisible( self, key:str ) -> bool:
-        return key in self.visible
+        return key in self._visibles
+
+    def getType( self, key:str ) -> Type:
+        pass
+        
 
 class XAttribute( XBase ):
     def __init__( self, valuedict:Dict=None ):

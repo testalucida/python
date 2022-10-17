@@ -24,8 +24,8 @@ class XEinAus( XBase ):
         self.monat = ""
         self.betrag = 0.0
         self.ea_art = ""
-        self.verteilt_auf = None
-        self.umlegbar = None
+        self.verteilt_auf:int = None
+        self.umlegbar:int = None
         self.buchungsdatum = ""
         self.buchungstext = ""
         self.mehrtext = ""

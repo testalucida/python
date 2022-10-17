@@ -8,7 +8,8 @@ from PySide2.QtCore import Signal, QModelIndex, Qt
 from PySide2.QtGui import QDoubleValidator
 from PySide2.QtWidgets import QDialog, QGridLayout, QPushButton, QApplication, QWidget, QHBoxLayout
 
-from base.baseqtderivates import BaseEdit, BaseDialog, BaseDialogWithButtons, getOkCancelButtonDefinitions
+from base.baseqtderivates import BaseEdit, BaseDialog, BaseDialogWithButtons, getOkCancelButtonDefinitions, \
+    getCloseButtonDefinition
 from v2.einaus.einausview import EinAusTableView, EinAusTableViewFrame
 from v2.icc.iccwidgets import IccTableView, IccCheckTableViewFrame
 from v2.mtleinaus.mtleinauslogic import MieteTableModel
@@ -61,10 +62,9 @@ class MieteTableViewFrame( IccCheckTableViewFrame ):
 
 ################   MtlZahlungEditDialog   ###########
 class MtlZahlungEditDialog( BaseDialogWithButtons ):
-    def __init__( self, tv:EinAusTableView ):
-        BaseDialogWithButtons.__init__( self, "Ändern einzelner Zahlungen",
-                                        getOkCancelButtonDefinitions( self.onOk, self.onCancel ) )
-        #self._validationCallback = validationCallback
+    def __init__( self, tv:EinAusTableView, title="Ändern von Zahlungen für einen Monat" ):
+        BaseDialogWithButtons.__init__( self, title,
+                                        getCloseButtonDefinition( self.onClose ) )
         self._tv:EinAusTableView = tv
         self._tvframe:EinAusTableViewFrame = EinAusTableViewFrame( self._tv, withEditButtons=True )
         self.setMainWidget( self._tvframe )
@@ -72,12 +72,12 @@ class MtlZahlungEditDialog( BaseDialogWithButtons ):
     def getTableViewFrame( self ) -> EinAusTableViewFrame:
         return self._tvframe
 
-    def onOk( self ):
+    def onClose( self ):
             self.accept()
 
-    def onCancel( self ):
-        print( "onCancel")
-        self.close()
+    # def onCancel( self ):
+    #     print( "onCancel")
+    #     self.close()
 
 ################ ValueDialog ########################
 class ValueDialog( QDialog ):
@@ -85,7 +85,7 @@ class ValueDialog( QDialog ):
         QDialog.__init__( self, parent )
         self._callback:Callable = None
         self.setModal( True )
-        self.setWindowTitle( "Monatszahlung erfassen" )
+        self.setWindowTitle( "Neue Monatszahlung erfassen" )
         layout = QGridLayout( self )
         row = 0
 
