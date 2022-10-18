@@ -44,11 +44,11 @@ class XMtlZahlung( XBase ):
     def __init__( self, valuedict:Dict=None ):
         XBase.__init__( self )
         self.mobj_id = ""
-        self.mv_id = ""
-        self.verwalter = ""
-        self.weg = "" # Name der Wohnungseigentümergemeinschaft
-        self.vonMonat = ""  # aktiv ab Monat im betreff. Jahr
-        self.bisMonat = ""  # aktiv bis Monat im betreff. Jahr
+        # self.mv_id = ""
+        # self.verwalter = ""
+        # self.weg = "" # Name der Wohnungseigentümergemeinschaft
+        # self.vonMonat = ""  # aktiv ab Monat im betreff. Jahr
+        # self.bisMonat = ""  # aktiv bis Monat im betreff. Jahr
         self.soll = 0.0 # hängt ab vom eingestellten Monat
         self.jan = 0.0
         self.feb = 0.0
@@ -86,6 +86,14 @@ class XMtlZahlung( XBase ):
     def computeSum( self ):
         self.summe = self.jan + self.feb + self.mrz + self.apr + self.mai + self.jun + \
                      self.jul + self.aug + self.sep + self.okt + self.nov + self.dez
+
+###########################   XMtlMiete   ######################
+class XMtlMiete( XMtlZahlung ):
+    def __init__( self, valuedict:Dict=None ):
+        XMtlZahlung.__init__( self, valuedict )
+        self.mv_id = ""
+        self.mv_vonMonat = ""
+        self.mv_bisMonat = ""
 
 #####################  Mietverhältnis Kurz  ######################
 class XMietverhaeltnisKurz( XBase ):

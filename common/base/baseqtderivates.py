@@ -17,7 +17,7 @@ from base.interfaces import XAttribute
 from datehelper import isValidIsoDatestring, isValidEurDatestring, getRelativeQDate, getQDateFromIsoString
 #################  BaseAction  ########################
 class BaseAction( QAction ):
-    def __init__( self, text:str, tooltip:str="", ident:Any=None, icon:QIcon=None, parent=None ):
+    def __init__( self, text:str="", tooltip:str="", ident:Any=None, icon:QIcon=None, parent=None ):
         QAction.__init__( self )
         if icon: self.setIcon( icon )
         self.setText( text )

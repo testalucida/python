@@ -61,7 +61,7 @@ class EinAusData( IccData ):
               "monat = '%s', " \
               "betrag = %.2f, " \
               "ea_art = '%s', " \
-              "verteilt auf = %s, " \
+              "verteilt_auf = %s, " \
               "umlegbar = %s, " \
               "buchungsdatum = %s, " \
               "buchungstext = %s, " \

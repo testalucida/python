@@ -4,14 +4,12 @@ from typing import List, Any, Iterable
 from PySide2.QtGui import QBrush, Qt
 
 import datehelper
-from base.basetablemodel import BaseTableModel
-from v2.einaus.einausdata import EinAusData
 from v2.einaus.einauslogic import EinAusTableModel, EinAusLogic
 from v2.icc import constants
 from v2.icc.constants import EinAusArt, iccMonthShortNames
 from v2.icc.iccdata import IccData
 from v2.icc.icclogic import IccSumTableModel, IccTableModel, IccLogic
-from v2.icc.interfaces import XMtlZahlung, XEinAus, XMietverhaeltnisKurz, XSollMiete
+from v2.icc.interfaces import XMtlZahlung, XEinAus, XMietverhaeltnisKurz, XSollMiete, XMtlMiete
 from v2.mtleinaus.mietedata import MieteData
 
 ###############  MieteTableModel  #############
@@ -152,7 +150,7 @@ class MtlEinAusTableModel( IccSumTableModel ):
 
 ###############  MieteTableModel  #############
 class MieteTableModel( MtlEinAusTableModel ):
-    def __init__( self, rowList:List[XMtlZahlung], jahr:int, editableMonthIdx:int ):
+    def __init__( self, rowList:List[XMtlMiete], jahr:int, editableMonthIdx:int ):
         MtlEinAusTableModel.__init__( self, rowList, jahr, editableMonthIdx, ( "soll", "summe" ) )
 
     def getDebiKrediKey( self ) -> str:
@@ -184,6 +182,7 @@ class MtlEinAusLogic( IccLogic ):
     def getDebiKrediKey( self ) -> Any:
         pass
 
+
     # @abstractmethod
     # def getMonatsZahlung( debikredi:str, month_sss:str, year:int ) -> XMtlZahlung:
     #     pass
@@ -195,7 +194,35 @@ class MtlEinAusLogic( IccLogic ):
         self._ealogic.commit()
         return xeinaus
 
+    def validateMonatsZahlung( self, x:XEinAus ) -> str:
+        """
+        prüft die Validität der in <x> enthaltenen Daten.
+        :param x:
+        :return: Leerstring, wenn alles in Ordnung ist, sonst eine Fehlermeldung.
+        """
+        # todo: master_name, mobj_id, debi_kredi prüfen
+        # zunächst nur eine Trivialprüfung:
+        if not x.master_name:
+            return "Angabe des Masterobjekts fehlt."
+        if not x.mobj_id:
+            return "Angabe der Wohnung fehlt."
+        if not x.debi_kredi:
+            return "Angabe von Debitor/Kreditor fehlt."
+        if not x.jahr > 2018:
+            return "Ungültiges Jahr. Muss größer als 2018 sein."
+        if not x.monat in constants.iccMonthShortNames:
+            return "Monat ungültig. Muss dreistelliges Monatskürzel wie 'jan' sein."
+        if x.betrag == 0:
+            return "Betrag ungültig. Muss ungleich 0 sein."
+        if not x.ea_art in ( EinAusArt.BRUTTOMIETE.value[0], EinAusArt.HAUSGELD_VORAUS.value[0],
+                             EinAusArt.KOMMUNALE_DIENSTE.value[0] ):
+            return "Ungültige EinAusArt. Muss BRUTTOMIETE, HAUSGELD_VORAUS oder KOMMUNALE_DIENSTE sein."
+        return ""
+
     def updateMonatsZahlung( self, x:XEinAus ):
+        msg = self.validateMonatsZahlung( x )
+        if msg:
+            raise Exception( "MtlEinAusLogic.updateMonatsZahlung():\nValidierung fehlerhaft:\n%s" % msg )
         self._ealogic.updateZahlung( x )
         self._ealogic.commit()
 
@@ -231,24 +258,67 @@ class MtlEinAusLogic( IccLogic ):
                     # model.removeObject( mtlZ )
                     # mtlZneu = self.getMonatsZahlung( mtlZ.getValue( debikredikey ), ea.monat, ea.jahr )
 
+    def getMonthIntervallForCurrentYear( self, jahr:int, isoVon: str, isoBis: str ) -> (str, str):
+        """
+        Ermittelt, ob der Zeitraum isoVon bis isoBis das komplette <jahr> beinhaltet (dann wird ("jan", "dez") zurück-
+        gegeben) oder ob isoVon erst in <jahr> startet (dann wird der Monatsname des entsprechenden Startmonats
+        zurückgegeben) oder ob isoBis in <jahr> fällt (dann wird der Monatsname des entsprechenden Endemonats
+        zurückgegeben).
+        Beispiel: isoVon = 2021-05-01, isoBis = NULL bzw. NONE, jahr = 2022.
+                  Zurückgegeben wird ("jan", "dez")
+        :param isoVon: Datum, ab wann ein MV existiert
+        :param isoBis: Datum, bis wann ein MV existiert (hat) bzw. None
+        :return: Tuple mit 2 Strings (Monatsnamen wie "jan", "dez",...)
+        """
+        vonY, vonM, vonD = datehelper.getDateParts( isoVon )
+        if isoBis:
+            bisY, bisM, bisD = datehelper.getDateParts( isoBis )
+        else:
+            isoBis = "2099-12-31"
+            bisY, bisM, bisD = 2099, 12, 31
+        if bisY < jahr:
+            raise Exception( "getMonthIntervallForGivenYear():\nisoBis endet vor <jahr> %d" % jahr )
+
+        firstMon, lastMon = "", ""
+        jahrStart = str( jahr ) + "-01-01"
+        jahrEnd = str( jahr ) + "-12-31"
+        if datehelper.isWithin( isoVon, jahrStart, jahrEnd ):
+            firstMon = iccMonthShortNames[vonM - 1]
+        else:
+            firstMon = iccMonthShortNames[0]
+        if datehelper.isWithin( isoBis, jahrStart, jahrEnd ):
+            lastMon = iccMonthShortNames[bisM - 1]
+        else:
+            lastMon = iccMonthShortNames[11]
+        return firstMon, lastMon
+
+    def getCondensedEinAusList( self, einausList: List[XEinAus] ) -> List[XEinAus]:
+        """
+        Verdichtet die übergebene <einausList> auf debi_kredi, d.h., alle Beträge in den in <einausList> enthaltenen
+        XEinAus-Objekten, die sich auf den gleichen debi_kredi beziehen, werden auf *ein* XeinAus-Objekt addiert;
+        die anderen XEinAus-Objekte des gleichen debi_kredi werden gelöscht.
+        So erhält man je debi_kredi und monat (und mobj_id) ein einziges XEinAus-Objekt.
+        :param einausList: Liste mit den zu verdichtenden XEinAus-Objekten.
+        :return: die verdichtete, *also geänderte* einausList
+        """
+        einausList = sorted( einausList, key=lambda x: x.debi_kredi )
+        for ea in einausList:
+            for ea2 in einausList:
+                if not ea == ea2 \
+                        and ea.monat == ea2.monat \
+                        and ea.mobj_id == ea2.mobj_id and ea.debi_kredi == ea2.debi_kredi:
+                    ea.betrag += ea2.betrag
+                    einausList.remove( ea2 )
+        return einausList
 
 
 #####################  MtlMieteLogic SINGLETON  ############################
 class MieteLogic( MtlEinAusLogic ):
     __instance = None
     def __init__( self ):
-        if MieteLogic.__instance:
-            raise Exception( "You can't instantiate MieteLogic more than once." )
-        else:
-            MtlEinAusLogic.__init__( self ) # call to super class
-            self._mieteData = MieteData()
-            MieteLogic.__instance = self
-
-    @staticmethod
-    def inst() -> __instance:
-        if not MieteLogic.__instance:
-            MieteLogic()
-        return MieteLogic.__instance
+        MtlEinAusLogic.__init__( self ) # call to super class
+        self._mieteData = MieteData()
+        MieteLogic.__instance = self
 
     def getEinAusArt( self ) -> EinAusArt:
         return EinAusArt.BRUTTOMIETE.value[0]
@@ -259,14 +329,14 @@ class MieteLogic( MtlEinAusLogic ):
     # def getMonatsZahlung( debikredi:str, month_sss:str, year:int ) -> XMtlZahlung:
     #     #todo
 
-    def getMietzahlungenModel( self, jahr: int, checkmonatIdx:int=None ) -> MieteTableModel:
-        l:List[XMtlZahlung] = self.getMietzahlungen( jahr, checkmonatIdx )
+    def createMietzahlungenModel( self, jahr: int, checkmonatIdx:int=None ) -> MieteTableModel:
+        l:List[XMtlMiete] = self.getMietzahlungen( jahr, checkmonatIdx )
         tm = MieteTableModel( l, jahr, checkmonatIdx )
         return tm
 
-    def getMietzahlungen( self, jahr: int, checkmonatIdx:int=None ) -> List[XMtlZahlung]:
+    def getMietzahlungen( self, jahr: int, checkmonatIdx:int=None ) -> List[XMtlMiete]:
         """
-        Liefert eine Liste aller gezahlten Monatsmieten aller Mieter in <jahr>
+        Liefert eine Liste aller gezahlten Monatsmieten im Monat <checkmonat> aller Mieter in <jahr>
         Hat ein Mieter in einem Monat mehrere Teilbeträge bezahlt, werden diese in 1 XMtlZahlung-Objekt verdichtet.
         :param jahr: Jahr, für das die Mietzahlungen zu ermitteln sind
         :param checkmonatIdx: Der Index des Monats - BEGINNEND BEI 0 -,
@@ -279,7 +349,7 @@ class MieteLogic( MtlEinAusLogic ):
         # betreffen.
         # Deshalb muss die einausList zunächst auf Monate verdichtet werden,
         # und vor dem Verdichten wird sie nach Mietern (Debitoren) sortiert.
-        einausList = self._getCondensedEinAusList( einausList )
+        einausList = self.getCondensedEinAusList( einausList )
         # einausList enthält nun je Mieter (Debitor) und Monat ein XEinAus-Objekt und ist nach Mietern sortiert.
         # Nicht für jeden Monat muss ein XEinAus-Objekt vorhanden sein.
 
@@ -288,11 +358,11 @@ class MieteLogic( MtlEinAusLogic ):
         # Dafür müssen wir zuerst eine Liste der in <jahr> aktiven Mietverhältnisse holen:
         mvlist: List[XMietverhaeltnisKurz] = self._getUniqueMietverhaeltnisse( jahr )
         # je XMietverhaeltnisKurz-Objekt in mvlist ein XMtlZahlung-OBjekt anlegen und in die XMtlZahlung-Liste packen:
-        mzlist:List[XMtlZahlung] = self._convertMietVhToMtlZahlg( mvlist, jahr )
+        mietelist:List[XMtlMiete] = self._convertMietVhToMtlZahlg( mvlist, jahr )
         # die XMtlZahlung-Objekte in mzlist müssen jetzt noch mit den Zahlungsdaten versorgt werden:
-        self._provideZahlungen( mzlist, einausList )
-        self.provideSollMieten( jahr, constants.iccMonthShortNames[checkmonatIdx], mzlist )
-        return mzlist
+        self._provideZahlungen( mietelist, einausList )
+        self.provideSollMieten( jahr, constants.iccMonthShortNames[checkmonatIdx], mietelist )
+        return mietelist
 
     def provideSollMieten( self, jahr:int, monat:str, mzlist:List[XMtlZahlung] ) -> List[XMtlZahlung]:
         """
@@ -329,61 +399,15 @@ class MieteLogic( MtlEinAusLogic ):
                 retlist.append( x )
         return retlist
 
-    def _convertMietVhToMtlZahlg( self, mvlist: List[XMietverhaeltnisKurz], jahr: int ) -> List[XMtlZahlung]:
-        def getMonthIntervallForCurrentYear( isoVon: str, isoBis: str ) -> (str, str):
-            """
-            Ermittelt, ob der Zeitraum isoVon bis isoBis das komplette <jahr> beinhaltet (dann wird ("jan", "dez") zurück-
-            gegeben) oder ob isoVon erst in <jahr> startet (dann wird der Monatsname des entsprechenden Startmonats
-            zurückgegeben) oder ob isoBis in <jahr> fällt (dann wird der Monatsname des entsprechenden Endemonats
-            zurückgegeben).
-            Beispiel: isoVon = 2021-05-01, isoBis = NULL bzw. NONE, jahr = 2022.
-                      Zurückgegeben wird ("jan", "dez")
-            :param isoVon: Datum, ab wann ein MV existiert
-            :param isoBis: Datum, bis wann ein MV existiert (hat) bzw. None
-            :return: Tuple mit 2 Strings (Monatsnamen wie "jan", "dez",...)
-            """
-            vonY, vonM, vonD = datehelper.getDateParts( isoVon )
-            if isoBis:
-                bisY, bisM, bisD = datehelper.getDateParts( isoBis )
-            else:
-                isoBis = "2099-12-31"
-                bisY, bisM, bisD = 2099, 12, 31
-            if bisY < jahr:
-                raise Exception( "getMonthIntervallForGivenYear():\nisoBis endet vor <jahr> %d" % jahr )
-
-            firstMon, lastMon = "", ""
-            if datehelper.isWithin( isoVon, jahrStart, jahrEnd ):
-                firstMon = iccMonthShortNames[vonM - 1]
-            else:
-                firstMon = iccMonthShortNames[0]
-            if datehelper.isWithin( isoBis, jahrStart, jahrEnd ):
-                lastMon = iccMonthShortNames[bisM - 1]
-            else:
-                lastMon = iccMonthShortNames[11]
-            return firstMon, lastMon
-
-        jahrStart = str( jahr ) + "-01-01"
-        jahrEnd = str( jahr ) + "-12-31"
-        mzlist: List[XMtlZahlung] = list()
+    def _convertMietVhToMtlZahlg( self, mvlist: List[XMietverhaeltnisKurz], jahr: int ) -> List[XMtlMiete]:
+        mietelist: List[XMtlMiete] = list()
         for mv in mvlist:
-            x = XMtlZahlung()
+            x = XMtlMiete()
             x.mobj_id = mv.mobj_id
             x.mv_id = mv.mv_id
-            x.vonMonat, x.bisMonat = getMonthIntervallForCurrentYear( mv.von, mv.bis )
-            mzlist.append( x )
-        return mzlist
-
-    def _getCondensedEinAusList( self, einausList: List[XEinAus] ) -> List[XEinAus]:
-        einausList = sorted( einausList, key=lambda x: x.debi_kredi )
-
-        for ea in einausList:
-            for ea2 in einausList:
-                if not ea == ea2 \
-                        and ea.monat == ea2.monat \
-                        and ea.mobj_id == ea2.mobj_id and ea.debi_kredi == ea2.debi_kredi:
-                    ea.betrag += ea2.betrag
-                    einausList.remove( ea2 )
-        return einausList
+            x.mv_vonMonat, x.mv_bisMonat = self.getMonthIntervallForCurrentYear( jahr, mv.von, mv.bis )
+            mietelist.append( x )
+        return mietelist
 
     def _provideZahlungen( self, mzlist: List[XMtlZahlung], einausList: List[XEinAus] ) -> None:
         """

@@ -38,10 +38,12 @@ class EinAusArt( Enum ): # EinAus-Arten, wie sie in die Tabelle einaus eingetrag
     HAUSGELD_VORAUS = "hgv",
     NEBENKOSTEN_ABRECHNG = "nka",
     HAUSGELD_ABRECHNG = "hga",
+    SONDERUMLAGE = "sonder",
     ALLGEMEINE_KOSTEN = "a",
     GRUNDSTEUER = "g",
-    KOMMUNALE_DIENSTE = "k",
+    KOMMUNALE_DIENSTE = "k",  # Abschläge und Abrechnungen für Strom, Gas etc.
     REPARATUR = "r",
+    DIENSTREISE = "d",
     SONSTIGE_KOSTEN = "s",
     VERSICHERUNG = "v"
 

@@ -199,6 +199,7 @@ class BaseTableModel( QAbstractTableModel ):
     def setValue( self, indexrow: int, indexcolumn: int, value: Any ) -> None:
         """
         Ändert einen Wert in dem durch indexrow spezifiz. XBase-Element.
+        (Durch indexcolumn wird ein Attribut in diesem XBase-Element spezifiziert.)
         Löst ein dataChanged-Signal aus. (Damit die View sich updaten kann.)
         *** ACHTUNG ***
         Leider kann nicht verhindert werden, dass XBase-Objekte, die Bestandteil dieses Models sind,

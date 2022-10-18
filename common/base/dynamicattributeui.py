@@ -57,11 +57,15 @@ class DynamicAttributeView( BaseWidget ):
         return self._xbaseui
 
     def getXBase( self ) -> XBase:
+        """
+        :return: the original XBase object. Unchanged, unless updateData() was called before.
+                 Calling updateData() results in updating the original XBase object with the user made changes.
+        """
         return self._xbaseui.getXBase()
 
-    def getXBaseCopy( self ) -> XBase:
+    def getModifiedXBaseCopy( self ) -> XBase:
         """
-        returns a copy of the wrapped XBase-Object
+        returns a copy of the wrapped XBase-Object with modifications made by user
         :return: a copy of the wrapped XBase-Object
         """
         return copy.deepcopy( self._xbaseui.getXBase() )
@@ -86,10 +90,10 @@ class DynamicAttributeDialog( BaseDialogWithButtons ):
         self.setMainWidget( self._view )
         self._view.setFocusToFirstEditableWidget()
 
-    def getDynamicAttributeView( self ):
+    def getDynamicAttributeView( self ) -> DynamicAttributeView:
         return self._view
 
-
+######################   TEST  TEST  TEST   ############################
 def test():
     class XTest( XBase ):
         def __init__(self):
@@ -106,7 +110,7 @@ def test():
     def onOk():
         print( "Okee" )
         v = d.getDynamicAttributeView()
-        xcopy = v.getXBaseCopy()
+        xcopy = v.getModifiedXBaseCopy()
         v.updateData()
         x = v.getXBase()
         equal = x.equals( xcopy )
