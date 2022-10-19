@@ -1,20 +1,23 @@
 from abc import abstractmethod
 from enum import IntEnum
-from typing import List
+from numbers import Number
+from typing import List, Iterable
 
 from PySide2.QtCore import QModelIndex
-from PySide2.QtGui import QCursor
+from PySide2.QtGui import QCursor, QGuiApplication, Qt
 from PySide2.QtWidgets import QAction, QDialog
 
-from base.baseqtderivates import BaseEdit, FloatEdit, SmartDateEdit, IntEdit, MultiLineEdit, BaseAction
+from base.baseqtderivates import BaseEdit, FloatEdit, SmartDateEdit, IntEdit, MultiLineEdit, BaseAction, SumDialog
 from base.dynamicattributeui import DynamicAttributeDialog
 from base.interfaces import XBaseUI, VisibleAttribute
-from base.messagebox import ErrorBox
+from base.messagebox import ErrorBox, InfoBox
 from v2.einaus.einauslogic import EinAusTableModel
 from v2.einaus.einausview import EinAusTableView
 from v2.icc.icccontroller import IccController
-from v2.icc.iccwidgets import IccTableViewFrame, IccCheckTableViewFrame
+from v2.icc.iccwidgets import IccTableViewFrame, IccCheckTableViewFrame, IccTableView
 from v2.icc.interfaces import XMtlZahlung, XEinAus
+from v2.mietobjekt.mietobjektcontroller import MietobjektController
+from v2.mietverhaeltnis.mietverhaeltniscontroller import MietverhaeltnisController
 from v2.mtleinaus.mtleinauslogic import MieteLogic, MtlEinAusTableModel, MtlEinAusLogic, MieteTableModel
 from v2.mtleinaus.mtleinausview import MieteTableView, MieteTableViewFrame, ValueDialog, MtlZahlungEditDialog
 
@@ -30,13 +33,12 @@ class Action( IntEnum ):
 class MtlEinAusController( IccController ):
     def __init__( self ):
         IccController.__init__( self )
+        self._tableViewFrame:IccCheckTableViewFrame = None
+        self._tv:IccTableView = None
         self._newEinAus:XEinAus = None # hier werden ggf. neu angelegte Zahlungen geparkt
 
     def createGui( self ) -> IccCheckTableViewFrame:
         jahr, monat = self.getYearAndMonthToStartWith()
-        # tm = self.createModel( jahr, monat )
-        # tv = self._tv
-        # tv.setModel( tm )
         tvf:IccCheckTableViewFrame = self.createTableViewFrame( jahr, monat )
         tb = tvf.getToolBar()
         jahre = self.getJahre()
@@ -50,7 +52,13 @@ class MtlEinAusController( IccController ):
         tv.setContextMenuCallbacks( self.provideActions, self.onSelected )
         tv.okClicked.connect( self.onBetragOk )
         tv.nokClicked.connect( self.onBetragEdit )
+        self._tableViewFrame = tvf
+        self._tv = tv
         return tvf
+
+    @abstractmethod
+    def getSollActions( self ) -> List[BaseAction]:
+        pass
 
     @abstractmethod
     def createTableViewFrame( self, jahr:int, monat:int ) -> IccCheckTableViewFrame:
@@ -69,11 +77,20 @@ class MtlEinAusController( IccController ):
         pass
 
     @abstractmethod
-    def provideActions( self, index, point, selectedIndexes ) -> List[QAction]:
+    def getShowDebiKrediAction( self ) -> BaseAction:
         pass
 
     @abstractmethod
-    def onSelected( self, action: QAction ):
+    def getSollAction( self ) -> BaseAction:
+        pass
+
+    @abstractmethod
+    def provideActions( self, index, point, selectedIndexes ) -> List[QAction]:
+        pass
+
+
+    @abstractmethod
+    def onSpecificAction( self, action:Action ):
         pass
 
     @abstractmethod
@@ -84,8 +101,50 @@ class MtlEinAusController( IccController ):
     def onMonthChanged( self, newMonthIdx: int, newMonthLongName: str ):
         pass
 
-    # def getCurrentYearAndMonth( self ):
-    #     return self._year, self._month
+    def provideActions( self, index, point, selectedIndexes ) -> List[QAction]:
+        """
+        Callback-Function, die zur Verfügung stehende Aktionen liefert, wenn der User durch Rechtsklick
+        in eine Tabellenzelle das Kontextmenü öffnen möchte
+        :param index:
+        :param point:
+        :param selectedIndexes:
+        :return:
+        """
+        def isNumeric( row, col ) -> bool:
+            val = model.getValue( row, col )
+            return type( val ) in (int, float)
+
+        model: MieteTableModel = self._tv.model()
+        col = index.column()
+        key = model.keys[col]
+        debikredi_key = self._logic.getDebiKrediKey()
+        l = list()
+        if key == "mobj_id":
+            l.append( BaseAction( text="Objektdaten anzeigen", ident=Action.SHOW_MIETOBJEKT ) )
+        if key == debikredi_key:
+            l.append( self.getShowDebiKrediAction() )
+        if key == "soll":
+            l.append( self.getSollAction() )
+        if key not in ( "mobj_id", debikredi_key, "soll", "ok", "nok", "summe" ):
+            idxlist = self._tv.selectedIndexes()
+            if len( idxlist ) > 1:
+                l.append( BaseAction( "Berechne Summe", ident=Action.COMPUTE_SUMME ) )
+        if key not in ( "ok", "nok" ):
+            sep = BaseAction()
+            sep.setSeparator( True )
+            l.append( sep )
+            l.append( BaseAction( "Kopiere", ident=Action.COPY ) )
+        return l
+
+    def onSelected( self, action: BaseAction ):
+        if action.ident == Action.SHOW_MIETOBJEKT:
+            self._showMietobjekt()
+        elif action.ident == Action.COMPUTE_SUMME:
+            self._computeSumme()
+        elif action.ident == Action.COPY:
+            self._copySelectionToClipboard()
+        else:
+            self.onSpecificAction( action )
 
     def onBetragOk( self, index:QModelIndex ):
         model:MtlEinAusTableModel = self.getModel()
@@ -131,17 +190,18 @@ class MtlEinAusController( IccController ):
             :param row: Zeile des zu ändernden XEinAus-Objekts
             :return:
             """
+            debikrediLabel = self.getModel().getDebiKrediHeader() + ": "
             x:XEinAus = eatm.getElement( row )
             xui = XBaseUI( x )
             vislist = ( VisibleAttribute( "mobj_id", BaseEdit, "Wohnung: ", editable=False, nextRow=False ),
-                        VisibleAttribute( "debi_kredi", BaseEdit, "Mieter: ", editable=False ),
+                        VisibleAttribute( "debi_kredi", BaseEdit, debikrediLabel, editable=False ),
                         VisibleAttribute( "jahr", IntEdit, "Jahr: ", editable=False, widgetWidth=50 ),
                         VisibleAttribute( "monat", BaseEdit, "Monat: ", widgetWidth=50, editable=False ),
                         VisibleAttribute( "betrag", FloatEdit, "Betrag: ", widgetWidth=60, nextRow=False ),
                         VisibleAttribute( "mehrtext", MultiLineEdit, "Bemerkung: ", widgetHeight=60 ),
                         VisibleAttribute( "write_time", BaseEdit, "eingetragen: ", widgetWidth=100, editable=False ) )
             xui.addVisibleAttributes( vislist )
-            dlg = DynamicAttributeDialog( xui, "Ändern einer Monatsmietzahlung" )
+            dlg = DynamicAttributeDialog( xui, "Ändern einer Monatszahlung" )
             if dlg.exec_() == QDialog.Accepted:
                 v = dlg.getDynamicAttributeView()
                 xcopy = v.getModifiedXBaseCopy()
@@ -250,6 +310,44 @@ class MtlEinAusController( IccController ):
         editColIdx = model.getEditableColumnIdx()
         model.setValue( row, editColIdx, newval )
 
+    def _showMietobjekt( self ):
+        model:MtlEinAusTableModel = self.getModel()
+        idx = self._tv.selectedIndexes()[0]
+        mobj_id = model.getValue( idx.row(), idx.column() )
+        mobjCtrl = MietobjektController.fromMietobjekt( mobj_id )
+        mobjCtrl.createGui()
+
+    def _computeSumme( self ):
+        model: MtlEinAusTableModel = self.getModel()
+        summe = 0
+        idxlist = self._tv.selectedIndexes()
+        for idx in idxlist:
+            summe += model.getValue( idx.row(), idx.column() )
+        dlg = SumDialog()
+        dlg.setSum( summe )
+        dlg.exec_()
+
+    def _copySelectionToClipboard( self ):
+        values: str = ""
+        indexes = self._tv.selectedIndexes()
+        model = self.getModel()
+        row = -1
+        for idx in indexes:
+            if row == -1: row = idx.row()
+            if row != idx.row():
+                values += "\n"
+                row = idx.row()
+            elif len( values ) > 0:
+                values += "\t"
+            val = model.getValue( idx.row(), idx.column() )
+            val = " nil " if not val else val
+            if isinstance( val, Number ):
+                values += str( val )
+            else:
+                values += val
+        clipboard = QGuiApplication.clipboard()
+        clipboard.setText( values )
+
 
 ##############  MieteController  ####################
 class MieteController( MtlEinAusController ):
@@ -258,25 +356,6 @@ class MieteController( MtlEinAusController ):
         self._logic = MieteLogic()
         self._tv: MieteTableView = None #MieteTableView()
         self._tvframe: MieteTableViewFrame = None #MieteTableViewFrame( self._tv )
-
-    # def createGui( self ) -> IccCheckTableViewFrame:
-    #     jahr, monat = self.getYearAndMonthToStartWith()
-    #     tm = self._logic.createMietzahlungenModel( jahr, monat )
-    #     tv = self._tv
-    #     tv.setModel( tm )
-    #     tb = self._tvframe.getToolBar()
-    #     jahre = self.getJahre()
-    #     if len(jahre) == 0:
-    #         jahre.append( jahr )
-    #     tb.addYearCombo( jahre , self.onYearChanged )
-    #     tb.setYear( jahr )
-    #     tb.addMonthCombo( self.onMonthChanged )
-    #     tb.setMonthIdx( monat )
-
-        # tv.setContextMenuCallbacks( self.provideActions, self.onSelected )
-        # tv.okClicked.connect( self.onBetragOk )
-        # tv.nokClicked.connect( self.onBetragEdit )
-        # return self._tvframe
 
     def getTableView( self ) -> MieteTableView:
         return self._tv
@@ -297,52 +376,25 @@ class MieteController( MtlEinAusController ):
     def getLogic( self ) -> MieteLogic:
         return self._logic
 
-    def provideActions( self, index, point, selectedIndexes ) -> List[QAction]:
-        """
-        Callback-Function, die zur Verfügung stehende Aktionen liefert, wenn der User durch Rechtsklick
-        in eine Tabellenzelle das Kontextmenü öffnen möchte
-        :param index:
-        :param point:
-        :param selectedIndexes:
-        :return:
-        """
-        def isNumeric( row, col ) -> bool:
-            val = model.getValue( row, col )
-            return type( val ) in (int, float)
-        print( "context menu for column ", index.column(), ", row ", index.row() )
-        model:MieteTableModel = self._tv.model()
-        idxlist = self._tv.selectedIndexes()
-        for idx in idxlist:
-            print( idx.row(), "/", idx.column() )
-        l = list()
-        col = index.column()
-        key = model.keys[col]
-        debikredi_key = self._logic.getDebiKrediKey()
-        if key == "mobj_id":
-            l.append( BaseAction( text="Objektdaten anzeigen", ident=Action.SHOW_MIETOBJEKT ) )
-        if key == debikredi_key:
-            l.append( BaseAction( "Mietverhaeltnisdaten anzeigen", ident=Action.SHOW_MIETVERHAELTNIS ) )
-        if key == "soll":
-            l.append( BaseAction( "Nettomiete und NKV anzeigen", ident=Action.SHOW_NETTOMIETE_UND_NKV ) )
-        if key not in ( "mobj_id", "mv_id", "soll", "ok", "nok", "summe" ):
-            if len( idxlist ) > 1:
-                l.append( BaseAction( "Berechne Summe", ident=Action.COMPUTE_SUMME ) )
-        if key not in ( "ok", "nok" ):
-            sep = BaseAction()
-            sep.setSeparator( True )
-            l.append( sep )
-            l.append( BaseAction( "Kopiere", ident=Action.COPY ) )
+    def onSpecificAction( self, action: BaseAction ):
+        if action.ident == Action.SHOW_NETTOMIETE_UND_NKV:
+            self._showNettomiete()
+        elif action.ident == Action.SHOW_MIETVERHAELTNIS:
+            self._showMietverhaeltnis()
 
-        # l.append( QAction( "Action 1" ) )
-        # l.append( QAction( "Action 2" ) )
-        # sep = QAction()
-        # sep.setSeparator( True )
-        # l.append( sep )
-        # l.append( QAction( "Action 3" ) )
-        return l
+    def _showMietverhaeltnis( self ):
+        model: MieteTableModel = self.getModel()
+        idx = self._tv.selectedIndexes()[0]
+        mv_id = model.getValue( idx.row(), idx.column() )
+        mvCtrl = MietverhaeltnisController.fromMietverhaeltnis( mv_id )
+        mvCtrl.createGui()
 
-    def onSelected( self, action: BaseAction ):
-        print( "selected action: ", str( action ), " - ident: ", action.ident )
+    def _showNettomiete( self ):
+        model: MieteTableModel = self.getModel()
+        idx = self._tv.selectedIndexes()[0]
+        mv_id = model.getElement( idx.row() ).getValue( "mv_id" )
+        box = InfoBox( "Nettomiete und NKV", "Hieraus entsteht die Anzeige von Nettomiete und NKV für '%s'" % mv_id, "", "OK" )
+        box.exec_()
 
     def onYearChanged( self, newYear:int ):
         tm = self._logic.createMietzahlungenModel( newYear, self.getModel().getEditableMonthIdx() )
@@ -351,4 +403,15 @@ class MieteController( MtlEinAusController ):
     def onMonthChanged( self, newMonthIdx:int, newMonthLongName:str = "" ) :
         model: MtlEinAusTableModel = self.getModel()
         model.setEditableMonth( newMonthIdx )
+
+    def getShowDebiKrediAction( self ) -> BaseAction:
+        return BaseAction( "Mietverhaeltnisdaten anzeigen", ident=Action.SHOW_MIETVERHAELTNIS )
+
+    def getSollAction( self ) -> BaseAction:
+        """
+        User hat im Kontextmenü der Miete-Tabelle die rechte Maustaste gedrückt.
+        :return:
+        """
+        return BaseAction( "Nettomiete und NKV anzeigen", ident=Action.SHOW_NETTOMIETE_UND_NKV )
+
 
