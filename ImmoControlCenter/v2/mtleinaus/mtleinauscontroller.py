@@ -5,7 +5,7 @@ from typing import List, Iterable
 
 from PySide2.QtCore import QModelIndex
 from PySide2.QtGui import QCursor, QGuiApplication, Qt
-from PySide2.QtWidgets import QAction, QDialog
+from PySide2.QtWidgets import QAction, QDialog, QMenu
 
 from base.baseqtderivates import BaseEdit, FloatEdit, SmartDateEdit, IntEdit, MultiLineEdit, BaseAction, SumDialog
 from base.dynamicattributeui import DynamicAttributeDialog
@@ -18,15 +18,20 @@ from v2.icc.iccwidgets import IccTableViewFrame, IccCheckTableViewFrame, IccTabl
 from v2.icc.interfaces import XMtlZahlung, XEinAus
 from v2.mietobjekt.mietobjektcontroller import MietobjektController
 from v2.mietverhaeltnis.mietverhaeltniscontroller import MietverhaeltnisController
-from v2.mtleinaus.mtleinauslogic import MieteLogic, MtlEinAusTableModel, MtlEinAusLogic, MieteTableModel
-from v2.mtleinaus.mtleinausview import MieteTableView, MieteTableViewFrame, ValueDialog, MtlZahlungEditDialog
+from v2.mtleinaus.mtleinauslogic import MieteLogic, MtlEinAusTableModel, MtlEinAusLogic, MieteTableModel, HausgeldLogic, \
+    HausgeldTableModel
+from v2.mtleinaus.mtleinausview import MieteTableView, MieteTableViewFrame, ValueDialog, MtlZahlungEditDialog, \
+    HausgeldTableView, HausgeldTableViewFrame
+
 
 class Action( IntEnum ):
     SHOW_MIETOBJEKT = 0,
-    SHOW_MIETVERHAELTNIS = 1,
-    SHOW_NETTOMIETE_UND_NKV = 2,
-    COMPUTE_SUMME = 3,
-    COPY = 4
+    SHOW_MIETVERHAELTNIS = 100,
+    SHOW_NETTOMIETE_UND_NKV = 200,
+    SHOW_WEG_UND_VERWALTER = 250,
+    SHOW_HAUSGELD_UND_RUEZUFUE = 300,
+    COMPUTE_SUMME = 400,
+    COPY = 500
 
 
 #############  MtlEinAusController  #####################
@@ -57,6 +62,10 @@ class MtlEinAusController( IccController ):
         return tvf
 
     @abstractmethod
+    def getMenu( self ) -> QMenu:
+        pass
+
+    @abstractmethod
     def getSollActions( self ) -> List[BaseAction]:
         pass
 
@@ -77,17 +86,16 @@ class MtlEinAusController( IccController ):
         pass
 
     @abstractmethod
+    def getEinzelzahlungenModelMonat( self, debikredi:str, jahr:int, monthIdx:int ) -> EinAusTableModel:
+        pass
+
+    @abstractmethod
     def getShowDebiKrediAction( self ) -> BaseAction:
         pass
 
     @abstractmethod
     def getSollAction( self ) -> BaseAction:
         pass
-
-    @abstractmethod
-    def provideActions( self, index, point, selectedIndexes ) -> List[QAction]:
-        pass
-
 
     @abstractmethod
     def onSpecificAction( self, action:Action ):
@@ -97,9 +105,9 @@ class MtlEinAusController( IccController ):
     def onYearChanged( self, newYear: int ):
         pass
 
-    @abstractmethod
-    def onMonthChanged( self, newMonthIdx: int, newMonthLongName: str ):
-        pass
+    def onMonthChanged( self, newMonthIdx:int, newMonthLongName:str = "" ) :
+        model: MtlEinAusTableModel = self.getModel()
+        model.setEditableMonth( newMonthIdx )
 
     def provideActions( self, index, point, selectedIndexes ) -> List[QAction]:
         """
@@ -199,7 +207,7 @@ class MtlEinAusController( IccController ):
                         VisibleAttribute( "monat", BaseEdit, "Monat: ", widgetWidth=50, editable=False ),
                         VisibleAttribute( "betrag", FloatEdit, "Betrag: ", widgetWidth=60, nextRow=False ),
                         VisibleAttribute( "mehrtext", MultiLineEdit, "Bemerkung: ", widgetHeight=60 ),
-                        VisibleAttribute( "write_time", BaseEdit, "eingetragen: ", widgetWidth=100, editable=False ) )
+                        VisibleAttribute( "write_time", BaseEdit, "gebucht am: ", widgetWidth=100, editable=False ) )
             xui.addVisibleAttributes( vislist )
             dlg = DynamicAttributeDialog( xui, "Ändern einer Monatszahlung" )
             if dlg.exec_() == QDialog.Accepted:
@@ -246,10 +254,11 @@ class MtlEinAusController( IccController ):
 
         monatstm:MtlEinAusTableModel = self.getModel()
         monthIdx = monatstm.getSelectedMonthIdx()
-        eatm = self.getLogic().getZahlungenModelMieterMonat( monatstm.getMieter( index.row() ), self._year, monthIdx )
-        keys = ( "mobj_id", "debi_kredi", "jahr", "monat", "betrag", "write_time" )
-        headers = ( "Wohnung", "Mieter", "Jahr", "Monat", "Betrag", "eingetragen" )
-        eatm.setKeyHeaderMappings2( keys, headers )
+        eatm = self.getEinzelzahlungenModelMonat( monatstm.getDebiKredi( index.row() ), self._year, monthIdx )
+        # eatm = self.getLogic().getZahlungenModelDebiKrediMonat( monatstm.getDebiKredi( index.row() ), self._year, monthIdx )
+        # keys = ( "mobj_id", "debi_kredi", "jahr", "monat", "betrag", "write_time" )
+        # headers = ( "Wohnung", "Mieter", "Jahr", "Monat", "Betrag", "gebucht am" )
+        # eatm.setKeyHeaderMappings2( keys, headers )
         if eatm.rowCount() > 0:
             # Es gibt schon eine Zahlung für den betreff. Monat.
             # Deshalb den MtlZahlungEditDialog zeigen, damit der User die Zahlung auswählen kann, die er ändern oder
@@ -376,6 +385,16 @@ class MieteController( MtlEinAusController ):
     def getLogic( self ) -> MieteLogic:
         return self._logic
 
+    def getMenu( self ) -> QMenu:
+        return None
+
+    def getEinzelzahlungenModelMonat( self, debikredi: str, jahr: int, monthIdx: int ) -> EinAusTableModel:
+        eatm = self._logic.getZahlungenModelDebiKrediMonat( debikredi, jahr, monthIdx )
+        keys = ("mobj_id", "debi_kredi", "jahr", "monat", "betrag", "write_time")
+        headers = ("Wohnung", "Mieter", "Jahr", "Monat", "Betrag", "gebucht am")
+        eatm.setKeyHeaderMappings2( keys, headers )
+        return eatm
+
     def onSpecificAction( self, action: BaseAction ):
         if action.ident == Action.SHOW_NETTOMIETE_UND_NKV:
             self._showNettomiete()
@@ -400,9 +419,9 @@ class MieteController( MtlEinAusController ):
         tm = self._logic.createMietzahlungenModel( newYear, self.getModel().getEditableMonthIdx() )
         self._tv.setModel( tm )
 
-    def onMonthChanged( self, newMonthIdx:int, newMonthLongName:str = "" ) :
-        model: MtlEinAusTableModel = self.getModel()
-        model.setEditableMonth( newMonthIdx )
+    # def onMonthChanged( self, newMonthIdx:int, newMonthLongName:str = "" ) :
+    #     model: MtlEinAusTableModel = self.getModel()
+    #     model.setEditableMonth( newMonthIdx )
 
     def getShowDebiKrediAction( self ) -> BaseAction:
         return BaseAction( "Mietverhaeltnisdaten anzeigen", ident=Action.SHOW_MIETVERHAELTNIS )
@@ -413,5 +432,76 @@ class MieteController( MtlEinAusController ):
         :return:
         """
         return BaseAction( "Nettomiete und NKV anzeigen", ident=Action.SHOW_NETTOMIETE_UND_NKV )
+
+#############  MieteController  ####################
+class HausgeldController( MtlEinAusController ):
+    def __init__( self ):
+        MtlEinAusController.__init__( self )
+        self._logic = HausgeldLogic()
+        self._tv: HausgeldTableView = None
+        self._tvframe: HausgeldTableViewFrame = None
+
+    def getTableView( self ) -> HausgeldTableView:
+        return self._tv
+
+    def createTableViewFrame( self, jahr:int, monat:int ) -> IccCheckTableViewFrame:
+        self._tv = HausgeldTableView()
+        tm = self.createModel( jahr, monat )
+        self._tv.setModel( tm )
+        self._tvframe = HausgeldTableViewFrame( self._tv )
+        return self._tvframe
+
+    def createModel( self, jahr:int, monat:int ) -> HausgeldTableModel:
+        return self._logic.createHausgeldzahlungenModel( jahr, monat )
+
+    def getModel( self ) -> MtlEinAusTableModel:
+        return self._tv.model()
+
+    def getLogic( self ) -> HausgeldLogic:
+        return self._logic
+
+    def getMenu( self ) -> QMenu:
+        return None
+
+    def getEinzelzahlungenModelMonat( self, debikredi: str, jahr: int, monthIdx: int ) -> EinAusTableModel:
+        eatm = self._logic.getZahlungenModelDebiKrediMonat( debikredi, jahr, monthIdx )
+        keys = ("debi_kredi", "jahr", "monat", "betrag", "write_time")
+        headers = ("WEG", "Jahr", "Monat", "Betrag", "gebucht am")
+        eatm.setKeyHeaderMappings2( keys, headers )
+        return eatm
+
+    def onSpecificAction( self, action: BaseAction ):
+        if action.ident == Action.SHOW_HAUSGELD_UND_RUEZUFUE:
+            self._showHausgeld()
+
+    def _showHausgeld( self ):
+        model: HausgeldTableModel = self.getModel()
+        idx = self._tv.selectedIndexes()[0]
+        weg_name = model.getElement( idx.row() ).getValue( "weg_name" )
+        box = InfoBox( "Hausgeld und RüZuFü", "Hieraus entsteht die Anzeige von Hausgeld und "
+                                              "Rücklagenzuführung für '%s'" % weg_name,
+                       "", "OK" )
+        box.exec_()
+
+    def onYearChanged( self, newYear:int ):
+        tm = self._logic.createHausgeldzahlungenModel( newYear, self.getModel().getEditableMonthIdx() )
+        self._tv.setModel( tm )
+
+
+    def getShowDebiKrediAction( self ) -> BaseAction:
+        """
+        Anzeige, die gebracht werden soll, wenn der User in der Tableview mit der rechten Maustaste auf
+        den WEG-Namen geklickt hat
+        :return:
+        """
+        return BaseAction( "WEG und Verwalter anzeigen", ident=Action.SHOW_WEG_UND_VERWALTER )
+
+    def getSollAction( self ) -> BaseAction:
+        """
+        User hat im Kontextmenü der Miete-Tabelle die rechte Maustaste gedrückt.
+        :return:
+        """
+        return BaseAction( "Netto-Hausgeld und RüZuFü anzeigen", ident=Action.SHOW_HAUSGELD_UND_RUEZUFUE )
+
 
 

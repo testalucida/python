@@ -12,26 +12,20 @@ from base.baseqtderivates import BaseEdit, BaseDialog, BaseDialogWithButtons, ge
     getCloseButtonDefinition
 from v2.einaus.einausview import EinAusTableView, EinAusTableViewFrame
 from v2.icc.iccwidgets import IccTableView, IccCheckTableViewFrame
-from v2.mtleinaus.mtleinauslogic import MieteTableModel
+from v2.mtleinaus.mtleinauslogic import MieteTableModel, MtlEinAusTableModel
 
 
 ##############   MtlEinAusTableView   #################
 class MtlEinAusTableView( IccTableView ):
-    def __init__( self ):
-        IccTableView.__init__( self )
-
-##############   MieteTableView   #################
-class MieteTableView( MtlEinAusTableView ):
     okClicked = Signal( QModelIndex )
     nokClicked = Signal( QModelIndex )
     def __init__( self ):
-        MtlEinAusTableView.__init__( self )
+        IccTableView.__init__( self )
         self.setAlternatingRowColors( True )
-        #self.btvLeftClicked.connect( lambda idx: self.okClicked.emit(idx) )
         self.btvLeftClicked.connect( self.onLeftClicked )
-        self._columnsWidth:List[int] = list()
+        self._columnsWidth: List[int] = list()
 
-    def setModel( self, model:MieteTableModel ):
+    def setModel( self, model: MtlEinAusTableModel ):
         super().setModel( model, selectRows=False, singleSelection=False )
         if len( self._columnsWidth ) == 0:
             oknoksize = 30
@@ -44,7 +38,7 @@ class MieteTableView( MtlEinAusTableView ):
             for c in range( 0, model.columnCount() ):
                 self.setColumnWidth( c, self._columnsWidth[c] )
 
-    def onLeftClicked( self, index:QModelIndex ):
+    def onLeftClicked( self, index: QModelIndex ):
         isOkColumn, isNokColumn = False, False
         if index.column() == self.model().getOkColumnIdx():
             isOkColumn = True
@@ -52,11 +46,26 @@ class MieteTableView( MtlEinAusTableView ):
         elif index.column() == self.model().getNokColumnIdx():
             isNokColumn = True
             self.nokClicked.emit( index )
-        if True in ( isOkColumn, isNokColumn ):
+        if True in (isOkColumn, isNokColumn):
             self.clearSelection()
+
+##############   MieteTableView   #################
+class MieteTableView( MtlEinAusTableView ):
+    def __init__( self ):
+        MtlEinAusTableView.__init__( self )
 
 ###############  MieteTableViewFrame  #############
 class MieteTableViewFrame( IccCheckTableViewFrame ):
+    def __init__( self, tableView:MieteTableView ):
+        IccCheckTableViewFrame.__init__( self, tableView )
+
+##############   HausgeldTableView   #################
+class HausgeldTableView( MtlEinAusTableView ):
+    def __init__( self ):
+        MtlEinAusTableView.__init__( self )
+
+###############  HausgeldTableViewFrame  #############
+class HausgeldTableViewFrame( IccCheckTableViewFrame ):
     def __init__( self, tableView:MieteTableView ):
         IccCheckTableViewFrame.__init__( self, tableView )
 

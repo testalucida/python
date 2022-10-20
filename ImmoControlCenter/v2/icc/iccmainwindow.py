@@ -12,7 +12,8 @@ from enum import Enum
 from base.baseqtderivates import SmartDateEdit, IntDisplay, BaseTabWidget
 from base.messagebox import InfoBox
 from datehelper import getDateParts
-from v2.mtleinaus.mtleinausview import MieteTableView, MieteTableViewFrame
+from v2.mtleinaus.mtleinauslogic import MieteTableModel, HausgeldTableModel
+from v2.mtleinaus.mtleinausview import MieteTableView, MieteTableViewFrame, HausgeldTableView, HausgeldTableViewFrame
 
 
 class MainWindowAction( Enum ):
@@ -49,9 +50,19 @@ class MainWindowAction( Enum ):
 class MtlZahlungenTabWidget( BaseTabWidget ):
     def __init__( self, parent=None ):
         BaseTabWidget.__init__( self, parent )
-        self._tvMiete = MieteTableView()
-        self._tvfMiete = MieteTableViewFrame( self._tvMiete )
-        self.addTab( self._tvfMiete, "Miete" )
+    #     self._tvMiete = MieteTableView()
+    #     self._tvfMiete = MieteTableViewFrame( self._tvMiete )
+    #     self.addTab( self._tvfMiete, "Miete" )
+    #     #HausgeldTableViewFrame hinzufügen
+    #     self._tvHausgeld = HausgeldTableView()
+    #     self._tvfHausgeld = HausgeldTableViewFrame( self._tvHausgeld )
+    #     self.addTab( self._tvfHausgeld, "Hausgeld" )
+    #
+    # def setMieteModel( self, tm:MieteTableModel ):
+    #     self._tvMiete.setModel( tm )
+    #
+    # def setHausgeldModel( self, tm:HausgeldTableModel ):
+    #     self._tvHausgeld.setModel( tm )
 
 class SonstZahlungenTabWidget( BaseTabWidget ):
     def __init__( self, parent=None ):
@@ -65,27 +76,15 @@ class MainTabWidget( BaseTabWidget ):
         self.addTab( self._mtlZahlungenTab, "Monatliche Zahlungen" )
         self.addTab( self._sonstZahlungenTab, "Sonstige Zahlungen" )
 
-def testMainTabWidget():
-    app = QApplication()
-    tab = MainTabWidget()
-    tab.show()
-    app.exec_()
-
-def testMtlZahlungenTab():
-    app = QApplication()
-    tab = MtlZahlungenTabWidget()
-    tab.show()
-    app.exec_()
+    def getMtlZahlungenTab( self ) -> MtlZahlungenTabWidget:
+        return self._mtlZahlungenTab
 
 class IccMainWindow( QMainWindow ):
     def __init__( self, environment ):
         QMainWindow.__init__( self )
         self.setWindowTitle( "ImmoControlCenter   " + environment )
         self._menubar:QMenuBar = None
-        self._mainTab:QTabWidget = None
-        self._mtlZahlungenTab = MtlZahlungenTabWidget()
-        # self._viewsMenu:QMenu = None
-        # self._submenuShowTableContent:QMenu = None
+        self._mainTab = MainTabWidget()
         self._toolbar: QToolBar = None
         self._sdLetzteBuchung: SmartDateEdit = SmartDateEdit( self )
         self._leLetzteBuchung: QLineEdit = QLineEdit( self )
@@ -97,22 +96,29 @@ class IccMainWindow( QMainWindow ):
         self._idSaldo = self._createSumDisplay( "Bruttomieten minus Ausgaben minus HG-Vorauszahlungen" )
         self._summenfont = QFont( "Times New Roman", 16, weight=QFont.Bold )
         self._summenartfont = QFont( "Times New Roman", 9 )
-        # give others access to sum fields via Singleton SumFieldsAccess:
 
         self._actionCallbackFnc = None #callback function for all action callbacks
         self._shutdownCallback = None  # callback function for shutdown action
         self._createUI()
+
+    def addMieteTableViewFrame( self, tvf:MieteTableViewFrame ):
+        self._mainTab.getMtlZahlungenTab().addTab( tvf, "Mieten" )
+
+    def addHausgeldTableViewFrame( self, tvf:HausgeldTableViewFrame ):
+        self._mainTab.getMtlZahlungenTab().addTab( tvf, "Hausgelder" )
+
+    def setMieteModel( self, tm:MieteTableModel ):
+        self._mainTab.getMtlZahlungenTab().setMieteModel( tm )
+
+    def setHausgeldModel( self, tm:HausgeldTableModel ):
+        self._mainTab.getMtlZahlungenTab().setHausgeldModel( tm )
 
     def onSumFieldsProvidingFailed( self, msg:str ):
         self.showException( msg )
 
     def _createUI( self ):
         self._createMenusAndTools()
-        # maintab = MainTabWidget()
-        # self.setCentralWidget( maintab )
-        #
-        # self._mainTab = maintab
-
+        self.setCentralWidget( self._mainTab )
 
     def _createMenusAndTools( self ):
         self._menubar = QMenuBar( self )
@@ -157,8 +163,8 @@ class IccMainWindow( QMainWindow ):
 
     def addMenu( self, menu:QMenu ):
         self._menubar.addMenu( menu )
-        for child in menu.children():
-            print( str(child) )
+        # for child in menu.children():
+        #     print( str(child) )
 
     def _createMietobjektMenu( self ):
         menu = QtWidgets.QMenu( self._menubar, title="Mietobjekt" )
@@ -564,10 +570,25 @@ class IccMainWindow( QMainWindow ):
     #     te.setAttribute( Qt.WA_DeleteOnClose )
 
 
+
+
+def testMainTabWidget():
+    app = QApplication()
+    tab = MainTabWidget()
+    tab.show()
+    app.exec_()
+
+def testMtlZahlungenTab():
+    app = QApplication()
+    tab = MtlZahlungenTabWidget()
+    tab.show()
+    app.exec_()
+
+
 def test():
     import sys
     app = QApplication()
-    win = IccMainWindow()
+    win = IccMainWindow( "DEVELOP" )
     win.show()
     sys.exit( app.exec_() )
 

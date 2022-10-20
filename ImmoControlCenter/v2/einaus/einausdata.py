@@ -143,7 +143,7 @@ class EinAusData( IccData ):
         xlist = self.readAllGetObjectList( sql, XEinAus )
         return xlist
 
-    def getEinAuszahlungen3( self, ea_art:str, jahr:int, monat:str, mv_id:str ) -> List[XEinAus]:
+    def getEinAuszahlungen3( self, ea_art:str, jahr:int, monat:str, debikredi:str ) -> List[XEinAus]:
         """
         Liefert eine Liste von XEinAus-Objekten, die den gegebenen Kriterien genügen
         :param ea_art: EinAusArt
@@ -158,7 +158,7 @@ class EinAusData( IccData ):
               "where jahr = %d " \
               "and monat = '%s' " \
               "and debi_kredi = '%s' " \
-              "and ea_art = '%s' " % (jahr, monat, mv_id, ea_art)
+              "and ea_art = '%s' " % (jahr, monat, debikredi, ea_art)
         xlist = self.readAllGetObjectList( sql, XEinAus )
         return xlist
 

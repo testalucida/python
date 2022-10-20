@@ -95,6 +95,12 @@ class XMtlMiete( XMtlZahlung ):
         self.mv_vonMonat = ""
         self.mv_bisMonat = ""
 
+###########################   XMtlHausgeld   ######################
+class XMtlHausgeld( XMtlZahlung ):
+    def __init__( self, valuedict:Dict=None ):
+        XMtlZahlung.__init__( self, valuedict )
+        self.weg_name = "" # Name der Wohnungseigentümergemeinschaft
+
 #####################  Mietverhältnis Kurz  ######################
 class XMietverhaeltnisKurz( XBase ):
     def __init__( self, valuedict: Dict = None ):
@@ -129,6 +135,22 @@ class XSollMiete( XBase ):
         self.netto = 0.0
         self.nkv:float = 0.0
         self.brutto:float = 0.0 # Summe von netto + nkv
+        self.bemerkung = ""
+        if valuedict:
+            self.setFromDict( valuedict )
+
+#################  XSollHausgeld  ############################
+class XSollHausgeld( XBase ):
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self )
+        self.shg_id = 0
+        self.weg_name = ""
+        self.mobj_id = ""
+        self.von = ""
+        self.bis = ""
+        self.netto = 0.0
+        self.ruezufue = 0.0
+        self.brutto = 0.0 # Summe von netto + nkv
         self.bemerkung = ""
         if valuedict:
             self.setFromDict( valuedict )

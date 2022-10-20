@@ -6,8 +6,9 @@ from base.baseqtderivates import BaseAction
 from base.messagebox import InfoBox, ErrorBox
 from v2.icc.icccontroller import IccController
 from v2.icc.iccmainwindow import IccMainWindow
+from v2.icc.iccwidgets import IccCheckTableViewFrame
 from v2.icc.mainlogic import MainLogic
-from v2.mtleinaus.mtleinauscontroller import MieteController
+from v2.mtleinaus.mtleinauscontroller import MieteController, HausgeldController
 
 
 class MainController( IccController ):
@@ -17,10 +18,23 @@ class MainController( IccController ):
         self._env = environment
         self._logic:MainLogic = MainLogic()
         self._mieteCtrl = MieteController()
+        self._hausgeldCtrl = HausgeldController()
 
     def createGui( self ) -> IccMainWindow:
         self._win = IccMainWindow( self._env )
         self._win.addMenu( self.getMenu() )
+        menu = self._mieteCtrl.getMenu()
+        if menu:
+            self._win.addMenu( menu )
+        menu = self._hausgeldCtrl.getMenu()
+        if menu:
+            self._win.addMenu( menu )
+
+        tvf:IccCheckTableViewFrame = self._mieteCtrl.createGui()
+        self._win.addMieteTableViewFrame( tvf )
+        tvf: IccCheckTableViewFrame = self._hausgeldCtrl.createGui()
+        self._win.addHausgeldTableViewFrame( tvf )
+
         return self._win
 
     def getMenu( self ) -> QMenu:

@@ -9,7 +9,9 @@ from v2.icc import constants
 from v2.icc.constants import EinAusArt, iccMonthShortNames
 from v2.icc.iccdata import IccData
 from v2.icc.icclogic import IccSumTableModel, IccTableModel, IccLogic
-from v2.icc.interfaces import XMtlZahlung, XEinAus, XMietverhaeltnisKurz, XSollMiete, XMtlMiete
+from v2.icc.interfaces import XMtlZahlung, XEinAus, XMietverhaeltnisKurz, XSollMiete, XMtlMiete, XSollHausgeld, \
+    XMtlHausgeld
+from v2.mtleinaus.hausgelddata import HausgeldData
 from v2.mtleinaus.mietedata import MieteData
 
 ###############  MieteTableModel  #############
@@ -53,9 +55,9 @@ class MtlEinAusTableModel( IccSumTableModel ):
         objIdx = self.keys.index( "mobj_id" )
         return self.getValue( row, objIdx )
 
-    def getMieter( self, row:int ) -> str:
-        objIdx = self.keys.index( "mv_id" )
-        return self.getValue( row, objIdx )
+    # def getMieter( self, row:int ) -> str:
+    #     objIdx = self.keys.index( "mv_id" )
+    #     return self.getValue( row, objIdx )
 
     def getDebiKredi( self, row ) -> str:
         colIdx = self.keys.index( self.getDebiKrediKey() )
@@ -159,6 +161,17 @@ class MieteTableModel( MtlEinAusTableModel ):
     def getDebiKrediHeader( self ) -> str:
         return "Mieter"
 
+###############  HausgeldTableModel  #############
+class HausgeldTableModel( MtlEinAusTableModel ):
+    def __init__( self, rowList:List[XMtlHausgeld], jahr:int, editableMonthIdx:int ):
+        MtlEinAusTableModel.__init__( self, rowList, jahr, editableMonthIdx, ( "soll", "summe" ) )
+
+    def getDebiKrediKey( self ) -> str:
+        return "weg_name"
+
+    def getDebiKrediHeader( self ) -> str:
+        return "WEG"
+
 ################  MtlEinAusLogic  ############################
 class MtlEinAusLogic( IccLogic ):
     """
@@ -172,6 +185,7 @@ class MtlEinAusLogic( IccLogic ):
     müssen.
     """
     def __init__( self ):
+        IccLogic.__init__( self )
         self._ealogic = EinAusLogic()
 
     @abstractmethod
@@ -230,9 +244,16 @@ class MtlEinAusLogic( IccLogic ):
         ea_art = self.getEinAusArt()
         return self._ealogic.getZahlungenModel2( ea_art, year, monthIdx, mobj_id )
 
-    def getZahlungenModelMieterMonat( self, mv_id:str, year:int, monthIdx:int ) -> EinAusTableModel:
+    def getZahlungenModelDebiKrediMonat( self, debikredi:str, year:int, monthIdx:int ) -> EinAusTableModel:
+        """
+        Liefert für einen DebiKredi alle Zahlungen für einen Monat.
+        :param debikredi: ein Mieter oder eine WEG oder ein Versorger, der monatliche Abschläge erhebt.
+        :param year:
+        :param monthIdx:
+        :return:
+        """
         ea_art = self.getEinAusArt()
-        return self._ealogic.getZahlungenModel3( ea_art, year, monthIdx, mv_id )
+        return self._ealogic.getZahlungenModel3( ea_art, year, monthIdx, debikredi )
 
     def deleteZahlungen( self, ealist:List[XEinAus], model:MtlEinAusTableModel ):
         """
@@ -314,11 +335,11 @@ class MtlEinAusLogic( IccLogic ):
 
 #####################  MtlMieteLogic SINGLETON  ############################
 class MieteLogic( MtlEinAusLogic ):
-    __instance = None
+    #__instance = None
     def __init__( self ):
         MtlEinAusLogic.__init__( self ) # call to super class
         self._mieteData = MieteData()
-        MieteLogic.__instance = self
+        #MieteLogic.__instance = self
 
     def getEinAusArt( self ) -> EinAusArt:
         return EinAusArt.BRUTTOMIETE.value[0]
@@ -361,10 +382,12 @@ class MieteLogic( MtlEinAusLogic ):
         mietelist:List[XMtlMiete] = self._convertMietVhToMtlZahlg( mvlist, jahr )
         # die XMtlZahlung-Objekte in mzlist müssen jetzt noch mit den Zahlungsdaten versorgt werden:
         self._provideZahlungen( mietelist, einausList )
-        self.provideSollMieten( jahr, constants.iccMonthShortNames[checkmonatIdx], mietelist )
+        #self.provideSollMieten( jahr, constants.iccMonthShortNames[checkmonatIdx], mietelist )
+        self.provideSollMieten( jahr, checkmonatIdx, mietelist )
         return mietelist
 
-    def provideSollMieten( self, jahr:int, monat:str, mzlist:List[XMtlZahlung] ) -> List[XMtlZahlung]:
+    #def provideSollMieten( self, jahr:int, monat:str, mzlist:List[XMtlMiete] ) -> List[XMtlMiete]:
+    def provideSollMieten( self, jahr: int, monatIdx:int, mzlist: List[XMtlMiete] ) -> List[XMtlMiete]:
         """
         Arbeitet in <mzlist> die Monats-Sollwerte des Monats <jahr>/<monat> ein.
         Wird benötigt, wenn im UI der Monat umgestellt wird.
@@ -374,7 +397,6 @@ class MieteLogic( MtlEinAusLogic ):
         :param mzlist: die Liste mit XMtlZahlung-Objekten, die mit den Sollwerten für <jahr>/<monat> aktualisiert werden soll
         :return: die aktualisierte <mzlist>
         """
-        monatIdx = iccMonthShortNames.index( monat )
         smlist: List[XSollMiete] = self.getSollMieten( jahr, monatIdx )
         for mz in mzlist:
             for sm in smlist:
@@ -409,7 +431,7 @@ class MieteLogic( MtlEinAusLogic ):
             mietelist.append( x )
         return mietelist
 
-    def _provideZahlungen( self, mzlist: List[XMtlZahlung], einausList: List[XEinAus] ) -> None:
+    def _provideZahlungen( self, mzlist: List[XMtlMiete], einausList: List[XEinAus] ) -> None:
         """
         Versorgt jedes XMtlZahlung-Objekt in <mzlist> mit den Zahlungsdaten der korrespondierenden
         XEinAus-Objekte aus <einausList>.
@@ -438,6 +460,59 @@ class MieteLogic( MtlEinAusLogic ):
 
 
 #####################  MtlHausgeldLogic ############################
-class MtlHausgeldLogic( MtlEinAusLogic ):
+class HausgeldLogic( MtlEinAusLogic ):
     def __init__( self ):
         MtlEinAusLogic.__init__( self )
+        self._hausgeldData = HausgeldData()
+
+    def createHausgeldzahlungenModel( self, jahr: int, checkmonatIdx:int=None ) -> HausgeldTableModel:
+        zlist:List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.HAUSGELD_VORAUS, jahr )
+        zlist = self.getCondensedEinAusList( zlist )
+        # die XEinAus-Liste in XMtlHausgeld-Liste umwandeln:
+        xhglist:List[XMtlHausgeld] = list()
+        for xea in zlist:
+            xhg = XMtlHausgeld()
+            xhg.weg_name = xea.debi_kredi
+            xhg.mobj_id = xea.mobj_id
+            xhg.__dict__[xea.monat] = xea.betrag
+            xhglist.append( xhg )
+        self._provideSollHausgelder( jahr, checkmonatIdx, xhglist )
+        tm = HausgeldTableModel( xhglist, jahr, checkmonatIdx )
+        return tm
+
+    def _provideSollHausgelder( self, jahr:int, monatIdx:int, xhglist:List[XMtlHausgeld] ) -> List[XMtlHausgeld]:
+        sollHgList = self.getSollHausgelder( jahr, monatIdx )
+        for hg in xhglist:
+            for soll in sollHgList:
+                if soll.weg_name == hg.weg_name and soll.mobj_id == hg.mobj_id:
+                    hg.soll = soll.brutto
+                    break
+        return xhglist
+
+    def getSollHausgelder( self, jahr: int, monatIdx:int ) -> List[XSollHausgeld]:
+        """
+        Liefert alle Soll-Hausgelder, die im Jahr <jahr> und Monat <monat> gültig waren.
+        Annahme: Hausgelder ändern sich ausschließlich zum 1. eines Moants
+        :param jahr:
+        :param monatIdx: Monatsindex. Januar = 0, Dezember = 11
+        :return:
+        """
+        check = "%d-%02d-%02d" % (jahr, monatIdx+1, 1)
+        l:List[XSollHausgeld] = self._hausgeldData.getSollHausgelder( jahr )
+        retlist:List[XSollHausgeld] = list()
+        for x in l:
+            if datehelper.isWithin( check, x.von, x.bis ):
+                retlist.append( x )
+        return retlist
+
+    def getEinAusArt( self ) -> EinAusArt:
+        return EinAusArt.HAUSGELD_VORAUS.value[0]
+
+    def getDebiKrediKey( self ) -> Any:
+        return "weg_name"
+
+
+def test():
+    logic = HausgeldLogic()
+    tm = logic.createHausgeldzahlungenModel( 2022, 10 )
+    print( tm )

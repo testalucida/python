@@ -27,6 +27,11 @@ class EinAusLogic(IccLogic):
         self._einausData = EinAusData()
 
     def getZahlungenModel( self, jahr:int ) -> EinAusTableModel:
+        """
+        Liefert alle Ein- und Auszahlungen im Jahr <jahr> in Form eines EinAusTableModel.
+        :param jahr:
+        :return:
+        """
         l:List[XEinAus] = self._einausData.getEinAuszahlungenJahr( jahr )
         for x in l:
             x.write_time = x.write_time[0:10]
@@ -41,15 +46,29 @@ class EinAusLogic(IccLogic):
         tm = EinAusTableModel( l, jahr )
         return tm
 
-    def getZahlungenModel3( self, ea_art, jahr:int, monthIdx:int, mv_id:str ) -> EinAusTableModel:
+    def getZahlungenModel3( self, ea_art, jahr:int, monthIdx:int, debikredi:str ) -> EinAusTableModel:
+        """
+
+        :param ea_art:
+        :param jahr:
+        :param monthIdx:
+        :param mv_id:
+        :return:
+        """
         month_sss = iccMonthShortNames[monthIdx]
-        l: List[XEinAus] = self._einausData.getEinAuszahlungen3( ea_art, jahr, month_sss, mv_id )
+        l: List[XEinAus] = self._einausData.getEinAuszahlungen3( ea_art, jahr, month_sss, debikredi )
         for x in l:
             x.write_time = x.write_time[0:10]
         tm = EinAusTableModel( l, jahr )
         return tm
 
     def getZahlungen( self, ea_art:EinAusArt, jahr:int ) -> List[XEinAus]:
+        """
+        Liefert alle Zahlungen der Art <ea_art> im Jahr <jahr>
+        :param ea_art:
+        :param jahr:
+        :return:
+        """
         return self._einausData.getEinAusZahlungen( ea_art.value[0], jahr )
 
     def addZahlung( self, ea_art, mobj_id:str, debikredi:str,
