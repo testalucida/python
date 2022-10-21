@@ -4,6 +4,7 @@ from v2.icc.iccwidgets import IccTableView, IccTableViewFrame
 class EinAusTableView( IccTableView ):
     def __init__( self ):
         IccTableView.__init__( self )
+        self.setAlternatingRowColors( True )
 
 ##################   EinAusTableViewFrame   ##############
 class EinAusTableViewFrame( IccTableViewFrame ):

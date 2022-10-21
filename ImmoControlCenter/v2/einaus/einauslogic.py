@@ -10,11 +10,17 @@ from v2.icc.interfaces import XEinAus
 class EinAusTableModel( IccTableModel):
     def __init__( self, rowlist:List[XEinAus], jahr ):
         IccTableModel.__init__( self, rowlist, jahr )
-        keys = ( "ea_id", "master_name", "mobj_id", "debi_kredi", "jahr", "monat", "betrag", "ea_art", "verteilt_auf",
-                 "umlegbar", "buchungsdatum", "buchungstext", "mehrtext", "write_time" )
-        headers = ("ID", "Master", "Wohnung", "Debitor/\nKreditor", "Jahr", "Monat", "Betrag", "Art", "verteilt auf",
-                   "U", "Buchung am", "Buchg.text", "Mehr Text", "eingetragen" )
-        self.setKeyHeaderMappings2( keys, headers )
+        # keys = ( "ea_id", "master_name", "mobj_id", "debi_kredi", "jahr", "monat", "betrag", "ea_art", "verteilt_auf",
+        #          "umlegbar", "buchungsdatum", "buchungstext", "mehrtext", "write_time" )
+        # headers = ("ID", "Master", "Wohnung", "Debitor/\nKreditor", "Jahr", "Monat", "Betrag", "Art", "verteilt auf",
+        #            "U", "Buchung am", "Buchg.text", "Mehr Text", "eingetragen" )
+        # self.setKeyHeaderMappings2( keys, headers )
+        self.setKeyHeaderMappings2(
+            ("master_name", "mobj_id", "debi_kredi", "buchungstext", "buchungsdatum", "ea_art", "verteilt_auf",
+             "betrag", "mehrtext"),
+            ("Haus", "Whg", "Debitor/\nKreditor", "Buchungstext", "Buch.datum", "Art", "vJ",
+             "Betrag", "Bemerkung")
+        )
 
 #################   EinAusLogic   #################################
 class EinAusLogic(IccLogic):

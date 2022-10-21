@@ -4,6 +4,7 @@ from PySide2.QtWidgets import QMenu, QAction
 
 from base.baseqtderivates import BaseAction
 from base.messagebox import InfoBox, ErrorBox
+from v2.einaus.einauscontroller import EinAusController
 from v2.icc.icccontroller import IccController
 from v2.icc.iccmainwindow import IccMainWindow
 from v2.icc.iccwidgets import IccCheckTableViewFrame
@@ -19,6 +20,7 @@ class MainController( IccController ):
         self._logic:MainLogic = MainLogic()
         self._mieteCtrl = MieteController()
         self._hausgeldCtrl = HausgeldController()
+        self._einausCtrl = EinAusController()
 
     def createGui( self ) -> IccMainWindow:
         self._win = IccMainWindow( self._env )
@@ -31,10 +33,11 @@ class MainController( IccController ):
             self._win.addMenu( menu )
 
         tvf:IccCheckTableViewFrame = self._mieteCtrl.createGui()
-        self._win.addMieteTableViewFrame( tvf )
+        self._win.setMieteTableViewFrame( tvf )
         tvf: IccCheckTableViewFrame = self._hausgeldCtrl.createGui()
-        self._win.addHausgeldTableViewFrame( tvf )
-
+        self._win.setHausgeldTableViewFrame( tvf )
+        tvf: IccCheckTableViewFrame = self._einausCtrl.createGui()
+        self._win.setAlleZahlungenTableViewFrame( tvf )
         return self._win
 
     def getMenu( self ) -> QMenu:

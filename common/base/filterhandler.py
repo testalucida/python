@@ -77,7 +77,7 @@ class FilterDialog( BaseDialog ):
             l.addWidget( allColumnsCombo, r, 0 )
             #self._combos.append( allColumnsCombo )
             op = BaseComboBox()
-            op.addItems( ("=", "<=", ">=", ">", "<", "in") )
+            op.addItems( ("=", "<=", ">=", ">", "<", "start") )
             op.setMaximumWidth( 50 )
             l.addWidget( op, r, 1, 1, 1, alignment=Qt.AlignCenter )
             val = BaseEdit()
@@ -150,6 +150,8 @@ class FilterHandler( QObject ):
             for r in range( 0, self._tm.rowCount() ):
                 match = True
                 for cond in condlist:
+                    if isinstance( cond.value, str ) and not cond.caseSensitive:
+                        cond.value = cond.value.lower()
                     # print( cond.toString() )
                     if not self._satisfiesCondition( r, cond ):
                         match = False
@@ -162,17 +164,22 @@ class FilterHandler( QObject ):
 
     def _satisfiesCondition( self, row:int, cond:FilterCondition ) -> bool:
         value = self._tm.getValueByColumnName( row, cond.header )
+        if isinstance( value, str ) and not cond.caseSensitive:
+            value = value.lower()
         compValue = cond.value
         op = cond.op
         if not value and not compValue: return True
         if not value and compValue: return False
         if value and not compValue: return False
+        # compValue ist das, was im Dialog eingestellt wurde, value ist das, was aus der Tabelle kommt
+        # und geprüft wird.
         if op == "=": return value == compValue
         if op == "<": return value < compValue
         if op == ">": return value > compValue
         if op == "<=": return value <= compValue
         if op == ">=": return value >= compValue
-        if op == "in": return value in compValue
+        #if op == "in": return value in compValue
+        if op == "start": return str(value).startswith( compValue )
 
     def onResetFilter( self ):
         self._tv.setModel( self._tm )
@@ -215,7 +222,10 @@ def makeTestModel2() -> BaseTableModel:
 
 def test():
     app = QApplication()
-    fh = FilterHandler( makeTestModel2() )
+    tv = BaseTableView()
+    tm = makeTestModel2()
+    tv.setModel( tm )
+    fh = FilterHandler( tv )
     fh.onFilter()
     #app.exec_()
 
