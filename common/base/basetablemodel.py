@@ -1,3 +1,4 @@
+import copy
 import decimal
 import numbers
 import sys
@@ -8,6 +9,18 @@ from PySide2.QtGui import QColor, QBrush, QFont, QPixmap
 
 from base.interfaces import XBase, Action
 
+####################   FilterCondition   ###############
+class FilterCondition:
+    def __init__( self ):
+        self.header = ""  # Name der Spalte
+        self.value = ""   # Vergleichswert
+        self.op = "=" # Vergleichsopeartor {'startsWith', 'contains', '=', '>=', '<=', '>', '<'}
+        self.caseSensitive = False
+
+    def toString( self ):
+        return "Column: " + self.header + " - op: '" + self.op + "' - comp.value: " + self.value + \
+               " - caseSensitive: " + str( self.caseSensitive )
+
 ##################  KeyHeaderMapping  ################
 class KeyHeaderMapping:
     def __init__( self, key=None, header=None ):
@@ -17,9 +30,11 @@ class KeyHeaderMapping:
 ##################  BaseTableModel  ##################
 class BaseTableModel( QAbstractTableModel ):
     sorting_finished = Signal()
+    rowsAddedSignal = Signal() # damit die View ggf. ihre Zeilenhöhe anpassen kann
     def __init__( self, rowList:List[XBase]=None, jahr:int=None ):
         QAbstractTableModel.__init__( self )
         self.rowList:List[XBase] = rowList
+        self._rowListUnfiltered:List[XBase] = None
         self._jahr:int = jahr # das Jahr ist bei manchen Models interessant, bei manchen nicht - kann also auf None stehen.
         self.headers:List = list()
         self.keys:List = list()
@@ -33,11 +48,11 @@ class BaseTableModel( QAbstractTableModel ):
         self.yellow = QColor( "yellow" )
         self.yellowBrush = QBrush( self.yellow )
         self.sortable = False
-        self.sort_col = 0
-        self.sort_ascending = False
+        self.sort_col = -1
+        self.sort_descending = False
         if rowList:
             self.setRowList( rowList )
-        #self._changelog:ChangeLog = ChangeLog.inst()
+        self._filterConditionList:List[FilterCondition] = None
 
     def _setDefaultKeyHeaderMapping( self ):
         """
@@ -73,6 +88,12 @@ class BaseTableModel( QAbstractTableModel ):
         :return:
         """
         self.headers = headerlist
+
+    def getSortColumn( self ) -> int:
+        return self.sort_col
+
+    def getSortOrder( self ) -> Qt.SortOrder:
+        return Qt.AscendingOrder if self.sort_descending else Qt.DescendingOrder
 
     def getColumnIndex( self, header ) -> int:
         return self.headers.index( header )
@@ -135,67 +156,6 @@ class BaseTableModel( QAbstractTableModel ):
         colidx = self.headers.index( colname )
         return self.getValue( indexrow, colidx )
 
-    # def setValue( self, indexrow:int, indexcolumn:int, value:Any, writeLog=True ) -> None:
-    #     """
-    #     Ändert einen Wert in dem durch indexrow spezifiz. XBase-Element.
-    #     Löst ein dataChanged-Signal aus. (Damit die View sich updaten kann.)
-    #     Schreibt ein XChange-Objekt ins ChangeLog, wenn writeLog==True.
-    #     *** ACHTUNG ***
-    #     Leider kann nicht verhindert werden, dass XBase-Objekte, die Bestandteil dieses Models sind,
-    #     außerhalb des Models verändert werden.
-    #     Da das Model von einer solchen Änderung keine Kenntnis erhält, wird auch kein ChangeLog geschrieben!
-    #     Wenn es notwendig ist, Objekte außerhalb des Models zu ändern, die View aber trotzdem aktualisiert
-    #     werden soll, muss nach der externen Änderung die Methode objectUpdatedExternally(...) aufgerufen werden.
-    #     Mit dem Parameter writeLog kann dabei gesteuert werden, ob das ChangeLog geschrieben werden soll
-    #     - allerdings nicht auf Attributebene, weil hier nicht bekannt ist,
-    #     welche Attribute geändert wurden - aber wenigstens auf Objekt-Ebene.
-    #     ***************
-    #     :param indexrow: Spezifiziert die Zeile der zu ändernden Zelle
-    #     :param indexcolumn: Spezifiziert die Spalte der zu ändernden Zelle
-    #     :param value: der neue Wert, der an dieser Stelle zu setzen ist.
-    #     :param writeLog: wenn True, wird das ChangeLog geschrieben.
-    #     :return:
-    #     """
-    #     oldval = self.getValue( indexrow, indexcolumn )
-    #     if oldval == value: return
-    #     e:XBase = self.getElement( indexrow )
-    #     key = self.keys[indexcolumn]
-    #     e.setValue( key, value )
-    #     index = self.createIndex( indexrow, indexcolumn )
-    #     self.dataChanged.emit( index, index, [Qt.DisplayRole] )
-    #     if writeLog:
-    #         method = sys._getframe().f_code.co_name
-    #         self._changelog.addChange( classtype=self.__class__, method=method, action=Action.UPDATE, x=e,
-    #                                    key=key, oldval=oldval, newval=value )
-
-    # def objectUpdatedExternally( self, x:XBase, writeLog:bool=True, classtype:Type=None, method="",
-    #                              action=Action.UPDATE,
-    #                              key="", oldval=None, newval=None ) -> None:
-    #     """
-    #     Diese Methode behandelt ein XBase-Objekt, das außerhalb dieses Models geändert wurde.
-    #     Sie löst ein dataChanged-Signal aus und schreibt das ChangeLog, wenn <writeLog> == True.
-    #     Das ChangeLog wird allerdings nur auf Objekt- nicht auf Attributebene geschrieben.
-    #     Ist das Korn "Attributebene" gewünscht, muss die Methode setValue(...) - gegebenenfalls mehrfach -
-    #     aufgerufen werden.
-    #     :param x: das geänderte XBase-Objekt
-    #     :param writeLog: wenn True, wird das ChangeLog geschrieben
-    #     :param classtype: Typ der externen Klasse, in der das Objekt geändert wurde
-    #     :param method: Name der Methode der externen Klasse, in der das OBjekt gäendert wurde
-    #     :param action: INSERT, UPDATE, DELETE
-    #     :param key: Name des Attributs, das geändert wurde (nur bei UPDATE)
-    #     :param oldval: Alter Wert des Attributs
-    #     :param newval: Neuer Wert des Attributs
-    #     :return: None
-    #     """
-    #     row = self.getRow( x )
-    #     indexA = self.createIndex( row, 0 )
-    #     indexZ = self.createIndex( row, self.columnCount() - 1 )
-    #     self.dataChanged.emit( indexA, indexZ, [Qt.DisplayRole] )
-    #     if writeLog:
-    #         if not oldval: oldval = str( None )
-    #         if not newval: newval = str( None )
-    #         self._changelog.addChange( classtype, method, action, x, key, oldval, newval )
-
     def setValue( self, indexrow: int, indexcolumn: int, value: Any ) -> None:
         """
         Ändert einen Wert in dem durch indexrow spezifiz. XBase-Element.
@@ -234,18 +194,69 @@ class BaseTableModel( QAbstractTableModel ):
     def addObject( self, x:XBase ):
         """
         Wird aufgerufen, um ein neues Objekt (eine neue Tabellenzeile) hinzuzufügen.
-        Löst ein dataChanged- und ein layoutChanged-Signal aus.
+        Löst ein dataChanged-, ein layoutChanged- und ein rowAdded-Signal aus.
         :param x: das neue Objekt
         :return:
         """
-        self.rowList.append( x )
-        row = self.rowCount() - 1
+        row = 0
+        if self._rowListUnfiltered:
+            # Model ist im Filter-Zustand, d.h., alle Elemente sind in der _rowListUnfiltered, nur die, die den
+            # Filterkriterien entsprechen, sind in rowList.
+            # Wir müssen x also auf jeden Fall der Liste _rowListUnfiltered hinzufügen.
+            if self.sort_col < 0:
+                # Daten sind nicht sortiert
+                self._rowListUnfiltered.append( x )
+            else:
+                # Daten sind sortiert, neues Objekt an der richtigen Stelle einfügen
+                # todo
+                row = self._insertObject( x, self._rowListUnfiltered )
+            if self.satisfiesFilterConditions( x ):
+                # das neue Objekt entspricht den Filterkriterien, deshalb muss es in die Liste der
+                # gefilterten Objekte eingefügt werden.
+                if self.sort_col < 0:
+                    self.rowList.append( x )
+                else:
+                    # todo
+                    row = self._insertObject( x, self.rowList )
+        else:
+            # rowList ungefiltert, neues Objekt hinzufügen
+            if self.sort_col < 0:
+                # rowList nicht sortiert
+                self.rowList.append( x )
+            else:
+                # Daten sind sortiert, neues Objekt an der richtigen Stelle einfügen.
+                # todo
+                self._insertObject( x, self.rowList )
+        if self.sort_col < 0:
+            row = self.rowCount() - 1
         indexA = self.createIndex( row, 0 )
         indexZ = self.createIndex( row, self.columnCount()-1 )
         self.dataChanged.emit( indexA, indexZ, [Qt.DisplayRole] )
+        # self._applyFilter( row, row )
         # method = sys._getframe().f_code.co_name
         # self._changelog.addChange( self.__class__, method, Action.INSERT, x )
         self.layoutChanged.emit() # muss hier aufgerufen werden, damit in der View eine neue Row angezeigt wird.
+        self.rowsAddedSignal.emit() # muss aufgerufen werden, damit die View die Zeilenhöhe anpasst. Das passiert
+                                    # nämlich nach layoutChanged leider nicht.
+
+    def _insertObject( self, x:XBase, targetList:List[XBase] ) -> int:
+        """
+        Fügt <x> an der der Sortierung entsprechenden Stelle in <targetList> ein.
+        Ist die Liste unsortiert, ist die Einfügeposition nicht vorhersehbar.
+        :param x:
+        :param targetList:
+        :return:
+        """
+        for e in targetList:
+            cmp = self.compare( x, e )
+            if cmp <= 0:
+                pos = targetList.index( e )
+                targetList.insert( pos, x )
+                return pos
+
+        # hinten anfügen:
+        targetList.append( x )
+        return len( targetList ) - 1
 
     def removeObject( self, x:XBase ):
         """
@@ -329,59 +340,66 @@ class BaseTableModel( QAbstractTableModel ):
         else:
             self.negNumberBrush = None
 
-    # def find( self, value, caseSensitive:bool=False, exactMatch:bool=False ):
-    #     """
-    #     Sucht nach Vorkommen von <value> in allen Spalten und Zeilen und liefert
-    #     die Position eines jeden Treffers als row/column-Tuple zurück.
-    #     Die Suche erfolgt sowohl auf String-Basis wie auch auf numerischer Basis, wenn der
-    #     Suchbegriff in eine Zahl (int oder float) umgewandelt werden kann.
-    #     Als Treffer gilt auch, wenn <exactMatch> == False und der Suchbegriff <value> nur ein Teilstring
-    #     eines Wertes aus dem TableModel ist.
-    #     :param value: Suchbegriff, numerisch oder alpha
-    #     :param caseSensitive: ob Groß-/Kleinschreibung beachtet werden soll
-    #     :param exactMatch: ob der Vergleich zwischen den kompletten Strings erfolgen soll oder ob als Match auch
-    #                     gelten soll, wenn <value> ein Teilstring des TableModel-Wertes ist.
-    #     :return: yields jeden Treffer bestehend aus einem Tuple(row-Index, column-Index)
-    #     """
-    #     def makeComparable( val ):
-    #         valNum = None
-    #         if type( val ) in (int, float):
-    #             valNum = val
-    #             val = str( val )
-    #         else: # string (hopefully)
-    #             try:
-    #                 valNum = int(val)
-    #             except ValueError:
-    #                 try:
-    #                     valNum = float(val)
-    #                 except ValueError:
-    #                     pass
-    #         if not caseSensitive:
-    #             val = val.lower()
-    #         return val, valNum
-    #
-    #     value, valueNum = makeComparable( value )
-    #     l: List[Tuple] = list()
-    #     for r in range( 0, self.rowCount() ):
-    #         for c in range( 0, self.columnCount() ):
-    #             tmval = self.getValue( r, c )
-    #             tmval, tmvalNum = makeComparable( tmval )
-    #             match = False
-    #             if (exactMatch and value == tmval) or (not exactMatch and value in tmval ):
-    #                 match = True
-    #             if match or (tmvalNum is not None and valueNum is not None and tmvalNum == valueNum):
-    #                 #l.append( (r, c) )
-    #                 yield r, c
-    #     #return l
+    #################   filtering  ##############################
+    def applyFilter( self, condlist:List[FilterCondition] ):
+        self._filterConditionList = condlist
+        self._applyFilter( 0, self.rowCount()-1 )
 
-    def isChanged( self ) -> bool:
-        return self._changes.hasChanges()
+    def _applyFilter( self, minrow:int, maxrow:int ):
+        unvisibleElements = list()
+        for r in range( minrow, maxrow+1 ):
+            for cond in self._filterConditionList:
+                value = self.getValueByColumnName( r, cond.header )
+                if not self._satisfiesCondition( value, cond ):
+                    x = self.getElement( r )
+                    unvisibleElements.append( x )
+        self._setElementsUnvisible( unvisibleElements )
 
-    # def getChanges( self ) -> ChangeLog:
-    #     return self._changes
+    @staticmethod
+    def _satisfiesCondition( value:Any, cond:FilterCondition ) -> bool:
+        if isinstance( cond.value, str ) and not cond.caseSensitive:
+            cond.value = cond.value.lower()
+        if isinstance( value, str ) and not cond.caseSensitive:
+            value = value.lower()
+        compValue = cond.value
+        op = cond.op
+        if not value and not compValue: return True
+        if not value and compValue: return False
+        if value and not compValue: return False
+        # compValue ist das, was im Dialog eingestellt wurde, value ist das, was aus der Tabelle kommt
+        # und geprüft wird.
+        if op == "startsWith": return str(value).startswith( compValue )
+        if op == "contains": return compValue in str( value )
+        if op == "=": return value == compValue
+        if op == "<>": return value != compValue
+        if op == "<": return value < compValue
+        if op == ">": return value > compValue
+        if op == "<=": return value <= compValue
+        if op == ">=": return value >= compValue
 
-    def clearChanges( self ):
-        self._changes.clear()
+    def _setElementsUnvisible( self, elements:List[XBase] ) -> None:
+        if not self._rowListUnfiltered:
+            self._rowListUnfiltered = copy.deepcopy( self.rowList )
+        for x in elements:
+            self.rowList.remove( x )
+        self.layoutChanged.emit()
+
+    def resetFilter( self ) -> None:
+        if self._rowListUnfiltered:
+            self.rowList = copy.deepcopy( self._rowListUnfiltered )
+            self._rowListUnfiltered.clear()
+            self._rowListUnfiltered = None
+            self._filterConditionList = None
+            self.layoutChanged.emit()
+            self.rowsAddedSignal.emit()
+
+    def satisfiesFilterConditions( self, x:XBase ) -> bool:
+        for cond in self._filterConditionList:
+            key = self.getKeyByHeader( cond.header )
+            value = x.getValue( key )
+            if not self._satisfiesCondition( value, cond ):
+                return False
+        return True
 
     def setSortable( self, sortable:bool=True ):
         self.sortable = sortable
@@ -391,20 +409,33 @@ class BaseTableModel( QAbstractTableModel ):
         """sort table by given column number col"""
         self.layoutAboutToBeChanged.emit()
         self.sort_col = col
-        self.sort_ascending = True if order == Qt.SortOrder.AscendingOrder else False
+        self.sort_descending = True if order == Qt.SortOrder.AscendingOrder else False
         self.rowList = sorted( self.rowList, key=cmp_to_key( self.compare ) )
         self.sorting_finished.emit()
         self.layoutChanged.emit()
 
     def compare( self, x1:XBase, x2:XBase ) -> int:
+        """
+        Vergleicht die Werte von self.sort_col der Objekte x1 und x2.
+        :param x1: Objekt 1
+        :param x2: Objekt 2
+        :return: der Returnwert ist abhängig davon, ob auf- oder absteigendes Sortieren gewünscht wird.
+                 Wenn absteigend:
+                    wenn value x1 < value x2: 1
+                    wenn value x1 > value x2: -1
+                 Wenn aufsteigend:
+                    wenn value x1 < value x2: -1
+                    wenn value x1 > value x2: 1
+                 Bei Gleichheit der beiden Werte: 0
+        """
         key = self.getKey( self.sort_col )
         v1 = x1.getValue( key )
         v2 = x2.getValue( key )
         if isinstance( v1, str ):
             v1 = v1.lower()
             v2 = v2.lower()
-        if v1 < v2: return 1 if self.sort_ascending else -1
-        if v1 > v2: return -1 if self.sort_ascending else 1
+        if v1 < v2: return 1 if self.sort_descending else -1
+        if v1 > v2: return -1 if self.sort_descending else 1
         if v1 == v2: return 0
 
 ##################  SumTableModel  #########################
@@ -469,7 +500,7 @@ def test():
             self.var2 = v2
 
     def onNewItem():
-        xn = X( "Gustav", 99 )
+        xn = X( "Adam", 99 )
         tm.addObject( xn )
 
     def onDeleteItem( rowlist ):
@@ -490,9 +521,10 @@ def test():
         obj.var1 = "Meister Karl"
         tm.objectUpdatedExternally( obj )
 
-    x1 = X( "Otto", 34 )
-    x2 = X( "Paul", 57 )
-    l = [x1, x2]
+    x1 = X( "Berta", 34 )
+    x2 = X( "Wolfi", 57 )
+    x3 = X( "Dora", 40 )
+    l = [x1, x2, x3]
     tm = BaseTableModel( l )
 
     from PySide2.QtWidgets import QApplication

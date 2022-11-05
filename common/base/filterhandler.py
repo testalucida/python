@@ -7,21 +7,20 @@ from PySide2.QtWidgets import QGridLayout, QDialog, QApplication
 
 from base.baseqtderivates import BaseDialog, BaseLabel, BaseComboBox, FatLabel, HLine, BaseCheckBox, BaseButton, \
     BaseEdit
-from base.basetablemodel import BaseTableModel
+from base.basetablemodel import BaseTableModel, FilterCondition
 from base.basetableview import BaseTableView
 from base.interfaces import XBase, TestItem
 
-class FilterCondition:
-    def __init__( self ):
-        self.header = ""  # Name der Spalte
-        self.value = ""   # Vergleichswert
-        self.op = "=" # Vergleichsopeartor {'=', '>=', '<=', '>', '<'}
-        self.exactMatch = False
-        self.caseSensitive = False
-
-    def toString( self ):
-        return "Column: " + self.header + " - op: '" + self.op + "' - comp.value: " + self.value + \
-               " - exactMatch: " + str( self.exactMatch ) + " - caseSensitive: " + str( self.caseSensitive )
+# class FilterCondition:
+#     def __init__( self ):
+#         self.header = ""  # Name der Spalte
+#         self.value = ""   # Vergleichswert
+#         self.op = "=" # Vergleichsopeartor {'startsWith', 'contains', '=', '>=', '<=', '>', '<'}
+#         self.caseSensitive = False
+#
+#     def toString( self ):
+#         return "Column: " + self.header + " - op: '" + self.op + "' - comp.value: " + self.value + \
+#                " - exactMatch: " + str( self.exactMatch ) + " - caseSensitive: " + str( self.caseSensitive )
 
 class DefinitionRow:
     """
@@ -32,7 +31,7 @@ class DefinitionRow:
         self.cboOp:BaseComboBox = None
         self.edValue:BaseEdit = None
         self.btnCaseSensitive:BaseButton = None
-        self.btnExactMatch:BaseButton = None
+        #self.btnExactMatch:BaseButton = None
 
 ##########################   MultiSortDialog   ####################
 class FilterDialog( BaseDialog ):
@@ -77,8 +76,9 @@ class FilterDialog( BaseDialog ):
             l.addWidget( allColumnsCombo, r, 0 )
             #self._combos.append( allColumnsCombo )
             op = BaseComboBox()
-            op.addItems( ("=", "<=", ">=", ">", "<", "start") )
-            op.setMaximumWidth( 50 )
+            op.addItems( ("startsWith", "contains", "=", "<>", "<=", ">=", ">", "<" ) )
+            op.setFixedWidth( 100 )
+            # op.currentIndexChanged.connect( self._onOpChanged )
             l.addWidget( op, r, 1, 1, 1, alignment=Qt.AlignCenter )
             val = BaseEdit()
             l.addWidget( val, r, 2 )
@@ -87,18 +87,20 @@ class FilterDialog( BaseDialog ):
             casesensitve.setFixedSize( btnSize )
             casesensitve.setToolTip( "Case-sensitves Filtern" )
             l.addWidget( casesensitve, r, 3 )
-            exactMatch = BaseButton( "|a|" )
-            exactMatch.setCheckable( True )
-            exactMatch.setFixedSize( btnSize )
-            exactMatch.setToolTip( "Exact Match" )
-            l.addWidget( exactMatch, r, 4 )
+            # exactMatch = BaseButton( "|a|" )
+            # exactMatch.setCheckable( True )
+            # exactMatch.setFixedSize( btnSize )
+            # exactMatch.setToolTip( "Exact Match" )
+            # exactMatch.setEnabled( False )
+            # l.addWidget( exactMatch, r, 4 )
             gui = DefinitionRow()
             gui.cboHeader = allColumnsCombo
             gui.cboOp = op
             gui.edValue = val
             gui.btnCaseSensitive = casesensitve
-            gui.btnExactMatch = exactMatch
+            # gui.btnExactMatch = exactMatch
             self._definitionsList.append( gui )
+            op.setUserData( gui )
             r += 1
 
         l.addWidget( BaseLabel(""), r, 0 )  #Vertical space dummy
@@ -111,6 +113,12 @@ class FilterDialog( BaseDialog ):
         self._btnCancel.clicked.connect( self.reject )
         l.addWidget( self._btnCancel, r, 2 )
 
+    # def _onOpChanged( self, idx ):
+    #     op:BaseComboBox = self.sender()
+    #     enabled = False if op.currentText() == "=" else True
+    #     defRow:DefinitionRow = op.getUserData()
+    #     defRow.btnExactMatch.setEnabled( enabled )
+
     def getFilterConditions( self ) -> List[FilterCondition]:
         l = list()
         for defi in self._definitionsList:
@@ -121,7 +129,7 @@ class FilterDialog( BaseDialog ):
                 filter.op = defi.cboOp.currentText()
                 filter.value = defi.edValue.text()
                 filter.caseSensitive = True if defi.btnCaseSensitive.isChecked() else False
-                filter.exactMatch = True if defi.btnExactMatch.isChecked() else False
+                # filter.exactMatch = True if defi.btnExactMatch.isChecked() else False
                 l.append( filter )
         return l
 
@@ -131,7 +139,7 @@ class FilterHandler( QObject ):
     def __init__( self, tv:BaseTableView ):
         QObject.__init__( self )
         self._tv = tv
-        self._tm = tv.model()
+        #self._tm:BaseTableModel = None
         self._dlg = None
 
     def onFilter( self ):
@@ -141,48 +149,18 @@ class FilterHandler( QObject ):
         wird dem Model bescheidgesagt, alle Zeilen auszublenden, die nicht den Filterkriterien entsprechen.
         :return:
         """
+        tm:BaseTableModel = self._tv.model()
         if not self._dlg:
-            self._dlg = FilterDialog( self._tm.getHeaders() )
+            self._dlg = FilterDialog( tm.getHeaders() )
         if self._dlg.exec_() == QDialog.Accepted:
-            condlist = self._dlg.getFilterConditions()
-            # rowlist_orig = self._tm.getRowList()
-            rowlist_filtered = list()
-            for r in range( 0, self._tm.rowCount() ):
-                match = True
-                for cond in condlist:
-                    if isinstance( cond.value, str ) and not cond.caseSensitive:
-                        cond.value = cond.value.lower()
-                    # print( cond.toString() )
-                    if not self._satisfiesCondition( r, cond ):
-                        match = False
-                        break
-                if match:
-                    elem = self._tm.getElement( r )
-                    rowlist_filtered.append( elem )
-            tm_filtered = BaseTableModel( rowlist_filtered )
-            self._tv.setModel( tm_filtered )
-
-    def _satisfiesCondition( self, row:int, cond:FilterCondition ) -> bool:
-        value = self._tm.getValueByColumnName( row, cond.header )
-        if isinstance( value, str ) and not cond.caseSensitive:
-            value = value.lower()
-        compValue = cond.value
-        op = cond.op
-        if not value and not compValue: return True
-        if not value and compValue: return False
-        if value and not compValue: return False
-        # compValue ist das, was im Dialog eingestellt wurde, value ist das, was aus der Tabelle kommt
-        # und geprüft wird.
-        if op == "=": return value == compValue
-        if op == "<": return value < compValue
-        if op == ">": return value > compValue
-        if op == "<=": return value <= compValue
-        if op == ">=": return value >= compValue
-        #if op == "in": return value in compValue
-        if op == "start": return str(value).startswith( compValue )
+            condlist:List[FilterCondition] = self._dlg.getFilterConditions()
+            tm.applyFilter( condlist )
 
     def onResetFilter( self ):
-        self._tv.setModel( self._tm )
+        self._tv.model().resetFilter()
+        if self._dlg:
+            del self._dlg
+            self._dlg = None
 
 
 ########################   TEST  TEST  TEST  TEST   ####################################
@@ -194,7 +172,7 @@ def testDialog():
         filters = dlg.getFilterConditions()
         for f in filters:
             print( "Filter: ", f.header, " ", f.op, " ", f.value,
-                   " caseSensitive: ", f.caseSensitive, " exactMatch: ", f.exactMatch )
+                   " caseSensitive: ", f.caseSensitive )
     else: print( "Cancelled" )
 
 def makeTestModel2() -> BaseTableModel:

@@ -3,11 +3,14 @@ from typing import List, Callable
 from PySide2 import QtCore
 from PySide2.QtCore import Signal, Qt
 from PySide2.QtGui import QColor
-from PySide2.QtWidgets import QWidget, QGridLayout, QToolBar, QComboBox, QApplication, QAction, QLabel, QHBoxLayout
+from PySide2.QtWidgets import QWidget, QGridLayout, QToolBar, QComboBox, QApplication, QAction, QLabel, QHBoxLayout, \
+    QDialog
 
+from base.dynamicattributeui import DynamicAttributeDialog
 from base.filterhandler import FilterHandler
-from base.interfaces import TestItem
-from base.baseqtderivates import BaseEdit, BaseWidget, SearchWidget, NewIconButton, EditIconButton, DeleteIconButton
+from base.interfaces import TestItem, XBaseUI, VisibleAttribute
+from base.baseqtderivates import BaseEdit, BaseWidget, SearchWidget, NewIconButton, EditIconButton, DeleteIconButton, \
+    IntEdit, FloatEdit
 from base.basetablemodel import BaseTableModel
 from base.basetableview import BaseTableView
 
@@ -216,6 +219,13 @@ class BaseTableViewFrame( BaseWidget ):
             hbox.addWidget( self._deleteBtn, stretch=0, alignment=Qt.AlignLeft )
             self._layout.addLayout( hbox, 2, 0, 1, 1, Qt.AlignLeft )
 
+    def getPreferredWidth( self ) -> int:
+        colcount = self._tv.model().columnCount()
+        w = 0
+        for col in range( 0, colcount ):
+            w += self._tv.columnWidth( col )
+        return w
+
     def _onEditItem( self ):
         sel_rows = self._tv.getSelectedRows()
         if len( sel_rows ) > 0:
@@ -282,8 +292,8 @@ def onSort():
 # def onResetFilter():
 #     print( "reset filter" )
 
-def onNewItem():
-    print( "onNewItem" )
+
+
 
 def onEditItem( ix ):
     print( ix )
@@ -295,6 +305,30 @@ def onPrint():
     print( "print..." )
 
 def testFrame():
+    def onNewItem():
+        #print( "onNewItem" )
+        x = TestItem()
+        xui = XBaseUI( x )
+        vislist = (VisibleAttribute( "nachname", BaseEdit, "Nachname: " ),
+                   VisibleAttribute( "vorname", BaseEdit, "Vorname" ),
+                   VisibleAttribute( "plz", BaseEdit, "PLZ: ", nextRow=False ),
+                   VisibleAttribute( "ort", BaseEdit, "Ort: ", widgetWidth=150 ),
+                   VisibleAttribute( "str", BaseEdit, "Straße: ", widgetWidth=160 ),
+                   VisibleAttribute( "alter", IntEdit, "Aler: " ),
+                   VisibleAttribute( "groesse", FloatEdit, "Größe: " ))
+        xui.addVisibleAttributes( vislist )
+        dlg = DynamicAttributeDialog( xui, "Ändern einer Monatszahlung" )
+        if dlg.exec_() == QDialog.Accepted:
+            v = dlg.getDynamicAttributeView()
+            xcopy = v.getModifiedXBaseCopy()
+            xcopy.print()
+            x = v.getXBase()
+            x.print()
+            v.updateData()
+            x = v.getXBase()
+            x.print()
+            tm.addObject( x )
+
     app = QApplication()
     tm = makeTestModel()
     tv = BaseTableView()

@@ -62,7 +62,8 @@ class SearchHandler( QObject ):
         self._searchWidget.doSearch.connect( self.onDoSearch )
         self._searchWidget.searchtextChanged.connect( self.onSearchfieldChanged )
         self._searchWidget.openSettings.connect( self.onOpenSettings )
-        self._model:BaseTableModel = tv.model()
+        # self._model:BaseTableModel = tv.model() NEIN! Der Pointer auf das Model muss in _searchNextMatch()
+                                                # geholt werden, da sich das Model ändern kann (durch Filterung)
         self._caseSensitive = False
         self._exactMatch = False
         self._row = 0
@@ -108,10 +109,11 @@ class SearchHandler( QObject ):
     def _searchNextMatch( self ):
         if self._row == 0 and self._col == 0:
             self._searchWidget.setSearchFieldBackgroundColor( "#ffffff" )
-        tm = self._model
+        tm = self._tv.model()
         for r in range( self._row, tm.rowCount() ):
             for c in range( self._col, tm.columnCount() ):
                 tmval = tm.getValue( r, c )
+                if not tmval: continue
                 tmval, tmvalNum = self._makeComparable( tmval )
                 match = False
                 if( self._exactMatch and self._searchValue == tmval) or \
@@ -122,10 +124,10 @@ class SearchHandler( QObject ):
                              tmvalNum == self._searchValueNum):
                     self._showMatch( tm.index( r, c ) )
                     self._row, self._col = r, c+1
-                    if self._col >= self._model.columnCount():
+                    if self._col >= tm.columnCount():
                         self._row += 1
                         self._col = 0
-                        if self._row >= self._model.rowCount():
+                        if self._row >= tm.rowCount():
                             self._row = 0
                     return
             self._col = 0

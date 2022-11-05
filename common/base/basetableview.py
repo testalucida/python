@@ -71,6 +71,9 @@ class BaseTableView( QTableView ):
         self.showSortIndicator( False )
 
     def showSortIndicator( self, show=True ):
+        model:BaseTableModel = self.model()
+        if model:
+            self.horizontalHeader().setSortIndicator( model.getSortColumn(), model.getSortOrder() )
         self.horizontalHeader().setSortIndicatorShown( show )
 
     def setContextMenuCallbacks( self, provider:Callable, onSelected:Callable ) -> None:
@@ -94,8 +97,9 @@ class BaseTableView( QTableView ):
     def setModel( self, model:BaseTableModel,
                   selectRows:bool=True, singleSelection:bool=True, sortable:bool=True  ) -> None:
         super().setModel( model )
-        self.setSizeAdjustPolicy( QAbstractScrollArea.AdjustToContents )
-        self.resizeColumnsToContents()
+        self.resizeRowsAndColumns()
+        # self.setSizeAdjustPolicy( QAbstractScrollArea.AdjustToContents )
+        # self.resizeColumnsToContents()
         self.resizeRowsToContents()
         if selectRows:
             self.setSelectionBehavior( QTableView.SelectRows )
@@ -110,7 +114,15 @@ class BaseTableView( QTableView ):
         model.layoutChanged.emit()
         model.setSortable( sortable )
         model.sorting_finished.connect( self.showSortIndicator )
-        #model.layoutChanged.connect( self.resizeRowsToContents )
+        #model.layoutChanged.connect( self.resizeRowsAndColumns )   FUNKTIONIERT NICHT - ROWS BEHALTEN IHRE HÖHE BEI
+        model.rowsAddedSignal.connect( self.onRowsAdded )
+
+    def onRowsAdded( self ):
+        self.resizeRowsToContents()
+
+    def resizeRowsAndColumns( self ):
+        self.resizeRowsToContents()
+        self.resizeColumnsToContents()
 
     def mouseMoveEvent(self, event:QMouseEvent):
         super().mouseMoveEvent( event )

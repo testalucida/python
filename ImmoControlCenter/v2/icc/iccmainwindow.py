@@ -48,14 +48,17 @@ class MainWindowAction( Enum ):
     EXIT=99
 
 
+###################   MtlZahlungenTabWidget   #################
 class MtlZahlungenTabWidget( BaseTabWidget ):
     def __init__( self, parent=None ):
         BaseTabWidget.__init__( self, parent )
 
+########################   AlleZahlungenTabWidget   ############
 class AlleZahlungenTabWidget( BaseTabWidget ):
     def __init__( self, parent=None ):
         BaseTabWidget.__init__( self, parent )
 
+########################   MainTabWidget   ##################
 class MainTabWidget( BaseTabWidget ):
     def __init__( self, parent=None ):
         BaseTabWidget.__init__( self, parent )
@@ -70,12 +73,16 @@ class MainTabWidget( BaseTabWidget ):
     def getAlleZahlungenTab( self ) -> AlleZahlungenTabWidget:
         return self._alleZahlungenTab
 
+########################   IccMainWindow   ####################
 class IccMainWindow( QMainWindow ):
     def __init__( self, environment ):
         QMainWindow.__init__( self )
         self.setWindowTitle( "ImmoControlCenter   " + environment )
         self._menubar:QMenuBar = None
         self._mainTab = MainTabWidget()
+        self._mieteTableViewFrame:MieteTableViewFrame = None
+        self._hausgeldTableViewFrame: HausgeldTableViewFrame = None
+        self._alleZahlungenTableViewFrame:EinAusTableViewFrame = None
         self._toolbar: QToolBar = None
         self._sdLetzteBuchung: SmartDateEdit = SmartDateEdit( self )
         self._leLetzteBuchung: QLineEdit = QLineEdit( self )
@@ -92,14 +99,30 @@ class IccMainWindow( QMainWindow ):
         self._shutdownCallback = None  # callback function for shutdown action
         self._createUI()
 
+    def getPreferredWidth( self ) -> int:
+        w = self._mieteTableViewFrame.getPreferredWidth()
+        return w + 20
+
     def setMieteTableViewFrame( self, tvf:MieteTableViewFrame ):
         self._mainTab.getMtlZahlungenTab().addTab( tvf, "Mieten" )
+        self._mieteTableViewFrame = tvf
 
     def setHausgeldTableViewFrame( self, tvf:HausgeldTableViewFrame ):
         self._mainTab.getMtlZahlungenTab().addTab( tvf, "Hausgelder" )
+        self._hausgeldTableViewFrame = tvf
 
     def setAlleZahlungenTableViewFrame( self, tvf:EinAusTableViewFrame ):
         self._mainTab.addTab( tvf, "Alle Zahlungen" )
+        self._alleZahlungenTableViewFrame = tvf
+
+    def getMieteTableViewFrame( self ) -> MieteTableViewFrame:
+        return self._mieteTableViewFrame
+
+    def getHausgeldTableViewFrame( self ) -> HausgeldTableViewFrame:
+        return self._hausgeldTableViewFrame
+
+    def getAlleZahlungenTableViewFrame( self ) -> EinAusTableViewFrame:
+        return self._alleZahlungenTableViewFrame
 
     def setMieteModel( self, tm:MieteTableModel ):
         self._mainTab.getMtlZahlungenTab().setMieteModel( tm )

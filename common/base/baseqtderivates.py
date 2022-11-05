@@ -73,12 +73,19 @@ class BaseStatusBar( QStatusBar ):
 class BaseComboBox( QComboBox, GetSetValue ):
     def __init__(self, parent=None ):
         QComboBox.__init__( self )
+        self._userData:Any = None
 
     def getValue( self ) -> str:
         return self.currentText()
 
     def setValue( self, currentText: str ) -> None:
         self.setCurrentText( currentText )
+
+    def setUserData( self, data:Any ):
+        self._userData = data
+
+    def getUserData( self ) -> Any:
+        return self._userData
 
 #################  BaseDialog  ########################
 class BaseDialog( QDialog ):

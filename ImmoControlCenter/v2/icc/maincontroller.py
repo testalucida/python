@@ -89,4 +89,8 @@ def test():
     c = MainController( "DEVELOP" )
     win = c.createGui()
     win.show()
+    w = win.getPreferredWidth()
+    h = win.height()
+    from PySide2.QtCore import QSize
+    win.resize( QSize( w, h ) )
     app.exec_()

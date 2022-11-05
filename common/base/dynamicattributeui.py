@@ -68,14 +68,20 @@ class DynamicAttributeView( BaseWidget ):
         returns a copy of the wrapped XBase-Object with modifications made by user
         :return: a copy of the wrapped XBase-Object
         """
-        return copy.deepcopy( self._xbaseui.getXBase() )
+        xbasecopy = copy.deepcopy( self._xbaseui.getXBase() )
+        self._updateData( xbasecopy )
+        return xbasecopy
 
     def updateData( self ):
+        xbase = self._xbaseui.getXBase()
+        self._updateData( xbase )
+
+    def _updateData( self, xbase:XBase ):
         """
         updates the wrapped XBase-Object with the (modified) values of the edit fields.
         :return:
         """
-        xbase = self._xbaseui.getXBase()
+        # xbase = self._xbaseui.getXBase()
         for w in self._widgets:
             key = w.objectName()
             val = w.getValue()
