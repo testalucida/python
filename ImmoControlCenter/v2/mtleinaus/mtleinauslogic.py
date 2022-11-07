@@ -10,7 +10,8 @@ from v2.icc.constants import EinAusArt, iccMonthShortNames
 from v2.icc.iccdata import IccData
 from v2.icc.icclogic import IccSumTableModel, IccTableModel, IccLogic
 from v2.icc.interfaces import XMtlZahlung, XEinAus, XMietverhaeltnisKurz, XSollMiete, XMtlMiete, XSollHausgeld, \
-    XMtlHausgeld
+    XMtlHausgeld, XMtlAbschlag, XSollAbschlag
+from v2.mtleinaus.abschlagdata import AbschlagData
 from v2.mtleinaus.hausgelddata import HausgeldData
 from v2.mtleinaus.mietedata import MieteData
 
@@ -172,6 +173,17 @@ class HausgeldTableModel( MtlEinAusTableModel ):
     def getDebiKrediHeader( self ) -> str:
         return "WEG"
 
+###############  AbschlagTableModel  #############
+class AbschlagTableModel( MtlEinAusTableModel ):
+    def __init__( self, rowList:List[XMtlAbschlag], jahr:int, editableMonthIdx:int ):
+        MtlEinAusTableModel.__init__( self, rowList, jahr, editableMonthIdx, ( "soll", "summe" ) )
+
+    def getDebiKrediKey( self ) -> str:
+        return "kreditor_id"
+
+    def getDebiKrediHeader( self ) -> str:
+        return "Kreditor"
+
 ################  MtlEinAusLogic  ############################
 class MtlEinAusLogic( IccLogic ):
     """
@@ -327,13 +339,15 @@ class MtlEinAusLogic( IccLogic ):
             for ea2 in einausList:
                 if not ea == ea2 \
                         and ea.monat == ea2.monat \
-                        and ea.mobj_id == ea2.mobj_id and ea.debi_kredi == ea2.debi_kredi:
+                        and ea.master_name == ea2.master_name \
+                        and ea.mobj_id == ea2.mobj_id  \
+                        and ea.debi_kredi == ea2.debi_kredi:
                     ea.betrag += ea2.betrag
                     einausList.remove( ea2 )
         return einausList
 
 
-#####################  MtlMieteLogic SINGLETON  ############################
+#####################  MieteLogic SINGLETON  ############################
 class MieteLogic( MtlEinAusLogic ):
     #__instance = None
     def __init__( self ):
@@ -459,7 +473,7 @@ class MieteLogic( MtlEinAusLogic ):
         return data.getMietverhaeltnisseKurz( jahr, orderby="mv_id" )
 
 
-#####################  MtlHausgeldLogic ############################
+#####################  HausgeldLogic ############################
 class HausgeldLogic( MtlEinAusLogic ):
     def __init__( self ):
         MtlEinAusLogic.__init__( self )
@@ -470,12 +484,16 @@ class HausgeldLogic( MtlEinAusLogic ):
         zlist = self.getCondensedEinAusList( zlist )
         # die XEinAus-Liste in XMtlHausgeld-Liste umwandeln:
         xhglist:List[XMtlHausgeld] = list()
+        memo = ""
+        xhg:XMtlHausgeld = None
         for xea in zlist:
-            xhg = XMtlHausgeld()
-            xhg.weg_name = xea.debi_kredi
-            xhg.mobj_id = xea.mobj_id
+            if xea.debi_kredi != memo:
+                xhg = XMtlHausgeld()
+                xhg.weg_name = xea.debi_kredi
+                xhg.mobj_id = xea.mobj_id
+                xhglist.append( xhg )
+                memo = xea.debi_kredi
             xhg.__dict__[xea.monat] = xea.betrag
-            xhglist.append( xhg )
         self._provideSollHausgelder( jahr, checkmonatIdx, xhglist )
         tm = HausgeldTableModel( xhglist, jahr, checkmonatIdx )
         return tm
@@ -511,8 +529,90 @@ class HausgeldLogic( MtlEinAusLogic ):
     def getDebiKrediKey( self ) -> Any:
         return "weg_name"
 
+#####################  AbschlagLogic ############################
+class AbschlagLogic( MtlEinAusLogic ):
+    def __init__( self ):
+        MtlEinAusLogic.__init__( self )
+        self._abschlagData = AbschlagData()
+
+    def createAbschlagzahlungenModel( self, jahr: int, checkmonatIdx:int=None ) -> AbschlagTableModel:
+        zlist:List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.MTL_ABSCHLAG, jahr )
+        zlist = self._getCondensedEinAusList( zlist ) # zlist enthält für jede sab_id und jeden Monat genau 1 XEinAus-Objekt
+        sollAbschlagList:List[XSollAbschlag] = self._abschlagData.getSollabschlaege( jahr )
+        # die XEinAus-Liste in XMtlAbschlag-Liste umwandeln:
+        xablist:List[XMtlAbschlag] = list()
+        sab_id_memo = 0
+        xab:XMtlAbschlag = None
+        for xea in zlist:
+            if xea.sab_id != sab_id_memo:
+                xab = XMtlAbschlag()
+                xab.sab_id = xea.sab_id
+                xab.kreditor = xea.debi_kredi
+                xab.master_name = xea.master_name
+                xab.mobj_id = xea.mobj_id
+                self._completeData( xab, xab.sab_id, jahr, checkmonatIdx, sollAbschlagList )
+                xablist.append( xab )
+                sab_id_memo = xea.sab_id
+            xab.__dict__[xea.monat] = xea.betrag
+        tm = AbschlagTableModel( xablist, jahr, checkmonatIdx )
+        return tm
+
+    def _getCondensedEinAusList( self, einausList: List[XEinAus] ) -> List[XEinAus]:
+        """
+        Verdichtet die übergebene <einausList> auf sab_id, d.h., alle Beträge in den in <einausList> enthaltenen
+        XEinAus-Objekten, die sich auf die gleichen sab_id beziehen, werden auf *ein* XeinAus-Objekt addiert;
+        die anderen XEinAus-Objekte der gleichen sab_id werden gelöscht.
+        So erhält man je sab_id und monat ein einziges XEinAus-Objekt.
+        :param einausList: Liste mit den zu verdichtenden XEinAus-Objekten.
+        :return: die verdichtete, *also geänderte* einausList
+        """
+        einausList = sorted( einausList, key=lambda x: x.sab_id )
+        for ea in einausList:
+            for ea2 in einausList:
+                if not ea == ea2 \
+                        and ea.monat == ea2.monat \
+                        and ea.sab_id == ea2.sab_id:
+                    ea.betrag += ea2.betrag
+                    einausList.remove( ea2 )
+        return einausList
+
+
+    def _completeData( self, xab:XMtlAbschlag, sab_id:int,
+                       jahr:int, monat:int, sollAbschlagList:List[XSollAbschlag] ) -> None:
+        """
+        Ergänzt die Daten Sollbetrag, Leistung und Vertragsnummer im Objekt <xab>, indem es das für <jahr> und <monat>
+        passende XSollAbschlag aus <sollAbschlagList> heraussucht und dessen Daten überträgt.
+        :param xab:  das zu ergänzende XMtlAbschlag-Objekt
+        :param sab_id: die ID des Soll-Abschlags
+        :param jahr:
+        :param monat:
+        :param abschlagList: die Liste aller XSollAbschlag-Objekte des Jahres <jahr>
+        :return:
+        """
+        def isCheckdateWithin( sollvon:str, sollbis:str ) -> bool:
+            sollbis = "9999-12-31" if not sollbis else sollbis
+            return datehelper.isWithin( checkdate, sollvon, sollbis )
+
+        checkdate = str( jahr ) + "-" + str( monat ) + "-" + "01"
+        for xsa in sollAbschlagList:
+            if xsa.sab_id == sab_id and isCheckdateWithin( xsa.von, xsa.bis ):
+                xab.soll = xsa.betrag
+                xab.vnr = xsa.vnr
+                xab.leistung = xsa.leistung
+                return
+        raise Exception( "AbschlagLogic._completeData():\n"
+                         "Sollabschlag nicht gefunden: "
+                         "sab_id = %d, jahr = %d, monat = %d " % ( sab_id, jahr, monat ) )
+
+
+    def getEinAusArt( self ) -> EinAusArt:
+        return EinAusArt.MTL_ABSCHLAG.value[0]
+
+    def getDebiKrediKey( self ) -> Any:
+        return "kreditor"
+
 
 def test():
-    logic = HausgeldLogic()
-    tm = logic.createHausgeldzahlungenModel( 2022, 10 )
+    logic = AbschlagLogic()
+    tm = logic.createAbschlagzahlungenModel( 2022, 10 )
     print( tm )

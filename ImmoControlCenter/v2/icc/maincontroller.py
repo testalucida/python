@@ -31,11 +31,16 @@ class MainController( IccController ):
         menu = self._hausgeldCtrl.getMenu()
         if menu:
             self._win.addMenu( menu )
-
+        ### die Views für die monatlichen Zahlungen erzeugen und dem MainWindow hinzufügen
+        # Mietzahlungen
         tvf:IccCheckTableViewFrame = self._mieteCtrl.createGui()
         self._win.setMieteTableViewFrame( tvf )
+        # Hausgeldzahlungen
         tvf: IccCheckTableViewFrame = self._hausgeldCtrl.createGui()
         self._win.setHausgeldTableViewFrame( tvf )
+        # Abschlagszahlungen (KEW, Gaswerk etc.)
+        # todo: AbschlagController aufrufen
+        ### Die View für die übrigen Zahlungen (Rechnungen etc.)
         tvf: IccCheckTableViewFrame = self._einausCtrl.createGui()
         self._win.setAlleZahlungenTableViewFrame( tvf )
         return self._win

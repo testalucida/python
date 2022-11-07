@@ -13,8 +13,9 @@ from base.baseqtderivates import SmartDateEdit, IntDisplay, BaseTabWidget
 from base.messagebox import InfoBox
 from datehelper import getDateParts
 from v2.einaus.einausview import EinAusTableViewFrame
-from v2.mtleinaus.mtleinauslogic import MieteTableModel, HausgeldTableModel
-from v2.mtleinaus.mtleinausview import MieteTableView, MieteTableViewFrame, HausgeldTableView, HausgeldTableViewFrame
+from v2.mtleinaus.mtleinauslogic import MieteTableModel, HausgeldTableModel, AbschlagTableModel
+from v2.mtleinaus.mtleinausview import MieteTableView, MieteTableViewFrame, HausgeldTableView, HausgeldTableViewFrame, \
+    AbschlagTableViewFrame
 
 
 class MainWindowAction( Enum ):
@@ -82,6 +83,7 @@ class IccMainWindow( QMainWindow ):
         self._mainTab = MainTabWidget()
         self._mieteTableViewFrame:MieteTableViewFrame = None
         self._hausgeldTableViewFrame: HausgeldTableViewFrame = None
+        self._abschlagTableViewFrame: AbschlagTableViewFrame = None
         self._alleZahlungenTableViewFrame:EinAusTableViewFrame = None
         self._toolbar: QToolBar = None
         self._sdLetzteBuchung: SmartDateEdit = SmartDateEdit( self )
@@ -111,6 +113,10 @@ class IccMainWindow( QMainWindow ):
         self._mainTab.getMtlZahlungenTab().addTab( tvf, "Hausgelder" )
         self._hausgeldTableViewFrame = tvf
 
+    def setAbschlagTableViewFrame( self, tvf:AbschlagTableViewFrame ):
+        self._mainTab.getMtlZahlungenTab().addTab( tvf, "Monatliche Abschläge" )
+        self._abschlagTableViewFrame = tvf
+
     def setAlleZahlungenTableViewFrame( self, tvf:EinAusTableViewFrame ):
         self._mainTab.addTab( tvf, "Alle Zahlungen" )
         self._alleZahlungenTableViewFrame = tvf
@@ -124,11 +130,14 @@ class IccMainWindow( QMainWindow ):
     def getAlleZahlungenTableViewFrame( self ) -> EinAusTableViewFrame:
         return self._alleZahlungenTableViewFrame
 
-    def setMieteModel( self, tm:MieteTableModel ):
-        self._mainTab.getMtlZahlungenTab().setMieteModel( tm )
-
-    def setHausgeldModel( self, tm:HausgeldTableModel ):
-        self._mainTab.getMtlZahlungenTab().setHausgeldModel( tm )
+    # def setMieteModel( self, tm:MieteTableModel ):
+    #     self._mainTab.getMtlZahlungenTab().setMieteModel( tm )
+    #
+    # def setHausgeldModel( self, tm:HausgeldTableModel ):
+    #     self._mainTab.getMtlZahlungenTab().setHausgeldModel( tm )
+    #
+    # def setAbschlagModel( self, tm:AbschlagTableModel ):
+    #     self._mainTab.getMtlZahlungenTab().setAbschlagModel( tm )
 
     def onSumFieldsProvidingFailed( self, msg:str ):
         self.showException( msg )

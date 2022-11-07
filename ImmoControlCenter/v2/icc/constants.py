@@ -36,6 +36,7 @@ class EinAusArt( Enum ): # EinAus-Arten, wie sie in die Tabelle einaus eingetrag
     BRUTTOMIETE = "brm",
     NEBENKOSTEN_VORAUS = "nkv"
     HAUSGELD_VORAUS = "hgv",
+    MTL_ABSCHLAG = "mab",
     NEBENKOSTEN_ABRECHNG = "nka",
     HAUSGELD_ABRECHNG = "hga",
     SONDERUMLAGE = "sonder",

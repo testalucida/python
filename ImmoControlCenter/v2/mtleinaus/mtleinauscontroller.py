@@ -19,9 +19,9 @@ from v2.icc.interfaces import XMtlZahlung, XEinAus
 from v2.mietobjekt.mietobjektcontroller import MietobjektController
 from v2.mietverhaeltnis.mietverhaeltniscontroller import MietverhaeltnisController
 from v2.mtleinaus.mtleinauslogic import MieteLogic, MtlEinAusTableModel, MtlEinAusLogic, MieteTableModel, HausgeldLogic, \
-    HausgeldTableModel
+    HausgeldTableModel, AbschlagLogic
 from v2.mtleinaus.mtleinausview import MieteTableView, MieteTableViewFrame, ValueDialog, MtlZahlungEditDialog, \
-    HausgeldTableView, HausgeldTableViewFrame
+    HausgeldTableView, HausgeldTableViewFrame, AbschlagTableView, AbschlagTableViewFrame
 
 
 class Action( IntEnum ):
@@ -433,7 +433,7 @@ class MieteController( MtlEinAusController ):
         """
         return BaseAction( "Nettomiete und NKV anzeigen", ident=Action.SHOW_NETTOMIETE_UND_NKV )
 
-#############  MieteController  ####################
+#############  HausgeldController  ####################
 class HausgeldController( MtlEinAusController ):
     def __init__( self ):
         MtlEinAusController.__init__( self )
@@ -465,6 +465,77 @@ class HausgeldController( MtlEinAusController ):
 
     def getEinzelzahlungenModelMonat( self, debikredi: str, jahr: int, monthIdx: int ) -> EinAusTableModel:
         eatm = self._logic.getZahlungenModelDebiKrediMonat( debikredi, jahr, monthIdx )
+        keys = ("debi_kredi", "jahr", "monat", "betrag", "write_time")
+        headers = ("WEG", "Jahr", "Monat", "Betrag", "gebucht am")
+        eatm.setKeyHeaderMappings2( keys, headers )
+        return eatm
+
+    def onSpecificAction( self, action: BaseAction ):
+        if action.ident == Action.SHOW_HAUSGELD_UND_RUEZUFUE:
+            self._showHausgeld()
+
+    def _showHausgeld( self ):
+        model: HausgeldTableModel = self.getModel()
+        idx = self._tv.selectedIndexes()[0]
+        weg_name = model.getElement( idx.row() ).getValue( "weg_name" )
+        box = InfoBox( "Hausgeld und RüZuFü", "Hieraus entsteht die Anzeige von Hausgeld und "
+                                              "Rücklagenzuführung für '%s'" % weg_name,
+                       "", "OK" )
+        box.exec_()
+
+    def onYearChanged( self, newYear:int ):
+        tm = self._logic.createHausgeldzahlungenModel( newYear, self.getModel().getEditableMonthIdx() )
+        self._tv.setModel( tm )
+
+
+    def getShowDebiKrediAction( self ) -> BaseAction:
+        """
+        Anzeige, die gebracht werden soll, wenn der User in der Tableview mit der rechten Maustaste auf
+        den WEG-Namen geklickt hat
+        :return:
+        """
+        return BaseAction( "WEG und Verwalter anzeigen", ident=Action.SHOW_WEG_UND_VERWALTER )
+
+    def getSollAction( self ) -> BaseAction:
+        """
+        User hat im Kontextmenü der Miete-Tabelle die rechte Maustaste gedrückt.
+        :return:
+        """
+        return BaseAction( "Netto-Hausgeld und RüZuFü anzeigen", ident=Action.SHOW_HAUSGELD_UND_RUEZUFUE )
+
+#############  AbschlagController  ####################
+class AbschlagController( MtlEinAusController ):
+    def __init__( self ):
+        MtlEinAusController.__init__( self )
+        self._logic = AbschlagLogic()
+        self._tv: AbschlagTableView = None
+        self._tvframe: AbschlagTableViewFrame = None
+
+    def getTableView( self ) -> AbschlagTableView:
+        return self._tv
+
+    def createTableViewFrame( self, jahr:int, monat:int ) -> IccCheckTableViewFrame:
+        self._tv = AbschlagTableView()
+        tm = self.createModel( jahr, monat )
+        self._tv.setModel( tm )
+        self._tvframe = AbschlagTableViewFrame( self._tv )
+        return self._tvframe
+
+    def createModel( self, jahr:int, monat:int ) -> HausgeldTableModel:
+        return self._logic.createHausgeldzahlungenModel( jahr, monat )
+
+    def getModel( self ) -> MtlEinAusTableModel:
+        return self._tv.model()
+
+    def getLogic( self ) -> AbschlagLogic:
+        return self._logic
+
+    def getMenu( self ) -> QMenu:
+        return None
+
+    def getEinzelzahlungenModelMonat( self, debikredi: str, jahr: int, monthIdx: int ) -> EinAusTableModel:
+        eatm = self._logic.getZahlungenModelDebiKrediMonat( debikredi, jahr, monthIdx )
+        # todo: keys und headers anpassen
         keys = ("debi_kredi", "jahr", "monat", "betrag", "write_time")
         headers = ("WEG", "Jahr", "Monat", "Betrag", "gebucht am")
         eatm.setKeyHeaderMappings2( keys, headers )

@@ -12,11 +12,6 @@ class IccData( DatabaseCommon ):
     def __init__(self):
         DatabaseCommon.__init__( self, DATABASE )
 
-    def getKreditoren( self ) -> List[str]:
-        sql = "select distinct kreditor from kreditorleistung order by kreditor "
-        tuplelist = self.read( sql )
-        return [t[0] for t in tuplelist]
-
     def getHandwerkerKurz( self, orderby:str=None ) -> List[XHandwerkerKurz]:
         """
         Selektiert alle Handwerkerdaten aus der Tabelle <handwerker>.

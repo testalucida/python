@@ -20,6 +20,7 @@ class XEinAus( XBase ):
         self.master_name = ""
         self.mobj_id = ""
         self.debi_kredi = ""
+        self.sab_id = 0
         self.jahr = 0
         self.monat = ""
         self.betrag = 0.0
@@ -101,6 +102,16 @@ class XMtlHausgeld( XMtlZahlung ):
         XMtlZahlung.__init__( self, valuedict )
         self.weg_name = "" # Name der Wohnungseigentümergemeinschaft
 
+###########################   XMtlAbschlag   ######################
+class XMtlAbschlag( XMtlZahlung ):
+    def __init__( self, valuedict:Dict=None ):
+        XMtlZahlung.__init__( self, valuedict )
+        self.sab_id = 0
+        self.kreditor = "" # Name des Kreditors (des Lieferanten)
+        self.vnr =  ""
+        self.leistung = ""
+        self.master_name = ""
+
 #####################  Mietverhältnis Kurz  ######################
 class XMietverhaeltnisKurz( XBase ):
     def __init__( self, valuedict: Dict = None ):
@@ -112,6 +123,7 @@ class XMietverhaeltnisKurz( XBase ):
         self.bis = ""
         if valuedict:
             self.setFromDict( valuedict )
+
 #######################################################################
 class XHandwerkerKurz( XBase ):
     def __init__(self, valuedict:Dict=None ):
@@ -155,6 +167,22 @@ class XSollHausgeld( XBase ):
         if valuedict:
             self.setFromDict( valuedict )
 
+#################  XSollAbschlag  ############################
+class XSollAbschlag( XBase ):
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self )
+        self.sab_id = 0
+        self.kreditor = "" # z.B. KEW, Gaswerk Illingen
+        self.vnr = "" # Vertragsnummer des Kreditors
+        self.leistung = "" # Gas, Strom, Wasser
+        self.master_name = ""
+        self.mobj_id = "" # nur erforderlich für eine Leerstehende Wohnung. Dann werden die Verträge auf mich abgeschlossen.
+        self.von = ""
+        self.bis = ""
+        self.betrag = 0.0
+        self.bemerkung = ""
+        if valuedict:
+            self.setFromDict( valuedict )
 
 #####################################################################################################################
 

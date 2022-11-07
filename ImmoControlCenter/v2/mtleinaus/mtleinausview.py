@@ -69,6 +69,16 @@ class HausgeldTableViewFrame( IccCheckTableViewFrame ):
     def __init__( self, tableView:MieteTableView ):
         IccCheckTableViewFrame.__init__( self, tableView )
 
+##############   AbschlagTableView   #################
+class AbschlagTableView( MtlEinAusTableView ):
+    def __init__( self ):
+        MtlEinAusTableView.__init__( self )
+
+###############  AbschlagTableViewFrame  #############
+class AbschlagTableViewFrame( IccCheckTableViewFrame ):
+    def __init__( self, tableView:AbschlagTableView ):
+        IccCheckTableViewFrame.__init__( self, tableView )
+
 ################   MtlZahlungEditDialog   ###########
 class MtlZahlungEditDialog( BaseDialogWithButtons ):
     def __init__( self, tv:EinAusTableView, title="Ändern von Zahlungen für einen Monat" ):

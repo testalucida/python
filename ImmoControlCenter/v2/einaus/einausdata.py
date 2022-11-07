@@ -18,6 +18,7 @@ class EinAusData( IccData ):
         :param x: Daten der Zahlung
         :return: die id des neu angelegten einaus-Satzes
         """
+        sab_id = "NULL" if not x.sab_id else str( x.sab_id )
         verteilt_auf = "NULL" if not x.verteilt_auf else str( x.verteilt_auf )
         umlegbar = "NULL" if not x.umlegbar else str( x.umlegbar )
         buchungsdatum = "NULL" if not x.buchungsdatum else "'" + x.buchungsdatum + "'"
@@ -25,11 +26,11 @@ class EinAusData( IccData ):
         mehrtext = "NULL" if not x.mehrtext else "'" + x.mehrtext + "'"
         writetime = datehelper.getCurrentTimestampIso()
         sql = "insert into einaus " \
-              "( master_name, mobj_id, debi_kredi, jahr, monat, betrag, ea_art, verteilt_auf, umlegbar, " \
+              "( master_name, mobj_id, debi_kredi, sab_id, jahr, monat, betrag, ea_art, verteilt_auf, umlegbar, " \
               "  buchungsdatum, buchungstext, mehrtext, write_time ) " \
               "values" \
-              "(   '%s',      '%s',       '%s',     %d,   '%s',    %.2f,   '%s',     %s,           %s," \
-              "    %s,         %s,         %s,     '%s' ) " % ( x.master_name, x.mobj_id, x.debi_kredi,
+              "(   '%s',      '%s',       '%s',     %s,     %d,   '%s',    %.2f,   '%s',     %s,           %s," \
+              "    %s,         %s,         %s,     '%s' ) " % ( x.master_name, x.mobj_id, x.debi_kredi, sab_id,
                                                                    x.jahr, x.monat, x.betrag,
                                                                    x.ea_art, verteilt_auf, umlegbar,
                                                                    buchungsdatum, buchungstext, mehrtext,
@@ -46,6 +47,7 @@ class EinAusData( IccData ):
         """
         # den alten Zustand lesen, er wird in die Log-Tabelle geschrieben
         oldX = self.getEinAusZahlung( x.ea_id )
+        sab_id = "NULL" if not x.sab_id else str( x.sab_id )
         verteilt_auf = "NULL" if not x.verteilt_auf else str( x.verteilt_auf )
         umlegbar = "NULL" if not x.umlegbar else str( x.umlegbar )
         buchungsdatum = "NULL" if not x.buchungsdatum else "'" + x.buchungsdatum + "'"
@@ -57,6 +59,7 @@ class EinAusData( IccData ):
               "master_name = '%s', " \
               "mobj_id = '%s', " \
               "debi_kredi = '%s', " \
+              "sabid = %s, " \
               "jahr = %d, " \
               "monat = '%s', " \
               "betrag = %.2f, " \
@@ -67,7 +70,7 @@ class EinAusData( IccData ):
               "buchungstext = %s, " \
               "mehrtext = %s, " \
               "write_time = '%s' " \
-              "where ea_id = %d " % (x.master_name, x.mobj_id, x.debi_kredi,
+              "where ea_id = %d " % (x.master_name, x.mobj_id, x.debi_kredi, x.sab_id,
                                        x.jahr, x.monat, x.betrag,
                                        x.ea_art, verteilt_auf, umlegbar,
                                        buchungsdatum, buchungstext, mehrtext,
@@ -89,7 +92,7 @@ class EinAusData( IccData ):
                           newvalues=None, oldvalues=x.toString( printWithClassname=True )  )
 
     def getEinAusZahlung( self, ea_id:int ) -> XEinAus:
-        sql = "select ea_id, master_name, mobj_id, debi_kredi, jahr, monat, betrag, ea_art, verteilt_auf, " \
+        sql = "select ea_id, master_name, mobj_id, debi_kredi, sab_id, jahr, monat, betrag, ea_art, verteilt_auf, " \
               "umlegbar, buchungsdatum, buchungstext, mehrtext, write_time " \
               "from einaus " \
               "where ea_id = %d " % ea_id
@@ -102,7 +105,7 @@ class EinAusData( IccData ):
         :param jahr: z.B. 2022
         :return:
         """
-        sql = "select ea_id, master_name, mobj_id, debi_kredi, jahr, monat, betrag, ea_art, verteilt_auf, " \
+        sql = "select ea_id, master_name, mobj_id, debi_kredi, sab_id, jahr, monat, betrag, ea_art, verteilt_auf, " \
               "umlegbar, buchungsdatum, buchungstext, mehrtext, write_time " \
               "from einaus " \
               "where jahr = %d "  % (jahr)
@@ -116,7 +119,7 @@ class EinAusData( IccData ):
         :param jahr: yyyy
         :return:  List[XEinAus]
         """
-        sql = "select ea_id, master_name, mobj_id, debi_kredi, jahr, monat, betrag, ea_art, verteilt_auf, " \
+        sql = "select ea_id, master_name, mobj_id, debi_kredi, sab_id, jahr, monat, betrag, ea_art, verteilt_auf, " \
               "umlegbar, buchungsdatum, buchungstext, mehrtext, write_time " \
               "from einaus " \
               "where jahr = %d " \
@@ -133,7 +136,7 @@ class EinAusData( IccData ):
         :param mobj_id: z.B. "thomasmann"
         :return: List[XEinAus]
         """
-        sql = "select ea_id, master_name, mobj_id, debi_kredi, jahr, monat, betrag, ea_art, verteilt_auf, " \
+        sql = "select ea_id, master_name, mobj_id, debi_kredi, sabid, jahr, monat, betrag, ea_art, verteilt_auf, " \
               "umlegbar, buchungsdatum, buchungstext, mehrtext, write_time " \
               "from einaus " \
               "where jahr = %d " \
@@ -152,7 +155,7 @@ class EinAusData( IccData ):
         :param mv_id: ID des Mieters
         :return: List[XEinAus]
         """
-        sql = "select ea_id, master_name, mobj_id, debi_kredi, jahr, monat, betrag, ea_art, verteilt_auf, " \
+        sql = "select ea_id, master_name, mobj_id, debi_kredi, sab_id, jahr, monat, betrag, ea_art, verteilt_auf, " \
               "umlegbar, buchungsdatum, buchungstext, mehrtext, write_time " \
               "from einaus " \
               "where jahr = %d " \
