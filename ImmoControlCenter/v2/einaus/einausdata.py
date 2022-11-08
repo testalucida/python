@@ -105,8 +105,10 @@ class EinAusData( IccData ):
         :param jahr: z.B. 2022
         :return:
         """
-        sql = "select ea_id, master_name, mobj_id, debi_kredi, sab_id, jahr, monat, betrag, ea_art, verteilt_auf, " \
-              "umlegbar, buchungsdatum, buchungstext, mehrtext, write_time " \
+        sql = "select ea_id, master_name, mobj_id, debi_kredi, sab_id, jahr, monat, betrag, ea_art, " \
+              "coalesce(verteilt_auf, '') as verteilt_auf, umlegbar, " \
+              "coalesce( buchungsdatum, '') as buchungsdatum, coalesce(buchungstext, '') as buchungstext, " \
+              "coalesce(mehrtext, '') as mehrtext, write_time " \
               "from einaus " \
               "where jahr = %d "  % (jahr)
         xlist = self.readAllGetObjectList( sql, XEinAus )
@@ -162,6 +164,24 @@ class EinAusData( IccData ):
               "and monat = '%s' " \
               "and debi_kredi = '%s' " \
               "and ea_art = '%s' " % (jahr, monat, debikredi, ea_art)
+        xlist = self.readAllGetObjectList( sql, XEinAus )
+        return xlist
+
+    def getEinAuszahlungen4( self, sab_id:int, jahr:int, monat:str ) -> List[XEinAus]:
+        """
+        Liefert eine Liste von XEinAus-Objekten, die den gegebenen Kriterien genügen
+        :param ea_art: EinAusArt
+        :param jahr: yyyy
+        :param monat: z.B. "jan", "mrz",... siehe iccMonthShortNames
+        :param mv_id: ID des Mieters
+        :return: List[XEinAus]
+        """
+        sql = "select ea_id, master_name, mobj_id, debi_kredi, sab_id, jahr, monat, betrag, ea_art, verteilt_auf, " \
+              "umlegbar, buchungsdatum, buchungstext, mehrtext, write_time " \
+              "from einaus " \
+              "where jahr = %d " \
+              "and monat = '%s' " \
+              "and sab_id = %d " % (jahr, monat, sab_id )
         xlist = self.readAllGetObjectList( sql, XEinAus )
         return xlist
 

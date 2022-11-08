@@ -460,7 +460,8 @@ class SumTableModel( BaseTableModel ):
         return self._rowCount
 
     def getValue( self, indexrow: int, indexcolumn: int ) -> Any:
-        if indexrow == self._rowCount - 1:
+        if indexrow == self._rowCount - 1: # letzte Zeile, in der ersten Spalte "SUMME" ausgeben.
+                                           # in den Spalten, deren Werte summiert werden sollen, die Summen ausgeben.
             if indexcolumn == 0:
                 return "SUMME"
             else:
@@ -470,6 +471,7 @@ class SumTableModel( BaseTableModel ):
                     return dic["sum"]
                 else:
                     return ""
+        key = self.keys[indexcolumn]
         return self.internalGetValue( indexrow, indexcolumn )
 
     def internalGetValue( self, indexrow:int, indexcolumn:int ) -> Any:

@@ -1,6 +1,6 @@
 from typing import List, Iterable
 
-from PySide2.QtWidgets import QMenu, QAction
+from PySide2.QtWidgets import QMenu
 
 from base.baseqtderivates import BaseAction
 from base.messagebox import InfoBox, ErrorBox
@@ -9,7 +9,7 @@ from v2.icc.icccontroller import IccController
 from v2.icc.iccmainwindow import IccMainWindow
 from v2.icc.iccwidgets import IccCheckTableViewFrame
 from v2.icc.mainlogic import MainLogic
-from v2.mtleinaus.mtleinauscontroller import MieteController, HausgeldController
+from v2.mtleinaus.mtleinauscontroller import MieteController, HausgeldController, AbschlagController
 
 
 class MainController( IccController ):
@@ -20,6 +20,7 @@ class MainController( IccController ):
         self._logic:MainLogic = MainLogic()
         self._mieteCtrl = MieteController()
         self._hausgeldCtrl = HausgeldController()
+        self._abschlagCtrl = AbschlagController()
         self._einausCtrl = EinAusController()
 
     def createGui( self ) -> IccMainWindow:
@@ -39,7 +40,8 @@ class MainController( IccController ):
         tvf: IccCheckTableViewFrame = self._hausgeldCtrl.createGui()
         self._win.setHausgeldTableViewFrame( tvf )
         # Abschlagszahlungen (KEW, Gaswerk etc.)
-        # todo: AbschlagController aufrufen
+        tvf: IccCheckTableViewFrame = self._abschlagCtrl.createGui()
+        self._win.setAbschlagTableViewFrame( tvf )
         ### Die View für die übrigen Zahlungen (Rechnungen etc.)
         tvf: IccCheckTableViewFrame = self._einausCtrl.createGui()
         self._win.setAlleZahlungenTableViewFrame( tvf )
@@ -88,14 +90,38 @@ class MainController( IccController ):
     def onExit( self ):
         print( "onExit" )
 
+
+def testScreenSize( win:IccMainWindow ):
+    from PySide2 import QtWidgets
+    from PySide2.QtWidgets import QDesktopWidget
+    app = QtWidgets.QApplication.instance()
+
+    r = win.rect()
+    print( r )
+
+    screens = app.screens()
+    for screen in screens:
+        rect = screen.availableGeometry()
+        print( rect )
+
+    screen = app.primaryScreen()
+    rect = screen.availableGeometry()
+    print( rect )
+
+    rect2 = QDesktopWidget().availableGeometry()
+    print( rect2 )
+    return rect
+
 def test():
     from PySide2.QtWidgets import QApplication
+    from PySide2.QtCore import QSize
+
     app = QApplication()
     c = MainController( "DEVELOP" )
     win = c.createGui()
     win.show()
+    # testScreenSize( win )
     w = win.getPreferredWidth()
-    h = win.height()
-    from PySide2.QtCore import QSize
-    win.resize( QSize( w, h ) )
+    #h = win.getPreferredHeight()
+    win.resize( QSize( w, 1000 ) )
     app.exec_()

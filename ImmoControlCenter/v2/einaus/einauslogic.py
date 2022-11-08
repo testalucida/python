@@ -17,9 +17,9 @@ class EinAusTableModel( IccTableModel):
         # self.setKeyHeaderMappings2( keys, headers )
         self.setKeyHeaderMappings2(
             ("master_name", "mobj_id", "debi_kredi", "buchungstext", "buchungsdatum", "ea_art", "verteilt_auf",
-             "betrag", "mehrtext"),
+             "betrag", "mehrtext", "write_time" ),
             ("Haus", "Whg", "Debitor/\nKreditor", "Buchungstext", "Buch.datum", "Art", "vJ",
-             "Betrag", "Bemerkung")
+             "Betrag", "Bemerkung", "eingetragen")
         )
 
 #################   EinAusLogic   #################################
@@ -54,7 +54,6 @@ class EinAusLogic(IccLogic):
 
     def getZahlungenModel3( self, ea_art, jahr:int, monthIdx:int, debikredi:str ) -> EinAusTableModel:
         """
-
         :param ea_art:
         :param jahr:
         :param monthIdx:
@@ -63,6 +62,14 @@ class EinAusLogic(IccLogic):
         """
         month_sss = iccMonthShortNames[monthIdx]
         l: List[XEinAus] = self._einausData.getEinAuszahlungen3( ea_art, jahr, month_sss, debikredi )
+        for x in l:
+            x.write_time = x.write_time[0:10]
+        tm = EinAusTableModel( l, jahr )
+        return tm
+
+    def getZahlungenModel4( self, sab_id:int, jahr:int, monthIdx:int ) -> EinAusTableModel:
+        month_sss = iccMonthShortNames[monthIdx]
+        l: List[XEinAus] = self._einausData.getEinAuszahlungen4( sab_id, jahr, month_sss )
         for x in l:
             x.write_time = x.write_time[0:10]
         tm = EinAusTableModel( l, jahr )
@@ -88,6 +95,28 @@ class EinAusLogic(IccLogic):
         x.mobj_id = mobj_id
         x.ea_art = ea_art
         x.debi_kredi = debikredi
+        x.jahr = jahr
+        x.monat = iccMonthShortNames[monthIdx]
+        x.betrag = value
+        x.buchungstext = buchungstext
+        x.buchungsdatum = buchungsdatum
+        x.mehrtext = mehrtext
+        ea_id = self._einausData.insertEinAusZahlung( x )
+        x.ea_id = ea_id
+        return x
+
+    def addZahlung2( self, ea_art, master_name:str,  mobj_id:str, debikredi:str, sab_id:int,
+                    jahr:int, monthIdx:int, value:float,
+                    buchungsdatum:str=None, buchungstext:str=None, mehrtext:str= None ) -> XEinAus:
+        if buchungsdatum:
+            if not datehelper.isValidIsoDatestring( buchungsdatum ):
+                raise ValueError( "EinAusLogic.addZahlung():\nBuchungsdatum '%s' ist nicht im ISO-Format." )
+        x = XEinAus()
+        x.master_name = master_name
+        x.mobj_id = mobj_id
+        x.ea_art = ea_art
+        x.debi_kredi = debikredi
+        x.sab_id = sab_id
         x.jahr = jahr
         x.monat = iccMonthShortNames[monthIdx]
         x.betrag = value

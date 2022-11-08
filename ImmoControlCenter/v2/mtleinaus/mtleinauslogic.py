@@ -64,6 +64,9 @@ class MtlEinAusTableModel( IccSumTableModel ):
         colIdx = self.keys.index( self.getDebiKrediKey() )
         return self.getValue( row, colIdx )
 
+    def getSab_id( self, row ) -> int:
+        return 0
+
     def setValue( self, row:int, col:int, value:float ) -> None:
         """
         Setzt einen Monatswert und korrigiert die Summe entsprechend.
@@ -177,12 +180,26 @@ class HausgeldTableModel( MtlEinAusTableModel ):
 class AbschlagTableModel( MtlEinAusTableModel ):
     def __init__( self, rowList:List[XMtlAbschlag], jahr:int, editableMonthIdx:int ):
         MtlEinAusTableModel.__init__( self, rowList, jahr, editableMonthIdx, ( "soll", "summe" ) )
+        self._idxOkColumn = 6
+        self._idxNokColumn = 7
+        self._idxSollColumn = 5
+        self._idxJanuarColumn = 8
+        self.setKeyHeaderMappings2(
+            ("master_name", "mobj_id", self.getDebiKrediKey(), "leistung", "vnr", "soll", "ok", "nok",
+             "jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dez", "summe"),
+            ("Haus", "Wohnung", self.getDebiKrediHeader(), "Leistg.", "Vertrag", "Soll", "ok", "nok",
+             "Jan", "Feb", "Mrz", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez", "Summe") )
+        self._idxSumColumn = self.getColumnIndexByKey( "summe" )
 
     def getDebiKrediKey( self ) -> str:
-        return "kreditor_id"
+        return "kreditor"
 
     def getDebiKrediHeader( self ) -> str:
         return "Kreditor"
+
+    def getSab_id( self, row ) -> int:
+        x = self.getElement( row )
+        return x.sab_id
 
 ################  MtlEinAusLogic  ############################
 class MtlEinAusLogic( IccLogic ):
@@ -213,9 +230,17 @@ class MtlEinAusLogic( IccLogic ):
     # def getMonatsZahlung( debikredi:str, month_sss:str, year:int ) -> XMtlZahlung:
     #     pass
 
-    def addMonatsZahlung( self, mobj_id:str, debikredi:str,
+    def addMonatsZahlung_( self, mobj_id:str, debikredi:str,
                           selectedYear:int, selectedMonth:int, value:float, mehrtext:str= "" ) -> XEinAus:
         xeinaus = self._ealogic.addZahlung( self.getEinAusArt(), mobj_id, debikredi,
+                                            selectedYear, selectedMonth, value, mehrtext=mehrtext )
+        self._ealogic.commit()
+        return xeinaus
+
+    def addMonatsZahlung( self, x:XMtlZahlung, selectedYear:int, selectedMonth:int,
+                          value:float, mehrtext:str= "" ) -> XEinAus:
+        debi_kredi = self.getDebiKrediKey()
+        xeinaus = self._ealogic.addZahlung( self.getEinAusArt(), x.mobj_id, x.getValue( debi_kredi ),
                                             selectedYear, selectedMonth, value, mehrtext=mehrtext )
         self._ealogic.commit()
         return xeinaus
@@ -494,6 +519,7 @@ class HausgeldLogic( MtlEinAusLogic ):
                 xhglist.append( xhg )
                 memo = xea.debi_kredi
             xhg.__dict__[xea.monat] = xea.betrag
+            xhg.computeSum()
         self._provideSollHausgelder( jahr, checkmonatIdx, xhglist )
         tm = HausgeldTableModel( xhglist, jahr, checkmonatIdx )
         return tm
@@ -545,7 +571,7 @@ class AbschlagLogic( MtlEinAusLogic ):
         xab:XMtlAbschlag = None
         for xea in zlist:
             if xea.sab_id != sab_id_memo:
-                xab = XMtlAbschlag()
+                xab = XMtlAbschlag() # entspricht einer Zeile im AbschlagTableModel
                 xab.sab_id = xea.sab_id
                 xab.kreditor = xea.debi_kredi
                 xab.master_name = xea.master_name
@@ -554,6 +580,7 @@ class AbschlagLogic( MtlEinAusLogic ):
                 xablist.append( xab )
                 sab_id_memo = xea.sab_id
             xab.__dict__[xea.monat] = xea.betrag
+            xab.computeSum()
         tm = AbschlagTableModel( xablist, jahr, checkmonatIdx )
         return tm
 
@@ -604,12 +631,25 @@ class AbschlagLogic( MtlEinAusLogic ):
                          "Sollabschlag nicht gefunden: "
                          "sab_id = %d, jahr = %d, monat = %d " % ( sab_id, jahr, monat ) )
 
+    def addMonatsZahlung( self, x:XMtlAbschlag, selectedYear:int, selectedMonth:int,
+                          value:float, mehrtext:str= "" ) -> XEinAus:
+        xeinaus = self._ealogic.addZahlung2( self.getEinAusArt(), x.master_name, x.mobj_id, x.kreditor, x.sab_id,
+                                            selectedYear, selectedMonth, value, mehrtext=mehrtext )
+        self._ealogic.commit()
+        return xeinaus
 
     def getEinAusArt( self ) -> EinAusArt:
         return EinAusArt.MTL_ABSCHLAG.value[0]
 
     def getDebiKrediKey( self ) -> Any:
         return "kreditor"
+
+    def getEinzelzahlungenModel( self, sab_id:int, year:int, monthIdx:int ) -> EinAusTableModel:
+        eatm:EinAusTableModel = self._ealogic.getZahlungenModel4( sab_id, year, monthIdx )
+        keys = ("master_name", "mobj_id", "debi_kredi", "sab_id", "jahr", "monat", "betrag", "write_time")
+        headers = ("Haus", "Wohnung", "Firma", "sab_id", "Jahr", "Monat", "Betrag", "gebucht am")
+        eatm.setKeyHeaderMappings2( keys, headers )
+        return eatm
 
 
 def test():

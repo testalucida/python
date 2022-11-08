@@ -102,8 +102,12 @@ class IccMainWindow( QMainWindow ):
         self._createUI()
 
     def getPreferredWidth( self ) -> int:
-        w = self._mieteTableViewFrame.getPreferredWidth()
-        return w + 20
+        w = self._abschlagTableViewFrame.getPreferredWidth()
+        return w
+
+    def getPreferredHeight( self ) -> int:
+        h = self._alleZahlungenTableViewFrame.getPreferredHeight()
+        return h
 
     def setMieteTableViewFrame( self, tvf:MieteTableViewFrame ):
         self._mainTab.getMtlZahlungenTab().addTab( tvf, "Mieten" )

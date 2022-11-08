@@ -4,7 +4,7 @@ from PySide2 import QtCore
 from PySide2.QtCore import Signal, Qt
 from PySide2.QtGui import QColor
 from PySide2.QtWidgets import QWidget, QGridLayout, QToolBar, QComboBox, QApplication, QAction, QLabel, QHBoxLayout, \
-    QDialog
+    QDialog, QDesktopWidget
 
 from base.dynamicattributeui import DynamicAttributeDialog
 from base.filterhandler import FilterHandler
@@ -224,7 +224,14 @@ class BaseTableViewFrame( BaseWidget ):
         w = 0
         for col in range( 0, colcount ):
             w += self._tv.columnWidth( col )
-        return w
+        return w +25
+
+    def getPreferredHeight( self ) -> int:
+        rowcount = self._tv.model().rowCount()
+        h = self._toolbar.height()
+        for row in range( 0, rowcount ):
+            h += self._tv.rowHeight( row )
+        return h + 25
 
     def _onEditItem( self ):
         sel_rows = self._tv.getSelectedRows()
@@ -242,6 +249,12 @@ class BaseTableViewFrame( BaseWidget ):
     def getTableView( self ) -> BaseTableView:
         return self._tv
 
+def testScreenSize():
+    app = QApplication()
+    tv = BaseTableView()
+    tvf = BaseTableViewFrame( tv )
+    rect = tvf.getScreenSize()
+    print( rect )
 
 ########################### TEST  TEST  TEST  ############################
 ### Test siehe auch basetableview.py Funktion testBaseTableViewFrame()
