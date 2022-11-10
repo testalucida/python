@@ -45,12 +45,13 @@ class XMtlZahlung( XBase ):
     def __init__( self, valuedict:Dict=None ):
         XBase.__init__( self )
         self.mobj_id = ""
-        # self.mv_id = ""
-        # self.verwalter = ""
-        # self.weg = "" # Name der Wohnungseigentümergemeinschaft
-        # self.vonMonat = ""  # aktiv ab Monat im betreff. Jahr
-        # self.bisMonat = ""  # aktiv bis Monat im betreff. Jahr
-        self.soll = 0.0 # hängt ab vom eingestellten Monat
+        self.soll = 0.0 # Soll-Betrag des eingestellten Monats. Ändert sich mit jeder Änderung des "Checkmonats".
+        ## vonMonat und bisMonat beziehen sich auf das Jahr, für das dieses Objekt angelegt wird.
+        ## Läuft ein MV z.B. von Januar bis Oktober, wird in vonMonat 'jan' und in bisMonat 'okt' eingetragen.
+        ## Das dient dazu, dass in der Tabelle die Monate, in denen keine Zahlung erwartet werden kann,
+        ## mit einem anderen Hintergrund dargestellt werden können als die anderen Monate.
+        self.vonMonat = "" # aktiv ab Monat im betreff. Jahr
+        self.bisMonat = "" # aktiv bis Monat im betreff. Jahr
         self.jan = 0.0
         self.feb = 0.0
         self.mrz = 0.0
@@ -93,14 +94,13 @@ class XMtlMiete( XMtlZahlung ):
     def __init__( self, valuedict:Dict=None ):
         XMtlZahlung.__init__( self, valuedict )
         self.mv_id = ""
-        self.mv_vonMonat = ""
-        self.mv_bisMonat = ""
 
 ###########################   XMtlHausgeld   ######################
 class XMtlHausgeld( XMtlZahlung ):
     def __init__( self, valuedict:Dict=None ):
         XMtlZahlung.__init__( self, valuedict )
-        self.weg_name = "" # Name der Wohnungseigentümergemeinschaft
+        self.master_name = ""
+        self.weg_name = "" # Name der Wohnungseigentümergemeinschaft / des Hauses
 
 ###########################   XMtlAbschlag   ######################
 class XMtlAbschlag( XMtlZahlung ):
@@ -119,6 +119,20 @@ class XMietverhaeltnisKurz( XBase ):
         self.id = 0
         self.mv_id = ""
         self.mobj_id = ""
+        self.von = ""
+        self.bis = ""
+        if valuedict:
+            self.setFromDict( valuedict )
+
+#####################  WEG  ######################
+class XVerwaltung( XBase ):
+    def __init__( self, valuedict: Dict = None ):
+        XBase.__init__( self )
+        self.vwg_id = 0
+        self.master_name = ""
+        self.mobj_id = ""
+        self.weg_name = ""
+        self.vw_id = ""
         self.von = ""
         self.bis = ""
         if valuedict:
@@ -156,6 +170,7 @@ class XSollHausgeld( XBase ):
     def __init__( self, valuedict:Dict=None ):
         XBase.__init__( self )
         self.shg_id = 0
+        self.vwg_id = 0
         self.weg_name = ""
         self.mobj_id = ""
         self.von = ""
@@ -180,6 +195,7 @@ class XSollAbschlag( XBase ):
         self.von = ""
         self.bis = ""
         self.betrag = 0.0
+        self.umlegbar = 0
         self.bemerkung = ""
         if valuedict:
             self.setFromDict( valuedict )

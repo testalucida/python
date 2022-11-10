@@ -10,198 +10,17 @@ from v2.icc.constants import EinAusArt, iccMonthShortNames
 from v2.icc.iccdata import IccData
 from v2.icc.icclogic import IccSumTableModel, IccTableModel, IccLogic
 from v2.icc.interfaces import XMtlZahlung, XEinAus, XMietverhaeltnisKurz, XSollMiete, XMtlMiete, XSollHausgeld, \
-    XMtlHausgeld, XMtlAbschlag, XSollAbschlag
+    XMtlHausgeld, XMtlAbschlag, XSollAbschlag, XVerwaltung
 from v2.mtleinaus.abschlagdata import AbschlagData
 from v2.mtleinaus.hausgelddata import HausgeldData
 from v2.mtleinaus.mietedata import MieteData
 
-###############  MieteTableModel  #############
-class MtlEinAusTableModel( IccSumTableModel ):
-    """
-    TableModel, das für die monatlichen Mieteinzahlungen und monatlichen Hausgeldauszahlungen verwendet wird.
-    """
-    def __init__( self, rowList:List[XMtlZahlung], jahr:int, editablemonthIdx:int, colsToSum:Iterable[str] ):
-        """
-        :param rowList: Liste mit XBase-Objekten. Jedes XBase-Objekt wird in der TableView durch eine Row repräsentiert.
-        :param jahr:
-        :param editablemonthIdx: Repräsentiert den Index des Monats, dessen Monatswert nach dem Klicken auf die OK-Spalte
-                                 geändert wird. 0=Januar, 11=Dezember
-        :param colsToSum: Zu summierende Spalten
-        """
-        IccSumTableModel.__init__( self, rowList, jahr, colsToSum )
-        self._okBrush = QBrush( Qt.green )
-        self._nokBrush = QBrush( Qt.red )
-        self._editBrush = QBrush( Qt.yellow )
-        self._idxOkColumn = 3
-        self._idxNokColumn = 4
-        self._idxSollColumn = 2
-        self._idxJanuarColumn = 5
-        self._idxEditableColumn = self._idxJanuarColumn + editablemonthIdx
-        self.setKeyHeaderMappings2(
-            ("mobj_id", self.getDebiKrediKey(), "soll", "ok", "nok", "jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug",
-             "sep", "okt", "nov", "dez", "summe"),
-            ("Objekt", self.getDebiKrediHeader(), "Soll", "ok", "nok", "Jan", "Feb", "Mrz", "Apr", "Mai", "Jun", "Jul", "Aug",
-             "Sep", "Okt", "Nov", "Dez", "Summe") )
-        self._idxSumColumn = self.getColumnIndexByKey( "summe" )
-
-    @abstractmethod
-    def getDebiKrediKey( self ) -> str:
-        pass
-
-    @abstractmethod
-    def getDebiKrediHeader( self ) -> str:
-        pass
-
-    def getMietobjekt( self, row:int ) -> str:
-        objIdx = self.keys.index( "mobj_id" )
-        return self.getValue( row, objIdx )
-
-    # def getMieter( self, row:int ) -> str:
-    #     objIdx = self.keys.index( "mv_id" )
-    #     return self.getValue( row, objIdx )
-
-    def getDebiKredi( self, row ) -> str:
-        colIdx = self.keys.index( self.getDebiKrediKey() )
-        return self.getValue( row, colIdx )
-
-    def getSab_id( self, row ) -> int:
-        return 0
-
-    def setValue( self, row:int, col:int, value:float ) -> None:
-        """
-        Setzt einen Monatswert und korrigiert die Summe entsprechend.
-        Annahme hierbei: vom User können in dieser Tabelle ausschließlich Monatswerte geändert werden.
-        Überschreibt die Methode der Basisklasse, weil nach einer Änderung eines Monatswerts
-        auch der Summenwert angepasst werden muss. Es finden hier also 2 Aufrufe von BaseTableModel.setValue() statt.
-        :param row: Row-Index der zu ändernden Zelle
-        :param col: Column-Index der zu ändernden Zelle
-        :param value: Neuer Wert
-        :return: None
-        """
-        oldval = self.getValue( row, col )
-        delta = value - oldval
-        super().setValue( row, col, value )
-        oldSum = self.getValue( row, self._idxSumColumn )
-        newSum = oldSum + delta
-        super().setValue( row,self._idxSumColumn, newSum )
-
-    def getSummeValue( self, row:int ) -> float:
-        return self.getValue( row, self._idxSumColumn )
-
-    def getSollValue( self, row: int ) -> float:
-        return self.getValue( row, self._idxSollColumn )
-
-    def internalGetValue( self, indexrow: int, indexcolumn: int ) -> Any:
-        if indexcolumn in (self._idxOkColumn, self._idxNokColumn):
-            return None
-        else:
-            return super().internalGetValue( indexrow, indexcolumn )
-
-    def getSollColumnIdx( self ) -> int:
-        return self._idxSollColumn
-
-    def getJanuarColumnIndex( self ) -> int:
-        return self._idxJanuarColumn
-
-    def getOkColumnIdx( self ) -> int:
-        return self._idxOkColumn
-
-    def getNokColumnIdx( self ) -> int:
-        return self._idxNokColumn
-
-    def setEditableMonth( self, monthIdx:int ):
-        oldEditIdx = self._idxEditableColumn
-        self._idxEditableColumn = self._idxJanuarColumn + monthIdx
-        idxA = self.createIndex( 0, oldEditIdx )
-        idxE = self.createIndex( self.rowCount()-1, oldEditIdx )
-        self.dataChanged.emit( idxA, idxE, [Qt.BackgroundColorRole] )
-        idxA = self.createIndex( 0, self._idxEditableColumn )
-        idxE = self.createIndex( self.rowCount()-1, self._idxEditableColumn )
-        self.dataChanged.emit( idxA, idxE, [Qt.BackgroundColorRole] )
-
-    def getSelectedMonthIdx( self ) -> int:
-        """
-        Liefert den Index des Monats, der zur Bearbeitung ausgewählt ist (0=Januar,...)
-        :return:
-        """
-        return self._idxEditableColumn - self._idxJanuarColumn
-
-    def getSelectedYear( self ) -> int:
-        """
-        Liefert das Jahr, das zur Bearbeitung ausgewählt ist
-        :return:
-        """
-        return self.getJahr()
-
-    def getEditableColumnIdx( self ) -> int:
-        """
-        liefert den Index der Spalte, die den bearbeitbaren Monat repräsentiert
-        :return:
-        """
-        return self._idxEditableColumn
-
-    def getEditableMonthIdx( self ) -> int:
-        return self._idxEditableColumn - self._idxJanuarColumn
-
-    def getBackgroundBrush( self, indexrow: int, indexcolumn: int ) -> QBrush or None:
-        if indexrow == self.rowCount() - 1: return
-        if indexcolumn == self._idxOkColumn:
-            return self._okBrush
-        elif indexcolumn == self._idxNokColumn:
-            return self._nokBrush
-        elif indexcolumn == self._idxEditableColumn:
-            return self._editBrush
-        #todo: den Diagonal-Brush einbauen, wenn das Mietverhältnis im betreff. Monat nicht aktiv war
-        return None
-
-###############  MieteTableModel  #############
-class MieteTableModel( MtlEinAusTableModel ):
-    def __init__( self, rowList:List[XMtlMiete], jahr:int, editableMonthIdx:int ):
-        MtlEinAusTableModel.__init__( self, rowList, jahr, editableMonthIdx, ( "soll", "summe" ) )
-
-    def getDebiKrediKey( self ) -> str:
-        return "mv_id"
-
-    def getDebiKrediHeader( self ) -> str:
-        return "Mieter"
-
-###############  HausgeldTableModel  #############
-class HausgeldTableModel( MtlEinAusTableModel ):
-    def __init__( self, rowList:List[XMtlHausgeld], jahr:int, editableMonthIdx:int ):
-        MtlEinAusTableModel.__init__( self, rowList, jahr, editableMonthIdx, ( "soll", "summe" ) )
-
-    def getDebiKrediKey( self ) -> str:
-        return "weg_name"
-
-    def getDebiKrediHeader( self ) -> str:
-        return "WEG"
-
-###############  AbschlagTableModel  #############
-class AbschlagTableModel( MtlEinAusTableModel ):
-    def __init__( self, rowList:List[XMtlAbschlag], jahr:int, editableMonthIdx:int ):
-        MtlEinAusTableModel.__init__( self, rowList, jahr, editableMonthIdx, ( "soll", "summe" ) )
-        self._idxOkColumn = 6
-        self._idxNokColumn = 7
-        self._idxSollColumn = 5
-        self._idxJanuarColumn = 8
-        self.setKeyHeaderMappings2(
-            ("master_name", "mobj_id", self.getDebiKrediKey(), "leistung", "vnr", "soll", "ok", "nok",
-             "jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dez", "summe"),
-            ("Haus", "Wohnung", self.getDebiKrediHeader(), "Leistg.", "Vertrag", "Soll", "ok", "nok",
-             "Jan", "Feb", "Mrz", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez", "Summe") )
-        self._idxSumColumn = self.getColumnIndexByKey( "summe" )
-
-    def getDebiKrediKey( self ) -> str:
-        return "kreditor"
-
-    def getDebiKrediHeader( self ) -> str:
-        return "Kreditor"
-
-    def getSab_id( self, row ) -> int:
-        x = self.getElement( row )
-        return x.sab_id
 
 ################  MtlEinAusLogic  ############################
+from v2.mtleinaus.mtleinaustablemodels import MtlEinAusTableModel, MieteTableModel, HausgeldTableModel, \
+    AbschlagTableModel
+
+
 class MtlEinAusLogic( IccLogic ):
     """
     Beinhaltet die Logik, die für die Zusammenstellung der Daten notwendig ist, die in den Miet- und Hausgeldzahlungs-
@@ -230,12 +49,12 @@ class MtlEinAusLogic( IccLogic ):
     # def getMonatsZahlung( debikredi:str, month_sss:str, year:int ) -> XMtlZahlung:
     #     pass
 
-    def addMonatsZahlung_( self, mobj_id:str, debikredi:str,
-                          selectedYear:int, selectedMonth:int, value:float, mehrtext:str= "" ) -> XEinAus:
-        xeinaus = self._ealogic.addZahlung( self.getEinAusArt(), mobj_id, debikredi,
-                                            selectedYear, selectedMonth, value, mehrtext=mehrtext )
-        self._ealogic.commit()
-        return xeinaus
+    # def addMonatsZahlung_( self, mobj_id:str, debikredi:str,
+    #                       selectedYear:int, selectedMonth:int, value:float, mehrtext:str= "" ) -> XEinAus:
+    #     xeinaus = self._ealogic.addZahlung( self.getEinAusArt(), mobj_id, debikredi,
+    #                                         selectedYear, selectedMonth, value, mehrtext=mehrtext )
+    #     self._ealogic.commit()
+    #     return xeinaus
 
     def addMonatsZahlung( self, x:XMtlZahlung, selectedYear:int, selectedMonth:int,
                           value:float, mehrtext:str= "" ) -> XEinAus:
@@ -371,6 +190,15 @@ class MtlEinAusLogic( IccLogic ):
                     einausList.remove( ea2 )
         return einausList
 
+    @abstractmethod
+    def selectedMonthChanged( self, model:MtlEinAusTableModel, newMonthIdx:int ):
+        """
+        im Model müssen neue Sollwerte angelegt werden.
+        :param model:
+        :param newMonthIdx:
+        :return:
+        """
+
 
 #####################  MieteLogic SINGLETON  ############################
 class MieteLogic( MtlEinAusLogic ):
@@ -466,7 +294,7 @@ class MieteLogic( MtlEinAusLogic ):
             x = XMtlMiete()
             x.mobj_id = mv.mobj_id
             x.mv_id = mv.mv_id
-            x.mv_vonMonat, x.mv_bisMonat = self.getMonthIntervallForCurrentYear( jahr, mv.von, mv.bis )
+            x.vonMonat, x.bisMonat = self.getMonthIntervallForCurrentYear( jahr, mv.von, mv.bis )
             mietelist.append( x )
         return mietelist
 
@@ -497,6 +325,22 @@ class MieteLogic( MtlEinAusLogic ):
         data = IccData()
         return data.getMietverhaeltnisseKurz( jahr, orderby="mv_id" )
 
+    def selectedMonthChanged( self, model: MieteTableModel, newMonthIdx: int ):
+        # todo
+        sollmieteListe:List[XSollMiete] = self.getSollMieten( model.getJahr(), newMonthIdx )
+        rowlist:List[XMtlMiete] = model.rowList
+        for mtlmiete in rowlist:
+            found = False
+            for sm in sollmieteListe:
+                if sm.mv_id == mtlmiete.mv_id:
+                    mtlmiete.soll = sm.brutto
+                    found = True
+                    break
+            if not found:
+                mtlmiete.soll = 0
+
+
+
 
 #####################  HausgeldLogic ############################
 class HausgeldLogic( MtlEinAusLogic ):
@@ -504,25 +348,58 @@ class HausgeldLogic( MtlEinAusLogic ):
         MtlEinAusLogic.__init__( self )
         self._hausgeldData = HausgeldData()
 
+    # def createHausgeldzahlungenModel( self, jahr: int, checkmonatIdx:int=None ) -> HausgeldTableModel:
+    #     zlist:List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.HAUSGELD_VORAUS, jahr )
+    #     zlist = self.getCondensedEinAusList( zlist )
+    #     # die XEinAus-Liste in XMtlHausgeld-Liste umwandeln:
+    #     xhglist:List[XMtlHausgeld] = list()
+    #     memo = ""
+    #     xhg:XMtlHausgeld = None
+    #     for xea in zlist:
+    #         if xea.debi_kredi != memo:
+    #             xhg = XMtlHausgeld()
+    #             xhg.weg_name = xea.debi_kredi
+    #             xhg.mobj_id = xea.mobj_id
+    #             self._provideVonBis( jahr, xhg )
+    #             xhglist.append( xhg )
+    #             memo = xea.debi_kredi
+    #         xhg.__dict__[xea.monat] = xea.betrag
+    #         xhg.computeSum()
+    #     self._provideSollHausgelder( jahr, checkmonatIdx, xhglist )
+    #     tm = HausgeldTableModel( xhglist, jahr, checkmonatIdx )
+    #     return tm
+
     def createHausgeldzahlungenModel( self, jahr: int, checkmonatIdx:int=None ) -> HausgeldTableModel:
+        vwlist:List[XVerwaltung] = self._hausgeldData.getVerwaltungen( jahr )
         zlist:List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.HAUSGELD_VORAUS, jahr )
         zlist = self.getCondensedEinAusList( zlist )
         # die XEinAus-Liste in XMtlHausgeld-Liste umwandeln:
         xhglist:List[XMtlHausgeld] = list()
-        memo = ""
-        xhg:XMtlHausgeld = None
-        for xea in zlist:
-            if xea.debi_kredi != memo:
-                xhg = XMtlHausgeld()
-                xhg.weg_name = xea.debi_kredi
-                xhg.mobj_id = xea.mobj_id
-                xhglist.append( xhg )
-                memo = xea.debi_kredi
-            xhg.__dict__[xea.monat] = xea.betrag
+        for vw in vwlist:
+            # für jede Verwaltung ein XMtlHausgeld-Objekt anlegen
+            xhg = XMtlHausgeld() # ein XMtlHausgel-OBjekt entspricht einer Zeile in der Tabelle
+            xhg.master_name = vw.master_name
+            xhg.mobj_id = vw.mobj_id
+            xhg.weg_name = vw.weg_name #+ " (" + vw.vw_id + ") "
+            self._provideVonBis( jahr, xhg, vw )
+            for xea in zlist:
+                # die Monatsbeträge aus den XEinAus-Objekten in das XMtlHausgeld-Objekt übertragen
+                xhg.__dict__[xea.monat] = xea.betrag
             xhg.computeSum()
+            xhglist.append( xhg )
         self._provideSollHausgelder( jahr, checkmonatIdx, xhglist )
         tm = HausgeldTableModel( xhglist, jahr, checkmonatIdx )
         return tm
+
+    def _provideVonBis( self, jahr, xhg:XMtlHausgeld, vw:XVerwaltung ):
+        """
+        Versorgt die Attribute xhg.vonMonat und xhg.bisMonat mit dem im Jahr <jahr> aktiven Monatsintervall.
+        Basis sind die Datümer vw.von und vw.bis
+        :param xhg:
+        :return:
+        """
+        # anschaffungsdatum, verkaufsdatum = self._hausgeldData.getAnschaffungsUndVerkaufsdatum2( xhg.master_name )
+        xhg.vonMonat, xhg.bisMonat =  self.getMonthIntervallForCurrentYear( jahr, vw.von, vw.bis )
 
     def _provideSollHausgelder( self, jahr:int, monatIdx:int, xhglist:List[XMtlHausgeld] ) -> List[XMtlHausgeld]:
         sollHgList = self.getSollHausgelder( jahr, monatIdx )
@@ -555,6 +432,10 @@ class HausgeldLogic( MtlEinAusLogic ):
     def getDebiKrediKey( self ) -> Any:
         return "weg_name"
 
+    def selectedMonthChanged( self, model: MtlEinAusTableModel, newMonthIdx: int ):
+        # todo
+        pass
+
 #####################  AbschlagLogic ############################
 class AbschlagLogic( MtlEinAusLogic ):
     def __init__( self ):
@@ -567,20 +448,20 @@ class AbschlagLogic( MtlEinAusLogic ):
         sollAbschlagList:List[XSollAbschlag] = self._abschlagData.getSollabschlaege( jahr )
         # die XEinAus-Liste in XMtlAbschlag-Liste umwandeln:
         xablist:List[XMtlAbschlag] = list()
-        sab_id_memo = 0
-        xab:XMtlAbschlag = None
-        for xea in zlist:
-            if xea.sab_id != sab_id_memo:
-                xab = XMtlAbschlag() # entspricht einer Zeile im AbschlagTableModel
-                xab.sab_id = xea.sab_id
-                xab.kreditor = xea.debi_kredi
-                xab.master_name = xea.master_name
-                xab.mobj_id = xea.mobj_id
-                self._completeData( xab, xab.sab_id, jahr, checkmonatIdx, sollAbschlagList )
-                xablist.append( xab )
-                sab_id_memo = xea.sab_id
-            xab.__dict__[xea.monat] = xea.betrag
+        for sollabschlag in sollAbschlagList:
+            # aus jedem sollabschlag ein XMtlAbschlag-Objekt machen:
+            xab = XMtlAbschlag()
+            xab.sab_id = sollabschlag.sab_id
+            xab.master_name = sollabschlag.master_name
+            xab.mobj_id = sollabschlag.mobj_id
+            xab.kreditor = sollabschlag.kreditor
+            self._completeData( xab, xab.sab_id, jahr, checkmonatIdx, sollAbschlagList )
+            # dem XMtlAbschlag-Objekt die einzelnen Zahlungen zuordnen
+            for xea in zlist:
+                if xea.sab_id == xab.sab_id:
+                   xab.__dict__[xea.monat] = xea.betrag
             xab.computeSum()
+            xablist.append( xab )
         tm = AbschlagTableModel( xablist, jahr, checkmonatIdx )
         return tm
 
@@ -626,6 +507,7 @@ class AbschlagLogic( MtlEinAusLogic ):
                 xab.soll = xsa.betrag
                 xab.vnr = xsa.vnr
                 xab.leistung = xsa.leistung
+                xab.vonMonat, xab.bisMonat = self.getMonthIntervallForCurrentYear( jahr, xsa.von, xsa.bis )
                 return
         raise Exception( "AbschlagLogic._completeData():\n"
                          "Sollabschlag nicht gefunden: "
@@ -633,8 +515,9 @@ class AbschlagLogic( MtlEinAusLogic ):
 
     def addMonatsZahlung( self, x:XMtlAbschlag, selectedYear:int, selectedMonth:int,
                           value:float, mehrtext:str= "" ) -> XEinAus:
+        umlegbar = self._abschlagData.getUmlegbar( x.sab_id )
         xeinaus = self._ealogic.addZahlung2( self.getEinAusArt(), x.master_name, x.mobj_id, x.kreditor, x.sab_id,
-                                            selectedYear, selectedMonth, value, mehrtext=mehrtext )
+                                            selectedYear, selectedMonth, value, umlegbar, mehrtext=mehrtext )
         self._ealogic.commit()
         return xeinaus
 
@@ -650,6 +533,10 @@ class AbschlagLogic( MtlEinAusLogic ):
         headers = ("Haus", "Wohnung", "Firma", "sab_id", "Jahr", "Monat", "Betrag", "gebucht am")
         eatm.setKeyHeaderMappings2( keys, headers )
         return eatm
+
+    def selectedMonthChanged( self, model: MtlEinAusTableModel, newMonthIdx: int ):
+        # todo
+        pass
 
 
 def test():

@@ -106,7 +106,7 @@ class EinAusLogic(IccLogic):
         return x
 
     def addZahlung2( self, ea_art, master_name:str,  mobj_id:str, debikredi:str, sab_id:int,
-                    jahr:int, monthIdx:int, value:float,
+                    jahr:int, monthIdx:int, value:float, umlegbar:int=1,
                     buchungsdatum:str=None, buchungstext:str=None, mehrtext:str= None ) -> XEinAus:
         if buchungsdatum:
             if not datehelper.isValidIsoDatestring( buchungsdatum ):
@@ -120,6 +120,7 @@ class EinAusLogic(IccLogic):
         x.jahr = jahr
         x.monat = iccMonthShortNames[monthIdx]
         x.betrag = value
+        x.umlegbar = umlegbar
         x.buchungstext = buchungstext
         x.buchungsdatum = buchungsdatum
         x.mehrtext = mehrtext

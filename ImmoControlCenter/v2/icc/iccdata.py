@@ -6,7 +6,8 @@ from base.interfaces import XBase
 
 from v2.icc.definitions import DATABASE
 from v2.icc.constants import EinAusArt
-from v2.icc.interfaces import XHandwerkerKurz, XEinAus, XMietverhaeltnisKurz
+from v2.icc.interfaces import XHandwerkerKurz, XEinAus, XMietverhaeltnisKurz, XVerwaltung
+
 
 class DbAction:
     INSERT = "insert"
@@ -79,6 +80,35 @@ class IccData( DatabaseCommon ):
             return ""
         return tpl[0][0]
 
+    def getVerwaltungen( self, jahr:int ) -> List[XVerwaltung]:
+        minbis = "%d-%02d-%02d" % (jahr, 1, 1)
+        maxvon = "%d-%02d-%02d" % (jahr, 12, 31)
+        sql = "select vwg_id, master_name, coalesce(mobj_id, '') as mobj_id, " \
+              "vw_id, weg_name, von, coalesce(bis, '') as bis " \
+              "from verwaltung " \
+              "where (bis is NULL or bis = '' or bis >= '%s') " \
+              "and not von > '%s' " \
+              "order by weg_name asc " % ( minbis, maxvon )
+        l: List[XVerwaltung] = self.readAllGetObjectList( sql, XVerwaltung )
+        return l
+
+    def getAnschaffungsUndVerkaufsdatum( self, mobj_id:str ) -> [str, str]:
+        sql = "select master.angeschafft_am, master.veraeussert_am " \
+              "from masterobjekt master " \
+              "inner join mietobjekt mobj on mobj.master_name = master.master_name " \
+              "where mobj.mobj_id = '%s' " % mobj_id
+        d = self.readOneGetDict( sql )
+        veraeussert_am = "" if not d["veraeussert_am"] else d["veraeussert_am" ]
+        return [d["angeschafft_am"], veraeussert_am]
+
+    def getAnschaffungsUndVerkaufsdatum2( self, master_name:str ) -> [str, str]:
+        sql = "select angeschafft_am, veraeussert_am " \
+              "from masterobjekt " \
+              "where master_name = '%s' " % master_name
+        d = self.readOneGetDict( sql )
+        veraeussert_am = "" if not d["veraeussert_am"] else d["veraeussert_am" ]
+        return [d["angeschafft_am"], veraeussert_am]
+
     def writeAndLog( self, sql: str, action:str, table:str, id_name:str, id_value:int,
                      newvalues:str=None, oldvalues:str=None ) -> int:
         """
@@ -129,4 +159,9 @@ class IccData( DatabaseCommon ):
             raise Exception( msg )
 
 
-
+def test():
+    data = IccData()
+    a, v = data.getAnschaffungsUndVerkaufsdatum( "kleist_12")
+    print( a, ", ", v )
+    verwlist = data.getVerwaltungen( 2022 )
+    print( verwlist )

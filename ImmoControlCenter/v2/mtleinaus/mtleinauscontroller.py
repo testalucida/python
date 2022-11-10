@@ -104,11 +104,13 @@ class MtlEinAusController( IccController ):
 
     @abstractmethod
     def onYearChanged( self, newYear: int ):
-        pass
+        model: MtlEinAusTableModel = self.getModel()
+        # todo
 
     def onMonthChanged( self, newMonthIdx:int, newMonthLongName:str = "" ) :
         model: MtlEinAusTableModel = self.getModel()
         model.setEditableMonth( newMonthIdx )
+        self.getLogic().selectedMonthChanged( model, newMonthIdx )
 
     def provideActions( self, index, point, selectedIndexes ) -> List[QAction]:
         """
@@ -502,7 +504,7 @@ class HausgeldController( MtlEinAusController ):
         den WEG-Namen geklickt hat
         :return:
         """
-        return BaseAction( "WEG und Verwalter anzeigen", ident=Action.SHOW_WEG_UND_VERWALTER )
+        return BaseAction( "Verwaltungsdetails anzeigen...", ident=Action.SHOW_WEG_UND_VERWALTER )
 
     def getSollAction( self ) -> BaseAction:
         """

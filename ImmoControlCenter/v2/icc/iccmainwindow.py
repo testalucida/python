@@ -102,7 +102,8 @@ class IccMainWindow( QMainWindow ):
         self._createUI()
 
     def getPreferredWidth( self ) -> int:
-        w = self._abschlagTableViewFrame.getPreferredWidth()
+        #w = self._abschlagTableViewFrame.getPreferredWidth()
+        w = self._hausgeldTableViewFrame.getPreferredWidth()
         return w
 
     def getPreferredHeight( self ) -> int:

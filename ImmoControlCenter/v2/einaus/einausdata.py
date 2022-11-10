@@ -20,7 +20,7 @@ class EinAusData( IccData ):
         """
         sab_id = "NULL" if not x.sab_id else str( x.sab_id )
         verteilt_auf = "NULL" if not x.verteilt_auf else str( x.verteilt_auf )
-        umlegbar = "NULL" if not x.umlegbar else str( x.umlegbar )
+        umlegbar = "NULL" if x.umlegbar is None else str( x.umlegbar )
         buchungsdatum = "NULL" if not x.buchungsdatum else "'" + x.buchungsdatum + "'"
         buchungstext = "NULL" if not x.buchungstext else "'" + x.buchungstext + "'"
         mehrtext = "NULL" if not x.mehrtext else "'" + x.mehrtext + "'"
