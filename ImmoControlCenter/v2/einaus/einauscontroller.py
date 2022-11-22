@@ -47,9 +47,21 @@ class EinAusController( IccController ):
         self._searchHandler = SearchHandler( tv, searchwidget )
         self._printHandler = PrintHandler( tv )
         tb.addPrintAction( "Öffne Druckvorschau für diese Tabelle...", self._printHandler.handlePreview )
-
         tv.setContextMenuCallbacks( self.provideActions, self.onSelected )
+        ### neue Zahlung, Zahlung ändern, löschen:
+        self._tvframe.newItem.connect( self.onNewEinAus )
+        self._tvframe.editItem.connect( self.onEditEinAus )
+        self._tvframe.deleteItems.connect( self.onDeleteEinAus )
         return self._tvframe
+
+    def onNewEinAus( self ):
+        print( "nue Zahlung")
+
+    def onEditEinAus( self, row:int ):
+        print( "edit Zahlung ", str(row) )
+
+    def onDeleteEinAus( self, rows:List[int] ):
+        print( "delete Zahlungen ", rows )
 
     def onYearChanged( self, newYear:int ):
         # tm = self._logic.getMietzahlungenModel( newYear )

@@ -30,8 +30,16 @@ class DynamicAttributeView( BaseWidget ):
             w = self._createWidget( attr.key, attr.type, attr.editable, attr.getWidgetWidth(), attr.getWidgetHeight() )
             self._widgets.append( w )
             self._layout.addWidget( w, row, col )
+            comboValues = attr.getComboValues()
+            if comboValues and isinstance( w, BaseComboBox ):
+                comboValues = list( comboValues )
+                if len( comboValues ) > 0:
+                    w.addItems( comboValues )
             value = self._xbaseui.getXBase().getValue( attr.key )
             w.setValue( value )
+            if isinstance( w, BaseComboBox ):
+                # das Signal darf erst mit der Callback-Funktion verknüpft werden, wenn der Wert zugewiesen ist.
+                w.currentTextChanged.connect( attr.comboCallback )
             if attr.nextRow:
                 row += 1
                 col = 0
@@ -50,8 +58,14 @@ class DynamicAttributeView( BaseWidget ):
             w.setFixedHeight( widgetHeight )
         return w
 
+    def getWidget( self, key:str ) -> BaseWidget:
+        for w in self._widgets:
+            if w.objectName() == key: return w
+        raise Exception( "DynamicAttributeView.getWidget(): Kein Widget für Key '%s' gefunden." % key )
+
     def setFocusToFirstEditableWidget( self ):
-        self._firstEditableWidget.setFocus()
+        if self._firstEditableWidget:
+            self._firstEditableWidget.setFocus()
 
     def getXBaseUI( self ) -> XBaseUI:
         return self._xbaseui
