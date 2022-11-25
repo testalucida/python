@@ -84,8 +84,8 @@ class MtlEinAusLogic( IccLogic ):
             return "Monat ungültig. Muss dreistelliges Monatskürzel wie 'jan' sein."
         if x.betrag == 0:
             return "Betrag ungültig. Muss ungleich 0 sein."
-        if not x.ea_art in ( EinAusArt.BRUTTOMIETE.value[0], EinAusArt.HAUSGELD_VORAUS.value[0],
-                             EinAusArt.KOMMUNALE_DIENSTE.value[0] ):
+        if not x.ea_art in ( EinAusArt.BRUTTOMIETE.value, EinAusArt.HAUSGELD_VORAUS.value,
+                             EinAusArt.KOMMUNALE_DIENSTE.value ):
             return "Ungültige EinAusArt. Muss BRUTTOMIETE, HAUSGELD_VORAUS oder KOMMUNALE_DIENSTE sein."
         return ""
 
@@ -209,7 +209,7 @@ class MieteLogic( MtlEinAusLogic ):
         #MieteLogic.__instance = self
 
     def getEinAusArt( self ) -> EinAusArt:
-        return EinAusArt.BRUTTOMIETE.value[0]
+        return EinAusArt.BRUTTOMIETE
 
     def getDebiKrediKey( self ) -> Any:
         return "mv_id"
@@ -384,8 +384,9 @@ class HausgeldLogic( MtlEinAusLogic ):
             self._provideVonBis( jahr, xhg, vw )
             for xea in zlist:
                 # die Monatsbeträge aus den XEinAus-Objekten in das XMtlHausgeld-Objekt übertragen
-                xhg.__dict__[xea.monat] = xea.betrag
-            xhg.computeSum()
+                if xea.debi_kredi == xhg.weg_name:
+                    xhg.__dict__[xea.monat] = xea.betrag
+                    xhg.computeSum()
             xhglist.append( xhg )
         self._provideSollHausgelder( jahr, checkmonatIdx, xhglist )
         tm = HausgeldTableModel( xhglist, jahr, checkmonatIdx )
@@ -427,7 +428,7 @@ class HausgeldLogic( MtlEinAusLogic ):
         return retlist
 
     def getEinAusArt( self ) -> EinAusArt:
-        return EinAusArt.HAUSGELD_VORAUS.value[0]
+        return EinAusArt.HAUSGELD_VORAUS
 
     def getDebiKrediKey( self ) -> Any:
         return "weg_name"
@@ -522,7 +523,7 @@ class AbschlagLogic( MtlEinAusLogic ):
         return xeinaus
 
     def getEinAusArt( self ) -> EinAusArt:
-        return EinAusArt.MTL_ABSCHLAG.value[0]
+        return EinAusArt.MTL_ABSCHLAG
 
     def getDebiKrediKey( self ) -> Any:
         return "kreditor"

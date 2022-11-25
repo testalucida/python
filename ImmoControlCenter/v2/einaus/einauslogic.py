@@ -30,6 +30,7 @@ class EinAusLogic(IccLogic):
     Wird verwendet z.B. von MtlEinAusLogic
     """
     def __init__( self ):
+        IccLogic.__init__( self )
         self._einausData = EinAusData()
 
     def getZahlungenModel( self, jahr:int ) -> EinAusTableModel:
@@ -44,15 +45,15 @@ class EinAusLogic(IccLogic):
         tm = EinAusTableModel( l, jahr )
         return tm
 
-    def getZahlungenModel2( self, ea_art, jahr:int, monthIdx:int, mobj_id:str ) -> EinAusTableModel:
+    def getZahlungenModel2( self, ea_art:EinAusArt, jahr:int, monthIdx:int, mobj_id:str ) -> EinAusTableModel:
         month_sss = iccMonthShortNames[monthIdx]
-        l: List[XEinAus] = self._einausData.getEinAuszahlungen2( ea_art, jahr, month_sss, mobj_id )
+        l: List[XEinAus] = self._einausData.getEinAuszahlungen2( ea_art.value, jahr, month_sss, mobj_id )
         for x in l:
             x.write_time = x.write_time[0:10]
         tm = EinAusTableModel( l, jahr )
         return tm
 
-    def getZahlungenModel3( self, ea_art, jahr:int, monthIdx:int, debikredi:str ) -> EinAusTableModel:
+    def getZahlungenModel3( self, ea_art:EinAusArt, jahr:int, monthIdx:int, debikredi:str ) -> EinAusTableModel:
         """
         :param ea_art:
         :param jahr:
@@ -61,7 +62,7 @@ class EinAusLogic(IccLogic):
         :return:
         """
         month_sss = iccMonthShortNames[monthIdx]
-        l: List[XEinAus] = self._einausData.getEinAuszahlungen3( ea_art, jahr, month_sss, debikredi )
+        l: List[XEinAus] = self._einausData.getEinAuszahlungen3( ea_art.value, jahr, month_sss, debikredi )
         for x in l:
             x.write_time = x.write_time[0:10]
         tm = EinAusTableModel( l, jahr )
@@ -82,7 +83,7 @@ class EinAusLogic(IccLogic):
         :param jahr:
         :return:
         """
-        return self._einausData.getEinAusZahlungen( ea_art.value[0], jahr )
+        return self._einausData.getEinAusZahlungen( ea_art.value, jahr )
 
     def addZahlung( self, ea_art, mobj_id:str, debikredi:str,
                     jahr:int, monthIdx:int, value:float,

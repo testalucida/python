@@ -1,16 +1,24 @@
-from typing import List
+from typing import List, Callable, Iterable
 from PySide2.QtWidgets import QAction
 
+import datehelper
+from base.baseqtderivates import BaseComboBox, BaseEdit, FloatEdit, IntEdit, BaseCheckBox, SmartDateEdit, MultiLineEdit, \
+    EditableComboBox
 from base.filterhandler import FilterHandler
+from base.interfaces import VisibleAttribute
 from base.multisorthandler import MultiSortHandler
 from base.printhandler import PrintHandler
 from base.searchhandler import SearchHandler
 from v2.einaus.einauslogic import EinAusLogic
-from v2.einaus.einausview import EinAusTableView, EinAusTableViewFrame
+from v2.einaus.einausview import EinAusTableView, EinAusTableViewFrame, XEinAusUI, EinAusDialog
+from v2.icc.constants import EinAusArt
 from v2.icc.icccontroller import IccController
 from v2.icc.iccwidgets import IccCheckTableViewFrame
 
 # ##############  EinAusController  ####################
+from v2.icc.interfaces import XEinAus, XMasterobjekt, XMietobjekt, XKreditorLeistung, XLeistung
+
+
 class EinAusController( IccController ):
     def __init__( self ):
         IccController.__init__( self )
@@ -55,7 +63,79 @@ class EinAusController( IccController ):
         return self._tvframe
 
     def onNewEinAus( self ):
-        print( "nue Zahlung")
+        def onMasterChanged( newMaster:str ):
+            # Mietobjektnamen für geänderten Master ermitteln:
+            mietobjektnamen = self._logic.getMietobjektNamen( newMaster )
+            v = dlg.getDynamicAttributeView()
+            cbo:BaseComboBox = v.getWidget( "mobj_id" )
+            cbo.clear()
+            cbo.addItems( mietobjektnamen )
+            # Kreditoren für geänderten Master ermitteln:
+            kreditoren = self._logic.getKreditoren( newMaster )
+            cbo = v.getWidget( "debi_kredi" )
+            cbo.clear()
+            cbo.addItems( kreditoren )
+
+        def onKreditorChanged( newKreditor:str ):
+            # Leistungen für den geänderten Kreditor ermitteln:
+            cbo = dlg.getDynamicAttributeView().getWidget( "master_name" )
+            master_name = cbo.currentText()
+            leistungen:List[str] = self._logic.getLeistungen( master_name, newKreditor )
+            cbo:BaseComboBox = dlg.getDynamicAttributeView().getWidget( "leistung" )
+            cbo.clear()
+            cbo.addItems( leistungen )
+
+        def onLeistungChanged( newLeistung:str ):
+            umlegbar = "Nein"
+            if newLeistung:
+                v = dlg.getDynamicAttributeView()
+                cbo = v.getWidget( "master_name" )
+                master_name = cbo.currentText()
+                cbo = v.getWidget( "debi_kredi" )
+                kreditor = cbo.currentText()
+                leist:XLeistung = self._logic.getLeistungskennzeichen( master_name, kreditor, newLeistung)
+                if leist:
+                    umlegbar = "Ja" if leist.umlegbar else "Nein"
+                    #todo ea_art =
+            cbo = v.getWidget( "umlegbar" )
+            cbo.setCurrentText( umlegbar )
+
+        x = XEinAus()
+        masternames = self._logic.getMasterNamen()
+        x.master_name = masternames[0]
+        mietobjektenames = self._logic.getMietobjektNamen( x.master_name )
+        kreditoren = self._logic.getKreditoren( x.master_name )
+        x.buchungsdatum = datehelper.getCurrentDateIso()
+        xui = XEinAusUI( x )
+        vislist = self._createVisibleAttributeList( masternames, mietobjektenames, kreditoren,
+                                                    onMasterChanged, onKreditorChanged, onLeistungChanged )
+        xui.addVisibleAttributes( vislist )
+        dlg = EinAusDialog( xui )
+        dlg.exec_()
+
+    @staticmethod
+    def _createVisibleAttributeList( masterobjekte:List[str], mietobjekte:List[str], kreditoren:List[str],
+                                     onMasterChangedCallback:Callable, onKreditorChangedCallback:Callable,
+                                     onLeistungChangedCallback:Callable ) \
+            -> Iterable[VisibleAttribute]:
+        smallW = 90
+        vislist = (
+            VisibleAttribute( "master_name", BaseComboBox, "Haus: ", nextRow=False,
+                              comboValues=masterobjekte, comboCallback=onMasterChangedCallback ),
+            VisibleAttribute( "mobj_id", BaseComboBox, "Wohnung: ", widgetWidth=150, comboValues=mietobjekte ),
+            VisibleAttribute( "debi_kredi", EditableComboBox, "Zahlung an/von: ",
+                              comboValues=kreditoren, comboCallback=onKreditorChangedCallback ),
+            VisibleAttribute( "leistung", EditableComboBox, "Art d. Leistung: ",
+                              comboCallback=onLeistungChangedCallback ),
+            VisibleAttribute( "betrag", FloatEdit, "Betrag: ", widgetWidth=smallW ),
+            VisibleAttribute( "ea_art", BaseComboBox, "Art d. Zahlung: ", comboValues=EinAusArt.getMemberNames() ),
+            VisibleAttribute( "verteilt_auf", IntEdit, "vert. auf Jhre: ", widgetWidth=smallW ),
+            VisibleAttribute( "umlegbar", BaseComboBox, "umlegbar: ", widgetWidth=smallW, comboValues=["Nein", "Ja"] ),
+            VisibleAttribute( "buchungsdatum", SmartDateEdit, "Buchungsdatum: ", widgetWidth=smallW ),
+            VisibleAttribute( "buchungstext", BaseEdit, "Buchungstext: ", columnspan=3 ),
+            VisibleAttribute( "mehrtext", MultiLineEdit, "Bemerkung: ", widgetHeight=55, columnspan=3 )
+        )
+        return vislist
 
     def onEditEinAus( self, row:int ):
         print( "edit Zahlung ", str(row) )

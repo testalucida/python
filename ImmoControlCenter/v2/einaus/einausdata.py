@@ -24,13 +24,14 @@ class EinAusData( IccData ):
         buchungsdatum = "NULL" if not x.buchungsdatum else "'" + x.buchungsdatum + "'"
         buchungstext = "NULL" if not x.buchungstext else "'" + x.buchungstext + "'"
         mehrtext = "NULL" if not x.mehrtext else "'" + x.mehrtext + "'"
+        leistung = "NULL" if not x.leistung else "'" + x.leistung + "'"
         writetime = datehelper.getCurrentTimestampIso()
         sql = "insert into einaus " \
-              "( master_name, mobj_id, debi_kredi, sab_id, jahr, monat, betrag, ea_art, verteilt_auf, umlegbar, " \
+              "( master_name, mobj_id, debi_kredi, leistung, sab_id, jahr, monat, betrag, ea_art, verteilt_auf, umlegbar, " \
               "  buchungsdatum, buchungstext, mehrtext, write_time ) " \
               "values" \
-              "(   '%s',      '%s',       '%s',     %s,     %d,   '%s',    %.2f,   '%s',     %s,           %s," \
-              "    %s,         %s,         %s,     '%s' ) " % ( x.master_name, x.mobj_id, x.debi_kredi, sab_id,
+              "(   '%s',      '%s',       '%s',     '%s',   %s,     %d,   '%s',    %.2f,   '%s',     %s,           %s," \
+              "    %s,         %s,         %s,     '%s' ) " % ( x.master_name, x.mobj_id, x.debi_kredi, leistung, sab_id,
                                                                    x.jahr, x.monat, x.betrag,
                                                                    x.ea_art, verteilt_auf, umlegbar,
                                                                    buchungsdatum, buchungstext, mehrtext,
@@ -53,12 +54,14 @@ class EinAusData( IccData ):
         buchungsdatum = "NULL" if not x.buchungsdatum else "'" + x.buchungsdatum + "'"
         buchungstext = "NULL" if not x.buchungstext else "'" + x.buchungstext + "'"
         mehrtext = "NULL" if not x.mehrtext else "'" + x.mehrtext + "'"
+        leistung = "NULL" if not x.leistung else "'" + x.leistung + "'"
         writetime = datehelper.getCurrentTimestampIso()
         sql = "update einaus " \
               "set " \
               "master_name = '%s', " \
               "mobj_id = '%s', " \
               "debi_kredi = '%s', " \
+              "leistung = '%s', " \
               "sabid = %s, " \
               "jahr = %d, " \
               "monat = '%s', " \
@@ -70,7 +73,7 @@ class EinAusData( IccData ):
               "buchungstext = %s, " \
               "mehrtext = %s, " \
               "write_time = '%s' " \
-              "where ea_id = %d " % (x.master_name, x.mobj_id, x.debi_kredi, x.sab_id,
+              "where ea_id = %d " % (x.master_name, x.mobj_id, x.debi_kredi, leistung, sab_id,
                                        x.jahr, x.monat, x.betrag,
                                        x.ea_art, verteilt_auf, umlegbar,
                                        buchungsdatum, buchungstext, mehrtext,
@@ -92,7 +95,7 @@ class EinAusData( IccData ):
                           newvalues=None, oldvalues=x.toString( printWithClassname=True )  )
 
     def getEinAusZahlung( self, ea_id:int ) -> XEinAus:
-        sql = "select ea_id, master_name, mobj_id, debi_kredi, sab_id, jahr, monat, betrag, ea_art, verteilt_auf, " \
+        sql = "select ea_id, master_name, mobj_id, debi_kredi, leistung, sab_id, jahr, monat, betrag, ea_art, verteilt_auf, " \
               "umlegbar, buchungsdatum, buchungstext, mehrtext, write_time " \
               "from einaus " \
               "where ea_id = %d " % ea_id
@@ -105,78 +108,79 @@ class EinAusData( IccData ):
         :param jahr: z.B. 2022
         :return:
         """
-        sql = "select ea_id, master_name, mobj_id, debi_kredi, sab_id, jahr, monat, betrag, ea_art, " \
+        sql = "select ea_id, master_name, mobj_id, debi_kredi, coalesce(leistung, '') as leistung, " \
+              "sab_id, jahr, monat, betrag, ea_art, " \
               "coalesce(verteilt_auf, '') as verteilt_auf, umlegbar, " \
               "coalesce( buchungsdatum, '') as buchungsdatum, coalesce(buchungstext, '') as buchungstext, " \
               "coalesce(mehrtext, '') as mehrtext, write_time " \
               "from einaus " \
-              "where jahr = %d "  % (jahr)
+              "where jahr = %d "  % jahr
         xlist = self.readAllGetObjectList( sql, XEinAus )
         return xlist
 
-    def getEinAusZahlungen( self, ea_art:str, jahr: int ) -> List[XEinAus]:
+    def getEinAusZahlungen( self, ea_art_val:str, jahr: int ) -> List[XEinAus]:
         """
         Liefert eine Liste von XEinAus-Objekten, die den gegebenen Kriterien genügen
-        :param ea_art: EinAusArt
+        :param ea_art_val: value der EinAusArt, z.B. "brm" für EinAusArt.BRUTTOMIETE
         :param jahr: yyyy
         :return:  List[XEinAus]
         """
-        sql = "select ea_id, master_name, mobj_id, debi_kredi, sab_id, jahr, monat, betrag, ea_art, verteilt_auf, " \
+        sql = "select ea_id, master_name, mobj_id, debi_kredi, leistung, sab_id, jahr, monat, betrag, ea_art, verteilt_auf, " \
               "umlegbar, buchungsdatum, buchungstext, mehrtext, write_time " \
               "from einaus " \
               "where jahr = %d " \
-              "and ea_art = '%s' " % (jahr, ea_art)
+              "and ea_art = '%s' " % (jahr, ea_art_val )
         xlist = self.readAllGetObjectList( sql, XEinAus )
         return xlist
 
-    def getEinAuszahlungen2( self, ea_art:str, jahr:int, monat:str, mobj_id:str ) -> List[XEinAus]:
+    def getEinAuszahlungen2( self, ea_art_val:str, jahr:int, monat:str, mobj_id:str ) -> List[XEinAus]:
         """
         Liefert eine Liste von XEinAus-Objekten, die den gegebenen Kriterien genügen
-        :param ea_art: EinAusArt
+        :param ea_art_val: EinAusArt
         :param jahr: yyyy
         :param monat: z.B. "jan", "mrz",... siehe iccMonthShortNames
         :param mobj_id: z.B. "thomasmann"
         :return: List[XEinAus]
         """
-        sql = "select ea_id, master_name, mobj_id, debi_kredi, sabid, jahr, monat, betrag, ea_art, verteilt_auf, " \
+        sql = "select ea_id, master_name, mobj_id, debi_kredi, leistung, sabid, jahr, monat, betrag, ea_art, verteilt_auf, " \
               "umlegbar, buchungsdatum, buchungstext, mehrtext, write_time " \
               "from einaus " \
               "where jahr = %d " \
               "and monat = '%s' " \
               "and mobj_id = '%s' " \
-              "and ea_art = '%s' " % (jahr, monat, mobj_id, ea_art)
+              "and ea_art = '%s' " % (jahr, monat, mobj_id, ea_art_val)
         xlist = self.readAllGetObjectList( sql, XEinAus )
         return xlist
 
-    def getEinAuszahlungen3( self, ea_art:str, jahr:int, monat:str, debikredi:str ) -> List[XEinAus]:
+    def getEinAuszahlungen3( self, ea_art_val:str, jahr:int, monat:str, debikredi:str ) -> List[XEinAus]:
         """
         Liefert eine Liste von XEinAus-Objekten, die den gegebenen Kriterien genügen
-        :param ea_art: EinAusArt
+        :param ea_art_val: value (string) der EinAusArt
         :param jahr: yyyy
         :param monat: z.B. "jan", "mrz",... siehe iccMonthShortNames
-        :param mv_id: ID des Mieters
+        :param debikredi: ID des Mieters oder Name der WEG oder Firma
         :return: List[XEinAus]
         """
-        sql = "select ea_id, master_name, mobj_id, debi_kredi, sab_id, jahr, monat, betrag, ea_art, verteilt_auf, " \
+        sql = "select ea_id, master_name, mobj_id, debi_kredi, leistung, sab_id, jahr, monat, betrag, ea_art, verteilt_auf, " \
               "umlegbar, buchungsdatum, buchungstext, mehrtext, write_time " \
               "from einaus " \
               "where jahr = %d " \
               "and monat = '%s' " \
               "and debi_kredi = '%s' " \
-              "and ea_art = '%s' " % (jahr, monat, debikredi, ea_art)
+              "and ea_art = '%s' " % (jahr, monat, debikredi, ea_art_val)
         xlist = self.readAllGetObjectList( sql, XEinAus )
         return xlist
 
     def getEinAuszahlungen4( self, sab_id:int, jahr:int, monat:str ) -> List[XEinAus]:
         """
         Liefert eine Liste von XEinAus-Objekten, die den gegebenen Kriterien genügen
-        :param ea_art: EinAusArt
+        :param sab_id: SollAbschlag-ID
         :param jahr: yyyy
         :param monat: z.B. "jan", "mrz",... siehe iccMonthShortNames
         :param mv_id: ID des Mieters
         :return: List[XEinAus]
         """
-        sql = "select ea_id, master_name, mobj_id, debi_kredi, sab_id, jahr, monat, betrag, ea_art, verteilt_auf, " \
+        sql = "select ea_id, master_name, mobj_id, debi_kredi, leistung, sab_id, jahr, monat, betrag, ea_art, verteilt_auf, " \
               "umlegbar, buchungsdatum, buchungstext, mehrtext, write_time " \
               "from einaus " \
               "where jahr = %d " \
@@ -205,7 +209,7 @@ def test2():
     x.jahr = 2022
     x.monat = "okt"
     x.betrag = 234.55
-    x.ea_art = EinAusArt.BRUTTOMIETE.value[0]
+    x.ea_art = EinAusArt.BRUTTOMIETE.value
 
     data = EinAusData()
     try:
@@ -228,10 +232,10 @@ def test1():
 
 def test():
     ea_art = EinAusArt.BRUTTOMIETE
-    print( ea_art.value[0] )
+    print( ea_art.value )
 
     data = EinAusData()
     l = data.getJahre()
     print( l )
-    l = data.getEinAusZahlungen( EinAusArt.BRUTTOMIETE, 2022 )
+    l = data.getEinAusZahlungen( EinAusArt.BRUTTOMIETE.value, 2022 )
     print( l )

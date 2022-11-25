@@ -55,7 +55,7 @@ class XBase:
 #################   VisibleAttribute   ##########################
 class VisibleAttribute:
     def __init__( self, key:str, type_:Type, label:str, editable=True,
-                  widgetWidth=-1, widgetHeight=-1, nextRow=True,
+                  widgetWidth=-1, widgetHeight=-1, nextRow=True, columnspan=1,
                   comboValues:List[str]=None, comboCallback=None ):
         self.key = key
         self.type = type_
@@ -64,6 +64,7 @@ class VisibleAttribute:
         self.comboCallback:Callable = comboCallback
         self.editable = editable
         self.nextRow = nextRow
+        self.columnspan = columnspan
         self._widgetHeight = widgetHeight # default -1: Qt bestimmt die Höhe
         self._widgetWidth = widgetWidth  # default -1: Qt bestimmt die Breite
 

@@ -29,14 +29,15 @@ class DynamicAttributeView( BaseWidget ):
             col += 1
             w = self._createWidget( attr.key, attr.type, attr.editable, attr.getWidgetWidth(), attr.getWidgetHeight() )
             self._widgets.append( w )
-            self._layout.addWidget( w, row, col )
+            self._layout.addWidget( w, row, col, 1, attr.columnspan )
             comboValues = attr.getComboValues()
             if comboValues and isinstance( w, BaseComboBox ):
                 comboValues = list( comboValues )
                 if len( comboValues ) > 0:
                     w.addItems( comboValues )
             value = self._xbaseui.getXBase().getValue( attr.key )
-            w.setValue( value )
+            if value:
+                w.setValue( value )
             if isinstance( w, BaseComboBox ):
                 # das Signal darf erst mit der Callback-Funktion verknüpft werden, wenn der Wert zugewiesen ist.
                 w.currentTextChanged.connect( attr.comboCallback )
@@ -44,7 +45,7 @@ class DynamicAttributeView( BaseWidget ):
                 row += 1
                 col = 0
             else:
-                col += 1
+                col += attr.columnspan
 
     def _createWidget( self, key:str, type_:Type, editable:bool, widgetWidth:int=-1, widgetHeight=-1 ) -> QWidget:
         w:QWidget = type_()

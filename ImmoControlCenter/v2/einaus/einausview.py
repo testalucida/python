@@ -32,7 +32,7 @@ class EinAusDialog( DynamicAttributeDialog ):
         DynamicAttributeDialog.__init__( self, xui, title )
 
 
-
+#################   TEST   TEST   TEST   TEST   #########################
 def test():
     from PySide2.QtWidgets import QApplication
     def onMasterChanged( newMaster:str ):

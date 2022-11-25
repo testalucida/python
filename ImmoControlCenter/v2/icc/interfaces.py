@@ -20,6 +20,7 @@ class XEinAus( XBase ):
         self.master_name = ""
         self.mobj_id = ""
         self.debi_kredi = ""
+        self.leistung = ""
         self.sab_id = 0
         self.jahr = 0
         self.monat = ""
@@ -199,6 +200,66 @@ class XSollAbschlag( XBase ):
         self.bemerkung = ""
         if valuedict:
             self.setFromDict( valuedict )
+
+class XMasterobjekt( XBase ):
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self )
+        self.master_id = 0
+        self.master_name = ""
+        self.lfdnr = 0
+        self.strasse_hnr = ""
+        self.plz = ""
+        self.ort = ""
+        self.gesamt_wfl = 0
+        self.anz_whg = 0
+        self.afa_wie_vj = "X"
+        self.afa = 0
+        self.afa_proz = 0.0
+        self.hauswart = ""
+        self.hauswart_telefon = ""
+        self.hauswart_mailto = ""
+        self.heizung = ""
+        self.angeschafft_am = ""
+        self.veraeussert_am = ""
+        self.bemerkung = ""
+        if valuedict:
+            self.setFromDict( valuedict )
+
+class XMietobjekt( XBase ):
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self )
+        self.mobj_id = ""
+        self.whg_bez = ""
+        self.qm = 0
+        self.container_nr = ""
+        self.bemerkung = ""
+        if valuedict:
+            self.setFromDict( valuedict )
+
+class XLeistung( XBase ):
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self )
+        self.leistung = ""
+        self.umlegbar = 0
+        self.ea_art = ""
+        if valuedict:
+            self.setFromDict( valuedict )
+
+class XKreditorLeistung( XLeistung ):
+    def __init__( self, valuedict:Dict=None ):
+        XLeistung.__init__( self )
+        self.kredleist_id = 0
+        self.master_name = ""
+        self.mobj_id = ""
+        self.kreditor = ""
+        # self.leistung = ""
+        # self.umlegbar = 0
+        # self.ea_art = ""
+        self.bemerkung = ""
+        if valuedict:
+            self.setFromDict( valuedict )
+
+
 
 #####################################################################################################################
 

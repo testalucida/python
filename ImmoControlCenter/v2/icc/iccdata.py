@@ -5,8 +5,8 @@ from base.databasecommon2 import DatabaseCommon
 from base.interfaces import XBase
 
 from v2.icc.definitions import DATABASE
-from v2.icc.constants import EinAusArt
-from v2.icc.interfaces import XHandwerkerKurz, XEinAus, XMietverhaeltnisKurz, XVerwaltung
+from v2.icc.interfaces import XHandwerkerKurz, XEinAus, XMietverhaeltnisKurz, XVerwaltung, XMasterobjekt, XMietobjekt, \
+    XKreditorLeistung, XLeistung
 
 
 class DbAction:
@@ -73,12 +73,29 @@ class IccData( DatabaseCommon ):
         xlist = self.readAllGetObjectList( sql, XHandwerkerKurz )
         return xlist
 
+    def getMasterobjekte( self ) -> List[XMasterobjekt]:
+        sql = "select master_id, master_name, lfdnr, strasse_hnr, plz, ort, gesamt_wfl, anz_whg, " \
+              "afa_wie_vj, afa, afa_proz, hauswart, hauswart_telefon, hauswart_mailto, heizung, " \
+              "angeschafft_am, veraeussert_am, bemerkung " \
+              "from masterobjekt " \
+              "order by master_name asc "
+        xlist = self.readAllGetObjectList( sql, XMasterobjekt )
+        return xlist
+
     def getMastername( self, mobj_id:str ) -> str:
         sql = "select master_name from mietobjekt where mobj_id = '%s' " % mobj_id
         tpl:List[Tuple] = self.read( sql )
         if len( tpl ) == 0:
             return ""
         return tpl[0][0]
+
+    def getMietobjekte( self, master_name:str ) -> List[XMietobjekt]:
+        sql = "select mobj_id, whg_bez, qm, container_nr, bemerkung " \
+              "from mietobjekt " \
+              "where master_name = '%s' " \
+              "order by mobj_id " % master_name
+        xlist = self.readAllGetObjectList( sql, XMietobjekt )
+        return xlist
 
     def getVerwaltungen( self, jahr:int ) -> List[XVerwaltung]:
         minbis = "%d-%02d-%02d" % (jahr, 1, 1)
@@ -108,6 +125,21 @@ class IccData( DatabaseCommon ):
         d = self.readOneGetDict( sql )
         veraeussert_am = "" if not d["veraeussert_am"] else d["veraeussert_am" ]
         return [d["angeschafft_am"], veraeussert_am]
+
+    def getKreditorLeistungen( self, master_name:str ) -> List[XKreditorLeistung]:
+        sql = "select kredleist_id, mobj_id, kreditor, leistung, umlegbar, ea_art, bemerkung " \
+              "from kreditorleistung " \
+              "where master_name = '%s' " % master_name
+        l: List[XKreditorLeistung] = self.readAllGetObjectList( sql, XKreditorLeistung )
+        return l
+
+    def getLeistungen( self, master_name:str, kreditor:str ) -> List[XLeistung]:
+        sql = "select leistung, umlegbar, ea_art " \
+              "from kreditorleistung " \
+              "where master_name = '%s' " \
+              "and kreditor = '%s' " % (master_name, kreditor)
+        l: List[XKreditorLeistung] = self.readAllGetObjectList( sql, XKreditorLeistung )
+        return l
 
     def writeAndLog( self, sql: str, action:str, table:str, id_name:str, id_value:int,
                      newvalues:str=None, oldvalues:str=None ) -> int:

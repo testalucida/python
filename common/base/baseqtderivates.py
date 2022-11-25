@@ -69,7 +69,7 @@ class BaseStatusBar( QStatusBar ):
     def __init__( self, parent=None ):
         QStatusBar.__init__( self, parent )
 
-#################  BaseDialog  ########################
+#################  BaseComboBox  ########################
 class BaseComboBox( QComboBox, GetSetValue ):
     def __init__(self, parent=None ):
         QComboBox.__init__( self )
@@ -86,6 +86,13 @@ class BaseComboBox( QComboBox, GetSetValue ):
 
     def getUserData( self ) -> Any:
         return self._userData
+
+#################  EditableComboBox  ########################
+class EditableComboBox( BaseComboBox, GetSetValue ):
+    def __init__(self, parent=None ):
+        BaseComboBox.__init__( self )
+        self.setEditable( True )
+
 
 #################  BaseDialog  ########################
 class BaseDialog( QDialog ):

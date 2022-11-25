@@ -1,6 +1,6 @@
 from v2.einaus.einauslogic import EinAusLogic
 from v2.icc.icclogic import IccLogic
-from v2.sonsteinaus.sonsteinausmodel import SonstEinAusTableModel
+from v2.sonsteinaus_not_in_use.sonsteinausmodel import SonstEinAusTableModel
 
 
 class SonstEinAusLogic( IccLogic ):
