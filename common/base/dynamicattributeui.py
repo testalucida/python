@@ -5,7 +5,7 @@ from PySide2.QtCore import Qt, Signal
 from PySide2.QtWidgets import QWidget, QDialog
 
 from base.baseqtderivates import BaseWidget, BaseGridLayout, BaseEdit, LineEdit, MultiLineEdit, BaseCheckBox, IntEdit, \
-    BaseLabel, FloatEdit, BaseComboBox, BaseDialogWithButtons, getOkCancelButtonDefinitions
+    BaseLabel, FloatEdit, BaseComboBox, BaseDialogWithButtons, getOkCancelButtonDefinitions, OkApplyCancelDialog
 from base.interfaces import XBase, XBaseUI, VisibleAttribute
 
 
@@ -103,10 +103,11 @@ class DynamicAttributeView( BaseWidget ):
             xbase.setValue( key, val )
 
 #################   DynamicAttributeDialog   #######################
-class DynamicAttributeDialog( BaseDialogWithButtons ):
+class DynamicAttributeDialog( OkApplyCancelDialog ):
     def __init__(self,  xbaseui:XBaseUI, title="Ändern eines Datensatzes" ):
-        BaseDialogWithButtons.__init__( self, title=title,
-                                        buttonDefinitions=getOkCancelButtonDefinitions( self.accept, self.reject ) )
+        OkApplyCancelDialog.__init__( self, title )
+        # BaseDialogWithButtons.__init__( self, title=title,
+        #                                 buttonDefinitions=getOkCancelButtonDefinitions( self.accept, self.reject ) )
         self._view = DynamicAttributeView( xbaseui )
         self.setMainWidget( self._view )
         self._view.setFocusToFirstEditableWidget()

@@ -37,7 +37,7 @@ class MtlEinAusLogic( IccLogic ):
         self._ealogic = EinAusLogic()
 
     @abstractmethod
-    def getEinAusArt( self ) -> EinAusArt:
+    def getEinAusArt( self ) -> str:
         pass
 
     @abstractmethod
@@ -84,8 +84,8 @@ class MtlEinAusLogic( IccLogic ):
             return "Monat ungültig. Muss dreistelliges Monatskürzel wie 'jan' sein."
         if x.betrag == 0:
             return "Betrag ungültig. Muss ungleich 0 sein."
-        if not x.ea_art in ( EinAusArt.BRUTTOMIETE.value, EinAusArt.HAUSGELD_VORAUS.value,
-                             EinAusArt.KOMMUNALE_DIENSTE.value ):
+        if not x.ea_art in ( EinAusArt.BRUTTOMIETE.display, EinAusArt.HAUSGELD_VORAUS.display,
+                             EinAusArt.KOMMUNALE_DIENSTE.display ):
             return "Ungültige EinAusArt. Muss BRUTTOMIETE, HAUSGELD_VORAUS oder KOMMUNALE_DIENSTE sein."
         return ""
 
@@ -97,8 +97,8 @@ class MtlEinAusLogic( IccLogic ):
         self._ealogic.commit()
 
     def getZahlungenModelObjektMonat( self, mobj_id, year:int, monthIdx:int ) -> EinAusTableModel:
-        ea_art = self.getEinAusArt()
-        return self._ealogic.getZahlungenModel2( ea_art, year, monthIdx, mobj_id )
+        ea_art_display = self.getEinAusArt()
+        return self._ealogic.getZahlungenModel2( ea_art_display, year, monthIdx, mobj_id )
 
     def getZahlungenModelDebiKrediMonat( self, debikredi:str, year:int, monthIdx:int ) -> EinAusTableModel:
         """
@@ -108,8 +108,8 @@ class MtlEinAusLogic( IccLogic ):
         :param monthIdx:
         :return:
         """
-        ea_art = self.getEinAusArt()
-        return self._ealogic.getZahlungenModel3( ea_art, year, monthIdx, debikredi )
+        ea_art_display = self.getEinAusArt()
+        return self._ealogic.getZahlungenModel3( ea_art_display, year, monthIdx, debikredi )
 
     def deleteZahlungen( self, ealist:List[XEinAus], model:MtlEinAusTableModel ):
         """
@@ -208,8 +208,8 @@ class MieteLogic( MtlEinAusLogic ):
         self._mieteData = MieteData()
         #MieteLogic.__instance = self
 
-    def getEinAusArt( self ) -> EinAusArt:
-        return EinAusArt.BRUTTOMIETE
+    def getEinAusArt( self ) -> str:
+        return EinAusArt.BRUTTOMIETE.display
 
     def getDebiKrediKey( self ) -> Any:
         return "mv_id"
@@ -232,7 +232,7 @@ class MieteLogic( MtlEinAusLogic ):
                          der UI-Tabelle angezeigt.
         :return:
         """
-        einausList: List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.BRUTTOMIETE, jahr )
+        einausList: List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.BRUTTOMIETE.display, jahr )
         # Annahme: in einausList können mehrere Zahlungsvorgänge eines Debitors/Kreditors sein, die den gleichen Monat
         # betreffen.
         # Deshalb muss die einausList zunächst auf Monate verdichtet werden,
@@ -371,7 +371,7 @@ class HausgeldLogic( MtlEinAusLogic ):
 
     def createHausgeldzahlungenModel( self, jahr: int, checkmonatIdx:int=None ) -> HausgeldTableModel:
         vwlist:List[XVerwaltung] = self._hausgeldData.getVerwaltungen( jahr )
-        zlist:List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.HAUSGELD_VORAUS, jahr )
+        zlist:List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.HAUSGELD_VORAUS.display, jahr )
         zlist = self.getCondensedEinAusList( zlist )
         # die XEinAus-Liste in XMtlHausgeld-Liste umwandeln:
         xhglist:List[XMtlHausgeld] = list()
@@ -427,8 +427,8 @@ class HausgeldLogic( MtlEinAusLogic ):
                 retlist.append( x )
         return retlist
 
-    def getEinAusArt( self ) -> EinAusArt:
-        return EinAusArt.HAUSGELD_VORAUS
+    def getEinAusArt( self ) -> str:
+        return EinAusArt.HAUSGELD_VORAUS.display
 
     def getDebiKrediKey( self ) -> Any:
         return "weg_name"
@@ -444,7 +444,7 @@ class AbschlagLogic( MtlEinAusLogic ):
         self._abschlagData = AbschlagData()
 
     def createAbschlagzahlungenModel( self, jahr: int, checkmonatIdx:int=None ) -> AbschlagTableModel:
-        zlist:List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.MTL_ABSCHLAG, jahr )
+        zlist:List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.MTL_ABSCHLAG.display, jahr )
         zlist = self._getCondensedEinAusList( zlist ) # zlist enthält für jede sab_id und jeden Monat genau 1 XEinAus-Objekt
         sollAbschlagList:List[XSollAbschlag] = self._abschlagData.getSollabschlaege( jahr )
         # die XEinAus-Liste in XMtlAbschlag-Liste umwandeln:
@@ -522,8 +522,8 @@ class AbschlagLogic( MtlEinAusLogic ):
         self._ealogic.commit()
         return xeinaus
 
-    def getEinAusArt( self ) -> EinAusArt:
-        return EinAusArt.MTL_ABSCHLAG
+    def getEinAusArt( self ) -> str:
+        return EinAusArt.MTL_ABSCHLAG.display
 
     def getDebiKrediKey( self ) -> Any:
         return "kreditor"

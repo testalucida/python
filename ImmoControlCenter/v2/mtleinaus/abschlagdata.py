@@ -21,7 +21,7 @@ class AbschlagData( IccData ):
         l:List[XSollAbschlag] = self.readAllGetObjectList( sql, XSollAbschlag )
         return l
 
-    def getUmlegbar( self, sab_id:int ) -> int:
+    def getUmlegbar( self, sab_id:int ) -> str:
         sql = "select umlegbar from sollabschlag where sab_id = " + str( sab_id )
         dic = self.readOneGetDict( sql )
         return dic["umlegbar"]

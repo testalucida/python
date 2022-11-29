@@ -3,6 +3,7 @@ from typing import List, Tuple, Dict
 import datehelper
 from base.databasecommon2 import DatabaseCommon
 from base.interfaces import XBase
+from v2.icc.constants import EinAusArt
 
 from v2.icc.definitions import DATABASE
 from v2.icc.interfaces import XHandwerkerKurz, XEinAus, XMietverhaeltnisKurz, XVerwaltung, XMasterobjekt, XMietobjekt, \
@@ -131,6 +132,8 @@ class IccData( DatabaseCommon ):
               "from kreditorleistung " \
               "where master_name = '%s' " % master_name
         l: List[XKreditorLeistung] = self.readAllGetObjectList( sql, XKreditorLeistung )
+        for leist in l:
+            leist.ea_art = EinAusArt.getDisplay( leist.ea_art )
         return l
 
     def getLeistungen( self, master_name:str, kreditor:str ) -> List[XLeistung]:
@@ -139,6 +142,8 @@ class IccData( DatabaseCommon ):
               "where master_name = '%s' " \
               "and kreditor = '%s' " % (master_name, kreditor)
         l: List[XKreditorLeistung] = self.readAllGetObjectList( sql, XKreditorLeistung )
+        for leist in l:
+            leist.ea_art = EinAusArt.getDisplay( leist.ea_art )
         return l
 
     def writeAndLog( self, sql: str, action:str, table:str, id_name:str, id_value:int,
@@ -179,15 +184,16 @@ class IccData( DatabaseCommon ):
             oldvalues = oldvalues.replace( "'", "\"" )
         ts = datehelper.getCurrentTimestampIso()
         transId = self.getTransactionId()
-        sql = "insert into writelog " \
+        sql2 = "insert into writelog " \
               "(trans_id, sql, action, table_name, id_name, id_value, newvalues, oldvalues, timestamp) " \
               "values " \
               "( %d,      '%s', '%s',  '%s',         '%s',    %d,     '%s',        '%s',      '%s' )" \
               % (transId, sql, action, table,     id_name, id_value, newvalues, oldvalues,    ts )
         try:
-            self.write( sql )
+            self.write( sql2 )
         except Exception as ex:
-            msg = "Exception\n" + str(ex) + "\nbei Ausführung des Statements\n" + sql + "\n"
+            print( "Fehler beim write in Tabelle writelog. SQL:\n%s" % sql2 )
+            msg = "Exception\n" + str(ex) + "\nbei Ausführung des Statements\n" + sql2 + "\n"
             raise Exception( msg )
 
 

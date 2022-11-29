@@ -1,5 +1,7 @@
+import enum
 import numbers
 from abc import abstractmethod
+from enum import Enum
 from typing import Any, List, Tuple, Callable, Iterable
 
 from PySide2 import QtWidgets, QtCore
@@ -8,11 +10,12 @@ from PySide2.QtGui import QDoubleValidator, QIntValidator, QFont, QGuiApplicatio
     QMouseEvent, QTextDocument, QIcon, QFontMetrics
 from PySide2.QtWidgets import QDialog, QCalendarWidget, QVBoxLayout, QBoxLayout, QLineEdit, QGridLayout, QPushButton, \
     QHBoxLayout, QApplication, QListView, QComboBox, QLabel, QTextEdit, QCheckBox, QFrame, QWidget, QAction, QTabWidget, \
-    QToolBar, QMenuBar, QStatusBar
+    QToolBar, QMenuBar, QStatusBar, QMessageBox
 
 from base.directories import BASE_IMAGES_DIR
 from base.interfaces import XAttribute
 #from definitions import ICON_DIR
+from base.messagebox import ErrorBox, WarningBox, QuestionBox
 
 from datehelper import isValidIsoDatestring, isValidEurDatestring, getRelativeQDate, getQDateFromIsoString
 #################  BaseAction  ########################
@@ -99,11 +102,22 @@ class BaseDialog( QDialog ):
     def __init__(self, parent=None, flags=Qt.WindowFlags() ):
         QDialog.__init__( self, parent, flags )
 
+class ButtonIdent( Enum ):
+    IDENT_OK = enum.auto()
+    IDENT_APPLY = enum.auto()
+    IDENT_CANCEL = enum.auto()
+    IDENT_CLOSE = enum.auto()
+    IDENT_NEXT = enum.auto()
+    IDENT_PREV = enum.auto()
+    IDENT_NONE = enum.auto()
+
 ###########################   BaseDialogWithButtons  etc.  #############################
 class BaseButtonDefinition:
-    def __init__( self, text, tooltip:str, callback:Callable, callbackData:Any=None, icon:QIcon=None ):
+    def __init__( self, text, tooltip:str, callback:Callable, callbackData:Any=None, icon:QIcon=None,
+                  ident:ButtonIdent=ButtonIdent.IDENT_NONE ):
         self.text = text
         self.icon:QIcon = icon
+        self.ident:ButtonIdent = ident
         self.tooltip = tooltip
         self.callback:Callable = callback
         self.callbackData:Any = callbackData
@@ -114,14 +128,25 @@ class BaseButtonDefinition:
 #########################
 def getOkCancelButtonDefinitions( okCallback:Callable, cancelCallback:Callable ):
         ok = BaseButtonDefinition( "  OK  ", "Übernimmt die Änderungen und schließt das Fenster.",
-                                        okCallback )
+                                        okCallback, ident=ButtonIdent.IDENT_OK )
         cancel = BaseButtonDefinition( "Abbrechen", "Bricht die Änderungen ab, ohne sie zu übernehmen "
                                                     "und schließt das Fenster.",
-                                        cancelCallback )
+                                        cancelCallback, ident=ButtonIdent.IDENT_CANCEL )
         return ( ok, cancel )
 
+
+def getOkApplyCancelButtonDefinitions( okCallback: Callable, applyCallback:Callable, cancelCallback: Callable ):
+    ok = BaseButtonDefinition( "  OK  ", "Übernimmt die Änderungen und schließt das Fenster.",
+                               okCallback, ident=ButtonIdent.IDENT_OK )
+    apply = BaseButtonDefinition( "Übernehmen", "Übernimmt die Änderungen; das Fenster bleibt geöffnet.",
+                               applyCallback, ident=ButtonIdent.IDENT_APPLY )
+    cancel = BaseButtonDefinition( "Abbrechen", "Bricht die Änderungen ab, ohne sie zu übernehmen "
+                                                "und schließt das Fenster.",
+                                   cancelCallback, ident=ButtonIdent.IDENT_CANCEL )
+    return (ok, apply, cancel)
+
 def getCloseButtonDefinition( callback: Callable ):
-    defi = BaseButtonDefinition( "Schließen", "Schließt das Fenster.", callback )
+    defi = BaseButtonDefinition( "Schließen", "Schließt das Fenster.", callback, ident=ButtonIdent.IDENT_CLOSE )
     return (defi,)
 
 #########################
@@ -140,10 +165,13 @@ class BaseDialogWithButtons( BaseDialog ):
         col = 0
         for defi in buttonDefinitions:
             btn = BaseButton()
+            self._buttonList.append( btn )
             if defi.text:
                 btn.setText( defi.text )
             if defi.icon:
                 btn.setIcon( defi.icon )
+            if defi.ident != ButtonIdent.IDENT_NONE:
+                btn.setIdent( defi.ident )
             btn.setToolTip( defi.tooltip )
             btn.setDefault( defi.default )
             if defi.width > -1:
@@ -155,6 +183,15 @@ class BaseDialogWithButtons( BaseDialog ):
             self._layout.addWidget( btn, self._buttonrow, col )
             col += 1
 
+    def getButtons( self ) -> List:
+        return self._buttonList
+
+    def getButton( self, ident:ButtonIdent ):
+        for btn in self._buttonList:
+            if btn.getIdent() == ident:
+                return btn
+        return None
+
     def setMainWidget( self, widget:BaseWidget ):
         self._layout.addWidget( widget, self._mainrow, 0, 1, self._layout.columnCount() )
 
@@ -162,12 +199,75 @@ class BaseDialogWithButtons( BaseDialog ):
         return self._layout.columnCount()
 
 
+
+#################  OkApplyCancelDialog  #############################
+class OkApplyCancelDialog( BaseDialogWithButtons ):
+    def __init__( self, title:str, parent=None, flags=Qt.WindowFlags() ):
+        BaseDialogWithButtons.__init__( self, title,
+                                        getOkApplyCancelButtonDefinitions( self.onOk, self.onApply, self.onCancel ),
+                                        parent, flags )
+        self.setWindowTitle( title )
+        self._beforeAcceptCallback:Callable = None
+        self._applyCallback:Callable = None
+        self._beforeRejectCallback:Callable = None
+
+    def setCallbacks( self, beforeAcceptCallback:Callable, applyCallback:Callable, beforeRejectCallback:Callable=None ):
+        """
+        die Callback-Funktionen empfangen keinen Aufruf-PArameter und müssen True oder False zurückliefern.
+        Wird True zurückgeliefert, wird der Dialog geschlossen, bei False bleibt er offen.
+        :param beforeAcceptCallback:
+        :param applyCallback:
+        :param beforeRejectCallback:
+        :return: None
+        """
+        self._beforeAcceptCallback = beforeAcceptCallback
+        self._applyCallback = applyCallback
+        self._beforeRejectCallback = beforeRejectCallback
+
+    def getOkButton( self ):
+        return self.getButton( ident=ButtonIdent.IDENT_OK )
+
+    def getApplyButton( self ):
+        return self.getButton( ident=ButtonIdent.IDENT_APPLY )
+
+    def getCancelButton( self ):
+        return self.getButton( ident=ButtonIdent.IDENT_CANCEL )
+
+    def onOk( self ):
+        msg = ""
+        if self._beforeAcceptCallback:
+            msg = self._beforeAcceptCallback()
+        if msg:
+            box = ErrorBox( "Validierungsfehler", msg, "" )
+            box.exec_()
+        else:
+            self.accept()
+
+    def onApply( self ):
+        msg = ""
+        if self._applyCallback:
+            msg = self._applyCallback()
+        if msg:
+            box = ErrorBox( "Validierungsfehler", msg, "" )
+            box.exec_()
+
+    def onCancel( self ):
+        msg = ""
+        if self._beforeRejectCallback:
+            msg = self._beforeRejectCallback()
+        if msg:
+            box = QuestionBox( "Bestätigung", msg, "Ja", "Nein" )
+            if box.exec_() == QMessageBox.StandardButton.Yes:
+                self.reject()
+
+
 ################  BaseButton  ##########################
 class BaseButton( QPushButton ):
-    def __init__( self, text= "", parent=None, callback:Callable=None, callbackData:Any=None ):
+    def __init__( self, text= "", parent=None, callback:Callable=None, callbackData:Any=None, ident:Any=None ):
         QPushButton.__init__( self, text=text, parent= parent )
         self._callback:Callable = None
         self._callbackData:Any = None
+        self._ident:Any=ident
         if callback:
             self.setCallback( callback, callbackData )
 
@@ -181,6 +281,12 @@ class BaseButton( QPushButton ):
             self._callback( self._callbackData )
         else:
             self._callback()
+
+    def getIdent( self ) -> Any:
+        return self._ident
+
+    def setIdent( self, ident:Any ) -> None:
+        self._ident = ident
 
 ################  BaseIconButton  #####################
 class BaseIconButton( BaseButton ):

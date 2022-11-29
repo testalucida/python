@@ -56,7 +56,7 @@ class IccLogic:
 
     def getKreditoren( self, master_name:str ) -> List[str]:
         kredleistlist = self.getKreditorLeistungen( master_name )
-        kredlist = [k.kreditor for k in kredleistlist]
+        kredlist = list( set( [k.kreditor for k in kredleistlist] ) )
         kredlist.insert( 0, "" )
         return kredlist
 
