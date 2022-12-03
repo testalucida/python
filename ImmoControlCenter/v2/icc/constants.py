@@ -37,6 +37,12 @@ class ValueMapper:
         self.display = display
         self.dbvalue = dbvalue
 
+
+class Modus:
+    NEW = "new"
+    MODIFY = "mod"
+    UNK = "unk"
+
 class Umlegbar( Enum ):
     NEIN = "nein"
     JA = "ja"

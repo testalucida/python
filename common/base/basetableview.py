@@ -176,6 +176,20 @@ class BaseTableView( QTableView ):
         #print( "GenericTableView.onDoubleClick: %d,%d" % (index.row(), index.column()) )
         self.btvDoubleClicked.emit( index )
 
+    def getPreferredHeight( self ) -> int:
+        rowcount = self.model().rowCount()
+        h = self._toolbar.height()
+        for row in range( 0, rowcount ):
+            h += self.rowHeight( row )
+        return h + 25
+
+    def getPreferredWidth( self ) -> int:
+        colcount = self.model().columnCount()
+        w = 0
+        for col in range( 0, colcount ):
+            w += self.columnWidth( col )
+        return w + 25
+
     def getSelectedRows( self ) -> List[int]:
         sm = self.selectionModel()
         indexes:List[QModelIndex] = sm.selectedRows()  ## Achtung missverständlicher Methodenname

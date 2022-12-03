@@ -109,73 +109,7 @@ class XBaseUI:
     def getVisibleAttributes( self ) -> List[VisibleAttribute]:
         return self._attrList
 
-# class XBaseUI_:
-#     def __init__( self, xbase:XBase ):
-#         self._xbase = xbase
-#         self._editables = list()
-#         self._visibles = list()
-#         self._bools = list()
-#         self._ints = list()
-#         self._floats = list()
-#         self._strings = list()
-#
-#     def getXBase( self ) -> XBase:
-#         return self._xbase
-#
-#     def setEditable( self, label:str, key:str, type:Type ):
-#         self._editables.append( self.__dict__[key] )
-#         self._setType( key, type )
-#
-#     def setEditables( self, keyTypeList:Iterable[Iterable] ):
-#         """
-#         :param keyTypeList: Eine Liste, die aus kleinen Listen besteht: (label:str, key:str, type:Type)
-#         :return:
-#         """
-#         for l in keyTypeList:
-#             label, key, type = l[0], l[1], l[2]
-#             self.setEditable( key )
-#             self._setType( key, type )
-#
-#     def _setType( self, key:str, type:Type ):
-#         if type == str:
-#             self._strings.append( key )
-#         elif type == int:
-#             self._ints.append( key )
-#         elif type == float:
-#             self._floats.append( key )
-#         elif type == bool:
-#             self._bools.append( key )
-#
-#     def getEditables( self ) -> List[str]:
-#         return self._editables
-#
-#     def setVisible( self, key:str, type:Type ):
-#         self._visibles.append( key )
-#         self._setType( key, type )
-#
-#     def setVisibles( self, keyTypelist:List[List] ):
-#         """
-#         :param keyTypeList: Eine Liste, die aus kleinen Listen besteht: (key, type)
-#         :return:
-#         """
-#         for l in keyTypelist:
-#             key, type = l[0], l[1]
-#             self.setVisible( key )
-#             self._setType( key, type )
-#
-#     def getVisibles( self ) -> List[str]:
-#         return self._visibles
-#
-#     def isEditable( self, key:str ) -> bool:
-#         return key in self._editables
-#
-#     def isVisible( self, key:str ) -> bool:
-#         return key in self._visibles
-#
-#     def getType( self, key:str ) -> Type:
-#         pass
-        
-
+####################   XAttribute   #####################
 class XAttribute( XBase ):
     def __init__( self, valuedict:Dict=None ):
         XBase.__init__( self, valuedict )
@@ -186,7 +120,7 @@ class XAttribute( XBase ):
         self.options = list()
         self.editable = True
 
-####################  XChange  #######################
+####################  Action  #######################
 class Action( Enum ):
     INSERT = 1,
     UPDATE = 2,
@@ -199,41 +133,6 @@ class Action( Enum ):
         if action == Action.UPDATE: return "modified"
         if action == Action.DELETE: return "deleted"
         if action == Action.NONE: return "noaction"
-
-# class XChange( XBase ):
-#     __count = 0
-#     def __init__( self, classtype:Type=None, method="", action:Action=Action.NONE,
-#                   x:XBase=None, key:str="", oldval=None, newval=None,
-#                   userdata:Any=None ):
-#         XBase.__init__( self )
-#         XChange.__count += 1
-#         self._id = XChange.__count
-#         self.type:Type = classtype
-#         self.method = method
-#         self.action = action
-#         self.xbase:XBase = x
-#         self.key = key
-#         self.oldval = oldval
-#         self.newval = newval
-#         self.userdata = userdata
-#         self.timestamp = datetime.now() # timestamp of instantiation
-#         self.saved = False
-#
-#     def getId( self ) -> int:
-#         return self._id
-#
-#     def getAsString( self, sep="\t", printWholeObject=False ) -> str:
-#         ret = "change id: " + str( self.getId() ) + sep
-#         ret += "changed in class: " + (str(self.type) if self.type else str(None)) + sep
-#         ret += "action: " + ( Action.toString( self.action ) ) + sep
-#         ret += "changed object: " + (str( self.xbase.__class__ ) if self.xbase else str( None )) + sep
-#         ret += "key: " + str( self.key ) + sep
-#         ret += "oldval: " + (str( self.oldval ) if self.oldval else str( None )) + sep
-#         ret += "newval: " + (str( self.newval ) if self.newval else str( None )) + sep
-#         ret += "userdata: " + (str( self.userdata ) if self.userdata else str( None )) + "\n"
-#         if printWholeObject:
-#             ret += "\nCHANGED OBJECT: " + str( self.xbase.__class__ ) + "\n" + self.xbase.toString( "\n" )
-#         return ret
 
 class TestItem( XBase ):
     def __init__( self ):

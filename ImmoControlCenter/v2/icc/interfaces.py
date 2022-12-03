@@ -95,6 +95,8 @@ class XMtlMiete( XMtlZahlung ):
     def __init__( self, valuedict:Dict=None ):
         XMtlZahlung.__init__( self, valuedict )
         self.mv_id = ""
+        if valuedict:
+            self.setFromDict( valuedict )
 
 ###########################   XMtlHausgeld   ######################
 class XMtlHausgeld( XMtlZahlung ):
@@ -102,6 +104,8 @@ class XMtlHausgeld( XMtlZahlung ):
         XMtlZahlung.__init__( self, valuedict )
         self.master_name = ""
         self.weg_name = "" # Name der Wohnungseigentümergemeinschaft / des Hauses
+        if valuedict:
+            self.setFromDict( valuedict )
 
 ###########################   XMtlAbschlag   ######################
 class XMtlAbschlag( XMtlZahlung ):
@@ -112,6 +116,34 @@ class XMtlAbschlag( XMtlZahlung ):
         self.vnr =  ""
         self.leistung = ""
         self.master_name = ""
+        if valuedict:
+            self.setFromDict( valuedict )
+
+##################   XGrundbesitzabgabe   ####################
+class XGrundbesitzabgabe( XBase ):
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self, valuedict )#
+        self.id = 0
+        self.master_name = ""
+        self.grundsteuer:float = 0.0
+        self.abwasser:float = 0.0
+        self.strassenreinigung:float = 0.0
+        self.summe:float = 0.0 # der Jahresgesamtbetrag
+        self.betrag_vierteljhrl:float = 0.0 # dieser Betrag wird vierteljährlich eingezogen
+        self.bemerkung:str = ""
+        if valuedict:
+            self.setFromDict( valuedict )
+
+    def computeSum( self ):
+        self.summe = self.grundsteuer + self.abwasser + self.strassenreinigung
+        self.betrag_vierteljhrl = round( self.summe/4, 2 )
+
+class XSammelabgabe( XBase ):
+    def __init__( self ):
+        XBase.__init__( self )
+        self.grundbesitzabgabeList:List[XGrundbesitzabgabe] = list()
+        self.betrag = 0.0 # der Betrag, der eff. von der Stadt NK eingezogen wurde für alle Objekte,
+                          # die in in der GrundbesitzabgabeListe enthalten sind.
 
 #####################  Mietverhältnis Kurz  ######################
 class XMietverhaeltnisKurz( XBase ):

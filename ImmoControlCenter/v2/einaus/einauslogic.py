@@ -16,9 +16,9 @@ class EinAusTableModel( IccTableModel):
         #            "U", "Buchung am", "Buchg.text", "Mehr Text", "eingetragen" )
         # self.setKeyHeaderMappings2( keys, headers )
         self.setKeyHeaderMappings2(
-            ("master_name", "mobj_id", "debi_kredi", "buchungstext", "buchungsdatum", "ea_art", "verteilt_auf",
+            ("master_name", "mobj_id", "debi_kredi", "buchungstext", "buchungsdatum", "jahr", "ea_art", "verteilt_auf",
              "betrag", "mehrtext", "write_time" ),
-            ("Haus", "Whg", "Debitor/\nKreditor", "Buchungstext", "Buch.datum", "Art", "vJ",
+            ("Haus", "Whg", "Debitor/\nKreditor", "Buchungstext", "Buch.datum", "steuerl.\nJahr", "Art", "vJ",
              "Betrag", "Bemerkung", "eingetragen")
         )
 
@@ -85,6 +85,9 @@ class EinAusLogic(IccLogic):
         """
         return self._einausData.getEinAusZahlungen( ea_art_display, jahr )
 
+    def getSummeBetween( self, ea_art_display:str, startdate:str, enddate:str ) -> float:
+        return self._einausData.getSummeBetween( ea_art_display, startdate, enddate )
+
     def trySaveZahlung( self, x:XEinAus ) -> str:
         msg = self.validateZahlung( x )
         if msg:
@@ -94,8 +97,18 @@ class EinAusLogic(IccLogic):
             # Validierung ok, jetzt speichern
             # ACHTUNG: eine Exception, die von _einausData geworfen wird, wird hier nicht abgefangen
             y, m, d = datehelper.getDateParts( x.buchungsdatum )
-            x.jahr = y
-            x.monat = iccMonthShortNames[m-1]
+            if y == x.jahr:
+                x.monat = iccMonthShortNames[m-1]
+            else:
+                if y > x.jahr:
+                    # Buchung soll für ein vergangenes Jahr gelten,
+                    # fest "Dezember" eingeben
+                    x.monat = iccMonthShortNames[11]
+                else:
+                    # Buchung soll für ein zukünftiges Jahr gelten,
+                    # fest "Januar" eingeben
+                    x.monat = iccMonthShortNames[0]
+                x.buchungstext += "\nMonat <%s> - in der Tabelle nicht angezeit -  wurde algorithmisch ermittelt." % x.monat
             if x.ea_id <= 0:
                 self._einausData.insertEinAusZahlung( x )
                 self._einausData.commit()

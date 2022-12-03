@@ -1,5 +1,4 @@
-import enum
-from enum import Enum
+
 from typing import List, Callable, Iterable
 
 from PySide2.QtCore import QObject, Signal
@@ -8,25 +7,13 @@ from PySide2.QtWidgets import QAction, QDialog, QApplication
 import datehelper
 from base.baseqtderivates import BaseComboBox, BaseEdit, FloatEdit, IntEdit, BaseCheckBox, SmartDateEdit, MultiLineEdit, \
     EditableComboBox, ButtonIdent
-from base.filterhandler import FilterHandler
 from base.interfaces import VisibleAttribute
-from base.multisorthandler import MultiSortHandler
-from base.printhandler import PrintHandler
-from base.searchhandler import SearchHandler
 from v2.einaus.einauslogic import EinAusLogic
 from v2.einaus.einausview import EinAusTableView, EinAusTableViewFrame, XEinAusUI, EinAusDialog
-from v2.icc.constants import EinAusArt, Umlegbar
-from v2.icc.icccontroller import IccController
-from v2.icc.iccwidgets import IccCheckTableViewFrame
+from v2.icc.constants import EinAusArt, Umlegbar, Modus, iccMonthShortNames
 
 # ##############  EinAusController  ####################
 from v2.icc.interfaces import XEinAus, XMasterobjekt, XMietobjekt, XKreditorLeistung, XLeistung
-
-
-class Modus:
-    NEW = "new"
-    MODIFY = "mod"
-    UNK = "unk"
 
 VERTEILT_AUF_DEFAULT = 1
 # EINAUSART_DEFAULT = EinAusArt.ALLGEMEINE_KOSTEN
@@ -48,6 +35,8 @@ class EinAusDialogController( QObject ):
         self._cboLeistungen: BaseComboBox = None
         self._cboEinAus: BaseComboBox = None
         self._cboUmlegbar: BaseComboBox = None
+        self._ieJahr:IntEdit = None
+        self._cboMonate:BaseComboBox = None
 
     def _createGui( self ) -> EinAusDialog:
         x = self._x
@@ -84,6 +73,11 @@ class EinAusDialogController( QObject ):
         self._feBetrag:FloatEdit = v.getWidget( "betrag" )
         self._ieVerteiltAuf:IntEdit = v.getWidget( "verteilt_auf" )
         self._sdeBuchungsdatum:SmartDateEdit = v.getWidget( "buchungsdatum" )
+        self._sdeBuchungsdatum.textChanged.connect( self.onBuchungsdatumChanged )
+        self._ieJahr:IntEdit = v.getWidget( "jahr" )
+        # Jahr übertragen in _ieJahr:
+        self.onBuchungsdatumChanged( self._sdeBuchungsdatum.getDate() )
+        # self._cboMonate:BaseComboBox = v.getWidget( "monat" )
         self._beBuchungstext:BaseEdit = v.getWidget( "buchungstext" )
         self._mleMehrtext:MultiLineEdit = v.getWidget( "mehrtext" )
         self._dlg = dlg
@@ -111,6 +105,8 @@ class EinAusDialogController( QObject ):
             VisibleAttribute( "umlegbar", BaseComboBox, "umlegbar: ", widgetWidth=smallW,
                               comboValues=[Umlegbar.JA.value, Umlegbar.NEIN.value] ),
             VisibleAttribute( "buchungsdatum", SmartDateEdit, "Buchungsdatum: ", widgetWidth=smallW ),
+            VisibleAttribute( "jahr", IntEdit, "Jahr (steuerl.): ", widgetWidth=smallW ),
+            # VisibleAttribute( "monat", BaseComboBox, "Monat: ", comboValues=iccMonthShortNames, widgetWidth=smallW ),
             VisibleAttribute( "buchungstext", BaseEdit, "Buchungstext: ", columnspan=3 ),
             VisibleAttribute( "mehrtext", MultiLineEdit, "Bemerkung: ", widgetHeight=55, columnspan=3 )
         )
@@ -188,6 +184,17 @@ class EinAusDialogController( QObject ):
                 self._cboUmlegbar.setCurrentText( Umlegbar.JA.value )
             else:
                 self._cboUmlegbar.setCurrentText( Umlegbar.NEIN.value )
+
+    def onBuchungsdatumChanged( self, buchungsdatum:str ):
+        """
+        Mit jeder Eintragung des Buchungsdatums müssen die Attribute <jahr> und <monat> versorgt werden.
+        Das soll automatisch passieren, aber muss durch den Anwender änderbar sein (Dezember-/Januar-Thematik)
+        :param buchungsdatum:
+        :return:
+        """
+        #print( "onBuchungsdatumChanged")
+        year, mon, day = datehelper.getDateParts( buchungsdatum )
+        self._ieJahr.setIntValue( year )
 
     def onOk( self ) -> str:
         """

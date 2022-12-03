@@ -125,6 +125,24 @@ class EinAusData( IccData ):
         self._mapDbValueToDisplay( xlist )
         return xlist
 
+    def getSummeBetween( self, ea_art_display:str, startdate: str, enddate: str ) -> float:
+        """
+        liefert die Summe von Zahlungen einer bestimmten EinAusArt zwischen startdate und enddate (jeweils inklusive)
+        :param startdate:
+        :param enddate:
+        :return: die SUmme als float
+        """
+        ea_db_art = EinAusArt.getDbValue( ea_art_display )
+        sql = "select sum(betrag) " \
+              "from einaus " \
+              "where  ea_art = '%s' " \
+              "and buchungsdatum >= '%s' " \
+              "and buchungsdatum <= '%s' " % (ea_db_art, startdate, enddate)
+        tpl = self.read( sql )
+        summe = tpl[0][0]
+        return 0.0 if not summe else summe
+
+
     def getEinAusZahlungen( self, ea_art_display:str, jahr: int ) -> List[XEinAus]:
         """
         Liefert eine Liste von XEinAus-Objekten, die den gegebenen Kriterien genügen

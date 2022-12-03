@@ -64,9 +64,7 @@ class MainTabWidget( BaseTabWidget ):
     def __init__( self, parent=None ):
         BaseTabWidget.__init__( self, parent )
         self._mtlZahlungenTab = MtlZahlungenTabWidget()
-        #self._alleZahlungenTab = AlleZahlungenTabWidget()
         self.addTab( self._mtlZahlungenTab, "Monatliche Zahlungen" )
-        #self.addTab( self._alleZahlungenTab, "Alle Zahlungen" )
 
     def getMtlZahlungenTab( self ) -> MtlZahlungenTabWidget:
         return self._mtlZahlungenTab

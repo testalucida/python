@@ -1,11 +1,12 @@
 from typing import List, Callable, Iterable
-from PySide2.QtWidgets import QAction, QDialog
+from PySide2.QtWidgets import QAction, QDialog, QMenu
 
 import datehelper
 from base.baseqtderivates import BaseComboBox, BaseEdit, FloatEdit, IntEdit, BaseCheckBox, SmartDateEdit, MultiLineEdit, \
-    EditableComboBox
+    EditableComboBox, BaseAction
 from base.filterhandler import FilterHandler
 from base.interfaces import VisibleAttribute
+from base.messagebox import InfoBox
 from base.multisorthandler import MultiSortHandler
 from base.printhandler import PrintHandler
 from base.searchhandler import SearchHandler
@@ -18,6 +19,7 @@ from v2.icc.iccwidgets import IccCheckTableViewFrame
 
 # ##############  EinAusController  ####################
 from v2.icc.interfaces import XEinAus, XMasterobjekt, XMietobjekt, XKreditorLeistung, XLeistung
+from v2.sammelabgabe.sammelabgabecontroller import SammelabgabeController
 
 
 class EinAusController( IccController ):
@@ -30,9 +32,10 @@ class EinAusController( IccController ):
         self._printHandler:PrintHandler = None
         self._tvframe: EinAusTableViewFrame = EinAusTableViewFrame( self._tv, withEditButtons=True )
         self._logic = EinAusLogic()
+        self._jahr:int = self.getYearToStartWith()
 
     def createGui( self ) -> EinAusTableViewFrame:
-        jahr = self.getYearToStartWith()
+        jahr = self._jahr
         tm = self._logic.getZahlungenModel( jahr )
         tv = self._tv
         tv.setModel( tm )
@@ -63,38 +66,39 @@ class EinAusController( IccController ):
         self._tvframe.deleteItems.connect( self.onDeleteEinAus )
         return self._tvframe
 
+    def getMenu( self ) -> QMenu:
+        menu = QMenu( "Sammelabgabe" )
+        # Menü "Sammelabgabe"
+        action = BaseAction( "Sammelabgabe erfassen und aufsplitten...", parent=menu )
+        action.triggered.connect( self.onSammelabgabe )
+        menu.addAction( action )
+        return menu
+
+    def onSammelabgabe( self ):
+        c = SammelabgabeController()
+        einauslist:List[XEinAus] = c.processSammelabgabe( self._jahr )
+        if einauslist and len( einauslist ) > 0:
+            tm:EinAusTableModel = self._tv.model()
+            for ea in einauslist:
+                tm.addObject( ea )
+
     def onNewEinAus( self ):
         ctrl = EinAusDialogController()
         ctrl.ea_inserted.connect( self.onNewEinAusInserted )
         ctrl.processNewEinAus()
 
     def onNewEinAusInserted( self, x:XEinAus ):
-        model:EinAusTableModel = self._tv.model()
-        model.addObject( x )
-
-    @staticmethod
-    def _createVisibleAttributeList( masterobjekte:List[str], mietobjekte:List[str], kreditoren:List[str],
-                                     onMasterChangedCallback:Callable, onKreditorChangedCallback:Callable,
-                                     onLeistungChangedCallback:Callable ) \
-            -> Iterable[VisibleAttribute]:
-        smallW = 90
-        vislist = (
-            VisibleAttribute( "master_name", BaseComboBox, "Haus: ", nextRow=False,
-                              comboValues=masterobjekte, comboCallback=onMasterChangedCallback ),
-            VisibleAttribute( "mobj_id", BaseComboBox, "Wohnung: ", widgetWidth=150, comboValues=mietobjekte ),
-            VisibleAttribute( "debi_kredi", EditableComboBox, "Zahlung an/von: ",
-                              comboValues=kreditoren, comboCallback=onKreditorChangedCallback ),
-            VisibleAttribute( "leistung", EditableComboBox, "Art d. Leistung: ",
-                              comboCallback=onLeistungChangedCallback ),
-            VisibleAttribute( "betrag", FloatEdit, "Betrag: ", widgetWidth=smallW ),
-            VisibleAttribute( "ea_art", BaseComboBox, "Art d. Zahlung: ", comboValues=EinAusArt.getDisplayValues() ),
-            VisibleAttribute( "verteilt_auf", IntEdit, "vert. auf Jahre: ", widgetWidth=smallW ),
-            VisibleAttribute( "umlegbar", BaseComboBox, "umlegbar: ", widgetWidth=smallW, comboValues=["Nein", "Ja"] ),
-            VisibleAttribute( "buchungsdatum", SmartDateEdit, "Buchungsdatum: ", widgetWidth=smallW ),
-            VisibleAttribute( "buchungstext", BaseEdit, "Buchungstext: ", columnspan=3 ),
-            VisibleAttribute( "mehrtext", MultiLineEdit, "Bemerkung: ", widgetHeight=55, columnspan=3 )
-        )
-        return vislist
+        # der Tabelle den neuen Satz hinzufügen - aber nur, wenn das steuerliche Jahr <x.jahr>
+        # zu dem in der Combobox selektierten Jahr passt.
+        if self._jahr == x.jahr:
+            model:EinAusTableModel = self._tv.model()
+            model.addObject( x )
+        else:
+            box = InfoBox( "Buchung für fremdes Jahr", "Die eingegebene Buchung bezieht sich auf das Jahr %d.\n"
+                                                       "Eingestellt ist Jahr %d.\n"
+                                                       "Deshalb kann die neue Buchung nicht angezeigt werden.\n"
+                                                       "Sie wurde jedoch gespeichert." % (x.jahr, self._jahr), "", "OK" )
+            box.exec_()
 
     def onEditEinAus( self, row:int ):
         print( "edit Zahlung ", str(row) )
@@ -103,9 +107,10 @@ class EinAusController( IccController ):
         print( "delete Zahlungen ", rows )
 
     def onYearChanged( self, newYear:int ):
-        # tm = self._logic.getMietzahlungenModel( newYear )
-        # self._tv.setModel( tm )
-        pass
+        self._jahr = newYear
+        tm = self._logic.getZahlungenModel( self._jahr )
+        tv = self._tv
+        tv.setModel( tm )
 
     def provideActions( self, index, point, selectedIndexes ) -> List[QAction]:
         #print( "context menu for column ", index.column(), ", row ", index.row() )

@@ -211,7 +211,7 @@ class OkApplyCancelDialog( BaseDialogWithButtons ):
         self._applyCallback:Callable = None
         self._beforeRejectCallback:Callable = None
 
-    def setCallbacks( self, beforeAcceptCallback:Callable, applyCallback:Callable, beforeRejectCallback:Callable=None ):
+    def setCallbacks( self, beforeAcceptCallback:Callable, applyCallback:Callable=None, beforeRejectCallback:Callable=None ):
         """
         die Callback-Funktionen empfangen keinen Aufruf-PArameter und müssen True oder False zurückliefern.
         Wird True zurückgeliefert, wird der Dialog geschlossen, bei False bleibt er offen.
