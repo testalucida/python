@@ -2,6 +2,7 @@ from typing import List
 
 import datehelper
 from base.basetablemodel import BaseTableModel, SumTableModel
+from v2.einaus.einausdata import EinAusData
 from v2.einaus.einauslogic import EinAusLogic
 from v2.icc.constants import EinAusArt, iccMonthShortNames, Umlegbar
 from v2.icc.icclogic import IccLogic
@@ -43,10 +44,9 @@ class SammelabgabeLogic( IccLogic ):
         :param buchungsdatum:
         :return:
         """
-        ealogic = EinAusLogic()
         startdate = datehelper.addDaysToIsoString( buchungsdatum, -14 )
         enddate = datehelper.addDaysToIsoString( buchungsdatum, 14 )
-        summe = ealogic.getSummeBetween( EinAusArt.GRUNDSTEUER.display, startdate, enddate )
+        summe = self._data.checkSammelabgabeBetween( startdate, enddate ) # liefert nur die Summe an Grundsteuer
         return summe
 
     def trySaveSammelabgabe( self, jahr:int, betrag:float, buchungsdatum:str ) -> List[XEinAus]:
@@ -67,6 +67,7 @@ class SammelabgabeLogic( IccLogic ):
             self._supplyGrundsteuerDaten( xea, x.grundsteuer )
             self._supplyBemerkung( xea, betrag )
             ealogic.trySaveZahlung( xea )
+            ealist.append( xea )
 
         def trySaveAbgaben():
             xea: XEinAus = self._createXEinAusKopfdaten( x, jahr, buchungsdatum )
@@ -74,7 +75,9 @@ class SammelabgabeLogic( IccLogic ):
             self._supplyAbwasserStrasse( xea, x )
             self._supplyBemerkung( xea, betrag )
             ealogic.trySaveZahlung( xea )
+            ealist.append( xea )
 
+        ealist = list()
         ealogic = EinAusLogic()
         l: List[XGrundbesitzabgabe] = self._data.getSammelabgaben( jahr )
         for x in l:
@@ -85,6 +88,7 @@ class SammelabgabeLogic( IccLogic ):
             trySaveGrundsteuer()
             trySaveAbgaben()
         ealogic.commit()
+        return ealist
 
     def _createXEinAusKopfdaten( self, x:XGrundbesitzabgabe, jahr:int, buchungsdatum:str ) -> XEinAus:
         xea = XEinAus()

@@ -29,6 +29,7 @@ class KeyHeaderMapping:
 
 ##################  BaseTableModel  ##################
 class BaseTableModel( QAbstractTableModel ):
+    before_sorting = Signal()
     sorting_finished = Signal()
     rowsAddedSignal = Signal() # damit die View ggf. ihre Zeilenhöhe anpassen kann
     def __init__( self, rowList:List[XBase]=None, jahr:int=None ):
@@ -47,7 +48,7 @@ class BaseTableModel( QAbstractTableModel ):
         self.boldFont = QFont( "Arial", 11, QFont.Bold )
         self.yellow = QColor( "yellow" )
         self.yellowBrush = QBrush( self.yellow )
-        self.sortable = False
+        self.sortable = True
         self.sort_col = -1
         self.sort_descending = False
         if rowList:
@@ -93,7 +94,7 @@ class BaseTableModel( QAbstractTableModel ):
         return self.sort_col
 
     def getSortOrder( self ) -> Qt.SortOrder:
-        return Qt.AscendingOrder if self.sort_descending else Qt.DescendingOrder
+        return Qt.DescendingOrder if self.sort_descending else Qt.AscendingOrder
 
     def getColumnIndex( self, header ) -> int:
         return self.headers.index( header )
@@ -404,12 +405,14 @@ class BaseTableModel( QAbstractTableModel ):
     def setSortable( self, sortable:bool=True ):
         self.sortable = sortable
 
-    def sort( self, col:int, order: Qt.SortOrder ) -> None:
+    def sort( self, col:int, order: Qt.SortOrder=Qt.SortOrder.DescendingOrder ) -> None:
         if not self.sortable: return
+        self.sort_col = col
+        if col < 0: return
         """sort table by given column number col"""
         self.layoutAboutToBeChanged.emit()
-        self.sort_col = col
-        self.sort_descending = True if order == Qt.SortOrder.AscendingOrder else False
+        self.before_sorting.emit()
+        self.sort_descending = True if order == Qt.SortOrder.DescendingOrder else False
         self.rowList = sorted( self.rowList, key=cmp_to_key( self.compare ) )
         self.sorting_finished.emit()
         self.layoutChanged.emit()
@@ -434,8 +437,8 @@ class BaseTableModel( QAbstractTableModel ):
         if isinstance( v1, str ):
             v1 = v1.lower()
             v2 = v2.lower()
-        if v1 < v2: return 1 if self.sort_descending else -1
-        if v1 > v2: return -1 if self.sort_descending else 1
+        if v1 < v2: return -1 if self.sort_descending else 1
+        if v1 > v2: return 1 if self.sort_descending else -1
         if v1 == v2: return 0
 
 ##################  SumTableModel  #########################

@@ -34,18 +34,19 @@ class SammelabgabeController( IccController ):
             abschlag = self._dlg.getAbschlag()
             buchungsdatum = self._dlg.getBuchungsdatum()
             try:
+                # prüfen, ob die Abbuchung nicht schon erfasst wurde (fuzzy)
                 summe = self._logic.checkSammelabgabe( buchungsdatum )
                 if summe != 0:
                     msg = "Etwa zum Zeitpunkt %s wurden Grundsteuerabgaben in Höhe von %.2f bezahlt.\n" % (buchungsdatum, summe )
                     msg += "Soll die Buchung trotzdem durchgeführt werden?"
                     box = QuestionBox( "Abgabenzahlung gefunden", msg, "JA", "NEIN" )
                     if box.exec_() != QMessageBox.Yes:
-                        return
+                        return None
             except Exception as ex:
                 msg = str(ex) + "\nBuchung wird nicht durchgeführt."
                 box = ErrorBox( "Fehler beim Zugriff auf Tabelle <einaus>", str(ex), "" )
                 box.exec_()
-                return
+                return None
             try:
                 l:List[XEinAus] = self._logic.trySaveSammelabgabe( jahr, abschlag, buchungsdatum )
                 return l
@@ -53,7 +54,7 @@ class SammelabgabeController( IccController ):
                 msg = "Exception beim Speichern des Abschlags von %.2f Euro mit Buchungsdatum %s:\n " %  \
                       (abschlag, buchungsdatum )
                 msg += str(ex)
-                box = ErrorBox( "Fehler beim Speichern der Sammelabgabe", msg, "" )
+                box = ErrorBox( "Fehler beim Speichern der Sammelabgabe", msg, "Die Buchung wurde nicht durchgeführt." )
                 box.exec_()
                 return None
 

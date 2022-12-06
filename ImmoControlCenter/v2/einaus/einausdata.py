@@ -24,19 +24,17 @@ class EinAusData( IccData ):
         umlegbar = "NULL" if not x.umlegbar else "'" + x.umlegbar + "'"
         buchungsdatum = "NULL" if not x.buchungsdatum else "'" + x.buchungsdatum + "'"
         buchungstext = "NULL" if not x.buchungstext else "'" + x.buchungstext + "'"
-        mehrtext = "NULL" if not x.mehrtext else "'" + x.mehrtext + "'"
         leistung = "NULL" if not x.leistung else "'" + x.leistung + "'"
         writetime = datehelper.getCurrentTimestampIso()
         sql = "insert into einaus " \
               "( master_name, mobj_id, debi_kredi, leistung, sab_id, jahr, monat, betrag, ea_art, verteilt_auf, umlegbar, " \
-              "  buchungsdatum, buchungstext, mehrtext, write_time ) " \
+              "  buchungsdatum, buchungstext, write_time ) " \
               "values" \
               "(   '%s',      '%s',       '%s',     %s,   %s,     %d,   '%s',    %.2f,   '%s',     %s,           %s," \
-              "    %s,         %s,         %s,     '%s' ) " % ( x.master_name, x.mobj_id, x.debi_kredi, leistung, sab_id,
+              "    %s,         %s,        '%s' ) " % ( x.master_name, x.mobj_id, x.debi_kredi, leistung, sab_id,
                                                                    x.jahr, x.monat, x.betrag,
                                                                    ea_art_db, verteilt_auf, umlegbar,
-                                                                   buchungsdatum, buchungstext, mehrtext,
-                                                                   writetime )
+                                                                   buchungsdatum, buchungstext, writetime )
         inserted_id = self.writeAndLog( sql, DbAction.INSERT, "einaus", "ea_id", 0,
                                         newvalues=x.toString( printWithClassname=True ), oldvalues=None )
         x.ea_id = inserted_id
@@ -57,7 +55,6 @@ class EinAusData( IccData ):
         umlegbar = "NULL" if x.umlegbar == Umlegbar.NONE else "'" + x.umlegbar + "'"
         buchungsdatum = "NULL" if not x.buchungsdatum else "'" + x.buchungsdatum + "'"
         buchungstext = "NULL" if not x.buchungstext else "'" + x.buchungstext + "'"
-        mehrtext = "NULL" if not x.mehrtext else "'" + x.mehrtext + "'"
         leistung = "NULL" if not x.leistung else "'" + x.leistung + "'"
         writetime = datehelper.getCurrentTimestampIso()
         sql = "update einaus " \
@@ -75,12 +72,11 @@ class EinAusData( IccData ):
               "umlegbar = %s, " \
               "buchungsdatum = %s, " \
               "buchungstext = %s, " \
-              "mehrtext = %s, " \
               "write_time = '%s' " \
               "where ea_id = %d " % (x.master_name, x.mobj_id, x.debi_kredi, leistung, sab_id,
                                        x.jahr, x.monat, x.betrag,
                                        ea_art_db, verteilt_auf, umlegbar,
-                                       buchungsdatum, buchungstext, mehrtext,
+                                       buchungsdatum, buchungstext,
                                        writetime, x.ea_id )
         rowsAffected = self.writeAndLog( sql, DbAction.UPDATE, "einaus", "ea_id", x.ea_id,
                                          newvalues=x.toString( True ), oldvalues=oldX.toString( True ) )
@@ -101,7 +97,7 @@ class EinAusData( IccData ):
 
     def getEinAusZahlung( self, ea_id:int ) -> XEinAus:
         sql = "select ea_id, master_name, mobj_id, debi_kredi, leistung, sab_id, jahr, monat, betrag, ea_art, verteilt_auf, " \
-              "umlegbar, buchungsdatum, buchungstext, mehrtext, write_time " \
+              "umlegbar, buchungsdatum, buchungstext, write_time " \
               "from einaus " \
               "where ea_id = %d " % ea_id
         x = self.readOneGetObject( sql, XEinAus )
@@ -118,30 +114,12 @@ class EinAusData( IccData ):
               "sab_id, jahr, monat, betrag, ea_art, " \
               "coalesce(verteilt_auf, '') as verteilt_auf, umlegbar, " \
               "coalesce( buchungsdatum, '') as buchungsdatum, coalesce(buchungstext, '') as buchungstext, " \
-              "coalesce(mehrtext, '') as mehrtext, write_time " \
+              "write_time " \
               "from einaus " \
               "where jahr = %d "  % jahr
         xlist = self.readAllGetObjectList( sql, XEinAus )
         self._mapDbValueToDisplay( xlist )
         return xlist
-
-    def getSummeBetween( self, ea_art_display:str, startdate: str, enddate: str ) -> float:
-        """
-        liefert die Summe von Zahlungen einer bestimmten EinAusArt zwischen startdate und enddate (jeweils inklusive)
-        :param startdate:
-        :param enddate:
-        :return: die SUmme als float
-        """
-        ea_db_art = EinAusArt.getDbValue( ea_art_display )
-        sql = "select sum(betrag) " \
-              "from einaus " \
-              "where  ea_art = '%s' " \
-              "and buchungsdatum >= '%s' " \
-              "and buchungsdatum <= '%s' " % (ea_db_art, startdate, enddate)
-        tpl = self.read( sql )
-        summe = tpl[0][0]
-        return 0.0 if not summe else summe
-
 
     def getEinAusZahlungen( self, ea_art_display:str, jahr: int ) -> List[XEinAus]:
         """
@@ -152,7 +130,7 @@ class EinAusData( IccData ):
         """
         ea_art_db = EinAusArt.getDbValue( ea_art_display )
         sql = "select ea_id, master_name, mobj_id, debi_kredi, leistung, sab_id, jahr, monat, betrag, ea_art, verteilt_auf, " \
-              "umlegbar, buchungsdatum, buchungstext, mehrtext, write_time " \
+              "umlegbar, buchungsdatum, buchungstext, write_time " \
               "from einaus " \
               "where jahr = %d " \
               "and ea_art = '%s' " % ( jahr, ea_art_db )
@@ -171,7 +149,7 @@ class EinAusData( IccData ):
         """
         ea_art_db = EinAusArt.getDbValue( ea_art_display )
         sql = "select ea_id, master_name, mobj_id, debi_kredi, leistung, sabid, jahr, monat, betrag, ea_art, verteilt_auf, " \
-              "umlegbar, buchungsdatum, buchungstext, mehrtext, write_time " \
+              "umlegbar, buchungsdatum, buchungstext, write_time " \
               "from einaus " \
               "where jahr = %d " \
               "and monat = '%s' " \
@@ -192,7 +170,7 @@ class EinAusData( IccData ):
         """
         ea_art_db = EinAusArt.getDbValue( ea_art_display )
         sql = "select ea_id, master_name, mobj_id, debi_kredi, leistung, sab_id, jahr, monat, betrag, ea_art, verteilt_auf, " \
-              "umlegbar, buchungsdatum, buchungstext, mehrtext, write_time " \
+              "umlegbar, buchungsdatum, buchungstext, write_time " \
               "from einaus " \
               "where jahr = %d " \
               "and monat = '%s' " \
@@ -212,7 +190,7 @@ class EinAusData( IccData ):
         :return: List[XEinAus]
         """
         sql = "select ea_id, master_name, mobj_id, debi_kredi, leistung, sab_id, jahr, monat, betrag, ea_art, verteilt_auf, " \
-              "umlegbar, buchungsdatum, buchungstext, mehrtext, write_time " \
+              "umlegbar, buchungsdatum, buchungstext, write_time " \
               "from einaus " \
               "where jahr = %d " \
               "and monat = '%s' " \

@@ -1,4 +1,6 @@
 from typing import List, Callable, Iterable
+
+from PySide2.QtCore import Qt, QSize
 from PySide2.QtWidgets import QAction, QDialog, QMenu
 
 import datehelper
@@ -36,9 +38,10 @@ class EinAusController( IccController ):
 
     def createGui( self ) -> EinAusTableViewFrame:
         jahr = self._jahr
-        tm = self._logic.getZahlungenModel( jahr )
         tv = self._tv
+        tm = self._logic.getZahlungenModel( jahr )
         tv.setModel( tm )
+        tv.sortByColumn( tm.getWriteTimeColumnIdx(), Qt.SortOrder.AscendingOrder )
         tb = self._tvframe.getToolBar()
         jahre = self.getJahre()
         if len(jahre) == 0:
@@ -134,7 +137,10 @@ def test2():
     app = QApplication()
     c = EinAusController()
     frame = c.createGui()
+    w = frame.getTableView().getPreferredWidth()
+    h = frame.getTableView().getPreferredHeight()
     frame.show()
+    frame.resize( QSize(w, h) )
     app.exec_()
 #
 # def test():

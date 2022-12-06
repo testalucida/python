@@ -79,7 +79,7 @@ class EinAusDialogController( QObject ):
         self.onBuchungsdatumChanged( self._sdeBuchungsdatum.getDate() )
         # self._cboMonate:BaseComboBox = v.getWidget( "monat" )
         self._beBuchungstext:BaseEdit = v.getWidget( "buchungstext" )
-        self._mleMehrtext:MultiLineEdit = v.getWidget( "mehrtext" )
+        #self._mleMehrtext:MultiLineEdit = v.getWidget( "mehrtext" )
         self._dlg = dlg
         return dlg
 
@@ -107,8 +107,8 @@ class EinAusDialogController( QObject ):
             VisibleAttribute( "buchungsdatum", SmartDateEdit, "Buchungsdatum: ", widgetWidth=smallW ),
             VisibleAttribute( "jahr", IntEdit, "Jahr (steuerl.): ", widgetWidth=smallW ),
             # VisibleAttribute( "monat", BaseComboBox, "Monat: ", comboValues=iccMonthShortNames, widgetWidth=smallW ),
-            VisibleAttribute( "buchungstext", BaseEdit, "Buchungstext: ", columnspan=3 ),
-            VisibleAttribute( "mehrtext", MultiLineEdit, "Bemerkung: ", widgetHeight=55, columnspan=3 )
+            VisibleAttribute( "buchungstext", BaseEdit, "Text: ", columnspan=3 )
+            #VisibleAttribute( "mehrtext", MultiLineEdit, "Bemerkung: ", widgetHeight=55, columnspan=3 )
         )
         return vislist
 
@@ -117,7 +117,7 @@ class EinAusDialogController( QObject ):
         self._feBetrag.setValue( 0.0 )
         self._ieVerteiltAuf.setValue( VERTEILT_AUF_DEFAULT )
         self._beBuchungstext.setValue( "" )
-        self._mleMehrtext.setValue( "" )
+        #self._mleMehrtext.setValue( "" )
 
     def processNewEinAus( self ):
         """

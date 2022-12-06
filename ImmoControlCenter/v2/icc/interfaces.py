@@ -30,7 +30,6 @@ class XEinAus( XBase ):
         self.umlegbar = ""
         self.buchungsdatum = ""
         self.buchungstext = ""
-        self.mehrtext = ""
         self.write_time = ""
         if valuedict:
             self.setFromDict( valuedict )

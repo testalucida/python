@@ -1,6 +1,6 @@
 from numbers import Number
-from typing import List, Callable
-from PySide2.QtCore import QAbstractTableModel, Qt, Signal, QModelIndex, QPoint
+from typing import List, Callable, Tuple
+from PySide2.QtCore import QAbstractTableModel, Qt, Signal, QModelIndex, QPoint, QItemSelectionModel, QItemSelection
 from PySide2.QtGui import QMouseEvent, QGuiApplication, QIcon
 from PySide2.QtWidgets import QTableView, QAbstractItemView, QAbstractScrollArea, QHeaderView, QApplication, QMenu, \
     QAction, QComboBox
@@ -53,7 +53,7 @@ class BaseTableView( QTableView ):
         self.setContextMenuPolicy( Qt.CustomContextMenu )
         self.customContextMenuRequested.connect( self.onRightClick )
         self.setMouseTracking( True )
-        #self.horizontalHeader().sortIndicatorChanged.connect( self.afterSort )
+        # self.horizontalHeader().sortIndicatorChanged.connect( self.afterSort )
         # self.btvCellEnter.connect( self._onCellEnter )
         # self.btvCellLeave.connect( self._onCellLeave )
         self._vheaderView = BaseHeaderView( Qt.Orientation.Vertical )
@@ -61,20 +61,18 @@ class BaseTableView( QTableView ):
         self._vheaderView.bhvMouseMove.connect( self.onMouseMoveOutside )
         # self._hheaderView = BaseHeaderView( Qt.Orientation.Horizontal )
         # self._hheaderView.bhvMouseMove.connect( self.onMouseMoveOutside )
-        #self.setHorizontalHeader( self._hheaderView )  # mit dem CustomHeaderView funktioniert das Sortieren nicht
+        # self.setHorizontalHeader( self._hheaderView )  # mit dem CustomHeaderView funktioniert das Sortieren nicht
         self._mouseOverCol = -1
         self._mouseOverRow = -1
         # callback mit der Signatur indexrow:int, indexcolumn:int, point:QPoint.
         # Liefert die QAction-Objekte zurück, die im Kontextmenü angezeigt werden sollen.
-        self._contextMenuActionsProvider:Callable = None
-        self._contextMenuActionActor:Callable = None
-        self.showSortIndicator( False )
+        self._contextMenuActionsProvider: Callable = None
+        self._contextMenuActionActor: Callable = None
+        self._selectedElements: List[XBase] = list()
+        self._selectedColumnsMemo = list()
+        self.setSortingEnabled( True )
+        self.sortByColumn( -1 ) # damit kein SortIndicator angezeigt wird
 
-    def showSortIndicator( self, show=True ):
-        model:BaseTableModel = self.model()
-        if model:
-            self.horizontalHeader().setSortIndicator( model.getSortColumn(), model.getSortOrder() )
-        self.horizontalHeader().setSortIndicatorShown( show )
 
     def setContextMenuCallbacks( self, provider:Callable, onSelected:Callable ) -> None:
         """
@@ -95,12 +93,8 @@ class BaseTableView( QTableView ):
         self._contextMenuActionActor = onSelected
 
     def setModel( self, model:BaseTableModel,
-                  selectRows:bool=True, singleSelection:bool=True, sortable:bool=True  ) -> None:
+                  selectRows:bool=True, singleSelection:bool=True ) -> None:
         super().setModel( model )
-        self.resizeRowsAndColumns()
-        # self.setSizeAdjustPolicy( QAbstractScrollArea.AdjustToContents )
-        # self.resizeColumnsToContents()
-        self.resizeRowsToContents()
         if selectRows:
             self.setSelectionBehavior( QTableView.SelectRows )
         else:
@@ -109,20 +103,66 @@ class BaseTableView( QTableView ):
             self.setSelectionMode( QAbstractItemView.SingleSelection )
         else:
             self.setSelectionMode( QTableView.SelectionMode.ContiguousSelection )
-        self.setSortingEnabled( True ) # Sortieren soll grundsätzlich möglich sein...
-        self.showSortIndicator( False ) # ...aber wir wollen noch keinen Sort-Indicator sehen, weil noch nicht sortiert ist.
-        model.layoutChanged.emit()
-        model.setSortable( sortable )
-        model.sorting_finished.connect( self.showSortIndicator )
-        #model.layoutChanged.connect( self.resizeRowsAndColumns )   FUNKTIONIERT NICHT - ROWS BEHALTEN IHRE HÖHE BEI
+        model.layoutChanged.connect( self.onLayoutChanged )
+        model.before_sorting.connect( self.onBeforeSort )
+        #model.sorting_finished.connect( self.onSortingFinished )
         model.rowsAddedSignal.connect( self.onRowsAdded )
+        self.resizeRowsAndColumns()
+
+    def onBeforeSort( self ):
+        selectionlist = self.selectedIndexes()
+        if selectionlist and len(selectionlist) > 0:
+            rowIdx = -1
+            for idx in selectionlist:
+                if rowIdx < 0:
+                    rowIdx = idx.row()
+                    xbase = self.model().getElement( rowIdx )
+                    self._selectedElements.append( xbase )
+                    #print( "onBeforeSorting - added to selectionmemo: ", xbase )
+                if idx.row() == rowIdx:
+                    self._selectedColumnsMemo.append( idx.column() )
+        index = self.model().createIndex( -1, -1 )
+        self.selectionModel().setCurrentIndex( index, QItemSelectionModel.Select )
+
+    # def onSortingFinished( self ):
+    #     self.resizeRowsAndColumns()
+
+    # def clearSelection( self ):
+    #     super().clearSelection() # funktioniert nicht, aber trotzdem Aufruf - wer weiß, was da im Hintergrund noch abgeht
+    #     self.selectionModel().clear()
+
+    def sortByColumn(self, column:int, order:Qt.SortOrder = Qt.SortOrder.AscendingOrder ):
+        self.horizontalHeader().setSortIndicator( column, order )
+
+    def onLayoutChanged( self ):
+        if len( self._selectedElements ) > 0:
+            xbase:XBase = self._selectedElements[0]
+            rowIdx = self.model().getRow( xbase )
+            #print( "onLayoutChanged - retrieve selected: ", xbase, " - now on row ", rowIdx )
+            currentIndex = None
+            for colIdx in self._selectedColumnsMemo:
+                index = self.model().createIndex( rowIdx, colIdx )
+                if not currentIndex:
+                    currentIndex = index
+                    self.setCurrentIndex( currentIndex )
+                self.selectionModel().select( index, QItemSelectionModel.Select )
+            self._selectedElements.clear()
+            self._selectedColumnsMemo.clear()
+        self.resizeRowsAndColumns()
 
     def onRowsAdded( self ):
         self.resizeRowsToContents()
 
     def resizeRowsAndColumns( self ):
-        self.resizeRowsToContents()
         self.resizeColumnsToContents()
+        self.resizeRowsToContents()
+
+    def resizeColumnsToContents(self):
+        super().resizeColumnsToContents()
+        cols = self.model().columnCount()
+        for c in range( 0, cols ):
+            if self.columnWidth( c ) > 300:
+                self.setColumnWidth( c, 300 )
 
     def mouseMoveEvent(self, event:QMouseEvent):
         super().mouseMoveEvent( event )
@@ -178,7 +218,7 @@ class BaseTableView( QTableView ):
 
     def getPreferredHeight( self ) -> int:
         rowcount = self.model().rowCount()
-        h = self._toolbar.height()
+        h = self._vheaderView.height()
         for row in range( 0, rowcount ):
             h += self.rowHeight( row )
         return h + 25
@@ -282,4 +322,145 @@ def test():
     #tv.setProperty( 'hideSortIndicatorColumn', 1 )
     tv.horizontalHeader().setSortIndicatorShown( False )
     #tv.setSortingEnabled( True )
+    app.exec_()
+
+##########################################################################################
+##########################################################################################
+
+class TestTableModel( QAbstractTableModel ):
+    before_sorting = Signal()
+    sorting_finished = Signal()
+    def __init__( self ):
+        QAbstractTableModel.__init__( self )
+        self._data = ( ("theo", 6, "c"), ("abraham was\n the first", 4, "a"), ("sigi", 8, "b") )
+        #print( type(self._data ) )
+        # r = self._data[0]
+        # print( r )
+
+    def rowCount( self, parent: QModelIndex = None ) -> int:
+        return len( self._data )
+
+    def columnCount( self, parent: QModelIndex = None ) -> int:
+        return len( self._data[0] )
+
+    def getRow( self, rowIndex ):
+        return self._data[rowIndex]
+
+    def getRowIndex( self, row:List[Tuple] ):
+        for r in range( 0, self.rowCount() ):
+            data = self._data[r]
+            if data == row:
+                return r
+        raise Exception( "TestTableModel.getRowIndex(): Row nicht gefunden." )
+
+    def data( self, index: QModelIndex, role: int = None ):
+        if not index.isValid():
+            return None
+        if role == Qt.DisplayRole:
+            r, c = index.row(), index.column()
+            return self._data[r][c]
+        return None
+
+    def sort( self, col, order=Qt.SortOrder.DescendingOrder ):
+        from functools import cmp_to_key
+        self.before_sorting.emit()
+        #print( "col: ", col, " - order: ", order )
+        def compare( r1, r2 ):
+            i = r1[col]
+            k = r2[col]
+            if i == k: return 0
+            if order == Qt.SortOrder.DescendingOrder:
+                if i < k:
+                    rc = -1
+                else:
+                    rc = 1
+            elif order == Qt.SortOrder.AscendingOrder:
+                if i < k:
+                    rc = 1
+                else:
+                    rc = -1
+            #print( "compare: ", i, " with: ", k, " -- rc= ", rc )
+            return rc
+
+        if col < 0: return 0
+        self._data = sorted( self._data, key=cmp_to_key(compare) )
+        self.sorting_finished.emit()
+        self.layoutChanged.emit()
+
+class TestTableView( QTableView ):
+    def __init__( self ):
+        QTableView.__init__( self )
+        self._selectionMemo = list() # enthält die *Werte* der ersten selektierten Zeile
+        self._selectedColumnsMemo = list() # enthält die Indizes der selektierten Spalten der ersten selektierten Zeile.
+        self.setSortingEnabled( True )
+        self.sortByColumn( -1 )
+
+    def setModel( self, model ):
+        super().setModel( model )
+        model.layoutChanged.connect( self.onLayoutChanged )
+        model.before_sorting.connect( self.onBeforeSorting )
+        model.sorting_finished.connect( self.onSortingFinished )
+
+    def sortByColumn(self, column:int, order:Qt.SortOrder = Qt.SortOrder.AscendingOrder ):
+        self.horizontalHeader().setSortIndicator( column, order )
+
+    def onLayoutChanged( self ):
+        if self._selectionMemo and len( self._selectionMemo ) > 0:
+            row = self._selectionMemo[0]
+            rowIdx = self.model().getRowIndex( row )
+            #print( "onLayoutChanged - retrieve selected: ", row, " - now on row ", rowIdx )
+            currentIndex = None
+            for colIdx in self._selectedColumnsMemo:
+                index = self.model().createIndex( rowIdx, colIdx )
+                if not currentIndex:
+                    currentIndex = index
+                    self.setCurrentIndex( currentIndex )
+                self.selectionModel().select( index, QItemSelectionModel.Select )
+            self._selectionMemo.clear()
+            self._selectedColumnsMemo.clear()
+
+    def onLayoutChanged___( self ):
+        index = self.model().createIndex( 1, 1 )
+        self.selectionModel().select( index, QItemSelectionModel.Select )
+        self.setCurrentIndex( index )
+
+    def onBeforeSorting( self ):
+        selectionlist = self.selectedIndexes()
+        if selectionlist and len(selectionlist) > 0:
+            rowIdx = -1
+            for idx in selectionlist:
+                if rowIdx < 0:
+                    rowIdx = idx.row()
+                    row = self.model().getRow( rowIdx )
+                    self._selectionMemo.append( row )
+                    #print( "onBeforeSorting - added to selectionmemo: ", row )
+                if idx.row() == rowIdx:
+                    self._selectedColumnsMemo.append( idx.column() )
+        index = self.model().createIndex( -1, -1 )
+        self.selectionModel().setCurrentIndex( index, QItemSelectionModel.Select )
+
+    def onSortingFinished( self ):
+        self.resizeColumnsToContents()
+        self.resizeRowsToContents()
+
+def testSortAndSelect():
+    app = QApplication()
+    v = TestTableView()
+    tm = TestTableModel()
+    v.setModel( tm )
+    v.show()
+    v.setMinimumWidth( 350 )
+    app.exec_()
+
+
+def testSortIndicator():
+    app = QApplication()
+    v = TestTableView()
+    tm = TestTableModel()
+    v.setModel( tm )
+    v.sortByColumn( 1, Qt.SortOrder.AscendingOrder ) # ordnet "descending" - warum auch immer
+    v.resizeRowsToContents()
+    v.resizeColumnsToContents()
+    v.show()
+    v.setMinimumWidth( 300 )
     app.exec_()

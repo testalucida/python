@@ -10,17 +10,20 @@ from v2.icc.interfaces import XEinAus
 class EinAusTableModel( IccTableModel):
     def __init__( self, rowlist:List[XEinAus], jahr ):
         IccTableModel.__init__( self, rowlist, jahr )
-        # keys = ( "ea_id", "master_name", "mobj_id", "debi_kredi", "jahr", "monat", "betrag", "ea_art", "verteilt_auf",
-        #          "umlegbar", "buchungsdatum", "buchungstext", "mehrtext", "write_time" )
-        # headers = ("ID", "Master", "Wohnung", "Debitor/\nKreditor", "Jahr", "Monat", "Betrag", "Art", "verteilt auf",
-        #            "U", "Buchung am", "Buchg.text", "Mehr Text", "eingetragen" )
-        # self.setKeyHeaderMappings2( keys, headers )
         self.setKeyHeaderMappings2(
-            ("master_name", "mobj_id", "debi_kredi", "buchungstext", "buchungsdatum", "jahr", "ea_art", "verteilt_auf",
-             "betrag", "mehrtext", "write_time" ),
-            ("Haus", "Whg", "Debitor/\nKreditor", "Buchungstext", "Buch.datum", "steuerl.\nJahr", "Art", "vJ",
-             "Betrag", "Bemerkung", "eingetragen")
+            ("master_name", "mobj_id", "debi_kredi", "leistung", "buchungsdatum", "jahr", "ea_art", "verteilt_auf",
+             "betrag", "buchungstext", "write_time" ),
+            ("Haus", "Whg", "Debitor/\nKreditor", "Leistung", "Buch.datum", "steuerl.\nJahr", "Art", "vJ",
+             "Betrag", "Text", "eingetragen")
         )
+        self._colBuchungsdatum = 4
+        self._colWriteTime = 10
+
+    def getBuchungsdatumColumnIdx( self ) -> int:
+        return self._colBuchungsdatum
+
+    def getWriteTimeColumnIdx( self ) -> int:
+        return self._colWriteTime
 
 #################   EinAusLogic   #################################
 class EinAusLogic(IccLogic):
@@ -40,16 +43,16 @@ class EinAusLogic(IccLogic):
         :return:
         """
         l:List[XEinAus] = self._einausData.getEinAuszahlungenJahr( jahr )
-        for x in l:
-            x.write_time = x.write_time[0:10]
+        # for x in l:
+        #     x.write_time = x.write_time[0:10]
         tm = EinAusTableModel( l, jahr )
         return tm
 
     def getZahlungenModel2( self, ea_art_display:str, jahr:int, monthIdx:int, mobj_id:str ) -> EinAusTableModel:
         month_sss = iccMonthShortNames[monthIdx]
         l: List[XEinAus] = self._einausData.getEinAuszahlungen2( ea_art_display, jahr, month_sss, mobj_id )
-        for x in l:
-            x.write_time = x.write_time[0:10]
+        # for x in l:
+        #     x.write_time = x.write_time[0:10]
         tm = EinAusTableModel( l, jahr )
         return tm
 
@@ -63,16 +66,16 @@ class EinAusLogic(IccLogic):
         """
         month_sss = iccMonthShortNames[monthIdx]
         l: List[XEinAus] = self._einausData.getEinAuszahlungen3( ea_art_display, jahr, month_sss, debikredi )
-        for x in l:
-            x.write_time = x.write_time[0:10]
+        # for x in l:
+        #     x.write_time = x.write_time[0:10]
         tm = EinAusTableModel( l, jahr )
         return tm
 
     def getZahlungenModel4( self, sab_id:int, jahr:int, monthIdx:int ) -> EinAusTableModel:
         month_sss = iccMonthShortNames[monthIdx]
         l: List[XEinAus] = self._einausData.getEinAuszahlungen4( sab_id, jahr, month_sss )
-        for x in l:
-            x.write_time = x.write_time[0:10]
+        # for x in l:
+        #     x.write_time = x.write_time[0:10]
         tm = EinAusTableModel( l, jahr )
         return tm
 
@@ -84,9 +87,6 @@ class EinAusLogic(IccLogic):
         :return:
         """
         return self._einausData.getEinAusZahlungen( ea_art_display, jahr )
-
-    def getSummeBetween( self, ea_art_display:str, startdate:str, enddate:str ) -> float:
-        return self._einausData.getSummeBetween( ea_art_display, startdate, enddate )
 
     def trySaveZahlung( self, x:XEinAus ) -> str:
         msg = self.validateZahlung( x )
@@ -141,7 +141,7 @@ class EinAusLogic(IccLogic):
 
     def addZahlung( self, ea_art, mobj_id:str, debikredi:str,
                     jahr:int, monthIdx:int, value:float,
-                    buchungsdatum:str=None, buchungstext:str=None, mehrtext:str= None ) -> XEinAus:
+                    buchungsdatum:str=None, buchungstext:str=None ) -> XEinAus:
         if buchungsdatum:
             if not datehelper.isValidIsoDatestring( buchungsdatum ):
                 raise ValueError( "EinAusLogic.addZahlung():\nBuchungsdatum '%s' ist nicht im ISO-Format." )
@@ -156,14 +156,13 @@ class EinAusLogic(IccLogic):
         x.verteilt_auf = None
         x.buchungstext = buchungstext
         x.buchungsdatum = buchungsdatum
-        x.mehrtext = mehrtext
         # todo: Methode trySaveZahlung verwenden
         self._einausData.insertEinAusZahlung( x )
         return x
 
     def addZahlung2( self, ea_art_display, master_name:str,  mobj_id:str, debikredi:str, sab_id:int,
                     jahr:int, monthIdx:int, value:float, umlegbar:str=Umlegbar.NEIN.value,
-                    buchungsdatum:str=None, buchungstext:str=None, mehrtext:str= None ) -> XEinAus:
+                    buchungsdatum:str=None, buchungstext:str=None ) -> XEinAus:
         if buchungsdatum:
             if not datehelper.isValidIsoDatestring( buchungsdatum ):
                 raise ValueError( "EinAusLogic.addZahlung():\nBuchungsdatum '%s' ist nicht im ISO-Format." )
@@ -180,7 +179,6 @@ class EinAusLogic(IccLogic):
         x.umlegbar = umlegbar
         x.buchungstext = buchungstext
         x.buchungsdatum = buchungsdatum
-        x.mehrtext = mehrtext
         # todo: Methode trySaveZahlung verwenden
         self._einausData.insertEinAusZahlung( x )
         return x
