@@ -4,7 +4,8 @@ import datehelper
 from v2.einaus.einausdata import EinAusData
 from v2.icc.constants import iccMonthShortNames, EinAusArt, Umlegbar
 from v2.icc.icclogic import IccTableModel, IccLogic
-from v2.icc.interfaces import XEinAus
+from v2.icc.interfaces import XEinAus, XSummen
+
 
 #################   EinAusTableModel   ############################
 class EinAusTableModel( IccTableModel):
@@ -88,6 +89,18 @@ class EinAusLogic(IccLogic):
         """
         return self._einausData.getEinAusZahlungen( ea_art_display, jahr )
 
+    def getEinzahlungenSumme( self, jahr:int ) -> float:
+        return self._einausData.getEinzahlungenSumme( jahr )
+
+    def getHGVAuszahlungenSumme( self, jahr:int ) -> float :
+        return self._einausData.getHGVAuszahlungenSumme( jahr )
+
+    def getAuszahlungenSummeOhneHGV( self, jahr:int ) -> float:
+        return self._einausData.getAuszahlungenSummeOhneHGV( jahr )
+
+    def getEinzahlungen( self, jahr:int ) -> float:
+        return self._einausData.getEinzahlungenSumme( jahr )
+
     def trySaveZahlung( self, x:XEinAus ) -> str:
         msg = self.validateZahlung( x )
         if msg:
@@ -108,7 +121,7 @@ class EinAusLogic(IccLogic):
                     # Buchung soll für ein zukünftiges Jahr gelten,
                     # fest "Januar" eingeben
                     x.monat = iccMonthShortNames[0]
-                x.buchungstext += "\nMonat <%s> - in der Tabelle nicht angezeit -  wurde algorithmisch ermittelt." % x.monat
+                x.buchungstext += "\nMonat <%s> - in der Tabelle nicht angezeigt -  wurde algorithmisch ermittelt." % x.monat
             if x.ea_id <= 0:
                 self._einausData.insertEinAusZahlung( x )
                 self._einausData.commit()

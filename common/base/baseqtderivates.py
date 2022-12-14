@@ -20,14 +20,20 @@ from base.messagebox import ErrorBox, WarningBox, QuestionBox
 from datehelper import isValidIsoDatestring, isValidEurDatestring, getRelativeQDate, getQDateFromIsoString
 #################  BaseAction  ########################
 class BaseAction( QAction ):
-    def __init__( self, text:str="", tooltip:str="", ident:Any=None, icon:QIcon=None, parent=None ):
+    def __init__( self, text:str="", tooltip:str="", ident:Any=None, icon:QIcon=None, parent=None, userdata:Any=None ):
         QAction.__init__( self )
         if icon: self.setIcon( icon )
         self.setText( text )
         self.setToolTip( tooltip )
         self.setParent( parent )
         self.ident = ident
+        self.userdata = userdata
         #self.callback = callback
+
+class Separator( QAction ):
+    def __init__( self ):
+        QAction.__init__( self )
+        self.setSeparator( True )
 
 #################  BaseWidget  ########################
 class BaseWidget( QWidget ):
@@ -663,7 +669,10 @@ class IntDisplay( BaseEdit ):
     def getIntValue( self ) -> int:
         val = self.text()
         if not val: val = "0"
-        return int( val )
+        try:
+            return int( val )
+        except:
+            print( "STOPP" )
 
 ################ TextDocument #####################
 class TextDocument( QTextDocument ):

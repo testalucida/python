@@ -57,10 +57,10 @@ class MtlEinAusLogic( IccLogic ):
     #     return xeinaus
 
     def addMonatsZahlung( self, x:XMtlZahlung, selectedYear:int, selectedMonth:int,
-                          value:float, mehrtext:str= "" ) -> XEinAus:
+                          value:float, buchungstext:str= "" ) -> XEinAus:
         debi_kredi = self.getDebiKrediKey()
         xeinaus = self._ealogic.addZahlung( self.getEinAusArt(), x.mobj_id, x.getValue( debi_kredi ),
-                                            selectedYear, selectedMonth, value, mehrtext=mehrtext )
+                                            selectedYear, selectedMonth, value, buchungstext=buchungstext )
         self._ealogic.commit()
         return xeinaus
 
@@ -74,7 +74,7 @@ class MtlEinAusLogic( IccLogic ):
         # zunächst nur eine Trivialprüfung:
         if not x.master_name:
             return "Angabe des Masterobjekts fehlt."
-        if not x.mobj_id:
+        if not x.mobj_id and not x.ea_art == EinAusArt.MTL_ABSCHLAG.display:
             return "Angabe der Wohnung fehlt."
         if not x.debi_kredi:
             return "Angabe von Debitor/Kreditor fehlt."
@@ -85,8 +85,8 @@ class MtlEinAusLogic( IccLogic ):
         if x.betrag == 0:
             return "Betrag ungültig. Muss ungleich 0 sein."
         if not x.ea_art in ( EinAusArt.BRUTTOMIETE.display, EinAusArt.HAUSGELD_VORAUS.display,
-                             EinAusArt.KOMMUNALE_DIENSTE.display ):
-            return "Ungültige EinAusArt. Muss BRUTTOMIETE, HAUSGELD_VORAUS oder KOMMUNALE_DIENSTE sein."
+                             EinAusArt.KOMMUNALE_DIENSTE.display, EinAusArt.MTL_ABSCHLAG.display ):
+            return "Ungültige EinAusArt. Muss BRUTTOMIETE, HAUSGELD_VORAUS, MTL_ABSCHLAG oder KOMMUNALE_DIENSTE sein."
         return ""
 
     def updateMonatsZahlung( self, x:XEinAus ):
@@ -518,7 +518,7 @@ class AbschlagLogic( MtlEinAusLogic ):
                           value:float, mehrtext:str= "" ) -> XEinAus:
         umlegbar = self._abschlagData.getUmlegbar( x.sab_id )
         xeinaus = self._ealogic.addZahlung2( self.getEinAusArt(), x.master_name, x.mobj_id, x.kreditor, x.sab_id,
-                                            selectedYear, selectedMonth, value, umlegbar, mehrtext=mehrtext )
+                                            selectedYear, selectedMonth, value, umlegbar )
         self._ealogic.commit()
         return xeinaus
 

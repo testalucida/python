@@ -13,6 +13,7 @@ from base.interfaces import XBaseUI, VisibleAttribute, XBase
 from base.messagebox import ErrorBox, InfoBox
 from v2.einaus.einauslogic import EinAusTableModel
 from v2.einaus.einausview import EinAusTableView
+from v2.icc.constants import Action
 from v2.icc.icccontroller import IccController
 from v2.icc.iccwidgets import IccTableViewFrame, IccCheckTableViewFrame, IccTableView
 from v2.icc.interfaces import XMtlZahlung, XEinAus
@@ -22,17 +23,6 @@ from v2.mtleinaus.mtleinauslogic import MieteLogic, MtlEinAusTableModel, MtlEinA
     HausgeldTableModel, AbschlagLogic, AbschlagTableModel
 from v2.mtleinaus.mtleinausview import MieteTableView, MieteTableViewFrame, ValueDialog, MtlZahlungEditDialog, \
     HausgeldTableView, HausgeldTableViewFrame, AbschlagTableView, AbschlagTableViewFrame
-
-
-class Action( IntEnum ):
-    SHOW_MIETOBJEKT = 0,
-    SHOW_MIETVERHAELTNIS = 100,
-    SHOW_NETTOMIETE_UND_NKV = 200,
-    SHOW_WEG_UND_VERWALTER = 250,
-    SHOW_HAUSGELD_UND_RUEZUFUE = 300,
-    SHOW_LEISTUNGSVERTRAG = 350,
-    COMPUTE_SUMME = 400,
-    COPY = 500
 
 
 #############  MtlEinAusController  #####################
@@ -166,7 +156,7 @@ class MtlEinAusController( IccController ):
         row = index.row()
         col = model.getEditableColumnIdx()
         val = model.getValue( row, col )
-        if val > 0:
+        if val != 0:
             box = ErrorBox( "Übernahme des Soll-Werts nicht möglich.", "Der Monatswert ist bereits versorgt.",
                             "Vor Übernehmen des Soll-Werts muss der eingetragene Wert gelöscht werden." )
             box.exec_()
@@ -208,13 +198,14 @@ class MtlEinAusController( IccController ):
             debikrediLabel = self.getModel().getDebiKrediHeader() + ": "
             x:XEinAus = eatm.getElement( row )
             xui = XBaseUI( x )
-            vislist = ( VisibleAttribute( "mobj_id", BaseEdit, "Wohnung: ", editable=False, nextRow=False ),
+            vislist = ( VisibleAttribute( "master_name", BaseEdit, "Haus: ", editable=False, nextRow=False ),
+                        VisibleAttribute( "mobj_id", BaseEdit, "Wohnung: ", editable=False, nextRow=False ),
                         VisibleAttribute( "debi_kredi", BaseEdit, debikrediLabel, editable=False ),
                         VisibleAttribute( "jahr", IntEdit, "Jahr: ", editable=False, widgetWidth=50 ),
                         VisibleAttribute( "monat", BaseEdit, "Monat: ", widgetWidth=50, editable=False ),
                         VisibleAttribute( "betrag", FloatEdit, "Betrag: ", widgetWidth=60, nextRow=False ),
-                        VisibleAttribute( "mehrtext", MultiLineEdit, "Bemerkung: ", widgetHeight=60 ),
-                        VisibleAttribute( "write_time", BaseEdit, "gebucht am: ", widgetWidth=100, editable=False ) )
+                        VisibleAttribute( "buchungstext", MultiLineEdit, "Bemerkung: ", widgetHeight=60 ),
+                        VisibleAttribute( "write_time", BaseEdit, "gebucht am: ", editable=False, columnspan=2 ) )
             xui.addVisibleAttributes( vislist )
             dlg = DynamicAttributeDialog( xui, "Ändern einer Monatszahlung" )
             if dlg.exec_() == QDialog.Accepted:

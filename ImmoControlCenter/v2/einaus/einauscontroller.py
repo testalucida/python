@@ -1,3 +1,4 @@
+from enum import Enum, auto
 from typing import List, Callable, Iterable
 
 from PySide2.QtCore import Qt, QSize
@@ -5,7 +6,7 @@ from PySide2.QtWidgets import QAction, QDialog, QMenu
 
 import datehelper
 from base.baseqtderivates import BaseComboBox, BaseEdit, FloatEdit, IntEdit, BaseCheckBox, SmartDateEdit, MultiLineEdit, \
-    EditableComboBox, BaseAction
+    EditableComboBox, BaseAction, Separator
 from base.filterhandler import FilterHandler
 from base.interfaces import VisibleAttribute
 from base.messagebox import InfoBox
@@ -15,7 +16,7 @@ from base.searchhandler import SearchHandler
 from v2.einaus.einausdialogcontroller import EinAusDialogController
 from v2.einaus.einauslogic import EinAusLogic, EinAusTableModel
 from v2.einaus.einausview import EinAusTableView, EinAusTableViewFrame, XEinAusUI, EinAusDialog
-from v2.icc.constants import EinAusArt
+from v2.icc.constants import EinAusArt, Action
 from v2.icc.icccontroller import IccController
 from v2.icc.iccwidgets import IccCheckTableViewFrame
 
@@ -40,7 +41,7 @@ class EinAusController( IccController ):
         jahr = self._jahr
         tv = self._tv
         tm = self._logic.getZahlungenModel( jahr )
-        tv.setModel( tm )
+        tv.setModel( tm, selectRows=True, singleSelection=False )
         tv.sortByColumn( tm.getWriteTimeColumnIdx(), Qt.SortOrder.AscendingOrder )
         tb = self._tvframe.getToolBar()
         jahre = self.getJahre()
@@ -104,7 +105,13 @@ class EinAusController( IccController ):
             box.exec_()
 
     def onEditEinAus( self, row:int ):
-        print( "edit Zahlung ", str(row) )
+        x:XEinAus = self._tv.model().getElement( row )
+        ctrl = EinAusDialogController()
+        ctrl.ea_updated.connect( self.onEinAusModified )
+        ctrl.processEinAusModification( x )
+
+    def onEinAusModified( self, x: XEinAus ):
+        print( "modified" )
 
     def onDeleteEinAus( self, rows:List[int] ):
         print( "delete Zahlungen ", rows )
@@ -117,21 +124,73 @@ class EinAusController( IccController ):
 
     def provideActions( self, index, point, selectedIndexes ) -> List[QAction]:
         #print( "context menu for column ", index.column(), ", row ", index.row() )
+        col = index.column() # angeklickte Spalte
+        model: EinAusTableModel = self._tv.model()
+        key = model.getKey( col ) # Key der angeklickten Spalte
+        val = model.getValue( index.row(), col ) # Wert der angeklickten Spalte
+        x:XEinAus = model.getElement( index.row() ) # dieses Element wurde angeklickt
+        cnt_sel_rows = len( self._tv.getSelectedRows() )
         l = list()
-        l.append( QAction( "Action 1" ) )
-        l.append( QAction( "Action 2" ) )
-        sep = QAction()
-        sep.setSeparator( True )
-        l.append( sep )
-        l.append( QAction( "Action 3" ) )
+        if cnt_sel_rows == 1:
+            l.append( BaseAction( "EinAus-ID: " + str( x.ea_id ) ) )
+            l.append( Separator() )
+            if x.ea_art == EinAusArt.MTL_ABSCHLAG.display:
+                l.append( BaseAction( "Vertrag...", ident=Action.SHOW_LEISTUNGSVERTRAG, userdata=x ) )
+                l.append( Separator() )
+            elif x.ea_art in ( EinAusArt.HAUSGELD_VORAUS.display, EinAusArt.HAUSGELD_ABRECHNG.display ):
+                l.append( BaseAction( "Verwaltungsdaten...", ident=Action.SHOW_WEG_UND_VERWALTER, userdata=x ) )
+                l.append( Separator() )
+            if key in ( "master_name", "mobj_id" ):
+                l.append( BaseAction( "Hausdaten...", ident=Action.SHOW_MASTEROBJEKT, userdata=x ) )
+                if key == "mobj_id" and val and val > "":
+                    l.append( BaseAction( "Wohnungsdaten...", ident=Action.SHOW_MIETOBJEKT, userdata=x ) )
+                l.append( Separator() )
+            elif key == "debi_kredi" and x.ea_art == EinAusArt.BRUTTOMIETE.display:
+                l.append( BaseAction( "Mietverhältnis...", ident=Action.SHOW_MIETVERHAELTNIS, userdata=x ) )
+                l.append( Separator() )
+        l.append( BaseAction( "Markierte Zeile(n) kopieren", ident=Action.COPY ) )
+        l.append( BaseAction( "Wert der geklickten Zelle kopieren", ident=Action.COPY_CELL ) )
+        l.append( Separator() )
+        l.append( BaseAction( "Zahlung duplizieren und mit aktuellem Datum speichern", ident=Action.DUPLICATE_AND_SAVE ) )
+        l.append( BaseAction( "Zahlung duplizieren und im Editor öffnen...", ident=Action.DUPLICATE_AND_EDIT ) )
+        l.append( Separator() )
+        if cnt_sel_rows > 1:
+            l.append( BaseAction( "Summe der markierten Beträge berechnen...", ident=Action.COMPUTE_SUMME ) )
         return l
 
-    def onSelected( self, action: QAction ):
-        print( "selected action: ", str( action ) )
+    def onSelected( self, action: BaseAction ):
+        """callback function nach Auswahl eines Kontext-MenüItems"""
+        x: XEinAus = action.data()
+        ident = action.ident
+        # match ident:
+        #     case Action.COMPUTE_SUMME:
+        #         pass
+        #     case Action.COPY:
+        #         pass
+        #     case Action.COPY_CELL:
+        #         pass
+        #     case Action.SHOW_MIETVERHAELTNIS:
+        #         pass
+        #     case Action.SHOW_MIETOBJEKT:
+        #         pass
+        #     case Action.SHOW_MASTEROBJEKT:
+        #         pass
+        #     case Action.SHOW_WEG_UND_VERWALTER:
+        #         pass
+        #     case _:
+        #         raise Exception( "EinAusController.onSelected:\nUnbekannte Action: " + action.text() )
+
 
 
 # #####################   TEST   TEST   TEST   ##################
 #
+def testMatch():
+    i = 10
+    # match i:
+    #     case 1: print( i )
+    #     case 2: print( i )
+    #     case _: print( "----" )
+
 def test2():
     from PySide2.QtWidgets import QApplication
     app = QApplication()

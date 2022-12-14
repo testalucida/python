@@ -1,6 +1,6 @@
-from typing import List, Dict
-
+from typing import List
 import datehelper
+from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
 
 from v2.icc.constants import EinAusArt, Umlegbar
 from v2.icc.iccdata import IccData, DbAction
@@ -10,6 +10,14 @@ from v2.icc.interfaces import XEinAus
 class EinAusData( IccData ):
     def __init__(self):
         IccData.__init__( self )
+        self._dispatch:EinAusWriteDispatcher = EinAusWriteDispatcher.inst()
+        # Dass der Dispatcher von EinAusData aufgerufen wird, ist unscharf, da in diesem Modul nicht
+        # bekannt ist, ob der Schreibzugriff im Rahmen einer größeren Transaktion stattfindet oder ob die
+        # Transaktion nur einen einzigen Schreibzugriff beinhaltet.
+        # Wenn also 10 Inserts stattfinden sollen, nach dem neunten aber ein Rollback erfolgt, wurde der
+        # Dispatcher fälschlicherweise 9 mal über ein hinzugefügtes EinAus-Objekt informiert.
+        # Da dieses Modul aber schön zentral ist, und der Dispatcher nur für die *Anzeige* der Gesamteinnahmen und -ausgaben
+        # sorgt, erscheint diese Ungenauigkeit tolerabel.
 
     def insertEinAusZahlung( self, x:XEinAus ):
         """
@@ -39,6 +47,7 @@ class EinAusData( IccData ):
                                         newvalues=x.toString( printWithClassname=True ), oldvalues=None )
         x.ea_id = inserted_id
         x.write_time = writetime
+        self._dispatch.einaus_inserted( x )
 
     def updateEinAusZahlung( self, x:XEinAus ) -> int:
         """
@@ -52,7 +61,8 @@ class EinAusData( IccData ):
         sab_id = "NULL" if not x.sab_id else str( x.sab_id )
         ea_art_db = EinAusArt.getDbValue( x.ea_art )
         verteilt_auf = "NULL" if not x.verteilt_auf else str( x.verteilt_auf )
-        umlegbar = "NULL" if x.umlegbar == Umlegbar.NONE else "'" + x.umlegbar + "'"
+        #umlegbar = "NULL" if x.umlegbar == Umlegbar.NONE else "'" + x.umlegbar + "'"
+        umlegbar = "NULL" if not x.umlegbar else "'" + x.umlegbar + "'"
         buchungsdatum = "NULL" if not x.buchungsdatum else "'" + x.buchungsdatum + "'"
         buchungstext = "NULL" if not x.buchungstext else "'" + x.buchungstext + "'"
         leistung = "NULL" if not x.leistung else "'" + x.leistung + "'"
@@ -81,6 +91,7 @@ class EinAusData( IccData ):
         rowsAffected = self.writeAndLog( sql, DbAction.UPDATE, "einaus", "ea_id", x.ea_id,
                                          newvalues=x.toString( True ), oldvalues=oldX.toString( True ) )
         x.write_time = writetime
+        self._dispatch.einaus_updated( x )
         return rowsAffected
 
     def deleteEinAusZahlung( self, ea_id:int ):
@@ -94,6 +105,36 @@ class EinAusData( IccData ):
         sql = "delete from einaus where ea_id = %d" % ea_id
         self.writeAndLog( sql, DbAction.DELETE, "einaus", "ea_id", ea_id,
                           newvalues=None, oldvalues=x.toString( printWithClassname=True )  )
+        self._dispatch.einaus_deleted( ea_id )
+
+
+    def getEinzahlungenSumme( self, jahr:int ) -> float:
+        """ Liefert die Summe aller Einzahlungen (= positive Beträge) im Jahr <jahr>"""
+        sql = "select sum(betrag) as sum_ein from einaus " \
+              "where jahr = %d " \
+              "and betrag > 0 " % jahr
+        d = self.readOneGetDict( sql )
+        summe = d["sum_ein"]
+        return 0 if not summe else summe
+
+    def getAuszahlungenSummeOhneHGV( self, jahr:int ) -> float:
+        """ Liefert die Summe aller Auszahlungen (= negative Beträge) OHNE HG-Vorausz. im Jahr <jahr>"""
+        sql = "select sum(betrag) as sum_aus from einaus " \
+             "where jahr = %d " \
+             "and betrag < 0 " \
+             "and ea_art != '%s' " % ( jahr, EinAusArt.HAUSGELD_VORAUS.dbvalue )
+        d = self.readOneGetDict( sql )
+        summe = d["sum_aus"]
+        return 0 if not summe else summe
+
+    def getHGVAuszahlungenSumme( self, jahr:int ) -> float:
+        """ Liefert die Summe der HGV-Zahlungen im Jahr <jahr>"""
+        sql = "select sum(betrag) as sum_hgv from einaus " \
+              "where jahr = %d " \
+              "and ea_art = '%s' " % (jahr, EinAusArt.HAUSGELD_VORAUS.dbvalue)
+        d = self.readOneGetDict( sql )
+        summe = d["sum_hgv"]
+        return 0 if not summe else summe
 
     def getEinAusZahlung( self, ea_id:int ) -> XEinAus:
         sql = "select ea_id, master_name, mobj_id, debi_kredi, leistung, sab_id, jahr, monat, betrag, ea_art, verteilt_auf, " \

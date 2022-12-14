@@ -5,9 +5,12 @@ from PySide2.QtWidgets import QMenu
 from base.baseqtderivates import BaseAction
 from base.messagebox import InfoBox, ErrorBox
 from v2.einaus.einauscontroller import EinAusController
+from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
+from v2.icc.constants import EinAusArt
 from v2.icc.icccontroller import IccController
 from v2.icc.iccmainwindow import IccMainWindow
 from v2.icc.iccwidgets import IccCheckTableViewFrame
+from v2.icc.interfaces import XEinAus, XSummen
 from v2.icc.mainlogic import MainLogic
 from v2.mtleinaus.mtleinauscontroller import MieteController, HausgeldController, AbschlagController
 
@@ -22,6 +25,10 @@ class MainController( IccController ):
         self._hausgeldCtrl = HausgeldController()
         self._abschlagCtrl = AbschlagController()
         self._einausCtrl = EinAusController()
+        EinAusWriteDispatcher.inst().ea_inserted.connect( self.onEinAusInserted )
+        EinAusWriteDispatcher.inst().ea_updated.connect( self.onEinAusUpdated )
+        EinAusWriteDispatcher.inst().ea_deleted.connect( self.onEinAusDeleted )
+        # Summenfelder versorgen
 
     def createGui( self ) -> IccMainWindow:
         self._win = IccMainWindow( self._env )
@@ -51,6 +58,7 @@ class MainController( IccController ):
         ### Die View für die übrigen Zahlungen (Rechnungen etc.)
         tvf: IccCheckTableViewFrame = self._einausCtrl.createGui()
         self._win.setAlleZahlungenTableViewFrame( tvf )
+        self._provideSummen()
         return self._win
 
     def getMenu( self ) -> QMenu:
@@ -73,6 +81,34 @@ class MainController( IccController ):
         action.setShortcut( "Alt+F4")
         menu.addAction( action )
         return menu
+
+    def _provideSummen( self ):
+        summen:XSummen = self._logic.getSummen( self.getYearToStartWith() )
+        self._win.setSummenValues( summen )
+
+    def onEinAusInserted( self, x:XEinAus ):
+        summen = self._win.getSummenValues()
+        betrag = round(x.betrag)
+        summen.saldo += betrag
+        if x.ea_art == EinAusArt.HAUSGELD_VORAUS.display:
+            summen.sumHGV += betrag
+        elif x.betrag < 0:
+            summen.sumSonstAus += betrag
+        elif x.betrag >= 0:
+            summen.sumEin += betrag
+        else:
+            # hoppala!
+            box = ErrorBox( "Interner Fehler", "MainController.onEinAusInserted:\nNicht bedachte Konstellation!\n",
+                            more=x.toString() )
+            box.exec_()
+            return
+        self._win.setSummenValues( summen )
+
+    def onEinAusUpdated( self, x:XEinAus ):
+        print( "onEinAusUpdated")
+
+    def onEinAusDeleted( self, x:XEinAus ):
+        print( "onEinAusDeleted")
 
     def onExportDatabase( self ):
         try:

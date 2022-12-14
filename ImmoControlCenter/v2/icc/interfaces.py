@@ -144,6 +144,14 @@ class XSammelabgabe( XBase ):
         self.betrag = 0.0 # der Betrag, der eff. von der Stadt NK eingezogen wurde für alle Objekte,
                           # die in in der GrundbesitzabgabeListe enthalten sind.
 
+class XSummen( XBase ):
+    def __init__( self ):
+        XBase.__init__( self )
+        self.sumEin = 0
+        self.sumHGV = 0
+        self.sumSonstAus = 0
+        self.saldo = 0
+
 #####################  Mietverhältnis Kurz  ######################
 class XMietverhaeltnisKurz( XBase ):
     def __init__( self, valuedict: Dict = None ):

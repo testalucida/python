@@ -148,6 +148,8 @@ class BaseTableView( QTableView ):
                 self.selectionModel().select( index, QItemSelectionModel.Select )
             self._selectedElements.clear()
             self._selectedColumnsMemo.clear()
+            self.scrollTo( currentIndex )
+            #print( "scrolled to index ", currentIndex )
         self.resizeRowsAndColumns()
 
     def onRowsAdded( self ):

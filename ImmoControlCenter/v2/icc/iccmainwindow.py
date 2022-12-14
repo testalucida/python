@@ -13,6 +13,7 @@ from base.baseqtderivates import SmartDateEdit, IntDisplay, BaseTabWidget
 from base.messagebox import InfoBox
 from datehelper import getDateParts
 from v2.einaus.einausview import EinAusTableViewFrame
+from v2.icc.interfaces import XSummen
 from v2.mtleinaus.mtleinauslogic import MieteTableModel, HausgeldTableModel, AbschlagTableModel
 from v2.mtleinaus.mtleinausview import MieteTableView, MieteTableViewFrame, HausgeldTableView, HausgeldTableViewFrame, \
     AbschlagTableViewFrame
@@ -88,10 +89,10 @@ class IccMainWindow( QMainWindow ):
         self._leLetzteBuchung: QLineEdit = QLineEdit( self )
 
         # Summen
-        self._idSumMiete = self._createSumDisplay( "Summe aller Bruttomieten" )
-        self._idSummeSonstAus = self._createSumDisplay( "Summe aller sonstigen Ausgaben" )
-        self._idSummeHGV = self._createSumDisplay( "Summe aller Hausgeld-Vorauszahlungen" )
-        self._idSaldo = self._createSumDisplay( "Bruttomieten minus Ausgaben minus HG-Vorauszahlungen" )
+        self._idSumEin:IntDisplay = self._createSumDisplay( "Summe aller Einnahmen" )
+        self._idSummeSonstAus:IntDisplay = self._createSumDisplay( "Summe aller sonstigen Ausgaben" )
+        self._idSummeHGV:IntDisplay = self._createSumDisplay( "Summe aller Hausgeld-Vorauszahlungen" )
+        self._idSaldo:IntDisplay = self._createSumDisplay( "Einnahmen minus Ausgaben minus HG-Vorauszahlungen" )
         self._summenfont = QFont( "Times New Roman", 16, weight=QFont.Bold )
         self._summenartfont = QFont( "Times New Roman", 9 )
 
@@ -99,9 +100,28 @@ class IccMainWindow( QMainWindow ):
         self._shutdownCallback = None  # callback function for shutdown action
         self._createUI()
 
+    def setSummenValues( self, x:XSummen ):
+        self._idSumEin.setIntValue( x.sumEin )
+        self._idSummeHGV.setIntValue( x.sumHGV )
+        self._idSummeSonstAus.setIntValue( x.sumSonstAus )
+        self._idSaldo.setIntValue( x.saldo )
+
+    def getSummenValues( self ) -> XSummen:
+        """
+        Gibt ein Dict zurück mit den keys "ein", "hgv", "sonstaus", "saldo".
+        Die values sind allesamt vom Typ int.
+        :return:
+        """
+        x = XSummen()
+        x.sumEin = self._idSumEin.getIntValue()
+        x.sumHGV = self._idSummeHGV.getIntValue()
+        x.sumSonstAus = self._idSummeSonstAus.getIntValue()
+        x.saldo = self._idSaldo.getIntValue()
+        return x
+
     def getPreferredWidth( self ) -> int:
         #w = self._abschlagTableViewFrame.getPreferredWidth()
-        w = self._hausgeldTableViewFrame.getPreferredWidth()
+        w = self._alleZahlungenTableViewFrame.getPreferredWidth()
         return w
 
     def getPreferredHeight( self ) -> int:
@@ -348,7 +368,7 @@ class IccMainWindow( QMainWindow ):
     def _addSumFields( self ):
         self._toolBar.addWidget( self._createSumLabel() )
         self._toolBar.addWidget( self._createSumArtLabel( "Miete", 30 ) )
-        self._toolBar.addWidget( self._idSumMiete )
+        self._toolBar.addWidget( self._idSumEin )
 
         self._toolBar.addWidget( self._createLabel( "-", 20 ) )
 
@@ -478,14 +498,14 @@ class IccMainWindow( QMainWindow ):
             else:
                 self._actionCallbackFnc( action )
 
-    def onNewWindow( self ):
-        self.doCallback( MainWindowAction.NEW_WINDOW )
-
-    def onMieterwechsel( self ):
-        self.doCallback( MainWindowAction.MIETERWECHSEL )
-
-    def onVerwalterwechsel( self ):
-        pass
+    # def onNewWindow( self ):
+    #     self.doCallback( MainWindowAction.NEW_WINDOW )
+    #
+    # def onMieterwechsel( self ):
+    #     self.doCallback( MainWindowAction.MIETERWECHSEL )
+    #
+    # def onVerwalterwechsel( self ):
+    #     pass
 
     # def onChangeSollmiete( self ):
     #     pass
@@ -495,84 +515,84 @@ class IccMainWindow( QMainWindow ):
 
     # def onSaveActiveView( self ):
     #     self.doCallback( MainWindowAction.SAVE_ACTIVE_VIEW )
-
-    def onSaveAll( self ):
-        self.doCallback( MainWindowAction.SAVE_ALL )
-
-    def onExportDatabaseToServer( self ):
-        self.doCallback( MainWindowAction.EXPORT_DB_TO_SERVER )
-
-    def onImportDatabaseFromServer( self ):
-        self.doCallback( MainWindowAction.IMPORT_DB_FROM_SERVER )
-
-    def onFolgejahrEinrichten( self ):
-        self.doCallback( MainWindowAction.FOLGEJAHR )
-
-    def onPrintActiveView( self ):
-        self.doCallback( MainWindowAction.PRINT_ACTIVE_VIEW )
-
-    def onExit( self ):
-        self.doCallback( MainWindowAction.EXIT )
-
-    def onViewMietzahlungen( self ):
-        self.doCallback( MainWindowAction.OPEN_MIETE_VIEW )
-
-    def onViewHGVorauszahlungen( self ):
-        self.doCallback( MainWindowAction.OPEN_HGV_VIEW )
-
-    def onViewSollMiete( self ):
-        self.doCallback( MainWindowAction.OPEN_SOLL_MIETE_VIEW )
-
-    def onViewSollHausgeld( self ):
-        self.doCallback( MainWindowAction.OPEN_SOLL_HG_VIEW )
-
-    def onViewNebenkostenabrechnung( self ):
-        self.doCallback( MainWindowAction.OPEN_NKA_VIEW )
-
-    def onViewHausgeldabrechnung( self ):
-        self.doCallback( MainWindowAction.OPEN_HGA_VIEW )
-
-    def onViewAnlageV( self ):
-        self.doCallback( MainWindowAction.OPEN_ANLAGEV_VIEW )
-
-    def onExportActiveTableView( self ):
-        self.doCallback( MainWindowAction.EXPORT_CSV )
-
-    def onNotizen( self ):
-        self.doCallback( MainWindowAction.NOTIZEN )
-
-    def onSammelabgabe( self ):
-        self.doCallback( MainWindowAction.SAMMELABGABE_DETAIL )
-
-    def onGeschaeftsreise( self ):
-        self.doCallback( MainWindowAction.OPEN_GESCHAEFTSREISE_VIEW )
-
-    def onRenditeVergleich( self ):
-        self.doCallback( MainWindowAction.RENDITE_VIEW )
-
-    def onErtragUebersicht( self ):
-        self.doCallback( MainWindowAction.OPEN_ERTRAG_VIEW )
-
-    def onViewRechnungen( self ):
-        self.doCallback( MainWindowAction.OPEN_SONST_EIN_AUS_VIEW )
-
-    def onViewOffenePosten( self ):
-        self.doCallback( MainWindowAction.OPEN_OFFENE_POSTEN_VIEW )
-
-    def onViewObjektStammdaten( self ):
-        self.doCallback( MainWindowAction.OPEN_OBJEKT_STAMMDATEN_VIEW )
-
-    def onViewMietverhaeltnis( self ):
-        self.doCallback( MainWindowAction.OPEN_MIETVERH_VIEW )
-
-    def onNewSql( self ):
-        pass
-
-    def onShowTableContent( self, action ):
-        self.doCallback( MainWindowAction.SHOW_TABLE_CONTENT, action.text() )
-
-    def onShowDialog( self, action ):
-        self.doCallback( MainWindowAction.BRING_DIALOG_TO_FRONT, action.data() )
+    #
+    # def onSaveAll( self ):
+    #     self.doCallback( MainWindowAction.SAVE_ALL )
+    #
+    # def onExportDatabaseToServer( self ):
+    #     self.doCallback( MainWindowAction.EXPORT_DB_TO_SERVER )
+    #
+    # def onImportDatabaseFromServer( self ):
+    #     self.doCallback( MainWindowAction.IMPORT_DB_FROM_SERVER )
+    #
+    # def onFolgejahrEinrichten( self ):
+    #     self.doCallback( MainWindowAction.FOLGEJAHR )
+    #
+    # def onPrintActiveView( self ):
+    #     self.doCallback( MainWindowAction.PRINT_ACTIVE_VIEW )
+    #
+    # def onExit( self ):
+    #     self.doCallback( MainWindowAction.EXIT )
+    #
+    # def onViewMietzahlungen( self ):
+    #     self.doCallback( MainWindowAction.OPEN_MIETE_VIEW )
+    #
+    # def onViewHGVorauszahlungen( self ):
+    #     self.doCallback( MainWindowAction.OPEN_HGV_VIEW )
+    #
+    # def onViewSollMiete( self ):
+    #     self.doCallback( MainWindowAction.OPEN_SOLL_MIETE_VIEW )
+    #
+    # def onViewSollHausgeld( self ):
+    #     self.doCallback( MainWindowAction.OPEN_SOLL_HG_VIEW )
+    #
+    # def onViewNebenkostenabrechnung( self ):
+    #     self.doCallback( MainWindowAction.OPEN_NKA_VIEW )
+    #
+    # def onViewHausgeldabrechnung( self ):
+    #     self.doCallback( MainWindowAction.OPEN_HGA_VIEW )
+    #
+    # def onViewAnlageV( self ):
+    #     self.doCallback( MainWindowAction.OPEN_ANLAGEV_VIEW )
+    #
+    # def onExportActiveTableView( self ):
+    #     self.doCallback( MainWindowAction.EXPORT_CSV )
+    #
+    # def onNotizen( self ):
+    #     self.doCallback( MainWindowAction.NOTIZEN )
+    #
+    # def onSammelabgabe( self ):
+    #     self.doCallback( MainWindowAction.SAMMELABGABE_DETAIL )
+    #
+    # def onGeschaeftsreise( self ):
+    #     self.doCallback( MainWindowAction.OPEN_GESCHAEFTSREISE_VIEW )
+    #
+    # def onRenditeVergleich( self ):
+    #     self.doCallback( MainWindowAction.RENDITE_VIEW )
+    #
+    # def onErtragUebersicht( self ):
+    #     self.doCallback( MainWindowAction.OPEN_ERTRAG_VIEW )
+    #
+    # def onViewRechnungen( self ):
+    #     self.doCallback( MainWindowAction.OPEN_SONST_EIN_AUS_VIEW )
+    #
+    # def onViewOffenePosten( self ):
+    #     self.doCallback( MainWindowAction.OPEN_OFFENE_POSTEN_VIEW )
+    #
+    # def onViewObjektStammdaten( self ):
+    #     self.doCallback( MainWindowAction.OPEN_OBJEKT_STAMMDATEN_VIEW )
+    #
+    # def onViewMietverhaeltnis( self ):
+    #     self.doCallback( MainWindowAction.OPEN_MIETVERH_VIEW )
+    #
+    # def onNewSql( self ):
+    #     pass
+    #
+    # def onShowTableContent( self, action ):
+    #     self.doCallback( MainWindowAction.SHOW_TABLE_CONTENT, action.text() )
+    #
+    # def onShowDialog( self, action ):
+    #     self.doCallback( MainWindowAction.BRING_DIALOG_TO_FRONT, action.data() )
 
     def showException( self, exception: str, moretext: str = None ):
         print( exception )

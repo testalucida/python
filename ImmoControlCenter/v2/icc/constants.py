@@ -1,4 +1,4 @@
-from enum import Enum, IntEnum
+from enum import Enum, IntEnum, auto
 from typing import List
 from numpy import sort
 
@@ -31,6 +31,22 @@ iccMonthIdxToShortName = {
 #     monthnames[10],
 #     monthnames[11]
 # }
+
+class Action( IntEnum ):
+    SHOW_MASTEROBJEKT = auto()
+    SHOW_MIETOBJEKT = auto()
+    SHOW_MIETVERHAELTNIS = auto()
+    SHOW_NETTOMIETE_UND_NKV = auto()
+    SHOW_NEBENKOSTEN_ABRECHNUNG = auto()
+    SHOW_WEG_UND_VERWALTER = auto()
+    SHOW_HAUSGELD_UND_RUEZUFUE = auto()
+    SHOW_HAUSGELD_ABRECHNUNG = auto()
+    SHOW_LEISTUNGSVERTRAG = auto()
+    DUPLICATE_AND_SAVE = auto()
+    DUPLICATE_AND_EDIT = auto()
+    COMPUTE_SUMME = auto()
+    COPY = auto() # Kopiere ganze Selektion
+    COPY_CELL = auto() # Kopiere nur den Wert der geklickten Zelle
 
 class ValueMapper:
     def __init__( self, display, dbvalue ):
