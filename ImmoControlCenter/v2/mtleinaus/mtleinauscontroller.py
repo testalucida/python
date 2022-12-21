@@ -3,11 +3,13 @@ from enum import IntEnum
 from numbers import Number
 from typing import List, Iterable
 
+import numpy.core.defchararray
 from PySide2.QtCore import QModelIndex, QSize
 from PySide2.QtGui import QCursor, QGuiApplication, Qt
 from PySide2.QtWidgets import QAction, QDialog, QMenu
 
 from base.baseqtderivates import BaseEdit, FloatEdit, SmartDateEdit, IntEdit, MultiLineEdit, BaseAction, SumDialog
+from base.basetablefunctions import BaseTableFunctions
 from base.dynamicattributeui import DynamicAttributeDialog
 from base.interfaces import XBaseUI, VisibleAttribute, XBase
 from base.messagebox import ErrorBox, InfoBox
@@ -278,7 +280,7 @@ class MtlEinAusController( IccController ):
             # deshalb können wir den "kleinen" Dialog zeigen
             showValueDialog()
 
-    def _addZahlung( self, row:int, value:float, bemerkung="" ) -> XEinAus:
+    def _addZahlung( self, row:int, value:float, bemerkung="" ) -> XEinAus or None:
         model: MtlEinAusTableModel = self.getModel()
         selectedMonthIdx = model.getSelectedMonthIdx()
         selectedYear = model.getJahr()
@@ -328,35 +330,31 @@ class MtlEinAusController( IccController ):
         mobjCtrl.createGui()
 
     def _computeSumme( self ):
-        model: MtlEinAusTableModel = self.getModel()
-        summe = 0
-        idxlist = self._tv.selectedIndexes()
-        for idx in idxlist:
-            summe += model.getValue( idx.row(), idx.column() )
-        dlg = SumDialog()
-        dlg.setSum( summe )
-        dlg.exec_()
+        btf = BaseTableFunctions()
+        btf.computeSumme( self._tv, 5 )
 
     def _copySelectionToClipboard( self ):
-        values: str = ""
-        indexes = self._tv.selectedIndexes()
-        model = self.getModel()
-        row = -1
-        for idx in indexes:
-            if row == -1: row = idx.row()
-            if row != idx.row():
-                values += "\n"
-                row = idx.row()
-            elif len( values ) > 0:
-                values += "\t"
-            val = model.getValue( idx.row(), idx.column() )
-            val = " nil " if not val else val
-            if isinstance( val, Number ):
-                values += str( val )
-            else:
-                values += val
-        clipboard = QGuiApplication.clipboard()
-        clipboard.setText( values )
+        btf = BaseTableFunctions()
+        btf.copySelectionToClipboard( self._tv )
+        # values: str = ""
+        # indexes = self._tv.selectedIndexes()
+        # model = self.getModel()
+        # row = -1
+        # for idx in indexes:
+        #     if row == -1: row = idx.row()
+        #     if row != idx.row():
+        #         values += "\n"
+        #         row = idx.row()
+        #     elif len( values ) > 0:
+        #         values += "\t"
+        #     val = model.getValue( idx.row(), idx.column() )
+        #     val = " nil " if not val else val
+        #     if isinstance( val, Number ):
+        #         values += str( val )
+        #     else:
+        #         values += val
+        # clipboard = QGuiApplication.clipboard()
+        # clipboard.setText( values )
 
 
 ##############  MieteController  ####################

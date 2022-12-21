@@ -219,6 +219,12 @@ class BaseTableViewFrame( BaseWidget ):
             hbox.addWidget( self._deleteBtn, stretch=0, alignment=Qt.AlignLeft )
             self._layout.addLayout( hbox, 2, 0, 1, 1, Qt.AlignLeft )
 
+    def setNewButtonEnabled( self, enabled=True ):
+        self._newBtn.setEnabled( enabled )
+
+    def setDeleteButtonEnabled( self, enabled=True ):
+        self._deleteBtn.setEnabled( enabled )
+
     def getPreferredWidth( self ) -> int:
         colcount = self._tv.model().columnCount()
         w = 0

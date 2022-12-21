@@ -7,6 +7,8 @@ from PySide2.QtWidgets import QAction, QDialog, QMenu
 import datehelper
 from base.baseqtderivates import BaseComboBox, BaseEdit, FloatEdit, IntEdit, BaseCheckBox, SmartDateEdit, MultiLineEdit, \
     EditableComboBox, BaseAction, Separator
+from base.basetablefunctions import BaseTableFunctions
+from base.basetablemodel import BaseTableModel
 from base.filterhandler import FilterHandler
 from base.interfaces import VisibleAttribute
 from base.messagebox import InfoBox
@@ -162,6 +164,12 @@ class EinAusController( IccController ):
         """callback function nach Auswahl eines Kontext-MenüItems"""
         x: XEinAus = action.data()
         ident = action.ident
+        if ident == Action.COMPUTE_SUMME:
+            model:BaseTableModel = self._tv.model()
+            col = model.getColumnIndexByKey( "betrag" )
+            btf = BaseTableFunctions()
+            btf.computeSumme( self._tv, col, col )
+
         # match ident:
         #     case Action.COMPUTE_SUMME:
         #         pass

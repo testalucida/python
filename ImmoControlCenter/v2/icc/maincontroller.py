@@ -4,6 +4,7 @@ from PySide2.QtWidgets import QMenu
 
 from base.baseqtderivates import BaseAction
 from base.messagebox import InfoBox, ErrorBox
+from v2.abrechnungen.abrechnungcontroller import NKAbrechnungController, HGAbrechnungController
 from v2.einaus.einauscontroller import EinAusController
 from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
 from v2.icc.constants import EinAusArt
@@ -25,6 +26,8 @@ class MainController( IccController ):
         self._hausgeldCtrl = HausgeldController()
         self._abschlagCtrl = AbschlagController()
         self._einausCtrl = EinAusController()
+        self._nkaCtrl = NKAbrechnungController()
+        self._hgaCtrl = HGAbrechnungController()
         EinAusWriteDispatcher.inst().ea_inserted.connect( self.onEinAusInserted )
         EinAusWriteDispatcher.inst().ea_updated.connect( self.onEinAusUpdated )
         EinAusWriteDispatcher.inst().ea_deleted.connect( self.onEinAusDeleted )
@@ -55,7 +58,17 @@ class MainController( IccController ):
         # Abschlagszahlungen (KEW, Gaswerk etc.)
         tvf: IccCheckTableViewFrame = self._abschlagCtrl.createGui()
         self._win.setAbschlagTableViewFrame( tvf )
-        ### Die View für die übrigen Zahlungen (Rechnungen etc.)
+        # Übrige regelmäßige (z.B. jährliche) Zahlungen (Versicherungen, Grundsteuer etc.)
+        # todo
+        # HGAbrechnungen
+        tvf: IccCheckTableViewFrame = self._hgaCtrl.createGui()
+        # todo
+        self._win.setHGAbrechnungenTableViewFrame( tvf )
+        # NKAbrechnungen
+        tvf: IccCheckTableViewFrame = self._nkaCtrl.createGui()
+        # todo
+        self._win.setNKAbrechnungenTableViewFrame( tvf )
+        ### Die View für "alle" Zahlungen (Rechnungen etc.)
         tvf: IccCheckTableViewFrame = self._einausCtrl.createGui()
         self._win.setAlleZahlungenTableViewFrame( tvf )
         self._provideSummen()

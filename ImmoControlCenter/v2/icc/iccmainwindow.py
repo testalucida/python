@@ -17,6 +17,7 @@ from v2.icc.interfaces import XSummen
 from v2.mtleinaus.mtleinauslogic import MieteTableModel, HausgeldTableModel, AbschlagTableModel
 from v2.mtleinaus.mtleinausview import MieteTableView, MieteTableViewFrame, HausgeldTableView, HausgeldTableViewFrame, \
     AbschlagTableViewFrame
+from v2.uebrigeregelm.uebrigeregelmaessview import UebrigeRegelmaessTableViewFrame
 
 
 class MainWindowAction( Enum ):
@@ -55,6 +56,16 @@ class MtlZahlungenTabWidget( BaseTabWidget ):
     def __init__( self, parent=None ):
         BaseTabWidget.__init__( self, parent )
 
+###################   UebrigeRegelmZahlungenTabWidget   #################
+class UebrigeRegelmZahlungenTabWidget( BaseTabWidget ):
+    def __init__( self, parent=None ):
+        BaseTabWidget.__init__( self, parent )
+
+###################   AbrechnungenTabWidget   #################
+class AbrechnungenTabWidget( BaseTabWidget ):
+    def __init__( self, parent=None ):
+        BaseTabWidget.__init__( self, parent )
+
 ########################   AlleZahlungenTabWidget   ############
 class AlleZahlungenTabWidget( BaseTabWidget ):
     def __init__( self, parent=None ):
@@ -66,12 +77,24 @@ class MainTabWidget( BaseTabWidget ):
         BaseTabWidget.__init__( self, parent )
         self._mtlZahlungenTab = MtlZahlungenTabWidget()
         self.addTab( self._mtlZahlungenTab, "Monatliche Zahlungen" )
+        # self._uebrigeRegelmZahlungenTab = UebrigeRegelmZahlungenTabWidget()
+        # self.addTab( self._uebrigeRegelmZahlungenTab, "Übrige regelmäßige Zahlungen" )
+        self._abrechnungenTab = AbrechnungenTabWidget()
+        self.addTab( self._abrechnungenTab, "Jahresabrechnungen" )
+        # self._alleZahlungenTab = AlleZahlungenTabWidget()
+        # self.addTab( self._alleZahlungenTab, "fdslkjfdsklj Zahlungen" )
 
     def getMtlZahlungenTab( self ) -> MtlZahlungenTabWidget:
         return self._mtlZahlungenTab
 
-    def getAlleZahlungenTab( self ) -> AlleZahlungenTabWidget:
-        return self._alleZahlungenTab
+    # def getUebrigeRegelmZahlungenTab( self ) -> UebrigeRegelmZahlungenTabWidget:
+    #     return self._uebrigeRegelmZahlungenTab
+    #
+    def getAbrechnungenTab( self ) -> AbrechnungenTabWidget:
+        return self._abrechnungenTab
+
+    # def getAlleZahlungenTab( self ) -> AlleZahlungenTabWidget:
+    #     return self._alleZahlungenTab
 
 ########################   IccMainWindow   ####################
 class IccMainWindow( QMainWindow ):
@@ -128,6 +151,7 @@ class IccMainWindow( QMainWindow ):
         h = self._alleZahlungenTableViewFrame.getPreferredHeight()
         return h
 
+    # die TableViewFrames für die Tab "Monatliche Zahlungen" setzen: (vom MainController.createGui)
     def setMieteTableViewFrame( self, tvf:MieteTableViewFrame ):
         self._mainTab.getMtlZahlungenTab().addTab( tvf, "Mieten" )
         self._mieteTableViewFrame = tvf
@@ -140,7 +164,18 @@ class IccMainWindow( QMainWindow ):
         self._mainTab.getMtlZahlungenTab().addTab( tvf, "Monatliche Abschläge" )
         self._abschlagTableViewFrame = tvf
 
+    def setUebrigeRegelmaessZahlungenTableViewFrame( self, tvf:UebrigeRegelmaessTableViewFrame ):
+        self._mainTab.addTab( tvf, "Übrige regelmäßige Zahlungen" )
+
+    def setHGAbrechnungenTableViewFrame( self, tvf ):
+        self._mainTab.getAbrechnungenTab().addTab( tvf, "HGA" )
+
+    def setNKAbrechnungenTableViewFrame( self, tvf ):
+        self._mainTab.getAbrechnungenTab().addTab( tvf, "NKA" )
+
+    # den TableViewFrame als neuen Tab im MainTabWidget setzen:
     def setAlleZahlungenTableViewFrame( self, tvf:EinAusTableViewFrame ):
+        #self._mainTab.getAlleZahlungenTab().addTab( tvf, "Alle Zahlungen" )
         self._mainTab.addTab( tvf, "Alle Zahlungen" )
         self._alleZahlungenTableViewFrame = tvf
 
@@ -153,14 +188,6 @@ class IccMainWindow( QMainWindow ):
     def getAlleZahlungenTableViewFrame( self ) -> EinAusTableViewFrame:
         return self._alleZahlungenTableViewFrame
 
-    # def setMieteModel( self, tm:MieteTableModel ):
-    #     self._mainTab.getMtlZahlungenTab().setMieteModel( tm )
-    #
-    # def setHausgeldModel( self, tm:HausgeldTableModel ):
-    #     self._mainTab.getMtlZahlungenTab().setHausgeldModel( tm )
-    #
-    # def setAbschlagModel( self, tm:AbschlagTableModel ):
-    #     self._mainTab.getMtlZahlungenTab().setAbschlagModel( tm )
 
     def onSumFieldsProvidingFailed( self, msg:str ):
         self.showException( msg )

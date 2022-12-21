@@ -22,6 +22,8 @@ class XEinAus( XBase ):
         self.debi_kredi = ""
         self.leistung = ""
         self.sab_id = 0
+        self.hga_id = 0
+        self.nka_id = 0
         self.jahr = 0
         self.monat = ""
         self.betrag = 0.0
@@ -117,6 +119,8 @@ class XMtlAbschlag( XMtlZahlung ):
         self.master_name = ""
         if valuedict:
             self.setFromDict( valuedict )
+
+
 
 ##################   XGrundbesitzabgabe   ####################
 class XGrundbesitzabgabe( XBase ):
@@ -297,6 +301,45 @@ class XKreditorLeistung( XLeistung ):
         self.bemerkung = ""
         if valuedict:
             self.setFromDict( valuedict )
+
+class XAbrechnung( XBase ):
+    """
+    Ein XAbrechnung-Objekt beinhaltet die attribute, die einer HGA und einer NKA gemeinsam sind.
+    """
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self )
+        self.master_name = ""
+        self.ab_jahr = 0
+        self.ab_datum = ""
+        self.forderung = 0.0
+        self.zahlung = 0.0  # Zahlung auf die Forderung gem. Tab. <einaus>
+        self.buchungsdatum = ""
+        self.bemerkung = "" # Bemerkung aus Tabelle hg_abrechnung oder nk_abrechnung
+        self.write_time = "" # Eintragung in Tabelle <einaus>
+        if valuedict:
+            self.setFromDict( valuedict )
+
+class XHGAbrechnung( XAbrechnung ):
+    def __init__( self, valuedict:Dict=None ):
+        XAbrechnung.__init__( self, valuedict )
+        self.hga_id = 0
+        self.weg_name = ""  # Name der WEG
+        self.vw_id = ""  # Verwalter-ID, entspricht in etwa dessen Namen
+        self.vwg_id = 0  # Prim.key in Tab. <verwaltung>
+        self.vwg_von = "" # Beginn der Verwaltung durch diesen Verwalter
+        self.vwg_bis = "" # Ende der Verwaltung durch diesen Verwalter
+        self.entnahme_rue = 0.0
+        if valuedict:
+            self.setFromDict( valuedict )
+
+class XNKAbrechnung( XAbrechnung ):
+    def __init__( self, valuedict:Dict=None ):
+        XAbrechnung.__init__( self, valuedict )
+        self.nka_id = 0
+        self.mv_id = "" # entspricht in etwa dem Namen des Mieters
+        if valuedict:
+            self.setFromDict( valuedict )
+
 
 
 
