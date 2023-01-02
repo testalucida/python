@@ -69,3 +69,8 @@ class MtlEinAusLogic:
         except Exception as ex:
             raise Exception( "Fehler bei der Anlage des Jahressets für Verwaltung '%s':\n%s"
                              % (vwg_id, str( ex )) )
+
+
+def test():
+    logic = MtlEinAusLogic()
+    #logic.createFolgejahrSet()

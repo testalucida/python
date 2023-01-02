@@ -413,8 +413,9 @@ class MainController( QObject ):
         if not retval.missionAccomplished():
             self._mainwin.showException( retval.exceptiontype, retval.errormessage )
         else:
-            self._mietenCtrl.addJahr( retval.returnvalue )
-            self._hgvCtrl.addJahr( retval.returnvalue )
+            pass
+            # self._mietenCtrl.addJahr( retval.returnvalue )
+            # self._hgvCtrl.addJahr( retval.returnvalue )
             self._mainwin.showInfo( "Folgejahr eingerichtet.", "Das Folgejahr wurde eingerichtet." )
 
 def testInputDialog():

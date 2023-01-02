@@ -322,7 +322,8 @@ def terminate_if_running():
         box.exec_()
         sys.exit( 1 )
 
-def main():
+def testmain():
+#def main():
     app = QApplication()
     setScreenSize( app )
     env = "DEVELOP"

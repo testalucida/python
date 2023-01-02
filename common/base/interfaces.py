@@ -2,6 +2,9 @@
 from enum import Enum
 from typing import Dict, Any, List, Type, Iterable, Callable
 
+from PySide2.QtCore import QObject
+
+
 class XBase:
     """
     Die Mutter aller Interfaces.
@@ -51,12 +54,23 @@ class XBase:
     def print( self ):
         print( self.toString( printWithClassname=True ) )
 
+#################   ButtonDefinition   #######################
+class ButtonDefinition:
+    def __init__( self, text:str, callback:Callable, tooltip:str=None, ident:Any=None, iconpath:str=None,
+                  maxW:int=None, maxH:int=None ):
+        self.text = text
+        self.callback = callback
+        self.tooltip = tooltip
+        self.ident = ident
+        self.iconpath = iconpath
+        self.maxW = maxW
+        self.maxH = maxH
 
 #################   VisibleAttribute   ##########################
 class VisibleAttribute:
     def __init__( self, key:str, type_:Type, label:str, editable=True,
                   widgetWidth=-1, widgetHeight=-1, nextRow=True, columnspan=1,
-                  comboValues:List[str]=None, comboCallback=None ):
+                  comboValues:List[str]=None, comboCallback=None, trailingButton:ButtonDefinition=None ):
         self.key = key
         self.type = type_
         self.label = label
@@ -67,6 +81,7 @@ class VisibleAttribute:
         self.columnspan = columnspan
         self._widgetHeight = widgetHeight # default -1: Qt bestimmt die Höhe
         self._widgetWidth = widgetWidth  # default -1: Qt bestimmt die Breite
+        self.trailingButton = trailingButton
 
     def setTextSpec( self, widgetWidth:int, widgetHeight:int ):
         self._widgetHeight = widgetHeight

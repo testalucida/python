@@ -1,5 +1,8 @@
 from abc import abstractmethod
 from typing import Dict, List, Any
+
+from PySide2.QtCore import Signal
+
 from base.interfaces import XBase
 
 
@@ -302,6 +305,14 @@ class XKreditorLeistung( XLeistung ):
         if valuedict:
             self.setFromDict( valuedict )
 
+class XTeilzahlung:
+    def __init__( self, betrag:float, buchungsdatum:str="", buchungstext:str="", write_time:str="", ea_id=0 ):
+        self.ea_id = ea_id
+        self.betrag = betrag
+        self.buchungsdatum = buchungsdatum
+        self.buchungstext = buchungstext
+        self.write_time = write_time
+
 class XAbrechnung( XBase ):
     """
     Ein XAbrechnung-Objekt beinhaltet die attribute, die einer HGA und einer NKA gemeinsam sind.
@@ -312,12 +323,20 @@ class XAbrechnung( XBase ):
         self.ab_jahr = 0
         self.ab_datum = ""
         self.forderung = 0.0
-        self.zahlung = 0.0  # Zahlung auf die Forderung gem. Tab. <einaus>
-        self.buchungsdatum = ""
+        self.zahlung = 0.0  # Summe der Teil-Zahlungen auf die Forderung gem. Tab. <einaus>
+        self.teilzahlungen:List[XTeilzahlung] = list() # Liste der Teilzahlungen. Wenn die Forderung
+                                                       # in einer Summe bezahlt wurde, enthält diese Liste
+                                                       # genau diesen einen Eintrag.
+        #self.buchungsdatum = ""
         self.bemerkung = "" # Bemerkung aus Tabelle hg_abrechnung oder nk_abrechnung
         self.write_time = "" # Eintragung in Tabelle <einaus>
         if valuedict:
             self.setFromDict( valuedict )
+
+    def addZahlung( self, betrag:float, buchungsdatum:str="", buchungstext:str="", write_time:str="", ea_id=0 ):
+        tz = XTeilzahlung( betrag, buchungsdatum, buchungstext, write_time, ea_id )
+        self.teilzahlungen.append( tz )
+        self.zahlung += betrag
 
 class XHGAbrechnung( XAbrechnung ):
     def __init__( self, valuedict:Dict=None ):

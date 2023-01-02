@@ -1,29 +1,26 @@
 from abc import abstractmethod
-from enum import IntEnum
-from numbers import Number
-from typing import List, Iterable
+from typing import List
 
-import numpy.core.defchararray
 from PySide2.QtCore import QModelIndex, QSize
-from PySide2.QtGui import QCursor, QGuiApplication, Qt
+from PySide2.QtGui import QCursor
 from PySide2.QtWidgets import QAction, QDialog, QMenu
 
-from base.baseqtderivates import BaseEdit, FloatEdit, SmartDateEdit, IntEdit, MultiLineEdit, BaseAction, SumDialog
+from base.baseqtderivates import BaseEdit, FloatEdit, IntEdit, MultiLineEdit, BaseAction, SumDialog
 from base.basetablefunctions import BaseTableFunctions
 from base.dynamicattributeui import DynamicAttributeDialog
-from base.interfaces import XBaseUI, VisibleAttribute, XBase
+from base.interfaces import XBaseUI, VisibleAttribute
 from base.messagebox import ErrorBox, InfoBox
 from v2.einaus.einauslogic import EinAusTableModel
-from v2.einaus.einausview import EinAusTableView
+from v2.einaus.einausview import EinAusTableView, TeilzahlungDialog, ValueDialog
 from v2.icc.constants import Action
 from v2.icc.icccontroller import IccController
-from v2.icc.iccwidgets import IccTableViewFrame, IccCheckTableViewFrame, IccTableView
+from v2.icc.iccwidgets import IccCheckTableViewFrame, IccTableView
 from v2.icc.interfaces import XMtlZahlung, XEinAus
 from v2.mietobjekt.mietobjektcontroller import MietobjektController
 from v2.mietverhaeltnis.mietverhaeltniscontroller import MietverhaeltnisController
 from v2.mtleinaus.mtleinauslogic import MieteLogic, MtlEinAusTableModel, MtlEinAusLogic, MieteTableModel, HausgeldLogic, \
     HausgeldTableModel, AbschlagLogic, AbschlagTableModel
-from v2.mtleinaus.mtleinausview import MieteTableView, MieteTableViewFrame, ValueDialog, MtlZahlungEditDialog, \
+from v2.mtleinaus.mtleinausview import MieteTableView, MieteTableViewFrame, \
     HausgeldTableView, HausgeldTableViewFrame, AbschlagTableView, AbschlagTableViewFrame
 
 
@@ -192,7 +189,7 @@ class MtlEinAusController( IccController ):
             """
             Callback vom MtlZahlungEditDialog.
             Ausgewählte Zahlung im DynamicAttributeDialog ändern lassen.
-            MtlZahlungEditDialog aktualisieren.
+            TeilzahlungDialog aktualisieren.
             MtlEinAusTableView aktualisieren (Geänderte Zahlung anzeigen).
             :param row: Zeile des zu ändernden XEinAus-Objekts
             :return:
@@ -256,17 +253,13 @@ class MtlEinAusController( IccController ):
         monthIdx = monatstm.getSelectedMonthIdx()
         eatm = self.getEinzelzahlungenModelMonat( monatstm.getDebiKredi( index.row() ),  monatstm.getSab_id( index.row() ),
                                                   self._year, monthIdx )
-        # eatm = self.getLogic().getZahlungenModelDebiKrediMonat( monatstm.getDebiKredi( index.row() ), self._year, monthIdx )
-        # keys = ( "mobj_id", "debi_kredi", "jahr", "monat", "betrag", "write_time" )
-        # headers = ( "Wohnung", "Mieter", "Jahr", "Monat", "Betrag", "gebucht am" )
-        # eatm.setKeyHeaderMappings2( keys, headers )
         if eatm.rowCount() > 0:
             # Es gibt schon eine Zahlung für den betreff. Monat.
-            # Deshalb den MtlZahlungEditDialog zeigen, damit der User die Zahlung auswählen kann, die er ändern oder
+            # Deshalb den TeilzahlungDialog zeigen, damit der User die Zahlung auswählen kann, die er ändern oder
             # löschen will. Er kann auch eine neue Zahlung anlegen.
             eatv = EinAusTableView()
             eatv.setModel( eatm )
-            dlg = MtlZahlungEditDialog( eatv )
+            dlg = TeilzahlungDialog( eatv )
             tvframe = dlg.getTableViewFrame()
             tvframe.newItem.connect( onNewItem )
             tvframe.editItem.connect( onEditItem )

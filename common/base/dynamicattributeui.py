@@ -1,12 +1,14 @@
 import copy
-from typing import Type, List
+from typing import Type, List, Any
 
 from PySide2.QtCore import Qt, Signal
-from PySide2.QtWidgets import QWidget, QDialog
+from PySide2.QtGui import QIcon
+from PySide2.QtWidgets import QWidget, QDialog, QHBoxLayout
 
 from base.baseqtderivates import BaseWidget, BaseGridLayout, BaseEdit, LineEdit, MultiLineEdit, BaseCheckBox, IntEdit, \
-    BaseLabel, FloatEdit, BaseComboBox, BaseDialogWithButtons, getOkCancelButtonDefinitions, OkApplyCancelDialog
-from base.interfaces import XBase, XBaseUI, VisibleAttribute
+    BaseLabel, FloatEdit, BaseComboBox, BaseDialogWithButtons, getOkCancelButtonDefinitions, OkApplyCancelDialog, \
+    BaseButton
+from base.interfaces import XBase, XBaseUI, VisibleAttribute, ButtonDefinition
 
 
 class DynamicAttributeView( BaseWidget ):
@@ -29,7 +31,14 @@ class DynamicAttributeView( BaseWidget ):
             col += 1
             w = self._createWidget( attr.key, attr.type, attr.editable, attr.getWidgetWidth(), attr.getWidgetHeight() )
             self._widgets.append( w )
-            self._layout.addWidget( w, row, col, 1, attr.columnspan )
+            if attr.trailingButton:
+                btn = self._createButton( attr.trailingButton )
+                boxlayout = QHBoxLayout()
+                boxlayout.addWidget( w, alignment=Qt.AlignLeft )
+                boxlayout.addWidget( btn, alignment=Qt.AlignLeft )
+                self._layout.addLayout( boxlayout, row, col, alignment=Qt.AlignLeft )
+            else:
+                self._layout.addWidget( w, row, col, 1, attr.columnspan )
             comboValues = attr.getComboValues()
             if comboValues and isinstance( w, BaseComboBox ):
                 comboValues = list( comboValues )
@@ -59,6 +68,38 @@ class DynamicAttributeView( BaseWidget ):
             w.setFixedHeight( widgetHeight )
         return w
 
+    @staticmethod
+    def _createButton( buttondef:ButtonDefinition ) -> BaseButton:
+        btn = BaseButton()
+        if buttondef.ident:
+            btn.setIdent( buttondef.ident )
+        if buttondef.text:
+            btn.setText( buttondef.text )
+        if buttondef.iconpath:
+            icon = QIcon( buttondef.iconpath )
+            btn.setIcon( icon )
+        if buttondef.tooltip:
+            btn.setToolTip( buttondef.tooltip )
+        if buttondef.maxW:
+            btn.setMaximumWidth( buttondef.maxW )
+        if buttondef.maxH:
+            btn.setMaximumHeight( buttondef.maxH )
+        btn.setCallback( buttondef.callback )
+        return btn
+
+    # def updateUI( self, keys:List[str] ):
+    #     x = self._xbaseui.getXBase()
+    #     for w in self._widgets:
+    #         key = w.objectName()
+    #         if key in keys:
+    #             val = x.getValue( key )
+    #             w.setValue( val )
+
+    def getButton( self, ident:Any ) -> BaseButton:
+        for w in self._widgets:
+            if isinstance( w, BaseButton ) and w.getIdent() == ident:
+                return w
+
     def getWidget( self, key:str ) -> BaseWidget:
         for w in self._widgets:
             if w.objectName() == key: return w
@@ -86,6 +127,11 @@ class DynamicAttributeView( BaseWidget ):
         xbasecopy = copy.deepcopy( self._xbaseui.getXBase() )
         self._updateData( xbasecopy )
         return xbasecopy
+
+    def updateUI( self, key:str ):
+        x = self._xbaseui.getXBase()
+        w = self.getWidget( key )
+        w.setValue( x.getValue( key ) )
 
     def updateData( self ):
         xbase = self._xbaseui.getXBase()

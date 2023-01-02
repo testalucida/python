@@ -24,15 +24,15 @@ class HGAbrechnungData( AbrechnungData ):
         AbrechnungData.__init__( self )
 
     def getObjekteUndAbrechnungen( self, ab_jahr:int ) -> List[XHGAbrechnung]:
-        sql = "select master.master_name, vwg.vwg_id, vwg.weg_name, vwg.vw_id, " \
-                "vwg.von as vwg_von, coalesce(vwg.bis, '') as vwg_bis, " \
-                "hga.hga_id, hga.ab_datum, hga.forderung, coalesce(hga.entnahme_rue, '') as entnahme_rue, " \
-                "hga.bemerkung, " \
-                "ea.betrag as zahlung, ea.buchungsdatum, ea.write_time " \
+        sql = "select master.master_name, " \
+              "vwg.vwg_id, coalesce(vwg.weg_name, '') as weg_name, coalesce(vwg.vw_id, '') as vw_id, " \
+              "coalesce(vwg.von, '') as vwg_von, coalesce(vwg.bis, '') as vwg_bis, " \
+              "coalesce(hga.hga_id, 0) as hga_id, coalesce(hga.ab_datum, '') as ab_datum, " \
+              "coalesce(hga.forderung, 0) as forderung, coalesce(hga.entnahme_rue, 0) as entnahme_rue, " \
+              "coalesce(hga.bemerkung, '') as bemerkung " \
                 "from masterobjekt master " \
                 "left outer join verwaltung vwg on vwg.master_name == master.master_name " \
                 "left outer join hg_abrechnung hga on (hga.ab_jahr = %d and hga.vwg_id = vwg.vwg_id) " \
-                "left outer join einaus ea on ea.hga_id = hga.hga_id " \
                 "where master.aktiv > 0 " \
                 "order by master.master_name, vwg.von " % ab_jahr
         return self.readAllGetObjectList( sql, XHGAbrechnung )
@@ -49,5 +49,5 @@ class NKAbrechnungData( AbrechnungData ):
 
 def test():
     data = HGAbrechnungData()
-    l = data.getAbrechnungen( 2021 )
+    l = data.getObjekteUndAbrechnungen( 2021 )
     print( l )

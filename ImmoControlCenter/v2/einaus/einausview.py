@@ -1,9 +1,15 @@
-from PySide2.QtCore import Slot
-from PySide2.QtWidgets import QDialog
+from typing import Callable
 
-from base.baseqtderivates import BaseEdit, FloatEdit, BaseComboBox
+from PySide2 import QtWidgets
+from PySide2.QtCore import Slot, Qt
+from PySide2.QtGui import QDoubleValidator
+from PySide2.QtWidgets import QDialog, QGridLayout, QHBoxLayout, QPushButton
+
+from base.baseqtderivates import BaseEdit, FloatEdit, BaseComboBox, BaseDialogWithButtons, getCloseButtonDefinition, \
+    SmartDateEdit
 from base.dynamicattributeui import DynamicAttributeDialog
 from base.interfaces import XBaseUI, VisibleAttribute
+from base.messagebox import ErrorBox
 from v2.icc.iccwidgets import IccTableView, IccTableViewFrame
 
 ##################   EinAusTableView   ###############
@@ -30,6 +36,108 @@ class XEinAusUI( XBaseUI ):
 class EinAusDialog( DynamicAttributeDialog ):
     def __init__( self, xui:XEinAusUI, title:str="Neue Zahlung anlegen" ):
         DynamicAttributeDialog.__init__( self, xui, title )
+
+################   TeilahlungDialog   ###########
+class TeilzahlungDialog( BaseDialogWithButtons ):
+    def __init__( self, tv:EinAusTableView, title="Ändern/Ergänzen von Zahlungen" ):
+        BaseDialogWithButtons.__init__( self, title,
+                                        getCloseButtonDefinition( self.onClose ) )
+        self._tv:EinAusTableView = tv
+        self._tvframe:EinAusTableViewFrame = EinAusTableViewFrame( self._tv, withEditButtons=True )
+        self.setMainWidget( self._tvframe )
+
+    def getTableViewFrame( self ) -> EinAusTableViewFrame:
+        return self._tvframe
+
+    def onClose( self ):
+            self.accept()
+
+
+################ ValueDialog ########################
+class ValueDialog( QDialog ):
+    def __init__( self, parent=None, mitBuchungsdatum=False ):
+        """
+        :param parent:
+        :param mitBuchungsdatum: Der Dialog wird dreizeilig gezeigt: Value, Buchungsdatum, Bemerkung
+        """
+        QDialog.__init__( self, parent )
+        self._callback: Callable = None
+        self.setModal( True )
+        self.setWindowTitle( "Neue Zahlung erfassen" )
+        layout = QGridLayout( self )
+        row = 0
+
+        self._numEntry = QtWidgets.QLineEdit( self )
+        self._numEntry.setPlaceholderText( "Betrag" )
+        layout.addWidget( self._numEntry, row, 0 )
+        self._numEntry.setAlignment( Qt.AlignRight | Qt.AlignTrailing | Qt.AlignVCenter )
+        self._numEntry.setValidator( QDoubleValidator( -9999, 9999, 2, self ) )
+        self._numEntry.setFocus()
+
+        self._sdBuchungsdatum:SmartDateEdit = None
+        if mitBuchungsdatum:
+            row += 1
+            self._sdBuchungsdatum = SmartDateEdit()
+            self._sdBuchungsdatum.setPlaceholderText( "Buchungsdatum" )
+            layout.addWidget( self._sdBuchungsdatum, row, 0 )
+        row += 1
+        self._txtEntry = BaseEdit()
+        self._txtEntry.setPlaceholderText( "Bemerkung" )
+        layout.addWidget( self._txtEntry, row, 0 )
+
+        row += 1
+        self._hboxLayout = QHBoxLayout()
+        self.btnOk = QPushButton( self, text="OK" )
+        self.btnOk.clicked.connect( self._ok )
+        self._hboxLayout.addWidget( self.btnOk )
+
+        self.btnCancel = QPushButton( self, text="Cancel" )
+        self.btnCancel.clicked.connect( self._cancel )
+        self._hboxLayout.addWidget( self.btnCancel )
+
+        layout.addLayout( self._hboxLayout, row, 0 )
+        self.setLayout( layout )
+
+    def setCallback( self, fnc ):
+        """
+        Callback nach Button-Click "+", "-", "-"
+        Die Callback-Function muss folgende Signatur haben: value:float, text:str (, buchungsdatum:str)
+        :param fnc:
+        :return:
+        """
+        self._callback = fnc
+
+    def setValue( self, numval:float or int ):
+        self._numEntry.setText( str(numval ) )
+
+    def setLabelText( self, text: str ) -> None:
+        self.label.setText( text )
+
+    def _doCallback( self ):
+        if self._callback:
+            num = self._numEntry.text()
+            if num is None or num == '': num = "0"
+            num = num.replace( ",", "." )
+            msg = ""
+            if not self._sdBuchungsdatum:
+                msg = self._callback( float( num ), self._txtEntry.text() )
+            else:
+                #datum = self._sdBuchungsdatum.getDate()
+                datum = self._sdBuchungsdatum.text()  # getDate() liefert '' zurück,
+                                                      # wenn das eingegebene Datum fehlerhaft ist.
+                                                      # Deshalb muss hier text() verwendet werden.
+                msg = self._callback( float( num ), self._txtEntry.text(), datum )
+        if not msg:
+            self.close()
+        else:
+            box = ErrorBox( "Validierung fehlgeschlagen", msg, "" )
+            box.exec_()
+
+    def _cancel( self ):
+        self.close()
+
+    def _ok( self ):
+        self._doCallback()
 
 
 #################   TEST   TEST   TEST   TEST   #########################

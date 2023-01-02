@@ -193,8 +193,9 @@ class EinAusDialogController( QObject ):
         :return:
         """
         #print( "onBuchungsdatumChanged")
-        year, mon, day = datehelper.getDateParts( buchungsdatum )
-        self._ieJahr.setIntValue( year )
+        if buchungsdatum:
+            year, mon, day = datehelper.getDateParts( buchungsdatum )
+            self._ieJahr.setIntValue( year )
 
     def onOk( self ) -> str:
         """
@@ -255,13 +256,6 @@ def test3():
     c.processEinAusModification( x )
     print( "...und feddich." )
     x.print()
-
-def test2():
-    s = "REPARATUR"
-    val = EinAusArt.getValueByMemberName( s )
-    print( val )
-    val2 = EinAusArt.getValueByMember( EinAusArt.REPARATUR )
-    print( val == val2 )
 
 def test():
     app = QApplication()

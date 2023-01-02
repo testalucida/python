@@ -265,6 +265,8 @@ class OkApplyCancelDialog( BaseDialogWithButtons ):
             box = QuestionBox( "Bestätigung", msg, "Ja", "Nein" )
             if box.exec_() == QMessageBox.StandardButton.Yes:
                 self.reject()
+        else:
+            self.reject()
 
 
 ################  BaseButton  ##########################
@@ -521,6 +523,12 @@ class BaseLabel( QLabel, AutoWidth, GetSetValue ):
     def setBackground( self, color ):
         # color in der Form "solid white"
         self.setStyleSheet( "background: " + color + ";" )
+
+###################   BaseLink   ########################
+class BaseLink( BaseLabel ):
+    def __init__( self, text:str, parent=None ):
+        BaseLabel.__init__( self, text, parent )
+        self.setOpenExternalLinks( True )
 
 #########################  BaseCheckBox  #############################
 class BaseCheckBox( QCheckBox, GetSetValue ):
@@ -1157,6 +1165,17 @@ def testSearchWidget():
     app.exec_()
 
 
+
+def testLink():
+    app = QApplication()
+    lnk = BaseLink( text="Hier geht's lang" )
+    lnk.resize( QSize(200, 50 ) )
+    lnk.setTextInteractionFlags(Qt.LinksAccessibleByMouse)
+    #lnk.setText( "<b>Hello</b> <i>Qt!</i>" )
+     #lnk.setText(" <a href=\"http://www.google.com\"> <font face=verdana size=12 color=black> This is a link</font> </a>" )
+    lnk.setText( "<a> <font face=verdana size=12 color=black> This is a link</font> </a>" )
+    lnk.show()
+    app.exec_()
 
 def testSearchField():
     app = QApplication()
