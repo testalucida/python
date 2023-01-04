@@ -305,8 +305,9 @@ class XKreditorLeistung( XLeistung ):
         if valuedict:
             self.setFromDict( valuedict )
 
-class XTeilzahlung:
+class XTeilzahlung( XBase ):
     def __init__( self, betrag:float, buchungsdatum:str="", buchungstext:str="", write_time:str="", ea_id=0 ):
+        XBase.__init__( self )
         self.ea_id = ea_id
         self.betrag = betrag
         self.buchungsdatum = buchungsdatum

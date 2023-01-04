@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import List
 
-from v2.icc.iccdata import IccData
+from v2.icc.iccdata import IccData, DbAction
 from v2.icc.interfaces import XAbrechnung, XHGAbrechnung, XNKAbrechnung
 
 ##################   Base class AbrechnungData   ###################
@@ -23,6 +23,36 @@ class HGAbrechnungData( AbrechnungData ):
     def __init__( self ):
         AbrechnungData.__init__( self )
 
+    def insertAbrechnung( self, xhga:XHGAbrechnung ) -> int:
+        vwg_id = "NULL" if not xhga.vwg_id else str(xhga.vwg_id)
+        bemerkung = "NULL" if not xhga.bemerkung else ("'%s'" % xhga.bemerkung)
+        sql = "insert into hg_abrechnung " \
+              "(ab_jahr, vwg_id, forderung, entnahme_rue, ab_datum, bemerkung) " \
+              "values " \
+              "(   %d,     %s,      %.2f,      %.2f,         '%s',     %s )" % (xhga.ab_jahr, vwg_id,
+                                                                                xhga.forderung, xhga.entnahme_rue,
+                                                                                xhga.ab_datum, bemerkung)
+        inserted_id = self.writeAndLog( sql, DbAction.INSERT, "hg_abrechnung", "hga_id", 0,
+                                        newvalues=xhga.toString( printWithClassname=True ), oldvalues=None )
+        xhga.hga_id = inserted_id
+        return inserted_id
+
+    def updateAbrechnung( self, xhga:XHGAbrechnung ) -> int:
+        oldX = self.getAbrechnung( xhga.hga_id )
+        bemerkung = "NULL" if not xhga.bemerkung else ("'%s'" % xhga.bemerkung)
+        sql = "update hg_abrechnung " \
+              "set ab_jahr = %d, " \
+              "vwg_id = %d, " \
+              "forderung = %.2f, " \
+              "entnahme_rue = %.2f, " \
+              "ab_datum = '%s', " \
+              "bemerkung = %s " \
+              "where hga_id = %d " % (xhga.ab_jahr, xhga.vwg_id, xhga.forderung, xhga.entnahme_rue, xhga.ab_datum,
+                                      bemerkung, xhga.hga_id)
+        rowsAffected = self.writeAndLog( sql, DbAction.UPDATE, "einaus", "ea_id", xhga.hga_id,
+                                         newvalues=xhga.toString( True ), oldvalues=oldX.toString( True ) )
+        return rowsAffected
+
     def getObjekteUndAbrechnungen( self, ab_jahr:int ) -> List[XHGAbrechnung]:
         sql = "select master.master_name, " \
               "vwg.vwg_id, coalesce(vwg.weg_name, '') as weg_name, coalesce(vwg.vw_id, '') as vw_id, " \
@@ -36,6 +66,13 @@ class HGAbrechnungData( AbrechnungData ):
                 "where master.aktiv > 0 " \
                 "order by master.master_name, vwg.von " % ab_jahr
         return self.readAllGetObjectList( sql, XHGAbrechnung )
+
+    def getAbrechnung( self, hga_id:int ) -> XHGAbrechnung:
+        sql = "select hga_id, ab_jahr, vwg_id, forderung, entnahme_rue, ab_datum, bemerkung " \
+              "from hg_abrechnung " \
+              "where hga_id = %d " % hga_id
+        x = self.readOneGetObject( sql, XHGAbrechnung )
+        return x
 
 
 ###################   NKAbrechnungData   #########################

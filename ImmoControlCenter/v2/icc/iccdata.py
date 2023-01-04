@@ -19,10 +19,8 @@ class IccData( DatabaseCommon ):
     """
     Enthält die DB-Zugriffe für Miet- UND Masterobjekte
     """
-    __dbCommon:DatabaseCommon = None # alle IccData-Instanzen sollen mit nur einem DatabaseCommon-Objekt arbeiten
     def __init__(self):
-        if not IccData.__dbCommon:
-            IccData.__dbCommon = DatabaseCommon.__init__( self, DATABASE )
+        self._dbCommon = DatabaseCommon.__init__( self, DATABASE )
 
     def getIccTabellen( self ) -> List[str]:
         sql = "select name from sqlite_master where type = 'table' order by name"

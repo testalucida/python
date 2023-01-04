@@ -41,10 +41,15 @@ class DatabaseCommon:
     Basisklasse für Anmeldung und Zugriffe auf eine Sqlite-Datenbank.
     Mit jeder Instanzierung wird eine Sqlite3.dbapi2.Connection erzeugt.
     """
+    _sqliteCon: sqlite3.dbapi2.Connection = None
+    _pathToDatabase = None
     def __init__( self, pathToDatabase:str ):
-        ## self._dbCon:DatabaseConnection = DatabaseConnection.inst()
-        self._sqliteCon:sqlite3.dbapi2.Connection = sqlite3.connect( pathToDatabase )
-        self._pathToDatabase = pathToDatabase
+        if DatabaseCommon._pathToDatabase and DatabaseCommon._pathToDatabase != pathToDatabase :
+            raise Exception( "Each application may connect to only one database" )
+        DatabaseCommon._pathToDatabase = pathToDatabase
+        if not DatabaseCommon._sqliteCon:
+            DatabaseCommon._sqliteCon:sqlite3.dbapi2.Connection = sqlite3.connect( pathToDatabase )
+        # self._pathToDatabase = pathToDatabase
         self._transId = 0
         self._transIdFile = pathToDatabase + "transid.txt"
 

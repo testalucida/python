@@ -87,14 +87,6 @@ class DynamicAttributeView( BaseWidget ):
         btn.setCallback( buttondef.callback )
         return btn
 
-    # def updateUI( self, keys:List[str] ):
-    #     x = self._xbaseui.getXBase()
-    #     for w in self._widgets:
-    #         key = w.objectName()
-    #         if key in keys:
-    #             val = x.getValue( key )
-    #             w.setValue( val )
-
     def getButton( self, ident:Any ) -> BaseButton:
         for w in self._widgets:
             if isinstance( w, BaseButton ) and w.getIdent() == ident:
@@ -133,7 +125,13 @@ class DynamicAttributeView( BaseWidget ):
         w = self.getWidget( key )
         w.setValue( x.getValue( key ) )
 
+    def updateUI2( self, keys:List[str] ):
+        x = self._xbaseui.getXBase()
+        for key in keys:
+            self.updateUI( key )
+
     def updateData( self ):
+        # übernimmt die vom User im View geänderten Werte ins Datenmodell (xbase)
         xbase = self._xbaseui.getXBase()
         self._updateData( xbase )
 
