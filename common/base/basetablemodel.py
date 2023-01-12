@@ -289,7 +289,11 @@ class BaseTableModel( QAbstractTableModel ):
         if not index.isValid():
             return None
         if role == Qt.DisplayRole:
-            return self.getValue( index.row(), index.column() )
+            val = self.getValue( index.row(), index.column() )
+            if isinstance( val, float ):
+                return "%.2f" % val
+                #return '{:.2f}'.format( round( val, 2 ) )
+            return val
         elif role == Qt.TextAlignmentRole:
             v = self.getValue( index.row(), index.column() )
             if isinstance( v, numbers.Number ): return int( Qt.AlignRight | Qt.AlignVCenter )

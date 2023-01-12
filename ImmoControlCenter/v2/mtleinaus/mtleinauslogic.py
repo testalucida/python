@@ -456,7 +456,7 @@ class AbschlagLogic( MtlEinAusLogic ):
             xab.master_name = sollabschlag.master_name
             xab.mobj_id = sollabschlag.mobj_id
             xab.kreditor = sollabschlag.kreditor
-            self._completeData( xab, xab.sab_id, jahr, checkmonatIdx, sollAbschlagList )
+            self._completeData( xab, xab.sab_id, jahr, checkmonatIdx+1, sollAbschlagList )
             # dem XMtlAbschlag-Objekt die einzelnen Zahlungen zuordnen
             for xea in zlist:
                 if xea.sab_id == xab.sab_id:
@@ -494,15 +494,16 @@ class AbschlagLogic( MtlEinAusLogic ):
         :param xab:  das zu ergänzende XMtlAbschlag-Objekt
         :param sab_id: die ID des Soll-Abschlags
         :param jahr:
-        :param monat:
+        :param monat: Januar = 1, ...
         :param abschlagList: die Liste aller XSollAbschlag-Objekte des Jahres <jahr>
         :return:
         """
         def isCheckdateWithin( sollvon:str, sollbis:str ) -> bool:
+            #print( checkdate, ", ", sollvon )
             sollbis = "9999-12-31" if not sollbis else sollbis
             return datehelper.isWithin( checkdate, sollvon, sollbis )
 
-        checkdate = str( jahr ) + "-" + str( monat ) + "-" + "01"
+        checkdate = str( jahr ) + "-" + ("%2d" % monat) + "-" + "01"
         for xsa in sollAbschlagList:
             if xsa.sab_id == sab_id and isCheckdateWithin( xsa.von, xsa.bis ):
                 xab.soll = xsa.betrag

@@ -76,7 +76,7 @@ class MainTabWidget( BaseTabWidget ):
     def __init__( self, parent=None ):
         BaseTabWidget.__init__( self, parent )
         self._mtlZahlungenTab = MtlZahlungenTabWidget()
-        self.addTab( self._mtlZahlungenTab, "Monatliche Zahlungen" )
+        self.addTab( self._mtlZahlungenTab, "Regelmäßige Zahlungen" )
         # self._uebrigeRegelmZahlungenTab = UebrigeRegelmZahlungenTabWidget()
         # self.addTab( self._uebrigeRegelmZahlungenTab, "Übrige regelmäßige Zahlungen" )
         self._abrechnungenTab = AbrechnungenTabWidget()
@@ -153,15 +153,15 @@ class IccMainWindow( QMainWindow ):
 
     # die TableViewFrames für die Tab "Monatliche Zahlungen" setzen: (vom MainController.createGui)
     def setMieteTableViewFrame( self, tvf:MieteTableViewFrame ):
-        self._mainTab.getMtlZahlungenTab().addTab( tvf, "Mieten" )
+        self._mainTab.getMtlZahlungenTab().addTab( tvf, "Mieten (mtl.)" )
         self._mieteTableViewFrame = tvf
 
     def setHausgeldTableViewFrame( self, tvf:HausgeldTableViewFrame ):
-        self._mainTab.getMtlZahlungenTab().addTab( tvf, "Hausgelder" )
+        self._mainTab.getMtlZahlungenTab().addTab( tvf, "Hausgelder (mtl.)" )
         self._hausgeldTableViewFrame = tvf
 
     def setAbschlagTableViewFrame( self, tvf:AbschlagTableViewFrame ):
-        self._mainTab.getMtlZahlungenTab().addTab( tvf, "Monatliche Abschläge" )
+        self._mainTab.getMtlZahlungenTab().addTab( tvf, "Abschläge (mtl., vierteljhrl.)" )
         self._abschlagTableViewFrame = tvf
 
     def setUebrigeRegelmaessZahlungenTableViewFrame( self, tvf:UebrigeRegelmaessTableViewFrame ):

@@ -29,18 +29,11 @@ class XBase:
         for k, v in d.items():
             _d[k] = v
 
+    def updateFromOther( self, other ):
+        self.setFromDict( other.__dict__ )
+
     def equals( self, other ) -> bool:
         if other is None: return False
-        # for key in self.__dict__.keys():
-        #     try:
-        #         selfval = self.__dict__[key]
-        #         otherval = other.__dict__[key]
-        #         if selfval and not otherval: return False
-        #         if otherval and not selfval: return False
-        #         if selfval and otherval and selfval != otherval: return False
-        #     except:
-        #         return False
-        # return True
         return True if self.__dict__ == other.__dict__ else False
 
     def getKeys( self ) -> List:

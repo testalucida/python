@@ -320,6 +320,7 @@ class XAbrechnung( XBase ):
     """
     def __init__( self, valuedict:Dict=None ):
         XBase.__init__( self )
+        self.abr_id = 0   # dahinter verbirgt sich entweder eine hga_id oder eine nka_id
         self.master_name = ""
         self.ab_jahr = 0
         self.ab_datum = ""
@@ -342,7 +343,6 @@ class XAbrechnung( XBase ):
 class XHGAbrechnung( XAbrechnung ):
     def __init__( self, valuedict:Dict=None ):
         XAbrechnung.__init__( self, valuedict )
-        self.hga_id = 0
         self.weg_name = ""  # Name der WEG
         self.vw_id = ""  # Verwalter-ID, entspricht in etwa dessen Namen
         self.vwg_id = 0  # Prim.key in Tab. <verwaltung>
@@ -355,8 +355,10 @@ class XHGAbrechnung( XAbrechnung ):
 class XNKAbrechnung( XAbrechnung ):
     def __init__( self, valuedict:Dict=None ):
         XAbrechnung.__init__( self, valuedict )
-        self.nka_id = 0
+        self.mobj_id = ""
         self.mv_id = "" # entspricht in etwa dem Namen des Mieters
+        self.von = "" # Beginn des Mietverhältnisses
+        self.bis = "" # Ende des Mietverhältnisses
         if valuedict:
             self.setFromDict( valuedict )
 

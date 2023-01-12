@@ -27,7 +27,8 @@ class IccController( QObject ):
 
     def getYearAndMonthToStartWith( self ):
         """
-        Liefert Jahr und Monat, das bei Anwendungsstart zu verwenden ist
+        Liefert Jahr und Monat, das bei Anwendungsstart zu verwenden ist.
+        Geliefert wird der Moants-Index, also Janaur = 0
         :return:
         """
         return self._year, self._month

@@ -30,6 +30,7 @@ class MtlEinAusTableModel( IccSumTableModel ):
         self.idxNokColumn = 4
         self.idxSollColumn = 2
         self.idxJanuarColumn = 5
+        self._editablemonthIdx = editablemonthIdx
         self._idxEditableColumn = self.idxJanuarColumn + editablemonthIdx
         self.setKeyHeaderMappings2(
             ("mobj_id", self.getDebiKrediKey(), "soll", "ok", "nok", "jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug",
@@ -45,6 +46,19 @@ class MtlEinAusTableModel( IccSumTableModel ):
     @abstractmethod
     def getDebiKrediHeader( self ) -> str:
         pass
+
+    def setOkColumnIdx( self, idx:int ):
+        self.idxOkColumn = idx
+
+    def setNokColumnIdx( self, idx:int ):
+        self.idxNokColumn = idx
+
+    def setSollColumnIdx( self, idx:int ):
+        self.idxSollColumn = idx
+
+    def setJanuarColumnIdx( self, idx:int ):
+        self.idxJanuarColumn = idx
+        self._idxEditableColumn = idx + self._editablemonthIdx
 
     def getMietobjekt( self, row:int ) -> str:
         objIdx = self.keys.index( "mobj_id" )
@@ -183,10 +197,10 @@ class HausgeldTableModel( MtlEinAusTableModel ):
 class AbschlagTableModel( MtlEinAusTableModel ):
     def __init__( self, rowList:List[XMtlAbschlag], jahr:int, editableMonthIdx:int ):
         MtlEinAusTableModel.__init__( self, rowList, jahr, editableMonthIdx, ( "soll", "summe" ) )
-        self.idxOkColumn = 6
-        self.idxNokColumn = 7
-        self.idxSollColumn = 5
-        self.idxJanuarColumn = 8
+        self.setOkColumnIdx( 6 )
+        self.setNokColumnIdx( 7 )
+        self.setSollColumnIdx( 5 )
+        self.setJanuarColumnIdx( 8 )
         self.setKeyHeaderMappings2(
             ("master_name", "mobj_id", self.getDebiKrediKey(), "leistung", "vnr", "soll", "ok", "nok",
              "jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dez", "summe"),

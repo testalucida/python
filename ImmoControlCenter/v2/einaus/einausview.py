@@ -113,12 +113,22 @@ class ValueDialog( QDialog ):
     def setLabelText( self, text: str ) -> None:
         self.label.setText( text )
 
+    def setBemerkung( self, bemerkung:str ):
+        self._txtEntry.setText( bemerkung )
+
+    def setBuchungsdatum( self, datum:str ):
+        """
+        :param datum: YYYY-MM-DD
+        :return:
+        """
+        self._sdBuchungsdatum.setDateFromIsoString( datum )
+
     def _doCallback( self ):
+        msg = ""
         if self._callback:
             num = self._numEntry.text()
             if num is None or num == '': num = "0"
             num = num.replace( ",", "." )
-            msg = ""
             if not self._sdBuchungsdatum:
                 msg = self._callback( float( num ), self._txtEntry.text() )
             else:
@@ -128,7 +138,8 @@ class ValueDialog( QDialog ):
                                                       # Deshalb muss hier text() verwendet werden.
                 msg = self._callback( float( num ), self._txtEntry.text(), datum )
         if not msg:
-            self.close()
+            #self.close()
+            self.accept()
         else:
             box = ErrorBox( "Validierung fehlgeschlagen", msg, "" )
             box.exec_()
@@ -138,6 +149,90 @@ class ValueDialog( QDialog ):
 
     def _ok( self ):
         self._doCallback()
+
+######################   ValueDialog2  #################################
+class ValueDialog2( QDialog ):
+    """
+    Vereinfachte Variante des ValueDialog.
+    Er enthält außer dem Value-Feld und der Bemerkung immer ein Buchungsdatum.
+    Es wird auf jeglichen callback-Mechanismus verzichtet.
+    Wenn ok gedrückt wird, ohne dass ein Betrag eingegeben ist, wird eine Fehlermeldung ausgegeben und
+    es gibt keinen accept()-Aufruf.
+    Wenn cancel gedrückt wird, wird der Dialog ohne Sicherheitsabfrage geschlossen.
+    """
+    def __init__( self, parent=None ):
+        """
+        :param parent:
+        :param mitBuchungsdatum: Der Dialog wird dreizeilig gezeigt: Value, Buchungsdatum, Bemerkung
+        """
+        QDialog.__init__( self, parent )
+        # self._callback: Callable = None
+        self.setModal( True )
+        self.setWindowTitle( "Neue Zahlung erfassen" )
+        layout = QGridLayout( self )
+        row = 0
+
+        self._numEntry = QtWidgets.QLineEdit( self )
+        self._numEntry.setPlaceholderText( "Betrag" )
+        layout.addWidget( self._numEntry, row, 0 )
+        self._numEntry.setAlignment( Qt.AlignRight | Qt.AlignTrailing | Qt.AlignVCenter )
+        self._numEntry.setValidator( QDoubleValidator( -9999, 9999, 2, self ) )
+        self._numEntry.setFocus()
+
+        self._sdBuchungsdatum:SmartDateEdit = None
+        row += 1
+        self._sdBuchungsdatum = SmartDateEdit()
+        self._sdBuchungsdatum.setPlaceholderText( "Buchungsdatum" )
+        layout.addWidget( self._sdBuchungsdatum, row, 0 )
+        row += 1
+        self._txtEntry = BaseEdit()
+        self._txtEntry.setPlaceholderText( "Bemerkung" )
+        layout.addWidget( self._txtEntry, row, 0 )
+
+        row += 1
+        self._hboxLayout = QHBoxLayout()
+        self.btnOk = QPushButton( self, text="OK" )
+        self.btnOk.clicked.connect( self._ok )
+        self._hboxLayout.addWidget( self.btnOk )
+
+        self.btnCancel = QPushButton( self, text="Cancel" )
+        self.btnCancel.clicked.connect( self._cancel )
+        self._hboxLayout.addWidget( self.btnCancel )
+
+        layout.addLayout( self._hboxLayout, row, 0 )
+        self.setLayout( layout )
+
+    def setValue( self, numval:float or int ):
+        self._numEntry.setText( str(numval ) )
+
+    def getValue( self ) -> float:
+        num = self._numEntry.text()
+        if num is None or num == '': num = "0"
+        num = num.replace( ",", "." )
+        return float( num )
+
+    def getBuchungsdatum( self ) -> str:
+        return self._sdBuchungsdatum.text()
+
+    def getBemerkung( self ) -> str:
+        return self._txtEntry.text()
+
+    def setLabelText( self, text: str ) -> None:
+        self.label.setText( text )
+
+    def showError( self, title:str, msg:str ):
+        box = ErrorBox( title, msg, "" )
+        box.exec_()
+
+    def _cancel( self ):
+        self.reject()
+
+    def _ok( self ):
+        num = self._numEntry.text()
+        if num is None or num == '' or num == "0":
+            self.showError( "Fehlende Eingabe", "Betrag darf nicht '0' sein." )
+        else:
+            self.accept()
 
 
 #################   TEST   TEST   TEST   TEST   #########################

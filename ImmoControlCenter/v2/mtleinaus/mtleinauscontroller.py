@@ -33,8 +33,8 @@ class MtlEinAusController( IccController ):
         self._newEinAus:XEinAus = None # hier werden ggf. neu angelegte Zahlungen geparkt
 
     def createGui( self ) -> IccCheckTableViewFrame:
-        jahr, monat = self.getYearAndMonthToStartWith()
-        tvf:IccCheckTableViewFrame = self.createTableViewFrame( jahr, monat )
+        jahr, monthIdx = self.getYearAndMonthToStartWith()
+        tvf:IccCheckTableViewFrame = self.createTableViewFrame( jahr, monthIdx )
         tb = tvf.getToolBar()
         jahre = self.getJahre()
         if len( jahre ) == 0:
@@ -42,7 +42,7 @@ class MtlEinAusController( IccController ):
         tb.addYearCombo( jahre, self.onYearChanged )
         tb.setYear( jahr )
         tb.addMonthCombo( self.onMonthChanged )
-        tb.setMonthIdx( monat )
+        tb.setMonthIdx( monthIdx )
         tv = tvf.getTableView()
         tv.setContextMenuCallbacks( self.provideActions, self.onSelected )
         tv.okClicked.connect( self.onBetragOk )

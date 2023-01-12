@@ -255,6 +255,15 @@ class EinAusData( IccData ):
         self._mapDbValueToDisplay( xlist )
         return xlist
 
+    def getEinAuszahlungenByNkaId( self, nka_id:int ) -> List[XEinAus]:
+        sql = "select ea_id, master_name, debi_kredi, hga_id, jahr, monat, betrag, " \
+              "ea_art, buchungsdatum, buchungstext, write_time " \
+              "from einaus " \
+              "where hga_id = %d " % nka_id
+        xlist = self.readAllGetObjectList( sql, XEinAus )
+        self._mapDbValueToDisplay( xlist )
+        return xlist
+
     def _mapDbValueToDisplay( self, xlist:List[XEinAus] ):
         for x in xlist:
             if x.ea_art:
