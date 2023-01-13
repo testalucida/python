@@ -74,7 +74,7 @@ class MtlEinAusLogic( IccLogic ):
         # zunächst nur eine Trivialprüfung:
         if not x.master_name:
             return "Angabe des Masterobjekts fehlt."
-        if not x.mobj_id and not x.ea_art == EinAusArt.MTL_ABSCHLAG.display:
+        if not x.mobj_id and not x.ea_art == EinAusArt.REGELM_ABSCHLAG.display:
             return "Angabe der Wohnung fehlt."
         if not x.debi_kredi:
             return "Angabe von Debitor/Kreditor fehlt."
@@ -85,8 +85,8 @@ class MtlEinAusLogic( IccLogic ):
         if x.betrag == 0:
             return "Betrag ungültig. Muss ungleich 0 sein."
         if not x.ea_art in ( EinAusArt.BRUTTOMIETE.display, EinAusArt.HAUSGELD_VORAUS.display,
-                             EinAusArt.KOMMUNALE_DIENSTE.display, EinAusArt.MTL_ABSCHLAG.display ):
-            return "Ungültige EinAusArt. Muss BRUTTOMIETE, HAUSGELD_VORAUS, MTL_ABSCHLAG oder KOMMUNALE_DIENSTE sein."
+                             EinAusArt.KOMMUNALE_DIENSTE.display, EinAusArt.REGELM_ABSCHLAG.display):
+            return "Ungültige EinAusArt. Muss BRUTTOMIETE, HAUSGELD_VORAUS, REGELM_ABSCHLAG oder KOMMUNALE_DIENSTE sein."
         return ""
 
     def updateMonatsZahlung( self, x:XEinAus ):
@@ -444,7 +444,7 @@ class AbschlagLogic( MtlEinAusLogic ):
         self._abschlagData = AbschlagData()
 
     def createAbschlagzahlungenModel( self, jahr: int, checkmonatIdx:int=None ) -> AbschlagTableModel:
-        zlist:List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.MTL_ABSCHLAG.display, jahr )
+        zlist:List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.REGELM_ABSCHLAG.display, jahr )
         zlist = self._getCondensedEinAusList( zlist ) # zlist enthält für jede sab_id und jeden Monat genau 1 XEinAus-Objekt
         sollAbschlagList:List[XSollAbschlag] = self._abschlagData.getSollabschlaege( jahr )
         # die XEinAus-Liste in XMtlAbschlag-Liste umwandeln:
@@ -524,7 +524,7 @@ class AbschlagLogic( MtlEinAusLogic ):
         return xeinaus
 
     def getEinAusArt( self ) -> str:
-        return EinAusArt.MTL_ABSCHLAG.display
+        return EinAusArt.REGELM_ABSCHLAG.display
 
     def getDebiKrediKey( self ) -> Any:
         return "kreditor"

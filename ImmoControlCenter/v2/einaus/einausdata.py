@@ -259,7 +259,7 @@ class EinAusData( IccData ):
         sql = "select ea_id, master_name, debi_kredi, hga_id, jahr, monat, betrag, " \
               "ea_art, buchungsdatum, buchungstext, write_time " \
               "from einaus " \
-              "where hga_id = %d " % nka_id
+              "where nka_id = %d " % nka_id
         xlist = self.readAllGetObjectList( sql, XEinAus )
         self._mapDbValueToDisplay( xlist )
         return xlist

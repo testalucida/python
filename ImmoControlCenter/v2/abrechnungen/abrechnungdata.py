@@ -53,7 +53,7 @@ class HGAbrechnungData( AbrechnungData ):
               "bemerkung = %s " \
               "where hga_id = %d " % (xhga.ab_jahr, xhga.vwg_id, xhga.forderung, xhga.entnahme_rue, xhga.ab_datum,
                                       bemerkung, xhga.abr_id)
-        rowsAffected = self.writeAndLog( sql, DbAction.UPDATE, "einaus", "ea_id", xhga.abr_id,
+        rowsAffected = self.writeAndLog( sql, DbAction.UPDATE, "hg_abrechnung", "hga_id", xhga.abr_id,
                                          newvalues=xhga.toString( True ), oldvalues=oldX.toString( True ) )
         return rowsAffected
 
@@ -65,7 +65,7 @@ class HGAbrechnungData( AbrechnungData ):
               "coalesce(hga.forderung, 0) as forderung, coalesce(hga.entnahme_rue, 0) as entnahme_rue, " \
               "coalesce(hga.bemerkung, '') as bemerkung " \
                 "from masterobjekt master " \
-                "inner join verwaltung vwg on vwg.master_name == master.master_name " \
+                "inner join verwaltung vwg on (vwg.master_name = master.master_name and hga_relevant = 1) " \
                 "left outer join hg_abrechnung hga on (hga.ab_jahr = %d and hga.vwg_id = vwg.vwg_id) " \
                 "where master.aktiv > 0 " \
                 "order by master.master_name, vwg.von " % ab_jahr
@@ -84,6 +84,34 @@ class NKAbrechnungData( AbrechnungData ):
     def __init__( self ):
         AbrechnungData.__init__( self )
 
+    def insertAbrechnung( self, xnka: XNKAbrechnung ) -> int:
+        bemerkung = "NULL" if not xnka.bemerkung else ("'%s'" % xnka.bemerkung)
+        sql = "insert into nk_abrechnung " \
+              "(ab_jahr, mv_id, forderung, ab_datum, bemerkung) " \
+              "values " \
+              "(   %d,     '%s',  %.2f,      '%s',     %s )" % (xnka.ab_jahr, xnka.mv_id,
+                                                                  xnka.forderung, xnka.ab_datum, bemerkung)
+        inserted_id = self.writeAndLog( sql, DbAction.INSERT, "nk_abrechnung", "nka_id", 0,
+                                        newvalues=xnka.toString( printWithClassname=True ), oldvalues=None )
+        xnka.abr_id = inserted_id
+        return inserted_id
+
+    def updateAbrechnung( self, xnka:XNKAbrechnung ) -> int:
+        oldX = self.getAbrechnung( xnka.abr_id )
+        bemerkung = "NULL" if not xnka.bemerkung else ("'%s'" % xnka.bemerkung)
+        sql = "update nk_abrechnung " \
+              "set ab_jahr = %d, " \
+              "mv_id = '%s', " \
+              "forderung = %.2f, " \
+              "ab_datum = '%s', " \
+              "bemerkung = %s " \
+              "where nka_id = %d " % (xnka.ab_jahr, xnka.mv_id, xnka.forderung, xnka.ab_datum,
+                                      bemerkung, xnka.abr_id)
+        rowsAffected = self.writeAndLog( sql, DbAction.UPDATE, "nk_abrechnung", "nka_id", xnka.abr_id,
+                                         newvalues=xnka.toString( True ), oldvalues=oldX.toString( True ) )
+        return rowsAffected
+
+
     def getObjekteUndAbrechnungen( self, ab_jahr:int ) -> List[XNKAbrechnung]:
         sql = "select master.master_name, " \
               "mo.mobj_id, mv.mv_id, mv.von, coalesce(mv.bis, '') as bis, " \
@@ -91,8 +119,8 @@ class NKAbrechnungData( AbrechnungData ):
               "coalesce(nka.forderung, 0) as forderung, " \
               "coalesce(nka.bemerkung, '') as bemerkung " \
               "from masterobjekt master " \
-              "inner join mietobjekt mo on mo.master_name == master.master_name " \
-              "inner join mietverhaeltnis mv on mv.mobj_id = mo.mobj_id " \
+              "inner join mietobjekt mo on mo.master_name = master.master_name " \
+              "inner join mietverhaeltnis mv on (mv.mobj_id = mo.mobj_id and nka_relevant = 1) " \
               "left outer join nk_abrechnung nka on (nka.ab_jahr = %d and nka.mv_id = mv.mv_id) " \
               "where master.aktiv > 0 " \
               "order by master.master_name, mv.von desc " % ab_jahr

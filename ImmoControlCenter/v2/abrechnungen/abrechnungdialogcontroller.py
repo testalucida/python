@@ -18,7 +18,7 @@ from v2.abrechnungen.abrechnunglogic import HGAbrechnungLogic, HGAbrechnungTable
     TeilzahlungTableModel, AbrechnungLogic
 from v2.einaus.einausview import ValueDialog, TeilzahlungDialog, ValueDialog2
 from v2.icc.icccontroller import IccController
-from v2.icc.interfaces import XHGAbrechnung, XAbrechnung, XTeilzahlung
+from v2.icc.interfaces import XHGAbrechnung, XAbrechnung, XTeilzahlung, XNKAbrechnung
 
 
 class AbrechnungDialogController:
@@ -32,12 +32,16 @@ class AbrechnungDialogController:
     def __init__( self, xabr:XAbrechnung, logic:AbrechnungLogic ):
         self._xabr_orig = xabr
         self._xabr = copy.deepcopy( xabr )
+        self._isNka = ( type( xabr ) == XNKAbrechnung )
         self._logic = logic
         self._xui = XAbrechnungUI( self._xabr )
         self._dlg:DynamicAttributeDialog = None
 
     def processAbrechnung( self ):
-        vislist = self._createVisibleAttributeList()
+        if self._isNka:
+            vislist = self._createVisibleAttributeListNKA()
+        else:
+            vislist = self._createVisibleAttributeListHGA()
         self._xui.addVisibleAttributes( vislist )
         title = "Hausgeldabrechnung eintragen/ändern für Objekt '%s'" % self._xabr.master_name
         self._dlg = dlg = DynamicAttributeDialog( self._xui, title )
@@ -107,7 +111,25 @@ class AbrechnungDialogController:
         feZahlung = v.getWidget( "zahlung" )
         feZahlung.setFloatValue( tzsum )
 
-    def _createVisibleAttributeList( self ) -> Iterable[VisibleAttribute]:
+    def _createVisibleAttributeListNKA( self ) -> Iterable[VisibleAttribute]:
+        smallW = 90
+        vislist = (
+            VisibleAttribute( "master_name", BaseEdit, "Haus: ", editable=False ),
+            VisibleAttribute( "mobj_id", BaseEdit, "Wohnung: ", editable=False ),
+            VisibleAttribute( "mv_id", BaseEdit, "Mieter: ", editable=False ),
+            VisibleAttribute( "ab_jahr", IntEdit, "Abrechnung für: ", editable=False, widgetWidth=smallW ),
+            VisibleAttribute( "ab_datum", SmartDateEdit, "abgerechnet am: ", widgetWidth=smallW ),
+            VisibleAttribute( "forderung", FloatEdit, "Forderung (€): ", widgetWidth=smallW ),
+            VisibleAttribute( "bemerkung", MultiLineEdit, "Bemerkung: ", widgetHeight=55 ),
+            VisibleAttribute( "zahlung", FloatEdit, "Zahlung (€): ", widgetWidth=smallW, editable=False,
+                              trailingButton=ButtonDefinition(
+                                  "...", callback=self.onEditZahlungen, tooltip="(Teil-)Zahlung erfassen / ändern",
+                                  ident="tz", maxW=30, maxH=30
+                              ) )
+        )
+        return vislist
+
+    def _createVisibleAttributeListHGA( self ) -> Iterable[VisibleAttribute]:
         smallW = 90
         vislist = (
             VisibleAttribute( "master_name", BaseEdit, "Objekt: ", editable=False ),
@@ -123,7 +145,6 @@ class AbrechnungDialogController:
                                   "...", callback=self.onEditZahlungen, tooltip="(Teil-)Zahlung erfassen / ändern",
                                   ident="tz", maxW=30, maxH=30
                               ) )
-            #VisibleAttribute( "buchungsdatum", SmartDateEdit, "Buchungsdatum: ", widgetWidth=smallW )
         )
         return vislist
 

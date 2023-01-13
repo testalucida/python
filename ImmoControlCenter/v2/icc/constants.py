@@ -68,7 +68,7 @@ class EinAusArt: # EinAus-Arten, wie sie in die Tabelle einaus eingetragen werde
     BRUTTOMIETE = ValueMapper( "Bruttomiete", "brm" )
     NEBENKOSTEN_VORAUS = ValueMapper( "Nebenkostenvorauszahlung", "nkv" )
     HAUSGELD_VORAUS = ValueMapper( "Hausgeldvorauszahlung", "hgv" )
-    MTL_ABSCHLAG = ValueMapper( "Mtl. Abschlag", "mab" )
+    REGELM_ABSCHLAG = ValueMapper( "Mtl. Abschlag", "rab" )
     NEBENKOSTEN_ABRECHNG = ValueMapper( "Nebenkostenabrechnung", "nkv" )
     HAUSGELD_ABRECHNG = ValueMapper( "Hausgeldabrechnung", "hga" )
     SONDERUMLAGE = ValueMapper( "Sonderumlage", "sonder" )
@@ -155,7 +155,7 @@ def testEinAusArtNeu():
 #         """
 #         Liefert eine Liste von EinAusArt-Members
 #         :return: [<EinAusArt.BRUTTOMIETE: 'brm'>, <EinAusArt.NEBENKOSTEN_VORAUS: 'nkv'>,
-#                   <EinAusArt.HAUSGELD_VORAUS: 'hgv'>, <EinAusArt.MTL_ABSCHLAG: 'mab'>, ...]
+#                   <EinAusArt.HAUSGELD_VORAUS: 'hgv'>, <EinAusArt.REGELM_ABSCHLAG: 'rab'>, ...]
 #         """
 #         return [m for m in EinAusArt]
 #

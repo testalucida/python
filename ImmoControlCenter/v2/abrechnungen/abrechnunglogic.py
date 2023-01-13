@@ -203,9 +203,9 @@ class AbrechnungLogic( IccLogic ):
     def _createXeinausFromTeilzahlung( self, xabr:XAbrechnung, tz:XTeilzahlung ) -> XEinAus:
         xea = XEinAus()
         xea.master_name = xabr.master_name
-        xea.debi_kredi = xabr.weg_name
+        xea.debi_kredi = self.getDebiKredi( xabr )
         xea.leistung = self.getLeistungKuerzel() + (" %d" % xabr.ab_jahr)
-        xea.hga_id = xabr.abr_id
+        xea.hga_id = self.provideForeignKey( xea, xabr )
         xea.jahr = self._getYearForTeilzahlung( tz )
         xea.monat = self._getMonthForTeilzahlung( tz )
         xea.betrag = tz.betrag
@@ -217,6 +217,20 @@ class AbrechnungLogic( IccLogic ):
 
     @abstractmethod
     def getAbrechnungTableModelType( self ) -> type:
+        pass
+
+    @abstractmethod
+    def getDebiKredi( self, xabr:XAbrechnung ) -> str:
+        pass
+
+    @abstractmethod
+    def provideForeignKey( self, xea:XEinAus, xabr:XAbrechnung ):
+        """
+        Versorgt je nach Abrechnungsart einen der beiden Fremdschlüssel hga_id bzw. nka_id im XEinAus-Objekt
+        :param xea:
+        :param xabr:
+        :return:
+        """
         pass
 
     @abstractmethod
@@ -263,6 +277,12 @@ class HGAbrechnungLogic( AbrechnungLogic ):
 
     def getAbrechnungTableModelType( self ) -> type:
         return HGAbrechnungTableModel
+
+    def getDebiKredi( self, xabr: XHGAbrechnung ) -> str:
+        return xabr.weg_name
+
+    def provideForeignKey( self, xea: XEinAus, xabr: XAbrechnung ):
+        xea.hga_id = xabr.abr_id
 
     def getLeistungKuerzel( self ) -> str:
         """
@@ -318,6 +338,12 @@ class NKAbrechnungLogic( AbrechnungLogic ):
     def getAbrechnungTableModelType( self ) -> type:
         return NKAbrechnungTableModel
 
+    def getDebiKredi( self, xabr: XNKAbrechnung ) -> str:
+        return xabr.mv_id
+
+    def provideForeignKey( self, xea: XEinAus, xabr: XAbrechnung ):
+        xea.nka_id = xabr.abr_id
+
     def getLeistungKuerzel( self ) -> str:
         """
         Das Kürzel, das in die Tabelle <einaus> in die Spalte <leistung> eingetragen wird.
@@ -337,3 +363,26 @@ class NKAbrechnungLogic( AbrechnungLogic ):
 
     def getEinAusZahlungen( self, abr_id ) -> List[XEinAus]:
         return  self._eaData.getEinAuszahlungenByNkaId( abr_id )
+
+    def _insertAbrechnung( self, xnka: XNKAbrechnung ) -> str:
+        try:
+            self._nkaData.insertAbrechnung( xnka )
+            return ""
+        except Exception as ex:
+            self._nkaData.rollback()
+            msg = "AbrechnungLogic._insertAbrechnung():\nFehler beim Insert der Abrechnung %d für " \
+                  "Masterobjekt '%s'\n\nFehlermeldung:\n%s " % (xnka.ab_jahr, xnka.master_name, str( ex ))
+            return msg
+
+    def _updateAbrechnung( self, xnka: XHGAbrechnung ) -> str:
+        try:
+            self._nkaData.updateAbrechnung( xnka )
+            return ""
+        except Exception as ex:
+            self._nkaData.rollback()
+            msg = "NKAbrechnungLogic._updateAbrechnung():\nFehler beim Update der Abrechnung %d für " \
+                  "Masterobjekt '%s'\n\nFehlermeldung:\n%s " % (xnka.ab_jahr, xnka.master_name, str( ex ))
+            return msg
+
+    def _commit( self ):
+        self._nkaData.commit()
