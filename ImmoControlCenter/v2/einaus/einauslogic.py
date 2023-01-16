@@ -1,10 +1,10 @@
-from typing import List
+from typing import List, Dict
 
 import datehelper
 from v2.einaus.einausdata import EinAusData
 from v2.icc.constants import iccMonthShortNames, EinAusArt, Umlegbar
 from v2.icc.icclogic import IccTableModel, IccLogic
-from v2.icc.interfaces import XEinAus, XSummen
+from v2.icc.interfaces import XEinAus, XSummen, XLetzteBuchung
 
 
 #################   EinAusTableModel   ############################

@@ -1,10 +1,10 @@
-from typing import List
+from typing import List, Dict
 import datehelper
 from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
 
 from v2.icc.constants import EinAusArt, Umlegbar
 from v2.icc.iccdata import IccData, DbAction
-from v2.icc.interfaces import XEinAus
+from v2.icc.interfaces import XEinAus, XLetzteBuchung
 
 
 class EinAusData( IccData ):
@@ -112,7 +112,6 @@ class EinAusData( IccData ):
         self.writeAndLog( sql, DbAction.DELETE, "einaus", "ea_id", ea_id,
                           newvalues=None, oldvalues=x.toString( printWithClassname=True )  )
         self._dispatch.einaus_deleted( ea_id )
-
 
     def getEinzahlungenSumme( self, jahr:int ) -> float:
         """ Liefert die Summe aller Einzahlungen (= positive Beträge) im Jahr <jahr>"""
@@ -270,6 +269,11 @@ class EinAusData( IccData ):
                 x.ea_art = EinAusArt.getDisplay( x.ea_art )
 
 ######################################################################
+
+def test5():
+    data = EinAusData()
+    x = data.getLetzteZahlung()
+    print( x )
 
 def test4():
     data = EinAusData()

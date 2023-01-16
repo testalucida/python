@@ -42,6 +42,17 @@ class XEinAus( XBase ):
     def getMonthIdx( self ) -> int:
         return iccMonthShortNames.index( self.monat )
 
+class XLetzteBuchung( XBase ):
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self )
+        self.debi_kredi = ""
+        self.leistung = ""
+        self.betrag = 0.0
+        self.ea_art = ""
+        if valuedict:
+            self.setFromDict( valuedict )
+
+
 #####################################################################
 class XMtlZahlung( XBase ):
     """

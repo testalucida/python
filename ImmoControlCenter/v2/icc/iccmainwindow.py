@@ -449,15 +449,11 @@ class IccMainWindow( QMainWindow ):
         return spacer
 
     def canShutdown( self ) -> bool:
-        if self._shutdownCallback:
-            return self._shutdownCallback()
+        # todo ?
+        return True
 
     def setLetzteBuchung( self, datum:str, text:str ) -> None:
-        try:
-            y, m, d = getDateParts( datum )
-            self._sdLetzteBuchung.setDate( y, m, d )
-        except:
-            pass
+        self._sdLetzteBuchung.setDateFromIsoString( datum )
         self._leLetzteBuchung.setText( text )
 
     def setTabellenAuswahl( self, tables:List[str] ) -> None:

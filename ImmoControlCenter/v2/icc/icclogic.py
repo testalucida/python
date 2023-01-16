@@ -5,7 +5,7 @@ from base.interfaces import XBase
 from v2.icc.iccdata import IccData
 
 ######################   IccTableModel   ########################
-from v2.icc.interfaces import XMasterobjekt, XMietobjekt, XKreditorLeistung, XLeistung
+from v2.icc.interfaces import XMasterobjekt, XMietobjekt, XKreditorLeistung, XLeistung, XLetzteBuchung, XEinAus
 
 
 class IccTableModel( BaseTableModel ):
@@ -73,4 +73,22 @@ class IccLogic:
             if len( leistungslist ) > 0:
                 return leistungslist[0]
         else: return None
+
+    def getLetzteBuchung( self ) -> [str, str]:
+        """
+        Liefert den letzten Eintrag aus der Tabelle einaus
+        :return: datum, text, so wie es im Mainwindow angezeigt werden soll
+        """
+        ea = self._iccdata.getLetzteBuchung()
+        text = ea["debi_kredi"] + ":  " + str( ea["betrag"] ) + " €  "
+        buchungsdatum = ea["buchungsdatum"]
+        if buchungsdatum:
+            datum = buchungsdatum
+            text += " (Datum=Buchung)"
+        else:
+            datum = ea["write_time"][0:10]
+            text += " (Datum=Eintragung)"
+        return datum, text
+
+
 

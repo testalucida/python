@@ -144,6 +144,20 @@ class IccData( DatabaseCommon ):
             leist.ea_art = EinAusArt.getDisplay( leist.ea_art )
         return l
 
+    def getLetzteBuchung( self ) -> Dict:
+        """
+        Liefert ein paar Kenndaten der letzten Zahlung, die im Hauptfenster als "Letzte Buchung" angezeigt werden.
+        :return: einen Dict mit den keys ebi_kredi, leistung, betrag, buchungsdatum, write_time
+        """
+        sql = "select max(ea_id) as ea_id from einaus "
+        dic = self.readOneGetDict( sql )
+        ea_id = dic["ea_id"]
+        sql = "select debi_kredi, leistung, betrag, buchungsdatum, write_time " \
+              "from einaus " \
+              "where ea_id = %d " % ea_id
+        d = self.readOneGetDict( sql )
+        return d
+
     def writeAndLog( self, sql: str, action:str, table:str, id_name:str, id_value:int,
                      newvalues:str=None, oldvalues:str=None ) -> int:
         """

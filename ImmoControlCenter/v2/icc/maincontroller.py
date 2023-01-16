@@ -2,6 +2,7 @@ from typing import List, Iterable
 
 from PySide2.QtWidgets import QMenu
 
+import datehelper
 from base.baseqtderivates import BaseAction
 from base.messagebox import InfoBox, ErrorBox
 from v2.abrechnungen.abrechnungcontroller import NKAbrechnungController, HGAbrechnungController
@@ -28,6 +29,7 @@ class MainController( IccController ):
         self._einausCtrl = EinAusController()
         self._nkaCtrl = NKAbrechnungController()
         self._hgaCtrl = HGAbrechnungController()
+        #self._win.setShutdownCallback( self.onShutdown )
         EinAusWriteDispatcher.inst().ea_inserted.connect( self.onEinAusInserted )
         EinAusWriteDispatcher.inst().ea_updated.connect( self.onEinAusUpdated )
         EinAusWriteDispatcher.inst().ea_deleted.connect( self.onEinAusDeleted )
@@ -72,6 +74,7 @@ class MainController( IccController ):
         tvf: IccCheckTableViewFrame = self._einausCtrl.createGui()
         self._win.setAlleZahlungenTableViewFrame( tvf )
         self._provideSummen()
+        self._provideLetzteBuchung()
         return self._win
 
     def getMenu( self ) -> QMenu:
@@ -99,6 +102,10 @@ class MainController( IccController ):
         summen:XSummen = self._logic.getSummen( self.getYearToStartWith() )
         self._win.setSummenValues( summen )
 
+    def _provideLetzteBuchung( self ):
+        datum, text = self._logic.getLetzteBuchung()
+        self._win.setLetzteBuchung( datum, text )
+
     def onEinAusInserted( self, x:XEinAus ):
         summen = self._win.getSummenValues()
         betrag = round(x.betrag)
@@ -116,6 +123,9 @@ class MainController( IccController ):
             box.exec_()
             return
         self._win.setSummenValues( summen )
+        # datum = x.buchungsdatum if x.buchungsdatum else datehelper.getCurrentDateIso()
+        # text = x.debi_kredi + ": " + str( x.betrag )
+        # self._win.setLetzteBuchung( datum, text )
 
     def onEinAusUpdated( self, x:XEinAus ):
         print( "onEinAusUpdated")
@@ -145,7 +155,10 @@ class MainController( IccController ):
     def onExit( self ):
         print( "onExit" )
 
+    def onShutdown( self ) -> bool:
+        return True
 
+####################################################################################
 def testScreenSize( win:IccMainWindow ):
     from PySide2 import QtWidgets
     from PySide2.QtWidgets import QDesktopWidget
