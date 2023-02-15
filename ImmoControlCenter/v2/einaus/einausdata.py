@@ -26,6 +26,7 @@ class EinAusData( IccData ):
         :param x: Daten der Zahlung
         :return: die id des neu angelegten einaus-Satzes
         """
+        mobj_id = "NULL" if not x.mobj_id else "'%s'" % x.mobj_id
         sab_id = "NULL" if not x.sab_id else str( x.sab_id )
         hga_id = "NULL" if not x.hga_id else str( x.hga_id )
         nka_id = "NULL" if not x.nka_id else str( x.nka_id )
@@ -40,8 +41,8 @@ class EinAusData( IccData ):
               "( master_name, mobj_id, debi_kredi, leistung, sab_id, hga_id, nka_id, jahr, monat, betrag, ea_art, verteilt_auf, umlegbar, " \
               "  buchungsdatum, buchungstext, write_time ) " \
               "values" \
-              "(   '%s',      '%s',       '%s',     %s,       %s,      %s,     %s,   %d,   '%s',    %.2f,   '%s',     %s,           %s," \
-              "    %s,         %s,        '%s' ) " % ( x.master_name, x.mobj_id, x.debi_kredi, leistung, sab_id,
+              "(   '%s',       %s,       '%s',     %s,       %s,      %s,     %s,   %d,   '%s',    %.2f,   '%s',     %s,           %s," \
+              "    %s,         %s,        '%s' ) " % ( x.master_name, mobj_id, x.debi_kredi, leistung, sab_id,
                                                        hga_id, nka_id,
                                                         x.jahr, x.monat, x.betrag,
                                                         ea_art_db, verteilt_auf, umlegbar,
@@ -169,7 +170,7 @@ class EinAusData( IccData ):
 
     def getEinAusZahlungen( self, ea_art_display:str, jahr: int ) -> List[XEinAus]:
         """
-        Liefert eine Liste von XEinAus-Objekten, die den gegebenen Kriterien genügen
+        Liefert eine nicht sortierte Liste von XEinAus-Objekten, die den gegebenen Kriterien genügen
         :param ea_art_display: erwartet wird hier der display-Wert der versch. EinAusArten, z.B. "Bruttomiete"
         :param jahr: yyyy
         :return:  List[XEinAus]

@@ -52,8 +52,6 @@ class EinAusLogic(IccLogic):
     def getZahlungenModel2( self, ea_art_display:str, jahr:int, monthIdx:int, mobj_id:str ) -> EinAusTableModel:
         month_sss = iccMonthShortNames[monthIdx]
         l: List[XEinAus] = self._einausData.getEinAuszahlungen2( ea_art_display, jahr, month_sss, mobj_id )
-        # for x in l:
-        #     x.write_time = x.write_time[0:10]
         tm = EinAusTableModel( l, jahr )
         return tm
 
@@ -173,7 +171,7 @@ class EinAusLogic(IccLogic):
         self._einausData.insertEinAusZahlung( x )
         return x
 
-    def addZahlung2( self, ea_art_display, master_name:str,  mobj_id:str, debikredi:str, sab_id:int,
+    def addZahlung2( self, ea_art_display, master_name:str,  mobj_id:str, debikredi:str, sab_id:int, leistung:str,
                     jahr:int, monthIdx:int, value:float, umlegbar:str=Umlegbar.NEIN.value,
                     buchungsdatum:str=None, buchungstext:str=None ) -> XEinAus:
         if buchungsdatum:
@@ -185,6 +183,7 @@ class EinAusLogic(IccLogic):
         x.ea_art = ea_art_display
         x.debi_kredi = debikredi
         x.sab_id = sab_id
+        x.leistung = leistung
         x.jahr = jahr
         x.monat = iccMonthShortNames[monthIdx]
         x.betrag = value

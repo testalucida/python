@@ -65,11 +65,11 @@ class Umlegbar( Enum ):
     NONE = ""
 
 class EinAusArt: # EinAus-Arten, wie sie in die Tabelle einaus eingetragen werden.
-    BRUTTOMIETE = ValueMapper( "Bruttomiete", "brm" )
-    NEBENKOSTEN_VORAUS = ValueMapper( "Nebenkostenvorauszahlung", "nkv" )
+    BRUTTOMIETE = ValueMapper( "Bruttomiete", "bruttomiete" )
+    #NEBENKOSTEN_VORAUS = ValueMapper( "Nebenkostenvorauszahlung", "nkv" )
     HAUSGELD_VORAUS = ValueMapper( "Hausgeldvorauszahlung", "hgv" )
-    REGELM_ABSCHLAG = ValueMapper( "Mtl. Abschlag", "rab" )
-    NEBENKOSTEN_ABRECHNG = ValueMapper( "Nebenkostenabrechnung", "nkv" )
+    #allREGELM_ABSCHLAG = ValueMapper( "Mtl. Abschlag", "rab" )
+    NEBENKOSTEN_ABRECHNG = ValueMapper( "Nebenkostenabrechnung", "nka" )
     HAUSGELD_ABRECHNG = ValueMapper( "Hausgeldabrechnung", "hga" )
     SONDERUMLAGE = ValueMapper( "Sonderumlage", "sonder" )
     ALLGEMEINE_KOSTEN = ValueMapper( "Allgemeine Hauskosten", "allg" )

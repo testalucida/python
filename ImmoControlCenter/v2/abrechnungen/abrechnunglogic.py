@@ -75,8 +75,17 @@ class AbrechnungLogic( IccLogic ):
         tm = TeilzahlungTableModel( xabr.teilzahlungen, xabr.ab_jahr )
         return tm
 
-    @staticmethod
-    def validateAbrechnung( x:XAbrechnung ) -> str:
+    @abstractmethod
+    def validateDerived( self, xabr ) -> str:
+        """
+        Wird von self.validateAbrechnung aufgerufen.
+        Damit wird das Abrechnungsobjekt xabr den abgeleiteten Klassen HGAbrechnungLogic und
+        NKAbrechnungLogic zur speziellen Prüfung übergeben.
+        :return:
+        """
+        pass
+
+    def validateAbrechnung( self, x:XAbrechnung ) -> str:
         """
         Validiert ein XAbrechnung-Objekt und liefert eine Fehlermeldung zurück, wenn ein Validierungsfehler vorliegt.
         Wenn alles ok ist, wird ein Leerstring zurückgegeben.
@@ -87,9 +96,12 @@ class AbrechnungLogic( IccLogic ):
         :return: Fehlermeldung oder Leerstring
         """
         if not x.master_name: return "Mastername fehlt"
+        if not x.mobj_id: return "Objektname fehlt"
         if not x.ab_jahr: return "Abrechnungsjahr fehlt"
         if not x.ab_datum: return "Erstellungsdatum der Abrechnung fehlt"
         if not x.forderung: return "Forderung aus Abrechnung fehlt"
+        msg = self.validateDerived( x )
+        if msg: return msg
         if len( x.teilzahlungen ) > 0:
             for tz in x.teilzahlungen:
                 if not tz.betrag:
@@ -203,9 +215,10 @@ class AbrechnungLogic( IccLogic ):
     def _createXeinausFromTeilzahlung( self, xabr:XAbrechnung, tz:XTeilzahlung ) -> XEinAus:
         xea = XEinAus()
         xea.master_name = xabr.master_name
+        xea.mobj_id = xabr.mobj_id
         xea.debi_kredi = self.getDebiKredi( xabr )
         xea.leistung = self.getLeistungKuerzel() + (" %d" % xabr.ab_jahr)
-        xea.hga_id = self.provideForeignKey( xea, xabr )
+        self.provideForeignKey( xea, xabr )
         xea.jahr = self._getYearForTeilzahlung( tz )
         xea.monat = self._getMonthForTeilzahlung( tz )
         xea.betrag = tz.betrag
@@ -304,6 +317,14 @@ class HGAbrechnungLogic( AbrechnungLogic ):
     def getEinAusZahlungen( self, abr_id ) -> List[XEinAus]:
         return  self._eaData.getEinAuszahlungenByHgaId( abr_id )
 
+    def validateDerived( self, xabr:XHGAbrechnung ) -> str:
+        # der allgemeine Teil der Abrechnung (s. XAbrechnung) wurde schon geprüft.
+        # Hier wird der spezielle Teil geprüft
+        if not xabr.weg_name: return "WEG-Bezeichnung fehlt."
+        if not xabr.vw_id: return "Verwalter fehlt."
+        if not xabr.vwg_id: return "Verwaltungs-ID fehlt."
+        return ""
+
     def _insertAbrechnung( self, xhga:XHGAbrechnung ) -> str:
         try:
             self._hgaData.insertAbrechnung( xhga )
@@ -363,6 +384,12 @@ class NKAbrechnungLogic( AbrechnungLogic ):
 
     def getEinAusZahlungen( self, abr_id ) -> List[XEinAus]:
         return  self._eaData.getEinAuszahlungenByNkaId( abr_id )
+
+    def validateDerived( self, xabr: XNKAbrechnung ) -> str:
+        # der allgemeine Teil der Abrechnung (s. XAbrechnung) wurde schon geprüft.
+        # Hier wird der spezielle Teil geprüft
+        if not xabr.mv_id: return "Name des Mieters fehlt."
+        return ""
 
     def _insertAbrechnung( self, xnka: XNKAbrechnung ) -> str:
         try:

@@ -43,23 +43,31 @@ class HGAbrechnungData( AbrechnungData ):
 
     def updateAbrechnung( self, xhga:XHGAbrechnung ) -> int:
         oldX = self.getAbrechnung( xhga.abr_id )
-        bemerkung = "NULL" if not xhga.bemerkung else ("'%s'" % xhga.bemerkung)
-        sql = "update hg_abrechnung " \
-              "set ab_jahr = %d, " \
-              "vwg_id = %d, " \
-              "forderung = %.2f, " \
-              "entnahme_rue = %.2f, " \
-              "ab_datum = '%s', " \
-              "bemerkung = %s " \
-              "where hga_id = %d " % (xhga.ab_jahr, xhga.vwg_id, xhga.forderung, xhga.entnahme_rue, xhga.ab_datum,
-                                      bemerkung, xhga.abr_id)
-        rowsAffected = self.writeAndLog( sql, DbAction.UPDATE, "hg_abrechnung", "hga_id", xhga.abr_id,
-                                         newvalues=xhga.toString( True ), oldvalues=oldX.toString( True ) )
-        return rowsAffected
+        if oldX.ab_jahr == xhga.ab_jahr \
+        and oldX.vwg_id == xhga.vwg_id \
+        and oldX.forderung == xhga.forderung \
+        and oldX.entnahme_rue == xhga.entnahme_rue \
+        and oldX.ab_datum == xhga.ab_datum \
+        and oldX.bemerkung == xhga.bemerkung:
+            bemerkung = "NULL" if not xhga.bemerkung else ("'%s'" % xhga.bemerkung)
+            sql = "update hg_abrechnung " \
+                  "set ab_jahr = %d, " \
+                  "vwg_id = %d, " \
+                  "forderung = %.2f, " \
+                  "entnahme_rue = %.2f, " \
+                  "ab_datum = '%s', " \
+                  "bemerkung = %s " \
+                  "where hga_id = %d " % (xhga.ab_jahr, xhga.vwg_id, xhga.forderung, xhga.entnahme_rue, xhga.ab_datum,
+                                          bemerkung, xhga.abr_id)
+            rowsAffected = self.writeAndLog( sql, DbAction.UPDATE, "hg_abrechnung", "hga_id", xhga.abr_id,
+                                             newvalues=xhga.toString( True ), oldvalues=oldX.toString( True ) )
+            return rowsAffected
+        return 0
 
     def getObjekteUndAbrechnungen( self, ab_jahr:int ) -> List[XHGAbrechnung]:
         sql = "select master.master_name, " \
-              "vwg.vwg_id, coalesce(vwg.weg_name, '') as weg_name, coalesce(vwg.vw_id, '') as vw_id, " \
+              "vwg.vwg_id, coalesce(vwg.weg_name, '') as weg_name, coalesce(vwg.mobj_id, '') as mobj_id, " \
+              "coalesce(vwg.vw_id, '') as vw_id, " \
               "coalesce(vwg.von, '') as vwg_von, coalesce(vwg.bis, '') as vwg_bis, " \
               "coalesce(hga.hga_id, 0) as abr_id, coalesce(hga.ab_datum, '') as ab_datum, " \
               "coalesce(hga.forderung, 0) as forderung, coalesce(hga.entnahme_rue, 0) as entnahme_rue, " \

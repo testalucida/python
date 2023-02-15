@@ -130,6 +130,7 @@ class XMtlAbschlag( XMtlZahlung ):
         self.kreditor = "" # Name des Kreditors (des Lieferanten)
         self.vnr =  ""
         self.leistung = ""
+        self.ea_art = "" # allg oder sonst
         self.master_name = ""
         if valuedict:
             self.setFromDict( valuedict )
@@ -248,6 +249,8 @@ class XSollAbschlag( XBase ):
         self.kreditor = "" # z.B. KEW, Gaswerk Illingen
         self.vnr = "" # Vertragsnummer des Kreditors
         self.leistung = "" # Gas, Strom, Wasser
+        self.ea_art = ""  # allg oder sonst - mit dieser ea_art wird ein gebuchter regelm. Abschlag in Tabelle einaus
+                          # geschrieben
         self.master_name = ""
         self.mobj_id = "" # nur erforderlich für eine Leerstehende Wohnung. Dann werden die Verträge auf mich abgeschlossen.
         self.von = ""
@@ -333,6 +336,7 @@ class XAbrechnung( XBase ):
         XBase.__init__( self )
         self.abr_id = 0   # dahinter verbirgt sich entweder eine hga_id oder eine nka_id
         self.master_name = ""
+        self.mobj_id = ""
         self.ab_jahr = 0
         self.ab_datum = ""
         self.forderung = 0.0
@@ -366,7 +370,6 @@ class XHGAbrechnung( XAbrechnung ):
 class XNKAbrechnung( XAbrechnung ):
     def __init__( self, valuedict:Dict=None ):
         XAbrechnung.__init__( self, valuedict )
-        self.mobj_id = ""
         self.mv_id = "" # entspricht in etwa dem Namen des Mieters
         self.von = "" # Beginn des Mietverhältnisses
         self.bis = "" # Ende des Mietverhältnisses

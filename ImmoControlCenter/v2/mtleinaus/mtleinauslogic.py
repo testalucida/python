@@ -74,7 +74,8 @@ class MtlEinAusLogic( IccLogic ):
         # zunächst nur eine Trivialprüfung:
         if not x.master_name:
             return "Angabe des Masterobjekts fehlt."
-        if not x.mobj_id and not x.ea_art == EinAusArt.REGELM_ABSCHLAG.display:
+        # if not x.mobj_id and not x.ea_art == EinAusArt.REGELM_ABSCHLAG.display:
+        if not x.mobj_id and not x.sab_id > 0:  # x.ea_art == EinAusArt.REGELM_ABSCHLAG.display:
             return "Angabe der Wohnung fehlt."
         if not x.debi_kredi:
             return "Angabe von Debitor/Kreditor fehlt."
@@ -85,8 +86,8 @@ class MtlEinAusLogic( IccLogic ):
         if x.betrag == 0:
             return "Betrag ungültig. Muss ungleich 0 sein."
         if not x.ea_art in ( EinAusArt.BRUTTOMIETE.display, EinAusArt.HAUSGELD_VORAUS.display,
-                             EinAusArt.KOMMUNALE_DIENSTE.display, EinAusArt.REGELM_ABSCHLAG.display):
-            return "Ungültige EinAusArt. Muss BRUTTOMIETE, HAUSGELD_VORAUS, REGELM_ABSCHLAG oder KOMMUNALE_DIENSTE sein."
+                             EinAusArt.KOMMUNALE_DIENSTE.display ):
+            return "Ungültige EinAusArt. Muss BRUTTOMIETE, HAUSGELD_VORAUS oder KOMMUNALE_DIENSTE sein."
         return ""
 
     def updateMonatsZahlung( self, x:XEinAus ):
@@ -444,7 +445,10 @@ class AbschlagLogic( MtlEinAusLogic ):
         self._abschlagData = AbschlagData()
 
     def createAbschlagzahlungenModel( self, jahr: int, checkmonatIdx:int=None ) -> AbschlagTableModel:
-        zlist:List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.REGELM_ABSCHLAG.display, jahr )
+        #zlist:List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.REGELM_ABSCHLAG.display, jahr )
+        zlist_allg: List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.ALLGEMEINE_KOSTEN.display, jahr )
+        zlist_sonst: List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.SONSTIGE_KOSTEN.display, jahr )
+        zlist = zlist_allg + zlist_sonst
         zlist = self._getCondensedEinAusList( zlist ) # zlist enthält für jede sab_id und jeden Monat genau 1 XEinAus-Objekt
         sollAbschlagList:List[XSollAbschlag] = self._abschlagData.getSollabschlaege( jahr )
         # die XEinAus-Liste in XMtlAbschlag-Liste umwandeln:
@@ -453,6 +457,7 @@ class AbschlagLogic( MtlEinAusLogic ):
             # aus jedem sollabschlag ein XMtlAbschlag-Objekt machen:
             xab = XMtlAbschlag()
             xab.sab_id = sollabschlag.sab_id
+            xab.ea_art = sollabschlag.ea_art
             xab.master_name = sollabschlag.master_name
             xab.mobj_id = sollabschlag.mobj_id
             xab.kreditor = sollabschlag.kreditor
@@ -517,14 +522,18 @@ class AbschlagLogic( MtlEinAusLogic ):
 
     def addMonatsZahlung( self, x:XMtlAbschlag, selectedYear:int, selectedMonth:int,
                           value:float, mehrtext:str= "" ) -> XEinAus:
-        umlegbar = self._abschlagData.getUmlegbar( x.sab_id )
-        xeinaus = self._ealogic.addZahlung2( self.getEinAusArt(), x.master_name, x.mobj_id, x.kreditor, x.sab_id,
-                                            selectedYear, selectedMonth, value, umlegbar )
+        dic = self._abschlagData.getVnrUndEaArtUndUmlegbar( x.sab_id )
+        x.leistung += (" (%s)" % dic["vnr"])
+        x.ea_art = EinAusArt.getDisplay( dic["ea_art"] )
+        xeinaus = self._ealogic.addZahlung2( x.ea_art, x.master_name, x.mobj_id, x.kreditor,
+                                             x.sab_id, x.leistung,
+                                             selectedYear, selectedMonth, value, dic["umlegbar"] )
         self._ealogic.commit()
         return xeinaus
 
     def getEinAusArt( self ) -> str:
-        return EinAusArt.REGELM_ABSCHLAG.display
+        raise Exception( "AbschlagLogic.getEinAusArt()\nDiese Methode ist nicht aufrufbar,\nda sie kein "
+                         "eindeutiges Ergebnis liefern kann.\nDie EinAusArt kann 'allg' oder 'sonst' sein." )
 
     def getDebiKrediKey( self ) -> Any:
         return "kreditor"

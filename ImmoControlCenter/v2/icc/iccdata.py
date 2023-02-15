@@ -152,6 +152,7 @@ class IccData( DatabaseCommon ):
         sql = "select max(ea_id) as ea_id from einaus "
         dic = self.readOneGetDict( sql )
         ea_id = dic["ea_id"]
+        if not ea_id: return
         sql = "select debi_kredi, leistung, betrag, buchungsdatum, write_time " \
               "from einaus " \
               "where ea_id = %d " % ea_id

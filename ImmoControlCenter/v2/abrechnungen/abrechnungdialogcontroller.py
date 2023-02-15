@@ -60,7 +60,7 @@ class AbrechnungDialogController:
         """
         dlg = self._dlg
         v = dlg.getDynamicAttributeView()
-        xcopy: XHGAbrechnung = v.getModifiedXBaseCopy()
+        xcopy: XAbrechnung = v.getModifiedXBaseCopy()
         # der logic übergeben zum Validieren
         msg = self._logic.validateAbrechnung( xcopy )
         if not msg:

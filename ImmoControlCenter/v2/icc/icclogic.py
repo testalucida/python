@@ -80,6 +80,7 @@ class IccLogic:
         :return: datum, text, so wie es im Mainwindow angezeigt werden soll
         """
         ea = self._iccdata.getLetzteBuchung()
+        if not ea: return "", ""
         text = ea["debi_kredi"] + ":  " + str( ea["betrag"] ) + " €  "
         buchungsdatum = ea["buchungsdatum"]
         if buchungsdatum:

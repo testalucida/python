@@ -136,7 +136,8 @@ class EinAusController( IccController ):
         if cnt_sel_rows == 1:
             l.append( BaseAction( "EinAus-ID: " + str( x.ea_id ) ) )
             l.append( Separator() )
-            if x.ea_art == EinAusArt.REGELM_ABSCHLAG.display:
+            #if x.ea_art == EinAusArt.REGELM_ABSCHLAG.display:
+            if x.sab_id > 0:  # ein regelmäßiger Abschlag
                 l.append( BaseAction( "Vertrag...", ident=Action.SHOW_LEISTUNGSVERTRAG, userdata=x ) )
                 l.append( Separator() )
             elif x.ea_art in ( EinAusArt.HAUSGELD_VORAUS.display, EinAusArt.HAUSGELD_ABRECHNG.display ):
