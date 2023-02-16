@@ -91,15 +91,40 @@ class SrcData( Data ):
                 "inner join masterobjekt master on master.master_id = vwg.master_id "
         return self.readAllGetDict( sql )
 
-    def selectHgv( self ):
+    def selectHgvZahlungen( self ):
         sql = "select 'hgv' as ea_art, " \
-              "z.mobj_id, master.master_name, mea.mv_id as debi_kredi, " \
+              "z.mobj_id, master.master_name, vwg.weg_name as debi_kredi, " \
               "z.jahr, z.monat, z.betrag, z.write_time " \
               "from zahlung z " \
               "inner join masterobjekt master on master.master_id = z.master_id " \
               "inner join mtleinaus mea on mea.meinaus_id = z.meinaus_id " \
-              "where z.zahl_art = 'bruttomiete' "
+              "inner join verwaltung vwg on vwg.vwg_id = mea.vwg_id " \
+              "where z.zahl_art = 'hgv' " \
+              "and z.mobj_id not like '%*' "
+        return self.readAllGetDict( sql )
 
+    def selectHga( self ):
+        sql = "select ab_jahr, hga.vwg_id, vwg.vw_id, vwg.mobj_id, betrag as forderung, entnahme_rue, ab_datum, bemerkung " \
+              "from hg_abrechnung hga " \
+              "inner join verwaltung vwg on vwg.vwg_id = hga.vwg_id "
+        return self.readAllGetDict( sql )
+
+    def selectNka( self ):
+        sql = "select ab_jahr, mv_id, betrag as forderung, ab_datum, bemerkung " \
+              "from nk_abrechnung "
+        return self.readAllGetDict( sql )
+
+    def selectHgaZahlungen( self ):
+        sql = "select 'hga' as ea_art, z.mobj_id, z.hga_id, z.jahr, z.monat, z.betrag, z.write_time, " \
+                "hga.ab_jahr, vwg.weg_name as debi_kredi, master.master_name " \
+                "from zahlung z " \
+                "inner join hg_abrechnung hga on hga.hga_id = z.hga_id " \
+                "inner join verwaltung vwg on vwg.vwg_id = hga.vwg_id " \
+                "inner join masterobjekt master on master.master_id = vwg.master_id " \
+                "where zahl_art = 'hga'"
+        return self.readAllGetDict( sql )
+
+#################################################################
 class DestData( Data ):
     """
     Zugriffe auf die neue v2-Datenbank -- schreibend
@@ -109,6 +134,12 @@ class DestData( Data ):
         self._sqliteCon.isolation_level = None
         self._cursor = self._sqliteCon.cursor()
         self._cursor.execute( "begin" )
+
+    def selectHgaKerndaten( self ):
+        sql = "select hga.hga_id, hga.ab_jahr, hga.vwg_id, vwg.weg_name, vwg.mobj_id, ab_datum " \
+              "from hg_abrechnung hga " \
+              "inner join verwaltung vwg on vwg.vwg_id = hga.vwg_id "
+        return self.readAllGetDict( sql )
 
     def clearTable( self, tablename:str ):
         sql = "delete from " + tablename
@@ -192,6 +223,7 @@ class DestData( Data ):
     def rollback( self ):
         self._cursor.execute( "rollback" )
 
+##################################################################
 class DatenUebernahmeLogic:
     def __init__(self, pathToSrcDb, pathToDestDb ):
         self._srcData = SrcData( pathToSrcDb ) # die "alte" Datenbank mit den zu übernehmenden Daten ("Quelle") -- LESEZUGRIFF
@@ -199,13 +231,22 @@ class DatenUebernahmeLogic:
                                                                                                 # -- SCHREIBZUGRIFF
     def run( self ):
         # 1.) Daten der Master-Tabelle übernehmen
-        #self._copyMaster()
-        self._copyMietobjekt()
-        #self._copyVerwalter()
-        #self._copyVerwaltung()
-        #self._copySollHausgeld()
-        # self._copyZahlung()
+        #self._copyMaster()     --> done
+        #self._copyMietobjekt()  --> done
+        # self._copyMietverhaeltnisse() --> done
+        #self._copyVerwalter()  --> done
+        #self._copyVerwaltung()  --> done
+        #self._copySollHausgeld()  --> done
+        # self._copySollMiete() --> done
+        #self._copyAbrechnungen() --> done
+        self._copyZahlungen()
         self._destData.commit()
+
+    def _copySollMiete( self ):
+        table = "sollmiete"
+        dictlist = self._srcData.selectTable( table )
+        self._writeDestTable( table, dictlist )
+
 
     def _copySollHausgeld( self ):
         table = "sollhausgeld"
@@ -226,23 +267,58 @@ class DatenUebernahmeLogic:
                     break
         self._writeDestTable( table, shglist )
 
-    def _copyZahlung( self ):
-        # überträgt die Daten aus Tabelle zahlung in Tabelle einaus in mehreren Schritten
-        print( "copy Mieten" )
-        self._copyMieten()
-        print( "copy HGV" )
-        self._copyHgv()
-        print( "copy HGA" )
+    def _copyAbrechnungen( self ):
         self._copyHga()
-        print( "copy NKA" )
         self._copyNka()
+        pass
 
-    def _copyHgv( self ):
-        dictlist = self._srcData.selectHgv()
+    def _copyNka( self ):
+        nkalist = self._srcData.selectNka()
+        self._writeDestTable( "nk_abrechnung", nkalist )
 
-    def _copyMieten( self ):
+    def _copyHga( self ):
+        hgalist = self._srcData.selectHga()
+        # jetzt die vw_id in den einzelnen hga-Objekten umsetzen auf die neue vw_id
+        vwglist = self._destData.selectTable( "verwaltung" )
+        for hga in hgalist:
+            for vwg in vwglist:
+                if hga["mobj_id"] == vwg["mobj_id"] \
+                and hga["vw_id"] == vwg["vw_id"]:
+                    hga["vwg_id"] = vwg["vwg_id"]
+                    break
+        self._writeDestTable( "hg_abrechnung", hgalist )
+
+    def _copyZahlungen( self ):
+        # überträgt die Daten aus Tabelle zahlung in Tabelle einaus in mehreren Schritten
+        self._copyMieten( True ) # --> done
+        self._copyHgvZahlungen() # --> done
+        self._copyHgaZahlungen() # --> done
+        self._copyNkaZahlungen()
+
+    def _copyNkaZahlungen( self ):
+        pass
+
+    def _copyHgaZahlungen( self,  clearBefore=False ):
+        dictlist = self._srcData.selectHgaZahlungen()
+        # die gelieferten Sätze haben alle die alte hga_id an Bord, die muss ausgetauscht werde
+        hgalist = self._destData.selectHgaKerndaten()
+        for dic in dictlist:
+            for hga in hgalist:
+                if dic["mobj_id"] == hga["mobj_id"] \
+                and dic["debi_kredi"] == hga["weg_name"] \
+                and dic["ab_jahr"] == hga["ab_jahr"]:
+                    dic["hga_id"] = hga["hga_id"]
+                    dic["leistung"] = "HGA " + str(dic["ab_jahr"])
+                    break
+        self._writeDestTable( "einaus", dictlist, clearBefore )
+
+    def _copyHgvZahlungen( self, clearBefore=False ):
+        dictlist = self._srcData.selectHgvZahlungen()
+        self._writeDestTable( "einaus", dictlist, clearBefore )
+
+    def _copyMieten( self, clearBefore=False ):
         dictlist = self._srcData.selectMieten()
-        self._writeDestTable( "einaus", dictlist )
+        self._writeDestTable( "einaus", dictlist , clearBefore )
 
     def _copyVerwaltung( self ):
         dictlist = self._srcData.selectVerwaltung()
@@ -250,6 +326,11 @@ class DatenUebernahmeLogic:
 
     def _copyVerwalter( self ):
         table = "verwalter"
+        dictlist = self._srcData.selectTable( table )
+        self._writeDestTable( table, dictlist )
+
+    def _copyMietverhaeltnisse( self ):
+        table = "mietverhaeltnis"
         dictlist = self._srcData.selectTable( table )
         self._writeDestTable( table, dictlist )
 
@@ -263,14 +344,15 @@ class DatenUebernahmeLogic:
         dictlist = self._srcData.selectTable( table, "where master_name not like '%*'" )
         self._writeDestTable( table, dictlist )
 
-    def _writeDestTable( self, table:str, srcContent:List[Dict] ):
-        self._destData.clearTable( table )
+    def _writeDestTable( self, table:str, srcContent:List[Dict], clearTableBeforeWrite=True ):
+        if clearTableBeforeWrite:
+            self._destData.clearTable( table )
         destcols = self._destData.getColumnNames( table )
         for dic in srcContent:
-            for k, v in dic.items():
-                print( "key: ", k, " - value: ", v,
-                       " - is None: ", v is None,
-                       " - isNumeric: ", isinstance( v, numbers.Number ) )
+            # for k, v in dic.items():
+                # print( "key: ", k, " - value: ", v,
+                #        " - is None: ", v is None,
+                #        " - isNumeric: ", isinstance( v, numbers.Number ) )
             insert_stmt = self._destData.createInsertStatement( table, destcols, dic )
             # insert:
             try:
