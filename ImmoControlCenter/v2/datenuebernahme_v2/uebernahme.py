@@ -6,6 +6,7 @@ from PySide2.QtWidgets import QApplication
 
 from base.messagebox import WarningBox, InfoBox, ErrorBox
 from messagebox import MessageBox
+from v2.icc.constants import EinAusArt, Umlegbar
 from v2.icc.definitions import DATENUEBERNAHME_DIR, ROOT_DIR
 from v2.icc.iccdata import IccData
 
@@ -103,6 +104,17 @@ class SrcData( Data ):
               "and z.mobj_id not like '%*' "
         return self.readAllGetDict( sql )
 
+    def selectNkaZahlungen( self ):
+        sql = "select 'nka' as ea_art, " \
+              "z.nka_id, z.mobj_id, z.jahr, z.monat, z.betrag, z.write_time, " \
+              "nka.ab_jahr, nka.mv_id as debi_kredi, " \
+              "master.master_name " \
+              "from zahlung z " \
+              "inner join nk_abrechnung nka on nka.nka_id = z.nka_id " \
+              "inner join mietobjekt mo on mo.mobj_id = z.mobj_id " \
+              "inner join masterobjekt master on master.master_id = mo.master_id "
+        return self.readAllGetDict( sql )
+
     def selectHga( self ):
         sql = "select ab_jahr, hga.vwg_id, vwg.vw_id, vwg.mobj_id, betrag as forderung, entnahme_rue, ab_datum, bemerkung " \
               "from hg_abrechnung hga " \
@@ -115,13 +127,27 @@ class SrcData( Data ):
         return self.readAllGetDict( sql )
 
     def selectHgaZahlungen( self ):
-        sql = "select 'hga' as ea_art, z.mobj_id, z.hga_id, z.jahr, z.monat, z.betrag, z.write_time, " \
-                "hga.ab_jahr, vwg.weg_name as debi_kredi, master.master_name " \
-                "from zahlung z " \
-                "inner join hg_abrechnung hga on hga.hga_id = z.hga_id " \
-                "inner join verwaltung vwg on vwg.vwg_id = hga.vwg_id " \
-                "inner join masterobjekt master on master.master_id = vwg.master_id " \
-                "where zahl_art = 'hga'"
+        sql = "select 'hga' as ea_art, z.mobj_id, z.hga_id, z.jahr, z.monat, z.betrag, z.buchungsdatum, " \
+              "z.write_time, " \
+              "hga.ab_jahr, vwg.weg_name as debi_kredi, master.master_name " \
+              "from zahlung z " \
+              "inner join hg_abrechnung hga on hga.hga_id = z.hga_id " \
+              "inner join verwaltung vwg on vwg.vwg_id = hga.vwg_id " \
+              "inner join masterobjekt master on master.master_id = vwg.master_id " \
+              "where zahl_art = 'hga'"
+        return self.readAllGetDict( sql )
+
+    def selectSonstAusZahlungen( self ):
+        sql = "select z.kostenart as ea_art, z.mobj_id, z.hga_id, z.jahr, z.monat, z.betrag, z.umlegbar, " \
+              "z.buchungstext as zbuchungstext, z.buchungsdatum, z.write_time, " \
+              "sa.kreditor as debi_kredi, sa.buchungstext, sa.rgtext, sa.verteilen_auf_jahre as verteilt_auf, " \
+              "master.master_name " \
+              "from zahlung z " \
+              "inner join sonstaus sa on sa.saus_id = z.saus_id " \
+              "inner join masterobjekt master on master.master_id = z.master_id " \
+              "where zahl_art = 'sonstaus' " \
+              "and z.kostenart <> 'sam' " \
+              "and z.mobj_id not like '%*' "
         return self.readAllGetDict( sql )
 
 #################################################################
@@ -139,6 +165,11 @@ class DestData( Data ):
         sql = "select hga.hga_id, hga.ab_jahr, hga.vwg_id, vwg.weg_name, vwg.mobj_id, ab_datum " \
               "from hg_abrechnung hga " \
               "inner join verwaltung vwg on vwg.vwg_id = hga.vwg_id "
+        return self.readAllGetDict( sql )
+
+    def selectNkaKerndaten( self ):
+        sql = "select nka_id, ab_jahr, mv_id " \
+              "from nk_abrechnung "
         return self.readAllGetDict( sql )
 
     def clearTable( self, tablename:str ):
@@ -247,7 +278,6 @@ class DatenUebernahmeLogic:
         dictlist = self._srcData.selectTable( table )
         self._writeDestTable( table, dictlist )
 
-
     def _copySollHausgeld( self ):
         table = "sollhausgeld"
         shglist = self._srcData.selectSollHausgeld()
@@ -293,10 +323,48 @@ class DatenUebernahmeLogic:
         self._copyMieten( True ) # --> done
         self._copyHgvZahlungen() # --> done
         self._copyHgaZahlungen() # --> done
-        self._copyNkaZahlungen()
+        self._copyNkaZahlungen() # --> done
+        self._copySonstAus()  # --> done
 
-    def _copyNkaZahlungen( self ):
-        pass
+    def _copySonstAus( self, clearBefore=False ):
+        zlist = self._srcData.selectSonstAusZahlungen()
+        for z in zlist:
+            if z["ea_art"] == "a":
+                z["ea_art"] = EinAusArt.ALLGEMEINE_KOSTEN.dbvalue
+            elif z["ea_art"] == "g":
+                z["ea_art"] = EinAusArt.GRUNDSTEUER.dbvalue
+            elif z["ea_art"] == "s":
+                z["ea_art"] = EinAusArt.SONSTIGE_KOSTEN.dbvalue
+            elif z["ea_art"] == "r":
+                z["ea_art"] = EinAusArt.REPARATUR.dbvalue
+            elif z["ea_art"] == "v":
+                z["ea_art"] = EinAusArt.VERSICHERUNG.dbvalue
+            butext = z["zbuchungstext"] # !Z!
+            if butext is None:
+                butext = ""
+            if len( butext ) > 0:
+                if z["buchungstext"]:
+                    if not butext == z["buchungstext"]:
+                        butext += ( "\n" + z["buchungstext"] )
+            if z["rgtext"]:
+                butext += ( "\n" + z["rgtext"] )
+            z["buchungstext"] = butext
+            if z["umlegbar"] == 1:
+                z["umlegbar"] = Umlegbar.JA.value
+            else:
+                z["umlegbar"] = Umlegbar.NEIN.value
+        self._writeDestTable( "einaus", zlist, clearBefore )
+
+    def _copyNkaZahlungen( self, clearBefore=False ):
+        dictlist = self._srcData.selectNkaZahlungen()
+        nkalist = self._destData.selectNkaKerndaten()
+        for dic in dictlist:
+            for nka in nkalist:
+                if dic["debi_kredi"] == nka["mv_id"] \
+                and dic["ab_jahr"] == nka["ab_jahr"]:
+                    dic["nka_id"] = nka["nka_id"]
+                    dic["leistung"] = "NKA " + str(dic["ab_jahr"])
+        self._writeDestTable( "einaus", dictlist, clearBefore )
 
     def _copyHgaZahlungen( self,  clearBefore=False ):
         dictlist = self._srcData.selectHgaZahlungen()
