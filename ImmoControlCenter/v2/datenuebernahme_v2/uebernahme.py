@@ -270,7 +270,7 @@ class DatenUebernahmeLogic:
         #self._copySollHausgeld()  --> done
         # self._copySollMiete() --> done
         #self._copyAbrechnungen() --> done
-        self._copyZahlungen()
+        #self._copyZahlungen()
         self._destData.commit()
 
     def _copySollMiete( self ):
@@ -325,6 +325,7 @@ class DatenUebernahmeLogic:
         self._copyHgaZahlungen() # --> done
         self._copyNkaZahlungen() # --> done
         self._copySonstAus()  # --> done
+        # todo: Sammelabgaben splitten!
 
     def _copySonstAus( self, clearBefore=False ):
         zlist = self._srcData.selectSonstAusZahlungen()

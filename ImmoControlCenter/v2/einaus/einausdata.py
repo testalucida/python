@@ -168,11 +168,12 @@ class EinAusData( IccData ):
         self._mapDbValueToDisplay( xlist )
         return xlist
 
-    def getEinAusZahlungen( self, ea_art_display:str, jahr: int ) -> List[XEinAus]:
+    def getEinAusZahlungen( self, ea_art_display:str, jahr: int, additionalWhereClause="" ) -> List[XEinAus]:
         """
         Liefert eine nicht sortierte Liste von XEinAus-Objekten, die den gegebenen Kriterien genügen
         :param ea_art_display: erwartet wird hier der display-Wert der versch. EinAusArten, z.B. "Bruttomiete"
         :param jahr: yyyy
+        :param additionalWhereClause: optionale zusätzliche Selektionsbedingung (ohne "and", also z.B. "sab_id > 0")
         :return:  List[XEinAus]
         """
         ea_art_db = EinAusArt.getDbValue( ea_art_display )
@@ -181,6 +182,8 @@ class EinAusData( IccData ):
               "from einaus " \
               "where jahr = %d " \
               "and ea_art = '%s' " % ( jahr, ea_art_db )
+        if additionalWhereClause:
+            sql += ( " " + additionalWhereClause )
         xlist = self.readAllGetObjectList( sql, XEinAus )
         self._mapDbValueToDisplay( xlist )
         return xlist

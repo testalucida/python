@@ -1,27 +1,34 @@
+from typing import List, Iterable
+
 from PySide2.QtCore import QSize, Qt, Signal
 from PySide2.QtWidgets import QWidget
 
-from base.baseqtderivates import OkApplyCancelDialog, BaseGridLayout, FloatEdit, BaseLabel, MultiLineEdit, SmartDateEdit
+from base.baseqtderivates import OkApplyCancelDialog, BaseGridLayout, FloatEdit, BaseLabel, MultiLineEdit, \
+    SmartDateEdit, BaseComboBox
 from base.basetablemodel import BaseTableModel
 from base.basetableview import BaseTableView
 from v2.icc.interfaces import XSammelabgabe, XGrundbesitzabgabe
 
 
 class SammelabgabeSplitterDialog( OkApplyCancelDialog ):
-    sammelabgabe_erfasst = Signal( float )
-
+    year_changed = Signal( int )
     def __init__( self ):
         OkApplyCancelDialog.__init__( self, "Zahlung einer Sammelabgabe erfassen und aufteilen" )
         self.getApplyButton().setEnabled( False )
         #self._layout = BaseGridLayout()
         #self.setLayout( self._layout )
+        self._cboJahr:BaseComboBox = None
         self._tv = None
         self._feBetrag: FloatEdit = None
         self._mainWidget: QWidget = None
         self._createDlg()
+        self._needResize = True
 
     def _createDlg( self ):
         w = 90
+        self._cboJahr = BaseComboBox()
+        self._cboJahr.currentIndexChanged.connect( self.onYearChanged )
+        self._cboJahr.setMaximumWidth( w )
         self._tv = BaseTableView()
         self._feBetrag = FloatEdit()
         self._feBetrag.setMaximumWidth( w )
@@ -36,25 +43,46 @@ class SammelabgabeSplitterDialog( OkApplyCancelDialog ):
         w = QWidget()
         lay = BaseGridLayout()
         w.setLayout( lay )
-        lay.addWidget( self._tv, 0, 0, 1, 2 )
-        lay.addWidget( BaseLabel( "Von der Stadt eingezogener Betrag: " ), 1, 0, Qt.AlignRight )
-        lay.addWidget( self._feBetrag, 1, 1 ) #, Qt.AlignLeft )
-        lay.addWidget( BaseLabel( "Buchungsdatum: " ), 2, 0, Qt.AlignRight )
-        lay.addWidget( self._sdBuchungsdatum, 2, 1 )
+        r = 0
+        lay.addWidget( self._cboJahr, r, 1 )
+        r += 1
+        lay.addWidget( self._tv, r, 0, 1, 2 )
+        r += 1
+        lay.addWidget( BaseLabel( "Von der Stadt eingezogener Betrag: " ), r, 0, Qt.AlignRight )
+        lay.addWidget( self._feBetrag, r, 1 ) #, Qt.AlignLeft )
+        r += 1
+        lay.addWidget( BaseLabel( "Buchungsdatum: " ), r, 0, Qt.AlignRight )
+        lay.addWidget( self._sdBuchungsdatum, r, 1 )
         mleHinweis = MultiLineEdit()
         text = "Nach Drücken von OK werden soviele Zahlungen angelegt wie Objekte angezeigt werden." \
                "Der eingegebene Betrag wird dabei als Buchungstext in alle Zahlungen übernommen."
         mleHinweis.setValue( text )
         mleHinweis.setEnabled( False )
         mleHinweis.setMaximumHeight( 60 )
-        lay.addWidget( mleHinweis, 3, 0, 1, 2 )
+        r += 1
+        lay.addWidget( mleHinweis, r, 0, 1, 2 )
         return w
+
+    def setJahre( self, jahre:Iterable[int] ):
+        jahrlist = [str(j) for j in jahre]
+        self._cboJahr.addItems( jahrlist )
+
+    def setJahr( self, jahr:int ):
+        """
+        Setzt <jahr> als current item in der Jahr-ComboBox.
+        <jahr> muss Bestandteil der Item-List der ComboBox sein, also vorher mit setJahre(..) gesetzt worden sein.
+        :param jahr:
+        :return:
+        """
+        self._cboJahr.setCurrentText( str(jahr) )
 
     def setTableModel( self, tm:BaseTableModel ):
         self._tv.setModel( tm )
         w = self._tv.getPreferredWidth()
         h = self._tv.model().rowCount() * 25 + 200
-        self.resize( QSize( w+35, h ) )
+        if self._needResize:
+            self.resize( QSize( w+35, h ) )
+            self._needResize = False
 
     def setAbschlag( self, betrag:float ):
         self._feBetrag.setFloatValue( betrag )
@@ -81,6 +109,9 @@ class SammelabgabeSplitterDialog( OkApplyCancelDialog ):
     def beforeAccept( self ):
         print( "before accept" )
 
+    def onYearChanged( self, newIndex ):
+        self.year_changed.emit( int( self._cboJahr.itemText( newIndex ) ) )
+
 def test():
     from PySide2.QtWidgets import QApplication
     from v2.sammelabgabe.sammelabgabelogic import SammelabgabeTableModel
@@ -94,4 +125,6 @@ def test():
     tm = SammelabgabeTableModel( (x, ), 2022 )
     dlg = SammelabgabeSplitterDialog()
     dlg.setTableModel( tm )
+    dlg.setJahre( (2021, 2022, 2023) )
+    dlg.setJahr( 2022 )
     dlg.exec_()

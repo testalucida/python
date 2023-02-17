@@ -20,10 +20,17 @@ class SammelabgabeController( IccController ):
 
     def _createGui( self ) -> SammelabgabeSplitterDialog:
         self._dlg = SammelabgabeSplitterDialog()
-        tm = self._logic.getSammelabgabeTableModel( self.getYearToStartWith() )
+        self._dlg.year_changed.connect( self.onYearChanged )
+        jahr = self.getYearToStartWith()
+        jahrlist = self._logic.getJahre()
+        self._dlg.setJahre( jahrlist )
+        self._dlg.setJahr( jahr )
+        self._dlg.setBuchungsdatum( datehelper.getCurrentDateIso() )
+
+    def _provideModel( self, jahr:int ):
+        tm = self._logic.getSammelabgabeTableModel( jahr )
         self._dlg.setTableModel( tm )
         self._dlg.setAbschlag( tm.getVierteljahresAbschlag() )
-        self._dlg.setBuchungsdatum( datehelper.getCurrentDateIso() )
 
     def getMenu( self ) -> QMenu or None:
         return None
@@ -58,6 +65,8 @@ class SammelabgabeController( IccController ):
                 box.exec_()
                 return None
 
+    def onYearChanged( self, newYear ):
+        self._provideModel( newYear )
 
 def test():
     app = QApplication()

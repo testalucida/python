@@ -446,8 +446,8 @@ class AbschlagLogic( MtlEinAusLogic ):
 
     def createAbschlagzahlungenModel( self, jahr: int, checkmonatIdx:int=None ) -> AbschlagTableModel:
         #zlist:List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.REGELM_ABSCHLAG.display, jahr )
-        zlist_allg: List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.ALLGEMEINE_KOSTEN.display, jahr )
-        zlist_sonst: List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.SONSTIGE_KOSTEN.display, jahr )
+        zlist_allg: List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.ALLGEMEINE_KOSTEN.display, jahr, "and sab_id > 0 " )
+        zlist_sonst: List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.SONSTIGE_KOSTEN.display, jahr, "and sab_id > 0 " )
         zlist = zlist_allg + zlist_sonst
         zlist = self._getCondensedEinAusList( zlist ) # zlist enthält für jede sab_id und jeden Monat genau 1 XEinAus-Objekt
         sollAbschlagList:List[XSollAbschlag] = self._abschlagData.getSollabschlaege( jahr )

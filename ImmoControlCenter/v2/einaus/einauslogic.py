@@ -12,9 +12,9 @@ class EinAusTableModel( IccTableModel):
     def __init__( self, rowlist:List[XEinAus], jahr ):
         IccTableModel.__init__( self, rowlist, jahr )
         self.setKeyHeaderMappings2(
-            ("master_name", "mobj_id", "debi_kredi", "leistung", "buchungsdatum", "jahr", "ea_art", "verteilt_auf",
+            ("master_name", "mobj_id", "debi_kredi", "leistung", "buchungsdatum", "jahr", "monat", "ea_art", "verteilt_auf",
              "betrag", "buchungstext", "write_time" ),
-            ("Haus", "Whg", "Debitor/\nKreditor", "Leistung", "Buch.datum", "steuerl.\nJahr", "Art", "vJ",
+            ("Haus", "Whg", "Debitor/\nKreditor", "Leistung", "Buch.datum", "steuerl.\nJahr", "Monat", "Art", "vJ",
              "Betrag", "Text", "eingetragen")
         )
         self._colBuchungsdatum = 4
@@ -45,7 +45,9 @@ class EinAusLogic(IccLogic):
         """
         l:List[XEinAus] = self._einausData.getEinAuszahlungenJahr( jahr )
         # for x in l:
-        #     x.write_time = x.write_time[0:10]
+        #     # x.write_time = x.write_time[0:10]
+        #     if x.ea_art == EinAusArt.BRUTTOMIETE.display:
+        #         x.leistung = "Miete " + x.monat + " " + str( x.jahr )
         tm = EinAusTableModel( l, jahr )
         return tm
 
@@ -78,14 +80,14 @@ class EinAusLogic(IccLogic):
         tm = EinAusTableModel( l, jahr )
         return tm
 
-    def getZahlungen( self, ea_art_display:str, jahr:int ) -> List[XEinAus]:
+    def getZahlungen( self, ea_art_display:str, jahr:int, additionalWhereClause="" ) -> List[XEinAus]:
         """
         Liefert alle Zahlungen der Art <ea_art> im Jahr <jahr>
         :param ea_art_display:
         :param jahr:
         :return:
         """
-        return self._einausData.getEinAusZahlungen( ea_art_display, jahr )
+        return self._einausData.getEinAusZahlungen( ea_art_display, jahr, additionalWhereClause )
 
     def getEinzahlungenSumme( self, jahr:int ) -> float:
         return self._einausData.getEinzahlungenSumme( jahr )
