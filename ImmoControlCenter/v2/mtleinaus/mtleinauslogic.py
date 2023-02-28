@@ -44,18 +44,6 @@ class MtlEinAusLogic( IccLogic ):
     def getDebiKrediKey( self ) -> Any:
         pass
 
-
-    # @abstractmethod
-    # def getMonatsZahlung( debikredi:str, month_sss:str, year:int ) -> XMtlZahlung:
-    #     pass
-
-    # def addMonatsZahlung_( self, mobj_id:str, debikredi:str,
-    #                       selectedYear:int, selectedMonth:int, value:float, mehrtext:str= "" ) -> XEinAus:
-    #     xeinaus = self._ealogic.addZahlung( self.getEinAusArt(), mobj_id, debikredi,
-    #                                         selectedYear, selectedMonth, value, mehrtext=mehrtext )
-    #     self._ealogic.commit()
-    #     return xeinaus
-
     def addMonatsZahlung( self, x:XMtlZahlung, selectedYear:int, selectedMonth:int,
                           value:float, buchungstext:str= "" ) -> XEinAus:
         debi_kredi = self.getDebiKrediKey()
@@ -86,16 +74,23 @@ class MtlEinAusLogic( IccLogic ):
         if x.betrag == 0:
             return "Betrag ungültig. Muss ungleich 0 sein."
         if not x.ea_art in ( EinAusArt.BRUTTOMIETE.display, EinAusArt.HAUSGELD_VORAUS.display,
-                             EinAusArt.KOMMUNALE_DIENSTE.display ):
-            return "Ungültige EinAusArt. Muss BRUTTOMIETE, HAUSGELD_VORAUS oder KOMMUNALE_DIENSTE sein."
+                             EinAusArt.ALLGEMEINE_KOSTEN.display ):    #EinAusArt.KOMMUNALE_DIENSTE.display ):
+            return "Ungültige EinAusArt '%s'. Muss BRUTTOMIETE, HAUSGELD_VORAUS oder ALLGEMEINE_KOSTEN sein." % x.ea_art
         return ""
 
-    def updateMonatsZahlung( self, x:XEinAus ):
+    def updateMonatsZahlung( self, x:XEinAus, tm:MtlEinAusTableModel ) -> int or float:
         msg = self.validateMonatsZahlung( x )
         if msg:
             raise Exception( "MtlEinAusLogic.updateMonatsZahlung():\nValidierung fehlerhaft:\n%s" % msg )
+        # alten Monatswert holen:
+        oldxea = self._ealogic.getZahlung( x.ea_id )
         self._ealogic.updateZahlung( x )
         self._ealogic.commit()
+        # alles ok
+        delta = x.betrag - oldxea.betrag
+        if delta != 0:
+            self._updateMonatswertAndSumme( tm, x.monat, x.mobj_id, x.debi_kredi, delta )
+        return delta
 
     def getZahlungenModelObjektMonat( self, mobj_id, year:int, monthIdx:int ) -> EinAusTableModel:
         ea_art_display = self.getEinAusArt()
@@ -112,31 +107,59 @@ class MtlEinAusLogic( IccLogic ):
         ea_art_display = self.getEinAusArt()
         return self._ealogic.getZahlungenModel3( ea_art_display, year, monthIdx, debikredi )
 
-    def deleteZahlungen( self, ealist:List[XEinAus], model:MtlEinAusTableModel ):
+    def deleteZahlungen( self, ealist:List[XEinAus], tm:MtlEinAusTableModel ) -> int or float:
         """
-        Die XEinAus-Objekte aus <xlist> werden aus der Datenbank, Tabelle <einaus> gelöscht.
+        Die XEinAus-Objekte aus <xlist> werden aus der Datenbanktabelle <einaus> gelöscht.
         Aus <model> müssen dann die XMtlZahlung-Objekte entfernt, neu berechnet und wieder eingefügt werden,
-        die von der Löschung der Einzelzahlungen betroffen sind.
-        Die XMtlZahlung-Objekte werden anhand debi_kredi, jahr und monat gefunden.
-        :param xlist:
-        :param model:
-        :return:
+        die von der Löschung der Einzelzahlungen betroffen sind. Dafür werden die XMtlZahlung-Objekte anhand
+        debi_kredi und monat identifiziert (jahr wird nicht benötigt, da in <model> nur ein einziges Jahr
+        enthalten ist.
+        :param ealist: enthält die XEinAus-Objekte, die gelöscht werden sollen.
+                        NB: sie beziehen sich alle auf genau eine mobj_id, genau einen debikredi und genau einen Monat.
+                        Sie betreffen also genau eine Row im MtlEinAusTableModel <model>.
+        :param model: das TableModel der monatlichen Zahlungen. In diesem muss der Monatswert, auf den sich
+                    die Löschungen beziehen, aktualisiert werden.
+        :return: das Delta, um das sich der betroffene Monatswert ändert.
         """
+        if len( ealist ) == 0: return
+        ea_art_set = set( [x.ea_art for x in ealist] )
+        if len( ea_art_set ) > 1:
+            raise Exception( "MtlEinAusLogic.deleteZahlungen():\n"
+                             "Unterschiedliche ea_art'en gefunden.\n"
+                             "Alle zu löschenden Zahlungen müssen von derselben ea_art sein." )
+        monat = mobj_id = debi_kredi = ""
+        delta = 0
+        for xea in ealist:
+            if ( "" < mobj_id != xea.mobj_id) \
+            or ( "" < debi_kredi != xea.debi_kredi ) \
+            or ( "" < monat != xea.monat ):
+               raise Exception( "MtlEinAusLogic.deleteZahlungen():\n"
+                                "Zu löschende Teilzahlungen dürfen sich nicht auf verschiedene\n"
+                                "Monate, Objekte oder Kreditoren bzw. Debitoren beziehen!")
+            monat = xea.monat
+            mobj_id = xea.mobj_id
+            debi_kredi = xea.debi_kredi
+            delta -= xea.betrag
         self._ealogic.deleteZahlungen( ealist )
         self._ealogic.commit()
         # wir sind noch hier, also hat die DB-Löschung der Einzelzahlungen funktioniert.
-        # aus dem Model die betroffenen XMTlZahlung-Objekte finden
-        mtlZlist:List[XMtlZahlung] = model.getRowList()
-        debikredikey = self.getDebiKrediKey()
-        for ea in ealist: # ea: eine einzelne Zahlung, die gerade aus der Tabelle einaus gelöscht wurde
-            for mtlZ in mtlZlist: # mtlZ: Monatszahlung ggf. bestehend aus mehreren Einzelzahlungen
-                if mtlZ.getValue( debikredikey ) == ea.debi_kredi:
-                    mtlZ.__dict__[ea.monat] -= ea.betrag
-                    model.objectUpdatedExternally( mtlZ )
-                    # model.removeObject( mtlZ )
-                    # mtlZneu = self.getMonatsZahlung( mtlZ.getValue( debikredikey ), ea.monat, ea.jahr )
+        self._updateMonatswertAndSumme( tm, monat, mobj_id, debi_kredi, delta )
+        return delta
 
-    def getMonthIntervallForCurrentYear( self, jahr:int, isoVon: str, isoBis: str ) -> (str, str):
+    @staticmethod
+    def _updateMonatswertAndSumme( tm:MtlEinAusTableModel,
+                                   monat:str, mobj_id:str, debi_kredi:str, delta:int or float ):
+        # aus <tm> das betroffene XMtlZahlung-Objekt finden:
+        xmz: XMtlZahlung = tm.getMtlZahlung( mobj_id, debi_kredi )
+        monthIdx = iccMonthShortNames.index( monat )
+        oldMonthValue = xmz.getMonthValue( monthIdx )
+        newMonthValue = oldMonthValue + delta
+        xmz.setMonthValue( monthIdx, newMonthValue )
+        xmz.computeSum()
+        tm.objectUpdatedExternally( xmz )
+
+    @staticmethod
+    def getMonthIntervallForCurrentYear( jahr:int, isoVon: str, isoBis: str ) -> (str, str):
         """
         Ermittelt, ob der Zeitraum isoVon bis isoBis das komplette <jahr> beinhaltet (dann wird ("jan", "dez") zurück-
         gegeben) oder ob isoVon erst in <jahr> startet (dann wird der Monatsname des entsprechenden Startmonats

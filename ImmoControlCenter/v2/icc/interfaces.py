@@ -94,6 +94,9 @@ class XMtlZahlung( XBase ):
 
     def setMonthValue( self, m:int, value:float ):
         """
+        Setzt den durch <m> spezifizierten Monatswert auf den Wert <value>.
+        Achtung: errechnet KEINE neue Summe!
+        Dies muss explizit durch einen Aufruf von computeSum() durchgeführt werden.
         :param m: index of month: 0 to 11
         :param value: float value to set
         :return: None

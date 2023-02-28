@@ -39,6 +39,12 @@ class MtlEinAusTableModel( IccSumTableModel ):
              "Sep", "Okt", "Nov", "Dez", "Summe") )
         self.idxSumColumn = self.getColumnIndexByKey( "summe" )
 
+    def getMtlZahlung( self, mobj_id:str, debi_kredi:str ) -> XMtlZahlung:
+        debi_kredi_key = self.getDebiKrediKey()
+        for xmz in self.rowList:
+            if xmz.mobj_id == mobj_id and xmz.__dict__[debi_kredi_key] == debi_kredi:
+                return xmz
+
     @abstractmethod
     def getDebiKrediKey( self ) -> str:
         pass
@@ -95,6 +101,15 @@ class MtlEinAusTableModel( IccSumTableModel ):
 
     def getSummeValue( self, row:int ) -> float:
         return self.getValue( row, self.idxSumColumn )
+
+    def addValueToSumme( self, row:int, value:int or float ):
+        summe = self.getSummeValue( row )
+        summe += value
+        self.setValue( row, self.idxSumColumn, summe )
+
+    def subtractValueFromSumme( self, row:int, value:int or float ):
+        val = value * (-1)
+        self.addValueToSumme( self, row, val )
 
     def getSollValue( self, row: int ) -> float:
         return self.getValue( row, self.idxSollColumn )

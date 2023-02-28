@@ -7,6 +7,7 @@ from base.baseqtderivates import BaseAction
 from base.messagebox import InfoBox, ErrorBox
 from v2.abrechnungen.abrechnungcontroller import NKAbrechnungController, HGAbrechnungController
 from v2.einaus.einauscontroller import EinAusController
+#from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
 from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
 from v2.icc.constants import EinAusArt
 from v2.icc.icccontroller import IccController
@@ -30,6 +31,7 @@ class MainController( IccController ):
         self._nkaCtrl = NKAbrechnungController()
         self._hgaCtrl = HGAbrechnungController()
         #self._win.setShutdownCallback( self.onShutdown )
+        # todo: connect to EinAusWriteDispatcher wg. Versorgung Summenfelder
         EinAusWriteDispatcher.inst().ea_inserted.connect( self.onEinAusInserted )
         EinAusWriteDispatcher.inst().ea_updated.connect( self.onEinAusUpdated )
         EinAusWriteDispatcher.inst().ea_deleted.connect( self.onEinAusDeleted )
@@ -107,31 +109,50 @@ class MainController( IccController ):
         self._win.setLetzteBuchung( datum, text )
 
     def onEinAusInserted( self, x:XEinAus ):
-        summen = self._win.getSummenValues()
+        """
+        Ist mit dem ea_inserted-Signal des EinAusWriteDispatchers connected.
+        Aktualisiert die Summenfelder in der ToolBar der Anwendung
+        :param ea_id_list: wird hier nicht benötigt
+        :param ea_art_display: wird benötigt, um die Summenfelder richtig zu versorgen
+        :param betrag: betrag, der dem betreffenden Summenfeld addiert werden muss
+        :return:
+        """
+        # Summenfelder aktualisieren
         betrag = round(x.betrag)
+        self._updateSummen( x.ea_art, betrag )
+
+    def _updateSummen( self, ea_art_display:str, betrag:int ):
+        summen = self._win.getSummenValues()
         summen.saldo += betrag
-        if x.ea_art == EinAusArt.HAUSGELD_VORAUS.display:
+        if ea_art_display == EinAusArt.HAUSGELD_VORAUS.display:
             summen.sumHGV += betrag
-        elif x.betrag < 0:
-            summen.sumSonstAus += betrag
-        elif x.betrag >= 0:
+        elif ea_art_display in (EinAusArt.BRUTTOMIETE.display, EinAusArt.NEBENKOSTEN_ABRECHNG.display) :
             summen.sumEin += betrag
         else:
-            # hoppala!
-            box = ErrorBox( "Interner Fehler", "MainController.onEinAusInserted:\nNicht bedachte Konstellation!\n",
-                            more=x.toString() )
-            box.exec_()
-            return
+            summen.sumSonstAus += betrag
         self._win.setSummenValues( summen )
-        # datum = x.buchungsdatum if x.buchungsdatum else datehelper.getCurrentDateIso()
-        # text = x.debi_kredi + ": " + str( x.betrag )
-        # self._win.setLetzteBuchung( datum, text )
 
-    def onEinAusUpdated( self, x:XEinAus ):
-        print( "onEinAusUpdated")
+    def onEinAusUpdated( self, x:XEinAus, delta:int or float ):
+        """
+        Ist mit dem ea_updated-Signal des EinAusWriteDispatchers connected.
+        Aktualisiert die Summenfelder in der ToolBar der Anwendung
+        :param x: das geänderte XEinAus-Objekt
+        :param delta: wird benötigt, Wert der Änderung
+        :return:
+        """
+        if delta != 0:
+            self._updateSummen( x.ea_art, delta )
 
-    def onEinAusDeleted( self, x:XEinAus ):
-        print( "onEinAusDeleted")
+    def onEinAusDeleted( self, ea_id_list:List[int], ea_art_display:str, betrag:int or float ):
+        """
+        Ist mit dem ea_deleted-Signal des EinAusWriteDispatchers connected.
+        Aktualisiert die Summenfelder in der ToolBar der Anwendung.
+        :param ea_id_list: wird hier nicht benötigt
+        :param ea_art_display: wird benötigt, um die Summenfelder richtig zu versorgen
+        :param betrag: betrag, der dem betreffenden Summenfeld addiert werden muss
+        :return:
+        """
+        self._updateSummen( ea_art_display, betrag )
 
     def onExportDatabase( self ):
         try:

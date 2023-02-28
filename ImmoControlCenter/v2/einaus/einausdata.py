@@ -1,6 +1,6 @@
 from typing import List, Dict
 import datehelper
-from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
+#from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
 
 from v2.icc.constants import EinAusArt, Umlegbar
 from v2.icc.iccdata import IccData, DbAction
@@ -10,7 +10,7 @@ from v2.icc.interfaces import XEinAus, XLetzteBuchung
 class EinAusData( IccData ):
     def __init__(self):
         IccData.__init__( self )
-        self._dispatch:EinAusWriteDispatcher = EinAusWriteDispatcher.inst()
+        #self._dispatch:EinAusWriteDispatcher = EinAusWriteDispatcher.inst()
         # Dass der Dispatcher von EinAusData aufgerufen wird, ist unscharf, da in diesem Modul nicht
         # bekannt ist, ob der Schreibzugriff im Rahmen einer größeren Transaktion stattfindet oder ob die
         # Transaktion nur einen einzigen Schreibzugriff beinhaltet.
@@ -51,7 +51,8 @@ class EinAusData( IccData ):
                                         newvalues=x.toString( printWithClassname=True ), oldvalues=None )
         x.ea_id = inserted_id
         x.write_time = writetime
-        self._dispatch.einaus_inserted( x )
+        #self._dispatch.einaus_inserted( x ) # das ist eigentlich nicht richtig, denn die Transaktion ist noch nicht
+                                            # abgeschlossen
 
     def updateEinAusZahlung( self, x:XEinAus ) -> int:
         """
@@ -98,7 +99,7 @@ class EinAusData( IccData ):
         rowsAffected = self.writeAndLog( sql, DbAction.UPDATE, "einaus", "ea_id", x.ea_id,
                                          newvalues=x.toString( True ), oldvalues=oldX.toString( True ) )
         x.write_time = writetime
-        self._dispatch.einaus_updated( x )
+        #self._dispatch.einaus_updated( x, oldX )
         return rowsAffected
 
     def deleteEinAusZahlung( self, ea_id:int ):
@@ -112,7 +113,7 @@ class EinAusData( IccData ):
         sql = "delete from einaus where ea_id = %d" % ea_id
         self.writeAndLog( sql, DbAction.DELETE, "einaus", "ea_id", ea_id,
                           newvalues=None, oldvalues=x.toString( printWithClassname=True )  )
-        self._dispatch.einaus_deleted( ea_id )
+        #self._dispatch.einaus_deleted( ea_id )
 
     def getEinzahlungenSumme( self, jahr:int ) -> float:
         """ Liefert die Summe aller Einzahlungen (= positive Beträge) im Jahr <jahr>"""

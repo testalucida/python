@@ -18,7 +18,7 @@ class EinAusTableModel( IccTableModel):
              "Betrag", "Text", "eingetragen")
         )
         self._colBuchungsdatum = 4
-        self._colWriteTime = 10
+        self._colWriteTime = 11
 
     def getBuchungsdatumColumnIdx( self ) -> int:
         return self._colBuchungsdatum
@@ -44,10 +44,6 @@ class EinAusLogic(IccLogic):
         :return:
         """
         l:List[XEinAus] = self._einausData.getEinAuszahlungenJahr( jahr )
-        # for x in l:
-        #     # x.write_time = x.write_time[0:10]
-        #     if x.ea_art == EinAusArt.BRUTTOMIETE.display:
-        #         x.leistung = "Miete " + x.monat + " " + str( x.jahr )
         tm = EinAusTableModel( l, jahr )
         return tm
 
@@ -89,6 +85,9 @@ class EinAusLogic(IccLogic):
         """
         return self._einausData.getEinAusZahlungen( ea_art_display, jahr, additionalWhereClause )
 
+    def getZahlung( self, ea_id:int ) -> XEinAus:
+        return self._einausData.getEinAusZahlung( ea_id )
+
     def getEinzahlungenSumme( self, jahr:int ) -> float:
         return self._einausData.getEinzahlungenSumme( jahr )
 
@@ -128,6 +127,8 @@ class EinAusLogic(IccLogic):
             else:
                 self._einausData.updateEinAusZahlung( x )
                 self._einausData.commit()
+            # todo: Zahlung in das TableModel "AlleZahlungen" eintragen
+
             return ""
 
     def validateZahlung( self, x:XEinAus ) -> str:
@@ -155,6 +156,18 @@ class EinAusLogic(IccLogic):
     def addZahlung( self, ea_art, mobj_id:str, debikredi:str,
                     jahr:int, monthIdx:int, value:float,
                     buchungsdatum:str=None, buchungstext:str=None ) -> XEinAus:
+        """
+        Methode, die für die monatl. Mietzahlungen und die Hausgeldvorauszahlungen aufgerufen wird
+        :param ea_art:
+        :param mobj_id:
+        :param debikredi:
+        :param jahr:
+        :param monthIdx:
+        :param value:
+        :param buchungsdatum:
+        :param buchungstext:
+        :return:
+        """
         if buchungsdatum:
             if not datehelper.isValidIsoDatestring( buchungsdatum ):
                 raise ValueError( "EinAusLogic.addZahlung():\nBuchungsdatum '%s' ist nicht im ISO-Format." )
@@ -176,6 +189,22 @@ class EinAusLogic(IccLogic):
     def addZahlung2( self, ea_art_display, master_name:str,  mobj_id:str, debikredi:str, sab_id:int, leistung:str,
                     jahr:int, monthIdx:int, value:float, umlegbar:str=Umlegbar.NEIN.value,
                     buchungsdatum:str=None, buchungstext:str=None ) -> XEinAus:
+        """
+        Methode, die für die Abschlagszahlungen aufgerufen wird.
+        :param ea_art_display:
+        :param master_name:
+        :param mobj_id:
+        :param debikredi:
+        :param sab_id:
+        :param leistung:
+        :param jahr:
+        :param monthIdx:
+        :param value:
+        :param umlegbar:
+        :param buchungsdatum:
+        :param buchungstext:
+        :return:
+        """
         if buchungsdatum:
             if not datehelper.isValidIsoDatestring( buchungsdatum ):
                 raise ValueError( "EinAusLogic.addZahlung():\nBuchungsdatum '%s' ist nicht im ISO-Format." )

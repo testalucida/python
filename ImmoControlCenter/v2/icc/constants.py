@@ -68,13 +68,13 @@ class EinAusArt: # EinAus-Arten, wie sie in die Tabelle einaus eingetragen werde
     BRUTTOMIETE = ValueMapper( "Bruttomiete", "bruttomiete" )
     #NEBENKOSTEN_VORAUS = ValueMapper( "Nebenkostenvorauszahlung", "nkv" )
     HAUSGELD_VORAUS = ValueMapper( "Hausgeldvorauszahlung", "hgv" )
-    #allREGELM_ABSCHLAG = ValueMapper( "Mtl. Abschlag", "rab" )
+    #REGELM_ABSCHLAG = ValueMapper( "Mtl. Abschlag", "rab" )
     NEBENKOSTEN_ABRECHNG = ValueMapper( "Nebenkostenabrechnung", "nka" )
     HAUSGELD_ABRECHNG = ValueMapper( "Hausgeldabrechnung", "hga" )
     SONDERUMLAGE = ValueMapper( "Sonderumlage", "sonder" )
     ALLGEMEINE_KOSTEN = ValueMapper( "Allgemeine Hauskosten", "allg" )
     GRUNDSTEUER = ValueMapper( "Grundsteuer", "gs" )
-    KOMMUNALE_DIENSTE = ValueMapper( "Kommunale Dienste", "komm" )  # Abschläge und Abrechnungen für Strom, Gas etc.
+    #KOMMUNALE_DIENSTE = ValueMapper( "Kommunale Dienste", "komm" )  # Abschläge und Abrechnungen für Strom, Gas etc.
     REPARATUR = ValueMapper( "Reparatur", "rep" )
     DIENSTREISE = ValueMapper( "Dienstreise", "reise" )
     SONSTIGE_KOSTEN = ValueMapper( "Sonstige Kosten", "sonst" )

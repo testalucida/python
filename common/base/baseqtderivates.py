@@ -668,6 +668,13 @@ class IntDisplay( BaseEdit ):
         self.setAlignment( Qt.AlignRight )
 
     def setIntValue( self, val:int ):
+        if val is None:
+            raise ValueError( "IntDisplay.setIntValue(): val is None" )
+        if not isinstance( val, int ):
+            if isinstance( val, float ):
+                val = round( val )
+            else:
+                raise ValueError( "IntDisplay.setIntValue(): val '%s' is not an int" % str(val) )
         self.setText( str( val ) )
         if val < 0:
             self.setStyleSheet( "color: red;" )
@@ -676,11 +683,8 @@ class IntDisplay( BaseEdit ):
 
     def getIntValue( self ) -> int:
         val = self.text()
-        if not val: val = "0"
-        try:
-            return int( val )
-        except:
-            print( "STOPP" )
+        return int( val )
+
 
 ################ TextDocument #####################
 class TextDocument( QTextDocument ):

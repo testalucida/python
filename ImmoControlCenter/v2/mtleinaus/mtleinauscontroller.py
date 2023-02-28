@@ -12,6 +12,7 @@ from base.interfaces import XBaseUI, VisibleAttribute
 from base.messagebox import ErrorBox, InfoBox
 from v2.einaus.einauslogic import EinAusTableModel
 from v2.einaus.einausview import EinAusTableView, TeilzahlungDialog, ValueDialog
+from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
 from v2.icc.constants import Action
 from v2.icc.icccontroller import IccController
 from v2.icc.iccwidgets import IccCheckTableViewFrame, IccTableView
@@ -217,6 +218,8 @@ class MtlEinAusController( IccController ):
                     return
                 v.updateData() # Validierung war ok, also Übernahme der Änderungen ins XBase-Objekt
                 try:
+                    # aus dem MtlZahlungenEditDialog die Liste der Einzelzahlungen holen,
+                    # die in Summe die Monatszahlung ergeben:
                     xlist:List[XEinAus] = eatm.getRowList()
                     self._updateZahlung( x, xlist, row )
                 except Exception as ex:
@@ -230,19 +233,13 @@ class MtlEinAusController( IccController ):
         def onDeleteItems( rowlist:List[int] ):
             """
             Callback vom MtlZahlungEditDialog.
-            Ausgewählte Zahlungen löschen, MtlZahlungEditDialog aktualisieren (Row entfernen),
+            Ausgewählte Zahlungen in <rowlist> löschen, MtlZahlungEditDialog aktualisieren (Row entfernen),
             MtlEinAusTableView aktualisieren (den Betrag der gelöschten Zahlung vom Monatswert abziehen).
             :param rowlist:
             :return:
             """
-            xlist:List[XEinAus] = eatm.getElements( rowlist )
             try:
-                # wir übergeben der Logik die Einzelzahlungen in xlist zum Löschen aus der <einaus>.
-                # Außerdem übergeben wir das Model mit den XMtlZahlung-Objekten. (Ein XMtlZahlung-Objekt ist aus
-                # der Saldierung mehrerer XEinAus-Objekte entstanden.
-                self.getLogic().deleteZahlungen( xlist, monatstm )
-                # hat geklappt - jetzt die gelöschten Zahlungen aus dem MtlZahlungEditDialog entfernen:
-                eatm.removeObjects( xlist )
+                self._deleteZahlungen( eatm, rowlist )
             except Exception as ex:
                 box = ErrorBox( "Fehler beim Delete", str( ex ),
                                 "\nException aufgetreten in MtlEinAusController.onBetragEdit.onDeleteItems" )
@@ -281,6 +278,9 @@ class MtlEinAusController( IccController ):
             # Datenbank-Insert
             x:XMtlZahlung = model.getElement( row ) # das OBjekt, in das die neue Monatszahlung eingetragen werden soll
             self._newEinAus = self.getLogic().addMonatsZahlung( x, selectedYear, selectedMonthIdx, value, bemerkung )
+            # EinAusWriteDispatcher informieren, damit die tableview "Alle Zahlungen" und die Summenfelder
+            # aktualisiert werden
+            EinAusWriteDispatcher.inst().einaus_inserted( self._newEinAus )
         except Exception as ex:
             box = ErrorBox( "Fehler beim Aufruf von MieteLogic.addZahlung(...) ",
                             "Exception in MtlEinAusController._addZahlung():\n" +
@@ -307,13 +307,41 @@ class MtlEinAusController( IccController ):
         :param row: Die Zeile im MtlEinAusTableModel, in der sich das zu ändernde XMtlZahlung-Objekt befindet
         :return: 
         """
-        # Datenbank-Update:
-        self.getLogic().updateMonatsZahlung( x )
-        # Update des MtlEinAusTableModel:
-        model = self.getModel()
-        newval = sum( [b.betrag for b in xlist ] )
-        editColIdx = model.getEditableColumnIdx()
-        model.setValue( row, editColIdx, newval )
+        try:
+            # Datenbank-Update:
+            delta = self.getLogic().updateMonatsZahlung( x, self.getModel() )
+            # EinAusWriteDispatcher informieren, damit die tableview "Alle Zahlungen" und die Summenfelder
+            # aktualisiert werden
+            EinAusWriteDispatcher.inst().einaus_updated( x, delta )
+        except Exception as ex:
+            box = ErrorBox( "Fehler beim Aufruf von MtlEinAusLogic.updateMonatsZahlung(...) ",
+                            "Exception in MtlEinAusController._updateZahlung():\n" +
+                            str( ex ), "" )
+            box.exec_()
+            return None
+
+    def _deleteZahlungen( self, eatm:EinAusTableModel, rowlist:List[int] ):
+        """
+        Ein oder mehrere Einzelzahlungen, die zu einem Monatswert gehören, sollen gelöscht werden.
+        :param eatm: EinAusTableModel, das die Einzelzahlungen enthält, die in Summe einen Monatswert ausmachen.
+        :param rowlist: Liste der zu löschenden Zeilennummern.
+                        Es handelt sich um das Model der Einzelzahlungen, die die Monatszahlung ergeben.
+        :return:
+        """
+        if len( rowlist ) < 1: return
+        xlist: List[XEinAus] = eatm.getElements( rowlist )
+        ea_id_list = [x.ea_id for x in xlist]
+        ea_art = xlist[0].ea_art # Annahme, dass alle ea_art'en gleich sind. Überprüft wird das im Logik-Modul.
+        # wir übergeben der Logik die Einzelzahlungen in xlist zum Löschen aus der <einaus>.
+        # Außerdem übergeben wir das Model mit den XMtlZahlung-Objekten. (Ein XMtlZahlung-Objekt ist aus
+        # der Saldierung mehrerer XEinAus-Objekte entstanden.
+        delta = self.getLogic().deleteZahlungen( xlist, self.getModel() )
+        # hat geklappt - jetzt die gelöschten Zahlungen aus dem MtlZahlungEditDialog
+        # ("Ändern/Ergänzen von Zahlungen") entfernen:
+        eatm.removeObjects( xlist )
+        # EinAusWriteDispatcher informieren, damit die tableview "Alle Zahlungen" und die Summenfelder
+        # aktualisiert werden
+        EinAusWriteDispatcher.inst().einaus_deleted( ea_id_list, ea_art, delta )
 
     def _showMietobjekt( self ):
         model:MtlEinAusTableModel = self.getModel()
@@ -329,26 +357,6 @@ class MtlEinAusController( IccController ):
     def _copySelectionToClipboard( self ):
         btf = BaseTableFunctions()
         btf.copySelectionToClipboard( self._tv )
-        # values: str = ""
-        # indexes = self._tv.selectedIndexes()
-        # model = self.getModel()
-        # row = -1
-        # for idx in indexes:
-        #     if row == -1: row = idx.row()
-        #     if row != idx.row():
-        #         values += "\n"
-        #         row = idx.row()
-        #     elif len( values ) > 0:
-        #         values += "\t"
-        #     val = model.getValue( idx.row(), idx.column() )
-        #     val = " nil " if not val else val
-        #     if isinstance( val, Number ):
-        #         values += str( val )
-        #     else:
-        #         values += val
-        # clipboard = QGuiApplication.clipboard()
-        # clipboard.setText( values )
-
 
 ##############  MieteController  ####################
 class MieteController( MtlEinAusController ):

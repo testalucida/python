@@ -63,7 +63,7 @@ class SammelabgabeLogic( IccLogic ):
         """
         def trySaveGrundsteuer():
             xea: XEinAus = self._createXEinAusKopfdaten( x, jahr, buchungsdatum )
-            self._createXEinAusKopfdaten( x, jahr, buchungsdatum )
+            #self._createXEinAusKopfdaten( x, jahr, buchungsdatum )
             self._supplyGrundsteuerDaten( xea, x.grundsteuer )
             self._supplyBemerkung( xea, betrag )
             ealogic.trySaveZahlung( xea )
@@ -71,7 +71,7 @@ class SammelabgabeLogic( IccLogic ):
 
         def trySaveAbgaben():
             xea: XEinAus = self._createXEinAusKopfdaten( x, jahr, buchungsdatum )
-            self._createXEinAusKopfdaten( x, jahr, buchungsdatum )
+            #self._createXEinAusKopfdaten( x, jahr, buchungsdatum )
             self._supplyAbwasserStrasse( xea, x )
             self._supplyBemerkung( xea, betrag )
             ealogic.trySaveZahlung( xea )
@@ -115,8 +115,8 @@ class SammelabgabeLogic( IccLogic ):
         xea.betrag = round( x.abwasser/4 + x.strassenreinigung/4, 2 )
 
     def _supplyBemerkung( self, xea:XEinAus, betrag:float ):
-        xea.mehrtext = "Abbuchung: %.2f €.\n" % betrag
-        xea.mehrtext += "Zahlung entstand durch algorithmische Splittung."
+        xea.buchungstext = "Abbuchung: %.2f €.\n" % betrag
+        xea.buchungstext += "Zahlung entstand durch algorithmische Splittung."
 
 def test():
     logic = SammelabgabeLogic()

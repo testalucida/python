@@ -2,7 +2,7 @@ from enum import Enum, auto
 from typing import List, Callable, Iterable
 
 from PySide2.QtCore import Qt, QSize
-from PySide2.QtWidgets import QAction, QDialog, QMenu
+from PySide2.QtWidgets import QAction, QDialog, QMenu, QMessageBox
 
 import datehelper
 from base.baseqtderivates import BaseComboBox, BaseEdit, FloatEdit, IntEdit, BaseCheckBox, SmartDateEdit, MultiLineEdit, \
@@ -11,13 +11,14 @@ from base.basetablefunctions import BaseTableFunctions
 from base.basetablemodel import BaseTableModel
 from base.filterhandler import FilterHandler
 from base.interfaces import VisibleAttribute
-from base.messagebox import InfoBox
+from base.messagebox import InfoBox, QuestionBox
 from base.multisorthandler import MultiSortHandler
 from base.printhandler import PrintHandler
 from base.searchhandler import SearchHandler
 from v2.einaus.einausdialogcontroller import EinAusDialogController
 from v2.einaus.einauslogic import EinAusLogic, EinAusTableModel
 from v2.einaus.einausview import EinAusTableView, EinAusTableViewFrame, XEinAusUI, EinAusDialog
+from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
 from v2.icc.constants import EinAusArt, Action
 from v2.icc.icccontroller import IccController
 from v2.icc.iccwidgets import IccCheckTableViewFrame
@@ -38,6 +39,9 @@ class EinAusController( IccController ):
         self._tvframe: EinAusTableViewFrame = EinAusTableViewFrame( self._tv, withEditButtons=True )
         self._logic = EinAusLogic()
         self._jahr:int = self.getYearToStartWith()
+        EinAusWriteDispatcher.inst().ea_inserted.connect( self.onEinAusInserted )
+        EinAusWriteDispatcher.inst().ea_updated.connect( self.onEinAusUpdated )
+        EinAusWriteDispatcher.inst().ea_deleted.connect( self.onEinAusDeleted )
 
     def createGui( self ) -> EinAusTableViewFrame:
         jahr = self._jahr
@@ -89,16 +93,26 @@ class EinAusController( IccController ):
                 tm.addObject( ea )
 
     def onNewEinAus( self ):
+        """
+        Im TableView "Alle Zahlungen" wurde der "+"-Button gedrückt
+        :return:
+        """
         ctrl = EinAusDialogController()
-        ctrl.ea_inserted.connect( self.onNewEinAusInserted )
+        ctrl.ea_inserted.connect( self.onEinAusInserted )
         ctrl.processNewEinAus()
 
-    def onNewEinAusInserted( self, x:XEinAus ):
-        # der Tabelle den neuen Satz hinzufügen - aber nur, wenn das steuerliche Jahr <x.jahr>
-        # zu dem in der Combobox selektierten Jahr passt.
+    def onEinAusInserted( self, x:XEinAus ):
+        # Wird vom EinAusDialogController aufgerufen, nachdem ein neuer Satz in Tabelle <einaus> eingefügt wurde.
+        # Jetzt muss der tableView "Alle Zahlungen" der neue Satz hinzugefügt werden -
+        # aber nur, wenn das steuerliche Jahr <x.jahr> zu dem in der Combobox selektierten Jahr passt.
         if self._jahr == x.jahr:
             model:EinAusTableModel = self._tv.model()
             model.addObject( x )
+            # # testen, ob  x schon im Model vorhanden ist.
+            # # Wenn nicht, gibt es eine Exception, und im except-Zweig wird das neue Objekt eingefügt.
+            # xcheck = model.getElementByUniqueKeyValue( "ea_id", x.ea_id )
+            # if not xcheck:
+            #     model.addObject( x )
         else:
             box = InfoBox( "Buchung für fremdes Jahr", "Die eingegebene Buchung bezieht sich auf das Jahr %d.\n"
                                                        "Eingestellt ist Jahr %d.\n"
@@ -109,14 +123,48 @@ class EinAusController( IccController ):
     def onEditEinAus( self, row:int ):
         x:XEinAus = self._tv.model().getElement( row )
         ctrl = EinAusDialogController()
-        ctrl.ea_updated.connect( self.onEinAusModified )
+        ctrl.ea_updated.connect( self.onEinAusUpdated )
         ctrl.processEinAusModification( x )
 
-    def onEinAusModified( self, x: XEinAus ):
-        print( "modified" )
+    def onEinAusUpdated( self, x: XEinAus, delta:int or float ):
+        """
+        Ist mit dem EinAusWriteDispatcher.ea_updated-Signal connectdd.
+        :param x: das geänderte XEInAus-Objekt
+        :param delta: wird hier nicht benötigt.
+        :return:
+        """
+        if self._jahr == x.jahr:
+            tm:EinAusTableModel = self._tv.model()
+            x2 = tm.getElementByUniqueKeyValue( "ea_id", x.ea_id )
+            if x != x2:
+                x2.updateFromOther( x )
 
     def onDeleteEinAus( self, rows:List[int] ):
-        print( "delete Zahlungen ", rows )
+        """
+        Wird aufgerufen, wenn im tvframe "Alle Zahlungen" der delete-Button gedrückt wird.
+        :param rows: die markierten Zeilen, Zahlungen repräsentierend, die gelöscht werden sollen
+        :return:
+        """
+        xealist = list()
+        model = self._tv.model()
+        for row in rows:
+            xea = model.getElement( row )
+            xealist.append( xea )
+        box = QuestionBox( "Ausgewählte Element löschen", "Ausgewählten Elemente wirklich löschen?", "Ja", "Nein" )
+        if box.exec_() == QMessageBox.Yes:
+            self._logic.deleteZahlungen( xealist )
+
+    def onEinAusDeleted( self, ea_id_list:List[int], delta:int or float ):
+        """
+        Wird von MainController.onEinAusDeleted aufgerufen.
+        Die entsprechende Zeile aus der TableView muss entfernt werden.
+        :param ea_id_list: Liste der zu löschenden ea_id
+        :param delta: interessiert hier nicht
+        :return:
+        """
+        model:BaseTableModel = self._tv.model()
+        for ea_id in ea_id_list:
+            model.removeObjectsByKeyValue( "ea_id", ea_id )
 
     def onYearChanged( self, newYear:int ):
         self._jahr = newYear
@@ -171,23 +219,6 @@ class EinAusController( IccController ):
             btf = BaseTableFunctions()
             btf.computeSumme( self._tv, col, col )
 
-        # match ident:
-        #     case Action.COMPUTE_SUMME:
-        #         pass
-        #     case Action.COPY:
-        #         pass
-        #     case Action.COPY_CELL:
-        #         pass
-        #     case Action.SHOW_MIETVERHAELTNIS:
-        #         pass
-        #     case Action.SHOW_MIETOBJEKT:
-        #         pass
-        #     case Action.SHOW_MASTEROBJEKT:
-        #         pass
-        #     case Action.SHOW_WEG_UND_VERWALTER:
-        #         pass
-        #     case _:
-        #         raise Exception( "EinAusController.onSelected:\nUnbekannte Action: " + action.text() )
 
 
 

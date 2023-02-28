@@ -124,10 +124,31 @@ class BaseTableModel( QAbstractTableModel ):
     def getRow( self, x:XBase ) -> int:
         """
         Liefert die Zeile, in der das spezifizierte XBase-Objekt dargestellt wird
+        ACHTUNG: Die hier verwendete rowList.index() versucht, das Element <x> durch Adressenvergleich
+        zu identifizieren (x1 == x2).
+        Eine Kopie von <x> wird hier nicht gefunden!
         :param x:
         :return:
         """
         return self.rowList.index( x )
+
+    def getElementByUniqueKeyValue( self, key:str, value:Any ) -> XBase or None:
+        """
+        Liefert das erste Objekt in self.rowList, dessen Key <key> den Wert <value> hat.
+        Man sollte diese Methode also nur verwenden, um ein Objekt (Element) anhand seiner eindeutigen ID zu finden.
+        Wird der gewünschte Key nicht gefunden, oder kein Element, dessen Key den Wert <value> aufweist, wird None
+        zurückgegeben.
+        :param key:
+        :param value:
+        :return:
+        """
+        for x in self.rowList:
+            try:
+                val = x.getValue( key )
+                if val == value: return x
+            except:
+                continue
+        return None
 
     def getElement( self, indexrow: int ) -> XBase:
         return self.rowList[indexrow]
@@ -278,6 +299,17 @@ class BaseTableModel( QAbstractTableModel ):
     def removeObjects( self, xlist:List[XBase] ):
         for x in xlist:
             self.removeObject( x )
+
+    def removeObjectsByKeyValue( self, key:str, value:Any ):
+        """
+        Entfernt alle Objekte aus der rowlist, auf die die Bedingung x.__dict__[key] == value zutrifft.
+        :param key:
+        :param value:
+        :return:
+        """
+        for x in self.rowList:
+            if x.getValue( key ) == value:
+                self.removeObject( x )
 
     def rowCount( self, parent:QModelIndex=None ) -> int:
         return len( self.rowList )
