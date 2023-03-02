@@ -19,7 +19,7 @@ class MainLogic( IccLogic ):
     def getSummen( self, jahr:int ) -> XSummen:
         ea_logic = EinAusLogic()
         x = XSummen()
-        x.sumEin = round( ea_logic.getEinzahlungenSumme( jahr ) )
+        x.sumEin = round( ea_logic.getEinnahmenSumme( jahr ) )
         x.sumHGV = round( ea_logic.getHGVAuszahlungenSumme( jahr ) )
         x.sumSonstAus = round( ea_logic.getAuszahlungenSummeOhneHGV( jahr ) )
         x.saldo = x.sumEin + x.sumHGV + x.sumSonstAus

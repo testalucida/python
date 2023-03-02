@@ -1,4 +1,4 @@
-
+import copy
 from typing import List, Callable, Iterable
 
 from PySide2.QtCore import QObject, Signal
@@ -10,6 +10,7 @@ from base.baseqtderivates import BaseComboBox, BaseEdit, FloatEdit, IntEdit, Bas
 from base.interfaces import VisibleAttribute
 from v2.einaus.einauslogic import EinAusLogic
 from v2.einaus.einausview import EinAusTableView, EinAusTableViewFrame, XEinAusUI, EinAusDialog
+from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
 from v2.icc.constants import EinAusArt, Umlegbar, Modus, iccMonthShortNames
 
 # ##############  EinAusController  ####################
@@ -20,9 +21,6 @@ VERTEILT_AUF_DEFAULT = 1
 UMLEGBAR_DEFAULT = Umlegbar.JA.value
 
 class EinAusDialogController( QObject ):
-    ea_inserted = Signal( XEinAus )
-    ea_updated = Signal( XEinAus )
-
     def __init__( self ):
         QObject.__init__( self )
         self._x:XEinAus = None # das XEinAus-Objekt, das neu angelegt wurde oder geändert wird
@@ -130,14 +128,16 @@ class EinAusDialogController( QObject ):
         self._x.umlegbar = UMLEGBAR_DEFAULT
         dlg = self._createGui()
         if dlg.exec_() == QDialog.Accepted:
-            self.ea_inserted.emit( self._x )
+            EinAusWriteDispatcher.inst().einaus_inserted( self._x )
 
     def processEinAusModification( self, x:XEinAus ):
         self._modus = Modus.MODIFY
+        oldx = copy.deepcopy( x )
         self._x = x
         dlg = self._createGui()
         if dlg.exec_() == QDialog.Accepted:
-            self.ea_updated.emit( self._x )
+            delta = self._x.betrag - oldx.betrag
+            EinAusWriteDispatcher.inst().einaus_updated( self._x, delta )
 
     def onMasterChanged( self, newMaster:str ):
         # Mietobjektnamen für geänderten Master ermitteln:
@@ -222,7 +222,6 @@ class EinAusDialogController( QObject ):
     def trySave( self ) -> str:
         v = self._dlg.getDynamicAttributeView()
         xcopy:XEinAus = v.getModifiedXBaseCopy()
-        msg = ""
         try:
             msg = self._logic.trySaveZahlung( xcopy )
         except Exception as ex:
@@ -232,7 +231,18 @@ class EinAusDialogController( QObject ):
             self._x.write_time = xcopy.write_time
             if self._modus == Modus.NEW:
                 self._x.ea_id = xcopy.ea_id
+            self._checkForNewItems()
         return msg
+
+    def _checkForNewItems( self ):
+        """
+        Prüft, ob in einer der Comboboxen Zahlung an/von und Art der Leistung ein neues
+        Item eingegeben wurde.
+        Wenn ja, speichern.
+        :return:
+        """
+        self._logic.checkKreditor( self._x.master_name, self._x.debi_kredi )
+
 
 
 # #####################   TEST   TEST   TEST   ##################

@@ -7,7 +7,7 @@ from base.interfaces import XBase
 
 
 #################  XDatum  ##############################
-from v2.icc.constants import iccMonthIdxToShortName, iccMonthShortNames
+from v2.icc.constants import iccMonthIdxToShortName, iccMonthShortNames, Umlegbar
 
 
 class XDateParts:
@@ -303,7 +303,7 @@ class XLeistung( XBase ):
     def __init__( self, valuedict:Dict=None ):
         XBase.__init__( self )
         self.leistung = ""
-        self.umlegbar = 0
+        self.umlegbar = Umlegbar.NEIN.value
         self.ea_art = ""
         if valuedict:
             self.setFromDict( valuedict )
@@ -313,11 +313,7 @@ class XKreditorLeistung( XLeistung ):
         XLeistung.__init__( self )
         self.kredleist_id = 0
         self.master_name = ""
-        self.mobj_id = ""
         self.kreditor = ""
-        # self.leistung = ""
-        # self.umlegbar = 0
-        # self.ea_art = ""
         self.bemerkung = ""
         if valuedict:
             self.setFromDict( valuedict )

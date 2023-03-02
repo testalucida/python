@@ -51,8 +51,6 @@ class EinAusData( IccData ):
                                         newvalues=x.toString( printWithClassname=True ), oldvalues=None )
         x.ea_id = inserted_id
         x.write_time = writetime
-        #self._dispatch.einaus_inserted( x ) # das ist eigentlich nicht richtig, denn die Transaktion ist noch nicht
-                                            # abgeschlossen
 
     def updateEinAusZahlung( self, x:XEinAus ) -> int:
         """
@@ -115,9 +113,10 @@ class EinAusData( IccData ):
                           newvalues=None, oldvalues=x.toString( printWithClassname=True )  )
         #self._dispatch.einaus_deleted( ea_id )
 
-    def getEinzahlungenSumme( self, jahr:int ) -> float:
-        """ Liefert die Summe aller Einzahlungen (= positive Beträge) im Jahr <jahr>"""
-        sql = "select sum(betrag) as sum_ein from einaus " \
+    def getEinnahmenSumme( self, jahr:int ) -> float:
+        """ Liefert die Summe aller Einnahmen (betrag > 0) im Jahr <jahr>"""
+        sql = "select sum(betrag) as sum_ein " \
+              "from einaus " \
               "where jahr = %d " \
               "and betrag > 0 " % jahr
         d = self.readOneGetDict( sql )

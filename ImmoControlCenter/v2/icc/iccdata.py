@@ -3,7 +3,7 @@ from typing import List, Tuple, Dict
 import datehelper
 from base.databasecommon2 import DatabaseCommon
 from base.interfaces import XBase
-from v2.icc.constants import EinAusArt
+from v2.icc.constants import EinAusArt, Umlegbar
 
 from v2.icc.definitions import DATABASE
 from v2.icc.interfaces import XHandwerkerKurz, XEinAus, XMietverhaeltnisKurz, XVerwaltung, XMasterobjekt, XMietobjekt, \
@@ -59,6 +59,14 @@ class IccData( DatabaseCommon ):
         sql = "select distinct kreditor from kreditorleistung order by kreditor "
         tuplelist = self.read( sql )
         return [t[0] for t in tuplelist]
+
+    def existsKreditor( self, master_name:str, kreditor:str ) -> bool:
+        sql = "select count(*) as cnt " \
+              "from kreditorleistung " \
+              "where master_name = '%s' " \
+              "and kreditor = '%s' " % ( master_name, kreditor )
+        tuplelist = self.read( sql )
+        return tuplelist[0][0] > 0
 
     def getHandwerkerKurz( self, orderby:str=None ) -> List[XHandwerkerKurz]:
         """
@@ -126,7 +134,7 @@ class IccData( DatabaseCommon ):
         return [d["angeschafft_am"], veraeussert_am]
 
     def getKreditorLeistungen( self, master_name:str ) -> List[XKreditorLeistung]:
-        sql = "select kredleist_id, mobj_id, kreditor, leistung, umlegbar, ea_art, bemerkung " \
+        sql = "select kredleist_id, master_name, kreditor, leistung, umlegbar, ea_art, bemerkung " \
               "from kreditorleistung " \
               "where master_name = '%s' " % master_name
         l: List[XKreditorLeistung] = self.readAllGetObjectList( sql, XKreditorLeistung )
@@ -158,6 +166,18 @@ class IccData( DatabaseCommon ):
               "where ea_id = %d " % ea_id
         d = self.readOneGetDict( sql )
         return d
+
+    def insertKreditorLeistung( self, x:XKreditorLeistung ):
+        bemerkung = "NULL" if not x.bemerkung else "'%s'" % x.bemerkung
+        leistung = "NULL" if not x.leistung else "'%s'" % x.leistung
+        ea_art_dbvalue = EinAusArt.getDbValue( x.ea_art )
+        sql = "insert into kreditorleistung " \
+              "(master_name, kreditor, leistung, umlegbar, ea_art, bemerkung) " \
+              "values" \
+              "('%s', '%s', %s, '%s', '%s', %s) " % (x.master_name, x.kreditor, leistung, x.umlegbar, ea_art_dbvalue, bemerkung )
+        inserted_id = self.writeAndLog( sql, DbAction.INSERT, "kreditorleistung", "kredleist_id", 0,
+                                        newvalues=x.toString( printWithClassname=True ), oldvalues=None )
+        x.kredleist_id = inserted_id
 
     def writeAndLog( self, sql: str, action:str, table:str, id_name:str, id_value:int,
                      newvalues:str=None, oldvalues:str=None ) -> int:
@@ -209,6 +229,18 @@ class IccData( DatabaseCommon ):
             msg = "Exception\n" + str(ex) + "\nbei Ausführung des Statements\n" + sql2 + "\n"
             raise Exception( msg )
 
+
+def testInsertKreditorleistung():
+    data = IccData()
+    x = XKreditorLeistung()
+    x.ea_art = EinAusArt.REPARATUR.display
+    x.master_name = "HOM_Remigius"
+    x.kreditor = "Bullenhaupt"
+    x.leistung = "Küchenberatung"
+    x.umlegbar = Umlegbar.NEIN.value
+    data.insertKreditorLeistung( x )
+    data.commit()
+    print( "okay" )
 
 def test():
     data = IccData()

@@ -88,8 +88,8 @@ class EinAusLogic(IccLogic):
     def getZahlung( self, ea_id:int ) -> XEinAus:
         return self._einausData.getEinAusZahlung( ea_id )
 
-    def getEinzahlungenSumme( self, jahr:int ) -> float:
-        return self._einausData.getEinzahlungenSumme( jahr )
+    def getEinnahmenSumme( self, jahr:int ) -> float:
+        return self._einausData.getEinnahmenSumme( jahr )
 
     def getHGVAuszahlungenSumme( self, jahr:int ) -> float :
         return self._einausData.getHGVAuszahlungenSumme( jahr )
@@ -97,8 +97,8 @@ class EinAusLogic(IccLogic):
     def getAuszahlungenSummeOhneHGV( self, jahr:int ) -> float:
         return self._einausData.getAuszahlungenSummeOhneHGV( jahr )
 
-    def getEinzahlungen( self, jahr:int ) -> float:
-        return self._einausData.getEinzahlungenSumme( jahr )
+    # def getEinzahlungen( self, jahr:int ) -> float:
+    #     return self._einausData.getEinzahlungenSumme( jahr )
 
     def trySaveZahlung( self, x:XEinAus ) -> str:
         msg = self.validateZahlung( x )
@@ -234,6 +234,7 @@ class EinAusLogic(IccLogic):
     def deleteZahlungen( self, xlist:List[XEinAus] ):
         for x in xlist:
             self._einausData.deleteEinAusZahlung( x.ea_id )
+        self._einausData.commit()
 
     def commit( self ):
         self._einausData.commit()

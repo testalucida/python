@@ -394,7 +394,7 @@ class IccMainWindow( QMainWindow ):
 
     def _addSumFields( self ):
         self._toolBar.addWidget( self._createSumLabel() )
-        self._toolBar.addWidget( self._createSumArtLabel( "Miete", 30 ) )
+        self._toolBar.addWidget( self._createSumArtLabel( "Einnahmen", 55 ) )
         self._toolBar.addWidget( self._idSumEin )
 
         self._toolBar.addWidget( self._createLabel( "-", 20 ) )

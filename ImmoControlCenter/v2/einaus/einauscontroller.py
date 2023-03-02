@@ -1,7 +1,7 @@
 from enum import Enum, auto
 from typing import List, Callable, Iterable
 
-from PySide2.QtCore import Qt, QSize
+from PySide2.QtCore import Qt, QSize, Slot
 from PySide2.QtWidgets import QAction, QDialog, QMenu, QMessageBox
 
 import datehelper
@@ -94,25 +94,24 @@ class EinAusController( IccController ):
 
     def onNewEinAus( self ):
         """
-        Im TableView "Alle Zahlungen" wurde der "+"-Button gedrückt
+        Im TableView "Alle Zahlungen" wurde der "+"-Button gedrückt.
+        Neue Zahlungen werden über den EinAusDialog erfasst, wozu der EinAusDialogController instanziert wird.
         :return:
         """
         ctrl = EinAusDialogController()
-        ctrl.ea_inserted.connect( self.onEinAusInserted )
+        #ctrl.ea_inserted.connect( self.onEinAusInserted )
         ctrl.processNewEinAus()
 
+    @Slot( XEinAus )
     def onEinAusInserted( self, x:XEinAus ):
-        # Wird vom EinAusDialogController aufgerufen, nachdem ein neuer Satz in Tabelle <einaus> eingefügt wurde.
+        # Ist mit dem Signal EinAusWriteDispatcher.ea_inserted connected.
+        # Dieses wird gesendet, nachdem ein neuer Satz in Tabelle <einaus> eingefügt wurde.
+        # Der Datenbank-Insert ist bereits erfolgt.
         # Jetzt muss der tableView "Alle Zahlungen" der neue Satz hinzugefügt werden -
         # aber nur, wenn das steuerliche Jahr <x.jahr> zu dem in der Combobox selektierten Jahr passt.
         if self._jahr == x.jahr:
             model:EinAusTableModel = self._tv.model()
             model.addObject( x )
-            # # testen, ob  x schon im Model vorhanden ist.
-            # # Wenn nicht, gibt es eine Exception, und im except-Zweig wird das neue Objekt eingefügt.
-            # xcheck = model.getElementByUniqueKeyValue( "ea_id", x.ea_id )
-            # if not xcheck:
-            #     model.addObject( x )
         else:
             box = InfoBox( "Buchung für fremdes Jahr", "Die eingegebene Buchung bezieht sich auf das Jahr %d.\n"
                                                        "Eingestellt ist Jahr %d.\n"
@@ -121,14 +120,22 @@ class EinAusController( IccController ):
             box.exec_()
 
     def onEditEinAus( self, row:int ):
+        """
+        Im TableView "Alle Zahlungen" wurde der Edit-Button gedrückt.
+        Änderungen von Zahlungen werden über den EinAusDialog erfasst, wozu der EinAusDialogController instanziert wird.
+        :return:
+        """
         x:XEinAus = self._tv.model().getElement( row )
         ctrl = EinAusDialogController()
-        ctrl.ea_updated.connect( self.onEinAusUpdated )
+        #ctrl.ea_updated.connect( self.onEinAusUpdated )
         ctrl.processEinAusModification( x )
 
+    @Slot( XEinAus, int or float )
     def onEinAusUpdated( self, x: XEinAus, delta:int or float ):
         """
-        Ist mit dem EinAusWriteDispatcher.ea_updated-Signal connectdd.
+        # Ist mit dem Signal EinAusWriteDispatcher.ea_updated connected.
+        # Dieses wird gesendet, nachdem der Update durchgeführt und in der Datenbank
+        gespeichert wurde.
         :param x: das geänderte XEInAus-Objekt
         :param delta: wird hier nicht benötigt.
         :return:
@@ -145,20 +152,23 @@ class EinAusController( IccController ):
         :param rows: die markierten Zeilen, Zahlungen repräsentierend, die gelöscht werden sollen
         :return:
         """
-        xealist = list()
+        if len( rows ) < 1: return
         model = self._tv.model()
-        for row in rows:
-            xea = model.getElement( row )
-            xealist.append( xea )
-        box = QuestionBox( "Ausgewählte Element löschen", "Ausgewählten Elemente wirklich löschen?", "Ja", "Nein" )
+        xealist = model.getElements( rows )
+        box = QuestionBox( "Ausgewählte Element löschen", "Ausgewählte Elemente wirklich löschen?", "Ja", "Nein" )
         if box.exec_() == QMessageBox.Yes:
+            ea_id_list = [x.ea_id for x in xealist]
+            ea_art = xealist[0].ea_art
+            delta = sum([x.betrag for x in xealist])
             self._logic.deleteZahlungen( xealist )
+            EinAusWriteDispatcher.inst().einaus_deleted( ea_id_list, ea_art, delta )
 
-    def onEinAusDeleted( self, ea_id_list:List[int], delta:int or float ):
+    @Slot( list, str, int or float )
+    def onEinAusDeleted( self, ea_id_list:List[int], ea_art:str, delta:int or float ):
         """
-        Wird von MainController.onEinAusDeleted aufgerufen.
-        Die entsprechende Zeile aus der TableView muss entfernt werden.
+        Ist mit dem Signal ea_deleted des EinAusWriteDispatchers connected.
         :param ea_id_list: Liste der zu löschenden ea_id
+        :param ea_art: die EinAusArt der gelöschten Sätze (alle haben die gleiche EinAusArt)
         :param delta: interessiert hier nicht
         :return:
         """
@@ -184,8 +194,7 @@ class EinAusController( IccController ):
         if cnt_sel_rows == 1:
             l.append( BaseAction( "EinAus-ID: " + str( x.ea_id ) ) )
             l.append( Separator() )
-            #if x.ea_art == EinAusArt.REGELM_ABSCHLAG.display:
-            if x.sab_id > 0:  # ein regelmäßiger Abschlag
+            if x.sab_id and x.sab_id > 0:  # ein regelmäßiger Abschlag
                 l.append( BaseAction( "Vertrag...", ident=Action.SHOW_LEISTUNGSVERTRAG, userdata=x ) )
                 l.append( Separator() )
             elif x.ea_art in ( EinAusArt.HAUSGELD_VORAUS.display, EinAusArt.HAUSGELD_ABRECHNG.display ):

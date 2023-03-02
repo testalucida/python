@@ -46,6 +46,8 @@ class IccLogic:
     def getMietobjektNamen( self, master_name:str ) -> List[str]:
         li = self.getMietobjekte( master_name )
         names = [o.mobj_id for o in li]
+        if len( names ) > 1: # es handelt sich um ein Haus mit mehreren Wohnungen - der Liste ein "" voranstellen.
+            names.insert( 0, "" )
         return names
 
     def getKreditorLeistungen( self, master_name:str, mobj_id:str=None ) -> List[XKreditorLeistung]:
@@ -59,6 +61,10 @@ class IccLogic:
         kredlist = list( set( [k.kreditor for k in kredleistlist] ) )
         kredlist.insert( 0, "" )
         return kredlist
+
+    def checkKreditor( self, master_name:str, debi_kredi:str ) -> bool:
+        if not self._iccdata.existsKreditor( master_name, debi_kredi ):
+            print( "nee" )
 
     def getLeistungen( self, master_name, kreditor:str ) -> List[str]:
         kredleistlist:List[XLeistung] = self._iccdata.getLeistungen( master_name, kreditor )
