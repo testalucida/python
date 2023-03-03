@@ -62,9 +62,29 @@ class IccLogic:
         kredlist.insert( 0, "" )
         return kredlist
 
-    def checkKreditor( self, master_name:str, debi_kredi:str ) -> bool:
-        if not self._iccdata.existsKreditor( master_name, debi_kredi ):
-            print( "nee" )
+    def checkKreditorLeistung( self, master_name:str, kreditor:str, leistung:str, umlegbar:str, ea_art_display ) -> \
+            XKreditorLeistung or None:
+        """
+        Prüft, ob eine bestimmte Kombination master_name/kreditor/leistung in Tabelle kreditorleistung existiert.
+        Wenn nein, wird sie angelegt.
+        :param master_name:
+        :param kreditor:
+        :param leistung:
+        :param umlegbar:
+        :param ea_art_display:
+        :return: die neu angelegte Kreditorleistung bzw. None, wenn sie bereits existiert.
+        """
+        if not self._iccdata.existsKreditorLeistung( master_name, kreditor, leistung ):
+            x = XKreditorLeistung()
+            x.master_name = master_name
+            x.kreditor = kreditor
+            x.leistung = leistung
+            x.umlegbar = umlegbar
+            x.ea_art = ea_art_display
+            self._iccdata.insertKreditorLeistung( x )
+            self._iccdata.commit()
+            return x
+        return None
 
     def getLeistungen( self, master_name, kreditor:str ) -> List[str]:
         kredleistlist:List[XLeistung] = self._iccdata.getLeistungen( master_name, kreditor )

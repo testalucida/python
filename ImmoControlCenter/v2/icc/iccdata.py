@@ -68,6 +68,15 @@ class IccData( DatabaseCommon ):
         tuplelist = self.read( sql )
         return tuplelist[0][0] > 0
 
+    def existsKreditorLeistung( self, master_name:str, kreditor:str, leistung:str ) -> bool:
+        sql = "select count(*) as cnt " \
+              "from kreditorleistung " \
+              "where master_name = '%s' " \
+              "and kreditor = '%s' " \
+              "and leistung = '%s' " % ( master_name, kreditor, leistung )
+        tuplelist = self.read( sql )
+        return tuplelist[0][0] > 0
+
     def getHandwerkerKurz( self, orderby:str=None ) -> List[XHandwerkerKurz]:
         """
         Selektiert alle Handwerkerdaten aus der Tabelle <handwerker>.
@@ -239,7 +248,7 @@ def testInsertKreditorleistung():
     x.leistung = "Küchenberatung"
     x.umlegbar = Umlegbar.NEIN.value
     data.insertKreditorLeistung( x )
-    data.commit()
+    ########data.commit()
     print( "okay" )
 
 def test():

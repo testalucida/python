@@ -6,8 +6,9 @@ from PySide2.QtWidgets import QAction, QDialog, QApplication
 
 import datehelper
 from base.baseqtderivates import BaseComboBox, BaseEdit, FloatEdit, IntEdit, BaseCheckBox, SmartDateEdit, MultiLineEdit, \
-    EditableComboBox, ButtonIdent
+    EditableComboBox, ButtonIdent, VorzeichenComboBox
 from base.interfaces import VisibleAttribute
+from base.messagebox import ErrorBox
 from v2.einaus.einauslogic import EinAusLogic
 from v2.einaus.einausview import EinAusTableView, EinAusTableViewFrame, XEinAusUI, EinAusDialog
 from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
@@ -96,6 +97,7 @@ class EinAusDialogController( QObject ):
                               comboValues=kreditoren, comboCallback=onKreditorChangedCallback ),
             VisibleAttribute( "leistung", EditableComboBox, "Art d. Leistung: ",
                               comboCallback=onLeistungChangedCallback ),
+            VisibleAttribute( "vorzeichen", VorzeichenComboBox, "", widgetWidth=20, nextRow=False ),
             VisibleAttribute( "betrag", FloatEdit, "Betrag: ", widgetWidth=smallW ),
             VisibleAttribute( "ea_art", BaseComboBox, "Art d. Zahlung: ", comboValues=EinAusArt.getDisplayValues(),
                               comboCallback=onEinAusArtChangedCallback ),
@@ -153,7 +155,12 @@ class EinAusDialogController( QObject ):
     def onKreditorChanged( self, newKreditor:str ):
         # Leistungen für den geänderten Kreditor ermitteln:
         master_name = self._cboMasternames.currentText()
-        leistungen:List[str] = self._logic.getLeistungen( master_name, newKreditor )
+        try:
+            leistungen:List[str] = self._logic.getLeistungen( master_name, newKreditor )
+        except Exception as ex:
+            box = ErrorBox( "Datenbankfehler", str(ex), "Aufgetreten in EinAusDialogController.onKreditorChanged" )
+            box.exec_()
+            return
         self._cboLeistungen.clear()
         self._cboLeistungen.addItems( leistungen )
 
@@ -241,8 +248,22 @@ class EinAusDialogController( QObject ):
         Wenn ja, speichern.
         :return:
         """
-        self._logic.checkKreditor( self._x.master_name, self._x.debi_kredi )
-
+        kredleist_new:XKreditorLeistung = \
+            self._logic.checkKreditorLeistung( self._x.master_name, self._x.debi_kredi, self._x.leistung,
+                                               self._x.umlegbar, self._x.ea_art )
+        if kredleist_new:
+            # currentKreditor = self._cboKreditoren.currentText()
+            # currentLeistung = self._cboLeistungen.currentText()
+            try:
+                kreditoren = self._logic.getKreditoren( self._cboMasternames.currentText() )
+            except Exception as ex:
+                box = ErrorBox( "Datenbankfehler", str( ex ), "Aufgetreten in EinAusDialogController._checkForNewItems" )
+                box.exec_()
+                return
+            self._cboKreditoren.clear()
+            self._cboKreditoren.addItems( kreditoren )
+            # self._cboKreditoren.setCurrentText( currentKreditor )
+            # self._cboLeistungen.setCurrentText( currentLeistung )
 
 
 # #####################   TEST   TEST   TEST   ##################

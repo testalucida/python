@@ -102,7 +102,6 @@ class EditableComboBox( BaseComboBox, GetSetValue ):
         BaseComboBox.__init__( self )
         self.setEditable( True )
 
-
 #################  BaseDialog  ########################
 class BaseDialog( QDialog ):
     def __init__(self, parent=None, flags=Qt.WindowFlags() ):
@@ -524,6 +523,9 @@ class BaseLabel( QLabel, AutoWidth, GetSetValue ):
         # color in der Form "solid white"
         self.setStyleSheet( "background: " + color + ";" )
 
+    def setTextAndBackgroundColor( self, textcolor, backgroundcolor ):
+        self.setStyleSheet( "QLabel { background-color : red; color : blue; }" );
+
 ###################   BaseLink   ########################
 class BaseLink( BaseLabel ):
     def __init__( self, text:str, parent=None ):
@@ -621,6 +623,45 @@ class FloatEdit( BaseEdit ):
             self.setFloatValue( floatval )
         except:
             self.setText( "" )
+
+#########################  SignedFloatEdit  ###########################
+class SignedFloatEdit( QWidget ):
+    def __init__( self, sign="-", parent=None ):
+        QWidget.__init__( self, parent )
+        self._currentSign = sign
+        self._floatEdit = FloatEdit()
+        self._sign = BaseButton( text=sign )
+        font = QFont( "Arial", 20 )
+        font.setBold( True )
+        self._sign.setFont( font )
+        self._sign.setMaximumWidth( 22 )
+        self._sign.setMaximumHeight( 22 )
+        self._sign.pressed.connect( self.onSignPressed )
+        self._setSignStyleSheet( sign )
+
+        self._layout = QHBoxLayout()
+        self.setLayout( self._layout )
+        self._layout.addWidget( self._sign)
+        self._layout.addWidget( self._floatEdit )
+        h = self._floatEdit.height()
+        #self._sign.setMinimumHeight( h )
+
+    def onSignPressed( self ):
+        sign = "+" if self._currentSign == "-" else "-"
+        self._setSignStyleSheet( sign )
+        self._currentSign = sign
+
+    def _setSignStyleSheet( self, sign:str ):
+        self._sign.setText( sign )
+        if sign == "-":
+            self._sign.setStyleSheet( "background-color: red; color: white" )
+            self._floatEdit.setStyleSheet( "color: red" )
+        else:
+            self._sign.setStyleSheet( "background-color: green; color: white" )
+            self._floatEdit.setStyleSheet( "color: green" )
+        self._floatEdit.setFocus()
+
+
 
 #########################  FloatEdit  ################################
 class IntEdit( BaseEdit ):
@@ -1260,6 +1301,21 @@ def test():
     if dlg.exec_() == QDialog.Accepted:
         print( '\n'.join( [str( s ) for s in dlg.choices] ) )
     #app.exec_()
+
+def testSignedFloatEdit():
+    app = QApplication()
+    sfe = SignedFloatEdit()
+    sfe.show()
+    app.exec_()
+
+def testLabelColor():
+    app = QApplication()
+    lbl = BaseLabel( "test" )
+    lbl.setStyleSheet( "QLabel { background-color : red; color : blue; }" );
+    # lbl.setBackground( "red" )
+    # lbl.setTextColor( "white" )
+    lbl.show()
+    app.exec_()
 
 if __name__ == "__main__":
     #test()
