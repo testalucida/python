@@ -11,7 +11,7 @@ from base.basetablefunctions import BaseTableFunctions
 from base.basetablemodel import BaseTableModel
 from base.filterhandler import FilterHandler
 from base.interfaces import VisibleAttribute
-from base.messagebox import InfoBox, QuestionBox
+from base.messagebox import InfoBox, QuestionBox, ErrorBox
 from base.multisorthandler import MultiSortHandler
 from base.printhandler import PrintHandler
 from base.searchhandler import SearchHandler
@@ -126,6 +126,19 @@ class EinAusController( IccController ):
         :return:
         """
         x:XEinAus = self._tv.model().getElement( row )
+        ea_art_options = EinAusArt.getEinAusDialogOptions()
+        if x.ea_art not in ea_art_options:
+            msg = "Zahlungen der Art '%s' können hier nicht geändert werden. " \
+                  "\nBitte die Änderungsfunktion in der jeweiligen Tabelle verwenden." % x.ea_art
+            box = ErrorBox( "Änderung nicht möglich", msg, "" )
+            box.exec_()
+            return
+        if x.sab_id > 0:
+            box = ErrorBox( "Änderung nicht tmöglich", "Regelmäßige Abschläge können hier nicht geändert werden. "
+                            "\nBitte die Änderung im Tab 'Regelmäßige Zahlungen ' in der Tabelle 'Abschläge' vornehmen.", "" )
+            box.exec_()
+            return
+
         ctrl = EinAusDialogController()
         #ctrl.ea_updated.connect( self.onEinAusUpdated )
         ctrl.processEinAusModification( x )

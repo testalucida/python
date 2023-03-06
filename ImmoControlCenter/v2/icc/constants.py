@@ -91,6 +91,25 @@ class EinAusArt: # EinAus-Arten, wie sie in die Tabelle einaus eingetragen werde
         return l
 
     @staticmethod
+    def getEinAusDialogOptions( issorted:bool = True ) -> List[str]:
+        """
+        Liefert nur die EinAus-Arten, die in der Tabelle "Alle Zahlungen" bei der Erfassung einer neuen
+        oder der Änderung einer bestehenden Zahlunge verwendet werden dürfen.
+        :param issorted:
+        :return:
+        """
+        l = list()
+        l.append( EinAusArt.SONDERUMLAGE.display )
+        l.append( EinAusArt.ALLGEMEINE_KOSTEN.display )
+        l.append( EinAusArt.REPARATUR.display )
+        l.append( EinAusArt.SONSTIGE_KOSTEN.display )
+        l.append( EinAusArt.VERSICHERUNG.display )
+        l.append( EinAusArt.GRUNDSTEUER.display )
+        if issorted:
+            l = list( sort( l ) )
+        return l
+
+    @staticmethod
     def getDbValue( display:str ) -> str:
         for attr in EinAusArt.__dict__.values():
             if isinstance( attr, ValueMapper ):

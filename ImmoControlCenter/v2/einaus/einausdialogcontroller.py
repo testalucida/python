@@ -6,7 +6,7 @@ from PySide2.QtWidgets import QAction, QDialog, QApplication
 
 import datehelper
 from base.baseqtderivates import BaseComboBox, BaseEdit, FloatEdit, IntEdit, BaseCheckBox, SmartDateEdit, MultiLineEdit, \
-    EditableComboBox, ButtonIdent, VorzeichenComboBox
+    EditableComboBox, ButtonIdent, SignedNumEdit
 from base.interfaces import VisibleAttribute
 from base.messagebox import ErrorBox
 from v2.einaus.einauslogic import EinAusLogic
@@ -34,6 +34,7 @@ class EinAusDialogController( QObject ):
         self._cboLeistungen: BaseComboBox = None
         self._cboEinAus: BaseComboBox = None
         self._cboUmlegbar: BaseComboBox = None
+        self._sneBetrag: SignedNumEdit = None
         self._ieJahr:IntEdit = None
         self._cboMonate:BaseComboBox = None
 
@@ -69,7 +70,8 @@ class EinAusDialogController( QObject ):
         self._cboLeistungen: BaseComboBox = v.getWidget( "leistung" )
         self._cboEinAus: BaseComboBox = v.getWidget( "ea_art" )
         self._cboUmlegbar: BaseComboBox = v.getWidget( "umlegbar" )
-        self._feBetrag:FloatEdit = v.getWidget( "betrag" )
+        # self._feBetrag:FloatEdit = v.getWidget( "betrag" )
+        self._sneBetrag: SignedNumEdit = v.getWidget( "betrag" )
         self._ieVerteiltAuf:IntEdit = v.getWidget( "verteilt_auf" )
         self._sdeBuchungsdatum:SmartDateEdit = v.getWidget( "buchungsdatum" )
         self._sdeBuchungsdatum.textChanged.connect( self.onBuchungsdatumChanged )
@@ -97,9 +99,9 @@ class EinAusDialogController( QObject ):
                               comboValues=kreditoren, comboCallback=onKreditorChangedCallback ),
             VisibleAttribute( "leistung", EditableComboBox, "Art d. Leistung: ",
                               comboCallback=onLeistungChangedCallback ),
-            VisibleAttribute( "vorzeichen", VorzeichenComboBox, "", widgetWidth=20, nextRow=False ),
-            VisibleAttribute( "betrag", FloatEdit, "Betrag: ", widgetWidth=smallW ),
-            VisibleAttribute( "ea_art", BaseComboBox, "Art d. Zahlung: ", comboValues=EinAusArt.getDisplayValues(),
+            # VisibleAttribute( "betrag", FloatEdit, "Betrag: ", widgetWidth=smallW ),
+            VisibleAttribute( "betrag", SignedNumEdit, "Betrag: ", widgetWidth=smallW+20 ),
+            VisibleAttribute( "ea_art", BaseComboBox, "Art d. Zahlung: ", comboValues=EinAusArt.getEinAusDialogOptions(),
                               comboCallback=onEinAusArtChangedCallback ),
             VisibleAttribute( "verteilt_auf", IntEdit, "vert. auf Jahre: ", widgetWidth=smallW ),
             VisibleAttribute( "umlegbar", BaseComboBox, "umlegbar: ", widgetWidth=smallW,

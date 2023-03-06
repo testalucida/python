@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Any, List, Tuple, Callable, Iterable
 
 from PySide2 import QtWidgets, QtCore
-from PySide2.QtCore import QDate, Qt, QAbstractTableModel, QRect, Signal, QSize
+from PySide2.QtCore import QDate, Qt, QAbstractTableModel, QRect, Signal, QSize, QMargins
 from PySide2.QtGui import QDoubleValidator, QIntValidator, QFont, QGuiApplication, QStandardItemModel, QStandardItem, \
     QMouseEvent, QTextDocument, QIcon, QFontMetrics
 from PySide2.QtWidgets import QDialog, QCalendarWidget, QVBoxLayout, QBoxLayout, QLineEdit, QGridLayout, QPushButton, \
@@ -572,6 +572,10 @@ class BaseEdit( QLineEdit, AutoWidth, GetSetValue ):
     def mousePressEvent(self, evt:QMouseEvent):
         self.setSelection( 0, len( self.text() ) )
 
+    def focusInEvent( self, evt ):
+        super().focusInEvent( evt )
+        self.setSelection( 0, len( self.text() ) )
+
     # def keyPressEvent( self, event ):
     #     super().keyPressEvent( event )
     #     self.key_pressed.emit( event.key() )
@@ -590,8 +594,9 @@ class BaseEdit( QLineEdit, AutoWidth, GetSetValue ):
 
 #########################  FloatEdit  ################################
 class FloatEdit( BaseEdit ):
-    def __init__( self, parent=None ):
+    def __init__( self, parent=None, showNegativNumbersRed:bool=True ):
         BaseEdit.__init__( self, parent )
+        self._showNegativNumbersRed = showNegativNumbersRed
         floatval = QDoubleValidator()
         self.setValidator( floatval )
         self.setAlignment( Qt.AlignRight )
@@ -612,10 +617,11 @@ class FloatEdit( BaseEdit ):
 
     def setFloatValue( self, val:float ):
         self.setText( str( val ) )
-        if val < 0:
-            self.setStyleSheet( "color: red;" )
-        else:
-            self.setStyleSheet( "color: green;" )
+        if self._showNegativNumbersRed:
+            if val < 0:
+                self.setStyleSheet( "color: red;" )
+            else:
+                self.setStyleSheet( "color: green;" )
 
     def setFloatStringValue( self, val:str ):
         try:
@@ -625,48 +631,125 @@ class FloatEdit( BaseEdit ):
             self.setText( "" )
 
 #########################  SignedFloatEdit  ###########################
-class SignedFloatEdit( QWidget ):
-    def __init__( self, sign="-", parent=None ):
+class SignedNumEdit( QWidget ):
+    class Sign( BaseButton ):
+        PLUS = "+"
+        MINUS = "-"
+        def __init__( self, sign=MINUS ):
+            BaseButton.__init__( self, text=sign )
+            self._currentSign = sign
+            font = QFont( "Arial", 20 )
+            font.setBold( True )
+            self.setFont( font )
+            self.setMaximumWidth( 22 )
+            self.setMaximumHeight( 22 )
+            self._setSignStyleSheet( sign )
+            self.pressed.connect( self.onPressed )
+
+        def setPlus( self ):
+            self._setSignStyleSheet( self.PLUS )
+            self._currentSign = self.PLUS
+
+        def setMinus( self ):
+            self._setSignStyleSheet( self.MINUS )
+            self._currentSign = self.MINUS
+
+        def isPlus( self ) -> bool:
+            return self._currentSign == self.PLUS
+
+        def isMinus( self ) -> bool:
+            return self._currentSign == self.MINUS
+
+        def onPressed( self ):
+            sign = self.PLUS if self._currentSign == self.MINUS else self.MINUS
+            self._setSignStyleSheet( sign )
+            self._currentSign = sign
+
+        def _setSignStyleSheet( self, sign: str ):
+            self.setText( sign )
+            if sign == self.MINUS:
+                self.setStyleSheet( "background-color: red; color: white" )
+            else:
+                self.setStyleSheet( "background-color: green; color: white" )
+
+    def __init__( self, numtype:type=float, sign="-", parent=None ):
         QWidget.__init__( self, parent )
-        self._currentSign = sign
-        self._floatEdit = FloatEdit()
-        self._sign = BaseButton( text=sign )
-        font = QFont( "Arial", 20 )
-        font.setBold( True )
-        self._sign.setFont( font )
-        self._sign.setMaximumWidth( 22 )
-        self._sign.setMaximumHeight( 22 )
+        self._type = numtype
+        self._sign = self.Sign( sign )
+        if numtype == int:
+            self._numEdit = IntEdit( showNegativNumbersRed=False )
+        else:
+            self._numEdit = FloatEdit( showNegativNumbersRed=False )
         self._sign.pressed.connect( self.onSignPressed )
-        self._setSignStyleSheet( sign )
+        self._setStyleSheet( self._sign.isPlus() )
+
+        # tmpWidget = QWidget()
+        # #tmpWidget.setContentsMargins( 0, 0, 0, 0 )
+        # tmpWidget.setStyleSheet( "background-color: yellow;" )
+        # tmpLayout = QHBoxLayout()
+        # margins:QMargins = tmpLayout.contentsMargins()
+        # margins.setLeft( 0 )
+        # margins.setRight( 0 )
+        # tmpLayout.setContentsMargins( margins )
+        # tmpWidget.setLayout( tmpLayout )
+        # tmpLayout.addWidget( self._sign, stretch=0, alignment=Qt.AlignLeft )
+        # tmpLayout.addWidget( self._numEdit, stretch=0, alignment=Qt.AlignLeft )
 
         self._layout = QHBoxLayout()
         self.setLayout( self._layout )
-        self._layout.addWidget( self._sign)
-        self._layout.addWidget( self._floatEdit )
-        h = self._floatEdit.height()
-        #self._sign.setMinimumHeight( h )
+        #self._layout.addWidget( tmpWidget )
+        self._layout.addWidget( self._sign, stretch=0, alignment=Qt.AlignLeft )
+        self._layout.addWidget( self._numEdit, stretch=0, alignment=Qt.AlignLeft )
+        self._layout.setContentsMargins( 0, 0, 0, 0 )
+        # h = self._numEdit.height()
 
     def onSignPressed( self ):
-        sign = "+" if self._currentSign == "-" else "-"
-        self._setSignStyleSheet( sign )
-        self._currentSign = sign
+        self._setStyleSheet( self._sign.isPlus() )
 
-    def _setSignStyleSheet( self, sign:str ):
-        self._sign.setText( sign )
-        if sign == "-":
-            self._sign.setStyleSheet( "background-color: red; color: white" )
-            self._floatEdit.setStyleSheet( "color: red" )
+    def _setStyleSheet( self, isPlus:bool ):
+        if not isPlus:
+            self._numEdit.setStyleSheet( "color: red" )
         else:
-            self._sign.setStyleSheet( "background-color: green; color: white" )
-            self._floatEdit.setStyleSheet( "color: green" )
-        self._floatEdit.setFocus()
+            self._numEdit.setStyleSheet( "color: green" )
+        self._numEdit.setFocus()
 
+    def setFocus( self ):
+        self._numEdit.setFocus()
+
+    def setPlus( self ):
+        self._sign.setPlus()
+
+    def setMinus( self ):
+        self._sign.setMinus()
+
+    def getValue( self ) -> int or float:
+        if self._type == int:
+            val = self._numEdit.getIntValue()
+        else:
+            val = self._numEdit.getFloatValue()
+        if self._sign.isMinus():
+            val *= -1
+        return val
+
+    def setValue( self, value: int or float ):
+        if value < 0:
+            self._sign.setMinus()
+            value *= -1 # wir haben Sign auf "-" gesetzt, deswegen muss value positiv gemacht werden
+            self._setStyleSheet( isPlus=False )
+        else:
+            self._sign.setPlus()
+            self._setStyleSheet( isPlus=True )
+        if self._type == int:
+            self._numEdit.setIntValue( value )
+        else:
+            self._numEdit.setFloatValue( value )
 
 
 #########################  FloatEdit  ################################
 class IntEdit( BaseEdit ):
-    def __init__( self, parent=None ):
+    def __init__( self, parent=None, showNegativNumbersRed:bool=True ):
         BaseEdit.__init__( self, parent )
+        self._showNegativNumbersRed = showNegativNumbersRed
         intval = QIntValidator()
         self.setValidator( intval )
         self.setAlignment( Qt.AlignRight )
@@ -679,10 +762,11 @@ class IntEdit( BaseEdit ):
 
     def setIntValue( self, val:int ):
         self.setText( str( val ) )
-        if val < 0:
-            self.setStyleSheet( "color: red;" )
-        else:
-            self.setStyleSheet( "color: green;" )
+        if self._showNegativNumbersRed:
+            if val < 0:
+                self.setStyleSheet( "color: red;" )
+            else:
+                self.setStyleSheet( "color: green;" )
 
     def setValue( self, val: int ):
         self.setIntValue( val )
@@ -1302,10 +1386,12 @@ def test():
         print( '\n'.join( [str( s ) for s in dlg.choices] ) )
     #app.exec_()
 
-def testSignedFloatEdit():
+def testSignedNumEdit():
     app = QApplication()
-    sfe = SignedFloatEdit()
+    sfe = SignedNumEdit( float, "-" )
+    sfe.setValue( -2.3 )
     sfe.show()
+    sfe.setFocus()
     app.exec_()
 
 def testLabelColor():
