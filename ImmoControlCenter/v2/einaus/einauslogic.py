@@ -88,6 +88,9 @@ class EinAusLogic(IccLogic):
     def getZahlung( self, ea_id:int ) -> XEinAus:
         return self._einausData.getEinAusZahlung( ea_id )
 
+    def getEaIdByForeignKey( self, foreignKeyName:str, foreignKeyValue:int ) -> int:
+        return self._einausData.getEaIdByForeignKey( foreignKeyName, foreignKeyValue )
+
     def getEinnahmenSumme( self, jahr:int ) -> float:
         return self._einausData.getEinnahmenSumme( jahr )
 
@@ -108,19 +111,24 @@ class EinAusLogic(IccLogic):
         else:
             # Validierung ok, jetzt speichern
             # ACHTUNG: eine Exception, die von _einausData geworfen wird, wird hier nicht abgefangen
-            y, m, d = datehelper.getDateParts( x.buchungsdatum )
-            if y == x.jahr:
-                x.monat = iccMonthShortNames[m-1]
-            else:
-                if y > x.jahr:
-                    # Buchung soll für ein vergangenes Jahr gelten,
-                    # fest "Dezember" eingeben
-                    x.monat = iccMonthShortNames[11]
-                else:
-                    # Buchung soll für ein zukünftiges Jahr gelten,
-                    # fest "Januar" eingeben
-                    x.monat = iccMonthShortNames[0]
-                x.buchungstext += "\nMonat <%s> - in der Tabelle nicht angezeigt -  wurde algorithmisch ermittelt." % x.monat
+            if x.buchungsdatum and not x.jahr:
+                y, m, d = datehelper.getDateParts( x.buchungsdatum )
+                x.jahr = y
+                if not x.monat:
+                    x.monat = iccMonthShortNames[m - 1]
+                # if y == x.jahr:
+                #     if not x.monat:
+                #         x.monat = iccMonthShortNames[m-1]
+                # else:
+                #     if y > x.jahr:
+                #         # Buchung soll für ein vergangenes Jahr gelten,
+                #         # fest "Dezember" eingeben
+                #         x.monat = iccMonthShortNames[11]
+                #     else:
+                #         # Buchung soll für ein zukünftiges Jahr gelten,
+                #         # fest "Januar" eingeben
+                #         x.monat = iccMonthShortNames[0]
+                #     x.buchungstext += "\nMonat <%s> - in der Tabelle nicht angezeigt -  wurde algorithmisch ermittelt." % x.monat
             if x.ea_id <= 0:
                 self._einausData.insertEinAusZahlung( x )
                 self._einausData.commit()
@@ -147,10 +155,12 @@ class EinAusLogic(IccLogic):
             if not x.verteilt_auf:
                 return "Bei Reparaturen muss angegeben werden, auf wieviele Jahre der Betrag verteilt werden soll."
         else:
-            if x.verteilt_auf > 1:
+            if x.verteilt_auf and x.verteilt_auf > 1:
                 return "Verteilung auf Jahre darf nur bei Reparaturen angegeben werden."
         if not x.buchungsdatum:
-            return "Buchungsdatum fehlt."
+            if not x.jahr:
+                return "Wenn schon kein Buchungsdatum angegeben ist, muss wenigstens das Jahr versorgt sein."
+            #return "Buchungsdatum fehlt."
         return ""
 
     def addZahlung( self, ea_art, mobj_id:str, debikredi:str,
@@ -230,6 +240,9 @@ class EinAusLogic(IccLogic):
         # todo: Methode trySaveZahlung verwenden
         rowsAffected = self._einausData.updateEinAusZahlung( x )
         return rowsAffected
+
+    def deleteZahlung( self, ea_id:int ):
+        self._einausData.deleteEinAusZahlung( ea_id )
 
     def deleteZahlungen( self, xlist:List[XEinAus] ):
         for x in xlist:

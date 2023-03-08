@@ -162,12 +162,12 @@ class XGeschaeftsreise( XBase ):
         XBase.__init__( self )
         self.id = 0
         self.master_name = ""
-        self.master_id = 0
-        self.mobj_id = ""
+        # self.master_id = 0
+        self.mobj_id = "" # deprecated, wird ab 2023 nicht mehr verwendet
         self.jahr = 0
         self.von = ""
         self.bis = ""
-        self.ziel = ""
+        self.ziel = ""  # deprecated, wird ab 2023 nicht mehr verwendet
         self.zweck = ""
         self.km = 0
         self.personen = 0

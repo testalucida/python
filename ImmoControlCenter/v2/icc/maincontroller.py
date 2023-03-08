@@ -9,6 +9,7 @@ from v2.abrechnungen.abrechnungcontroller import NKAbrechnungController, HGAbrec
 from v2.einaus.einauscontroller import EinAusController
 #from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
 from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
+from v2.geschaeftsreise.geschaeftsreisecontroller import GeschaeftsreiseController
 from v2.icc.constants import EinAusArt
 from v2.icc.icccontroller import IccController
 from v2.icc.iccmainwindow import IccMainWindow
@@ -30,6 +31,7 @@ class MainController( IccController ):
         self._einausCtrl = EinAusController()
         self._nkaCtrl = NKAbrechnungController()
         self._hgaCtrl = HGAbrechnungController()
+        #self._reiseCtrl = GeschaeftsreiseController()
         #self._win.setShutdownCallback( self.onShutdown )
         # todo: connect to EinAusWriteDispatcher wg. Versorgung Summenfelder
         EinAusWriteDispatcher.inst().ea_inserted.connect( self.onEinAusInserted )
@@ -52,6 +54,9 @@ class MainController( IccController ):
         menu = self._einausCtrl.getMenu()
         if menu:
             self._win.addMenu( menu )
+        # menu = self._reiseCtrl.getMenu()
+        # if menu:
+        #     self._win.addMenu( menu )
         ### die Views für die monatlichen Zahlungen erzeugen und dem MainWindow hinzufügen
         # Mietzahlungen
         tvf:IccCheckTableViewFrame = self._mieteCtrl.createGui()

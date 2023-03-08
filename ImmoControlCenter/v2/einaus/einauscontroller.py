@@ -134,8 +134,8 @@ class EinAusController( IccController ):
             box.exec_()
             return
         if x.sab_id > 0:
-            box = ErrorBox( "Änderung nicht tmöglich", "Regelmäßige Abschläge können hier nicht geändert werden. "
-                            "\nBitte die Änderung im Tab 'Regelmäßige Zahlungen ' in der Tabelle 'Abschläge' vornehmen.", "" )
+            box = ErrorBox( "Änderung nicht möglich", "Regelmäßige Abschläge können hier nicht geändert werden. "
+                            "\nBitte die Änderung im Tab 'Regelmäßige Zahlungen' in Tabelle 'Abschläge' vornehmen.", "" )
             box.exec_()
             return
 

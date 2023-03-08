@@ -30,6 +30,7 @@ class EinAusData( IccData ):
         sab_id = "NULL" if not x.sab_id else str( x.sab_id )
         hga_id = "NULL" if not x.hga_id else str( x.hga_id )
         nka_id = "NULL" if not x.nka_id else str( x.nka_id )
+        reise_id = "NULL" if not x.reise_id else str( x.reise_id )
         ea_art_db = EinAusArt.getDbValue( x.ea_art )
         verteilt_auf = "NULL" if not x.verteilt_auf else str( x.verteilt_auf )
         umlegbar = "NULL" if not x.umlegbar else "'" + x.umlegbar + "'"
@@ -38,12 +39,14 @@ class EinAusData( IccData ):
         leistung = "NULL" if not x.leistung else "'" + x.leistung + "'"
         writetime = datehelper.getCurrentTimestampIso()
         sql = "insert into einaus " \
-              "( master_name, mobj_id, debi_kredi, leistung, sab_id, hga_id, nka_id, jahr, monat, betrag, ea_art, verteilt_auf, umlegbar, " \
+              "( master_name, mobj_id, debi_kredi, leistung, sab_id, hga_id, nka_id, reise_id, " \
+              "  jahr, monat, betrag, ea_art, verteilt_auf, umlegbar, " \
               "  buchungsdatum, buchungstext, write_time ) " \
               "values" \
-              "(   '%s',       %s,       '%s',     %s,       %s,      %s,     %s,   %d,   '%s',    %.2f,   '%s',     %s,           %s," \
+              "(   '%s',       %s,       '%s',        %s,       %s,    %s,     %s,      %s,  " \
+              "    %d, '%s',   %.2f,   '%s',     %s,           %s," \
               "    %s,         %s,        '%s' ) " % ( x.master_name, mobj_id, x.debi_kredi, leistung, sab_id,
-                                                       hga_id, nka_id,
+                                                       hga_id, nka_id, reise_id,
                                                         x.jahr, x.monat, x.betrag,
                                                         ea_art_db, verteilt_auf, umlegbar,
                                                         buchungsdatum, buchungstext, writetime )
@@ -64,6 +67,7 @@ class EinAusData( IccData ):
         sab_id = "NULL" if not x.sab_id else str( x.sab_id )
         hga_id = "NULL" if not x.hga_id else str( x.hga_id )
         nka_id = "NULL" if not x.nka_id else str( x.nka_id )
+        reise_id = "NULL" if not x.reise_id else str( x.reise_id )
         ea_art_db = EinAusArt.getDbValue( x.ea_art )
         verteilt_auf = "NULL" if not x.verteilt_auf else str( x.verteilt_auf )
         umlegbar = "NULL" if not x.umlegbar else "'" + x.umlegbar + "'"
@@ -80,6 +84,7 @@ class EinAusData( IccData ):
               "sab_id = %s, " \
               "hga_id = %s, " \
               "nka_id = %s, " \
+              "reise_id = %s, " \
               "jahr = %d, " \
               "monat = '%s', " \
               "betrag = %.2f, " \
@@ -89,7 +94,7 @@ class EinAusData( IccData ):
               "buchungsdatum = %s, " \
               "buchungstext = %s, " \
               "write_time = '%s' " \
-              "where ea_id = %d " % (x.master_name, x.mobj_id, x.debi_kredi, leistung, sab_id, hga_id, nka_id,
+              "where ea_id = %d " % (x.master_name, x.mobj_id, x.debi_kredi, leistung, sab_id, hga_id, nka_id, reise_id,
                                        x.jahr, x.monat, x.betrag,
                                        ea_art_db, verteilt_auf, umlegbar,
                                        buchungsdatum, buchungstext,
@@ -151,6 +156,13 @@ class EinAusData( IccData ):
         self._mapDbValueToDisplay( (x,) )
         return x
 
+    def getEaIdByForeignKey( self, foreignKeyName:str, foreignKeyValue:int ) -> int:
+        sql = "select ea_id " \
+              "from einaus " \
+              "where %s = %d " % (foreignKeyName, foreignKeyValue )
+        tpllist = self.read( sql )
+        return tpllist[0][0]
+
     def getEinAuszahlungenJahr( self, jahr:int ) -> List[XEinAus]:
         """
         Liefert alle Ein- und Auszahlungen im jahr <jahr>
@@ -183,7 +195,7 @@ class EinAusData( IccData ):
               "where jahr = %d " \
               "and ea_art = '%s' " % ( jahr, ea_art_db )
         if additionalWhereClause:
-            sql += ( " " + additionalWhereClause )
+            sql += ( " and " + additionalWhereClause )
         xlist = self.readAllGetObjectList( sql, XEinAus )
         self._mapDbValueToDisplay( xlist )
         return xlist

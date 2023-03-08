@@ -94,6 +94,7 @@ class IccData( DatabaseCommon ):
               "afa_wie_vj, afa, afa_proz, hauswart, hauswart_telefon, hauswart_mailto, heizung, " \
               "angeschafft_am, veraeussert_am, bemerkung " \
               "from masterobjekt " \
+              "where aktiv = 1 " \
               "order by master_name asc "
         xlist = self.readAllGetObjectList( sql, XMasterobjekt )
         return xlist

@@ -27,6 +27,7 @@ class XEinAus( XBase ):
         self.sab_id = 0
         self.hga_id = 0
         self.nka_id = 0
+        self.reise_id = 0
         self.jahr = 0
         self.monat = ""
         self.betrag = 0.0
@@ -375,6 +376,38 @@ class XNKAbrechnung( XAbrechnung ):
         if valuedict:
             self.setFromDict( valuedict )
 
+#######################  Geschäftsreise  #######################
+class XGeschaeftsreise( XBase ):
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self )
+        self.reise_id = 0
+        self.master_name = ""
+        #self.master_id = 0
+        #self.mobj_id = ""
+        self.jahr = 0
+        self.von = ""
+        self.bis = ""
+        #self.ziel = ""
+        self.zweck = ""
+        self.km = 800
+        self.personen = 1
+        self.uebernachtung = ""
+        self.uebernacht_kosten = 0.0
+        if valuedict:
+            self.setFromDict( valuedict )
+
+#####################   Pauschale  ##########################
+class XPauschale( XBase ):
+    def __init__(self, valuedict:Dict=None):
+        XBase.__init__( self )
+        self.id = 0
+        self.jahr_von = 0
+        self.jahr_bis = 0
+        self.km = 0.0
+        self.vpfl_8 = 0.0 #Verpfl.-Pauschale für Hin- u. Rückreise bzw. für 8-24 stündige Dienstreise
+        self.vpfl_24 = 0.0 #Verpfl.-Pauschale für ganztägige Abwesenheit
+        if valuedict:
+            self.setFromDict( valuedict )
 
 
 
