@@ -88,8 +88,8 @@ class EinAusLogic(IccLogic):
     def getZahlung( self, ea_id:int ) -> XEinAus:
         return self._einausData.getEinAusZahlung( ea_id )
 
-    def getEaIdByForeignKey( self, foreignKeyName:str, foreignKeyValue:int ) -> int:
-        return self._einausData.getEaIdByForeignKey( foreignKeyName, foreignKeyValue )
+    def getEaIdAndBetragByForeignKey( self, foreignKeyName:str, foreignKeyValue:int ) -> Dict:
+        return self._einausData.getEaIdAndBetragByForeignKey( foreignKeyName, foreignKeyValue )
 
     def getEinnahmenSumme( self, jahr:int ) -> float:
         return self._einausData.getEinnahmenSumme( jahr )

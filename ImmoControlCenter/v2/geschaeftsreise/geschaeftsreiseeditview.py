@@ -3,7 +3,7 @@ from typing import List, Iterable
 
 from PySide2.QtWidgets import QWidget, QFormLayout, QComboBox, QApplication, QPushButton, QHBoxLayout, QDialog
 
-from base.baseqtderivates import SmartDateEdit, BaseEdit, MultiLineEdit, IntEdit, FloatEdit
+from base.baseqtderivates import SmartDateEdit, BaseEdit, MultiLineEdit, IntEdit, FloatEdit, SignedNumEdit
 from generictable_stuff.okcanceldialog import OkCancelDialog
 from v2.icc.interfaces import XGeschaeftsreise
 
@@ -19,10 +19,10 @@ class GeschaeftsreiseEditView( QWidget ):
         self._sdBis = SmartDateEdit()
         #self._beZiel = BaseEdit()
         self._meZweck = MultiLineEdit()
-        self._ieKm = IntEdit()
-        self._iePersonen = IntEdit()
+        self._ieKm = IntEdit( showNegativNumbersRed=False )
+        self._iePersonen = IntEdit( showNegativNumbersRed=False )
         self._beUebernachtung = BaseEdit()
-        self._feUebernachtKosten = FloatEdit()
+        self._feUebernachtKosten = SignedNumEdit()
         self._createGui()
         self.setMasterobjekte( masterlist )
         self.setData( x )
@@ -43,7 +43,7 @@ class GeschaeftsreiseEditView( QWidget ):
         self._meZweck.setMaximumHeight( 80 )
         l.addRow( "Zweck: ", self._meZweck )
         l.addRow( "Hotel o.ä.: ", self._beUebernachtung )
-        self._feUebernachtKosten.setMaximumWidth( 55 )
+        self._feUebernachtKosten.setMaximumWidth( 90 )
         l.addRow( "Übernacht.-Kosten: ", self._feUebernachtKosten )
         self._ieKm.setMaximumWidth( 55 )
         l.addRow( "Gefahrene Kilometer: ", self._ieKm )

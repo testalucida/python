@@ -37,6 +37,7 @@ class EinAusWriteDispatcher( QObject ):
         :param ea_art: EinAusArt, diese muss für alle ea_id*s in ea_id_list gleich sein
         :param delta: der Betrag, um den sich der Gesamtbetrag der Zahlungen durch die Löschung(en) von
         EinAus-Sätzen geändert hat.
+        NB: Wenn ein negativer Betrag aus <einaus> gelöscht wurde, muss delta > 0 sein (und umgekehrt)!
         :return:
         """
         self.ea_deleted.emit( ea_id_list, ea_art, delta )

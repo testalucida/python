@@ -1,17 +1,21 @@
 from typing import Any, Dict, List
 
+from PySide2.QtCore import QSize
 from PySide2.QtWidgets import QWidget, QApplication, QMessageBox, QMenu
 
 from base.baseqtderivates import BaseAction
 from base.messagebox import ErrorBox, QuestionBox
+from generictable_stuff.okcanceldialog import OkCancelDialog, OkDialog
 from screen import setScreenSize, getScreenWidth
+from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
 from v2.geschaeftsreise.geschaeftsreiseeditcontroller import GeschaeftsreiseEditController
 #from v2.geschaeftsreise.geschaeftsreiselogic import GeschaeftsreiseUcc
 from v2.geschaeftsreise.geschaeftsreiselogic import GeschaeftsreiseLogic
 from v2.geschaeftsreise.geschaeftsreisetablemodel import GeschaeftsreiseTableModel
 from v2.geschaeftsreise.geschaeftsreisenview import GeschaeftsreisenView
+from v2.icc.constants import EinAusArt
 from v2.icc.icccontroller import IccController
-from v2.icc.interfaces import XGeschaeftsreise
+from v2.icc.interfaces import XGeschaeftsreise, XEinAus
 
 
 class GeschaeftsreiseController( IccController ):
@@ -28,9 +32,17 @@ class GeschaeftsreiseController( IccController ):
         """
         menu = QMenu( "Geschäftsreisen" )
         action = BaseAction( "Geschäftsreisen anzeigen und bearbeiten...", parent=menu )
-        action.triggered.connect( self.createGui )
+        action.triggered.connect( self.onGeschaeftsreise )
         menu.addAction( action )
         return menu
+
+    def onGeschaeftsreise( self ):
+        view = self.createGui()
+        dlg = OkDialog( "Geschäftsreisen bearbeiten" )
+        dlg.setOkButtonText( "Schließen" )
+        dlg.addWidget( view, 0 )
+        dlg.resize( QSize( 800, 800 ) )
+        dlg.exec_()
 
     def createGui( self ) -> QWidget:
         try:
@@ -135,7 +147,8 @@ class GeschaeftsreiseController( IccController ):
         x:XGeschaeftsreise = editCtrl.createGeschaeftsreise( self._view.getJahr() )
         if x:
             try:
-                self._logic.insertGeschaeftsreise( x )
+                xea:XEinAus = self._logic.insertGeschaeftsreise( x )
+                EinAusWriteDispatcher.inst().einaus_inserted( xea )
             except Exception as ex:
                 box = ErrorBox( "Speichern fehlgeschlagen", str( ex ),
                                 "\nAufgefangen in GeschaeftsreiseController.onCreate()")
@@ -148,7 +161,8 @@ class GeschaeftsreiseController( IccController ):
         editCtrl = GeschaeftsreiseEditController( x )
         if editCtrl.editGeschaeftsreise():
             try:
-                self._logic.updateGeschaeftsreise( x )
+                xea, delta = self._logic.updateGeschaeftsreise( x )
+                EinAusWriteDispatcher.inst().einaus_updated( xea, delta )
             except Exception as ex:
                 box = ErrorBox( "Speichern fehlgeschlagen", str( ex ),
                                 "\nAufgefangen in GeschaeftsreiseController.onEdit()")
@@ -159,7 +173,9 @@ class GeschaeftsreiseController( IccController ):
 
     def onDelete( self, x: XGeschaeftsreise ):
         try:
-            self._logic.deleteGeschaeftsreise( x.reise_id )
+            dic = self._logic.deleteGeschaeftsreise( x.reise_id )
+            EinAusWriteDispatcher.inst().einaus_deleted( (dic["ea_id"],),
+                                                         EinAusArt.SONSTIGE_KOSTEN.display, dic["betrag"]*(-1) )
         except Exception as ex:
             box = ErrorBox( "Löschen fehlgeschlagen", str( ex ),
                             "\nAufgefangen in GeschaeftsreiseController.onDelete()" )
@@ -182,9 +198,12 @@ def test():
     c = GeschaeftsreiseController()
     v = c.createGui()
     v.yearChanged.connect( jahrChanged )
-    #v.save.connect( save )
-    v.show()
-    app.exec_()
+    dlg = OkDialog( "Geschäftsreisen bearbeiten" )
+    dlg.setOkButtonText( "Schließen" )
+    dlg.addWidget( v, 0 )
+    dlg.exec_()
+    #v.show()
+    #app.exec_()
 
 if __name__ == "__main__":
     test()

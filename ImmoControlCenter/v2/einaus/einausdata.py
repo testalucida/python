@@ -148,7 +148,7 @@ class EinAusData( IccData ):
         return 0 if not summe else summe
 
     def getEinAusZahlung( self, ea_id:int ) -> XEinAus:
-        sql = "select ea_id, master_name, mobj_id, debi_kredi, leistung, sab_id, hga_id, nka_id, jahr, monat, " \
+        sql = "select ea_id, master_name, mobj_id, debi_kredi, leistung, sab_id, hga_id, nka_id, reise_id, jahr, monat, " \
               "betrag, ea_art, verteilt_auf, umlegbar, buchungsdatum, buchungstext, write_time " \
               "from einaus " \
               "where ea_id = %d " % ea_id
@@ -156,12 +156,17 @@ class EinAusData( IccData ):
         self._mapDbValueToDisplay( (x,) )
         return x
 
-    def getEaIdByForeignKey( self, foreignKeyName:str, foreignKeyValue:int ) -> int:
-        sql = "select ea_id " \
+    def getEaIdAndBetragByForeignKey( self, foreignKeyName:str, foreignKeyValue:int ) -> Dict:
+        """
+        :param foreignKeyName:
+        :param foreignKeyValue:
+        :return: Dictionary mit den Keys ea_id und betrag
+        """
+        sql = "select ea_id, betrag " \
               "from einaus " \
               "where %s = %d " % (foreignKeyName, foreignKeyValue )
-        tpllist = self.read( sql )
-        return tpllist[0][0]
+        dic = self.readOneGetDict( sql )
+        return dic
 
     def getEinAuszahlungenJahr( self, jahr:int ) -> List[XEinAus]:
         """
@@ -170,7 +175,7 @@ class EinAusData( IccData ):
         :return:
         """
         sql = "select ea_id, master_name, mobj_id, debi_kredi, coalesce(leistung, '') as leistung, " \
-              "sab_id, hga_id, nka_id, jahr, monat, betrag, ea_art, " \
+              "sab_id, hga_id, nka_id, reise_id, jahr, monat, betrag, ea_art, " \
               "coalesce(verteilt_auf, '') as verteilt_auf, umlegbar, " \
               "coalesce( buchungsdatum, '') as buchungsdatum, coalesce(buchungstext, '') as buchungstext, " \
               "write_time " \
@@ -185,17 +190,18 @@ class EinAusData( IccData ):
         Liefert eine nicht sortierte Liste von XEinAus-Objekten, die den gegebenen Kriterien genügen
         :param ea_art_display: erwartet wird hier der display-Wert der versch. EinAusArten, z.B. "Bruttomiete"
         :param jahr: yyyy
-        :param additionalWhereClause: optionale zusätzliche Selektionsbedingung (ohne "and", also z.B. "sab_id > 0")
+        :param additionalWhereClause: optionale zusätzliche Selektionsbedingung ( z.B. "and sab_id > 0")
         :return:  List[XEinAus]
         """
         ea_art_db = EinAusArt.getDbValue( ea_art_display )
-        sql = "select ea_id, master_name, mobj_id, debi_kredi, leistung, sab_id, hga_id, nka_id, jahr, monat, betrag, " \
+        sql = "select ea_id, master_name, mobj_id, debi_kredi, leistung, sab_id, hga_id, nka_id, reise_id, " \
+              "jahr, monat, betrag, " \
               "ea_art, verteilt_auf, umlegbar, buchungsdatum, buchungstext, write_time " \
               "from einaus " \
               "where jahr = %d " \
               "and ea_art = '%s' " % ( jahr, ea_art_db )
         if additionalWhereClause:
-            sql += ( " and " + additionalWhereClause )
+            sql += additionalWhereClause
         xlist = self.readAllGetObjectList( sql, XEinAus )
         self._mapDbValueToDisplay( xlist )
         return xlist
@@ -210,7 +216,8 @@ class EinAusData( IccData ):
         :return: List[XEinAus]
         """
         ea_art_db = EinAusArt.getDbValue( ea_art_display )
-        sql = "select ea_id, master_name, mobj_id, debi_kredi, leistung, sabid, hga_id, nka_id, jahr, monat, betrag, " \
+        sql = "select ea_id, master_name, mobj_id, debi_kredi, leistung, sabid, hga_id, nka_id, reise_id, " \
+              "jahr, monat, betrag, " \
               "ea_art, verteilt_auf, umlegbar, buchungsdatum, buchungstext, write_time " \
               "from einaus " \
               "where jahr = %d " \
@@ -231,7 +238,8 @@ class EinAusData( IccData ):
         :return: List[XEinAus]
         """
         ea_art_db = EinAusArt.getDbValue( ea_art_display )
-        sql = "select ea_id, master_name, mobj_id, debi_kredi, leistung, sab_id, hga_id, nka_id, jahr, monat, betrag, " \
+        sql = "select ea_id, master_name, mobj_id, debi_kredi, leistung, sab_id, hga_id, nka_id, reise_id, " \
+              "jahr, monat, betrag, " \
               "ea_art, verteilt_auf, umlegbar, buchungsdatum, buchungstext, write_time " \
               "from einaus " \
               "where jahr = %d " \
@@ -251,7 +259,8 @@ class EinAusData( IccData ):
         :param mv_id: ID des Mieters
         :return: List[XEinAus]
         """
-        sql = "select ea_id, master_name, mobj_id, debi_kredi, leistung, sab_id, hga_id, nka_id, jahr, monat, betrag, " \
+        sql = "select ea_id, master_name, mobj_id, debi_kredi, leistung, sab_id, hga_id, nka_id, reise_id, " \
+              "jahr, monat, betrag, " \
               "ea_art, verteilt_auf, umlegbar, buchungsdatum, buchungstext, write_time " \
               "from einaus " \
               "where jahr = %d " \

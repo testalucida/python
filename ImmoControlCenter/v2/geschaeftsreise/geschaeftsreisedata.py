@@ -48,7 +48,7 @@ class GeschaeftsreiseData( IccData ):
 
     def insertGeschaeftsreise( self, x:XGeschaeftsreise ) -> int:
         uebernachtung = x.uebernachtung if x.uebernachtung > " " else ""
-        uebernacht_kosten = x.uebernacht_kosten if x.uebernacht_kosten > 0 else 0.0
+        uebernacht_kosten = x.uebernacht_kosten if x.uebernacht_kosten != 0 else 0.0
         sql = "insert into geschaeftsreise " \
               "( master_name, jahr, von, bis, " \
               "zweck, km, personen, uebernachtung, uebernacht_kosten )" \

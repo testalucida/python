@@ -133,9 +133,14 @@ class EinAusController( IccController ):
             box = ErrorBox( "Änderung nicht möglich", msg, "" )
             box.exec_()
             return
-        if x.sab_id > 0:
+        if x.sab_id and x.sab_id > 0:
             box = ErrorBox( "Änderung nicht möglich", "Regelmäßige Abschläge können hier nicht geändert werden. "
                             "\nBitte die Änderung im Tab 'Regelmäßige Zahlungen' in Tabelle 'Abschläge' vornehmen.", "" )
+            box.exec_()
+            return
+        if x.reise_id and x.reise_id > 0:
+            box = ErrorBox( "Änderung nicht möglich", "Reisekosten können hier nicht geändert werden.",
+                            "Bitte die Änderung im Geschäftsreisen-Dialog vornehmen." )
             box.exec_()
             return
 
@@ -168,6 +173,13 @@ class EinAusController( IccController ):
         if len( rows ) < 1: return
         model = self._tv.model()
         xealist = model.getElements( rows )
+        for xea in xealist:
+            if xea.reise_id and xea.reise_id > 0:
+                box = ErrorBox( "Löschen nicht zuläassig",
+                                "Reisekosten können hier nicht gelöscht werden.",
+                                "Bitte den Geschäftsreise-Dialog verwenden." )
+                box.exec_()
+                return
         box = QuestionBox( "Ausgewählte Element löschen", "Ausgewählte Elemente wirklich löschen?", "Ja", "Nein" )
         if box.exec_() == QMessageBox.Yes:
             ea_id_list = [x.ea_id for x in xealist]

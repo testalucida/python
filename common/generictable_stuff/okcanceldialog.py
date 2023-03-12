@@ -112,6 +112,43 @@ class OkCancelDialog2( QDialog ):
     def getItemAt( self, row:int ) -> QWidget:
         return self._layout.itemAt( QModelIndex( row, 0 ) )
 
+########################   OkDialog   #######################
+class OkDialog( QDialog ):
+    def __init__( self, title=None, parent=None ):
+        QDialog.__init__( self, parent )
+        self.title = title
+        self._layout = QGridLayout()
+        self._okButton = QPushButton( "OK" )
+        self._createGui()
+
+    def _createGui( self ):
+        self.setLayout( self._layout )
+        self._layout.addWidget( self._okButton, 3, 0, alignment=Qt.AlignLeft | Qt.AlignBottom )
+        self._okButton.clicked.connect( self.accept )
+        self._okButton.setDefault( True )
+        if self.title:
+            self.setWindowTitle( self.title )
+        else:
+            self.setWindowTitle( "OkDialog" )
+
+    def setOkButtonText( self, text:str ):
+        self._okButton.setText( text )
+
+    def addWidget( self, widget: QWidget, row: int ) -> None:
+        if row > 2: raise Exception( "OkDialog.addWidget() -- invalid row index: %d" % (row) )
+        self._layout.addWidget( widget, row, 0 )
+
+
+def testOkDialog():
+    app = QApplication()
+    dlg = OkDialog()
+    dlg.setWindowTitle( "testdialog" )
+    dlg.setOkButtonText( "Schließen" )
+    lbl = QLabel( "Man beachte diesen erstaunlichen Dialog" )
+    dlg.addWidget( lbl, 0 )
+    lbl = QLabel( "Did you?" )
+    dlg.addWidget( lbl, 2 )
+    dlg.exec_()
 
 
 def testOkCancelDialog():

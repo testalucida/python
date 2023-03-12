@@ -683,25 +683,11 @@ class SignedNumEdit( QWidget ):
         self._sign.pressed.connect( self.onSignPressed )
         self._setStyleSheet( self._sign.isPlus() )
 
-        # tmpWidget = QWidget()
-        # #tmpWidget.setContentsMargins( 0, 0, 0, 0 )
-        # tmpWidget.setStyleSheet( "background-color: yellow;" )
-        # tmpLayout = QHBoxLayout()
-        # margins:QMargins = tmpLayout.contentsMargins()
-        # margins.setLeft( 0 )
-        # margins.setRight( 0 )
-        # tmpLayout.setContentsMargins( margins )
-        # tmpWidget.setLayout( tmpLayout )
-        # tmpLayout.addWidget( self._sign, stretch=0, alignment=Qt.AlignLeft )
-        # tmpLayout.addWidget( self._numEdit, stretch=0, alignment=Qt.AlignLeft )
-
         self._layout = QHBoxLayout()
         self.setLayout( self._layout )
-        #self._layout.addWidget( tmpWidget )
         self._layout.addWidget( self._sign, stretch=0, alignment=Qt.AlignLeft )
         self._layout.addWidget( self._numEdit, stretch=0, alignment=Qt.AlignLeft )
         self._layout.setContentsMargins( 0, 0, 0, 0 )
-        # h = self._numEdit.height()
 
     def onSignPressed( self ):
         self._setStyleSheet( self._sign.isPlus() )
@@ -732,7 +718,7 @@ class SignedNumEdit( QWidget ):
         return val
 
     def setValue( self, value: int or float ):
-        if value < 0:
+        if value < 0 or ( value == 0 and self._sign.isMinus() ):
             self._sign.setMinus()
             value *= -1 # wir haben Sign auf "-" gesetzt, deswegen muss value positiv gemacht werden
             self._setStyleSheet( isPlus=False )
@@ -743,6 +729,26 @@ class SignedNumEdit( QWidget ):
             self._numEdit.setIntValue( value )
         else:
             self._numEdit.setFloatValue( value )
+
+    def setFloatValue( self, value:float ):
+        if not self._type == float:
+            raise ValueError( "SignedNumEdit was intantiated with type==int.\nUse method setIntValue()." )
+        self.setValue( value )
+
+    def getFloatValue( self ) -> float:
+        if not self._type == float:
+            raise ValueError( "SignedNumEdit was intantiated with type==int.\nUse method getIntValue()." )
+        return self.getValue()
+
+    def setIntValue( self, value:int ):
+        if not self._type == int:
+            raise ValueError( "SignedNumEdit was intantiated with type==float.\nUse method setFloatValue()." )
+        self.setValue( value )
+
+    def getIntValue( self ) -> int:
+        if not self._type == int:
+            raise ValueError( "SignedNumEdit was intantiated with type==float.\nUse method getFloatValue()." )
+        return self.getValue()
 
 
 #########################  FloatEdit  ################################

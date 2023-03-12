@@ -46,6 +46,10 @@ class GeschaeftsreiseEditController:
         elif not x.bis: msg = "Ende muss angegeben sein."
         elif x.von > x.bis: msg = "Beginn muss vor dem Ende sein."
         elif not x.zweck: msg = "Zweck muss angegeben sein."
+        elif x.uebernachtung and not x.uebernacht_kosten:
+            msg = "Wenn ein Hotel angegeben wurde, müssen auch Übernachtungskosten angegeben werden."
+        elif x.uebernacht_kosten and not x.uebernachtung:
+            msg = "Wenn Übernachtungskosten angegeben werden, muss auch der Name des Hotels angegeben werden."
         elif x.km <= 0: msg = "Kilometerangabe fehlt. Muss angegeben werden."
         if msg:
             box = ErrorBox( "Angaben unvollständig", msg, "" )

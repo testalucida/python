@@ -159,16 +159,11 @@ class GeschaeftsreiseLogic:
         geschaeftsreisen = self.getGeschaeftsreisen( master_name, jahr )
         return self._getGeschaeftsreisekosten( geschaeftsreisen )
 
-    def getGeschaeftsreisekosten2( self, reise:XGeschaeftsreise ) -> float:
+    def getGeschaeftsreisekostenParts( self, reise:XGeschaeftsreise ) -> Dict:
         """
         Ermittelt die Kosten für eine Geschäftsreise.
-        ACHTUNG: Hotelkosten sind echte Abflüsse (im Ggs zum km-Geld und der Vpfl.-Pauschale).
-                 Der in die Tabelle einaus eingetragene Betrag setzt sich also zusammen aus den (tatsächlichen)
-                 Hotelkosten und den kalkulatorischen Fahrt- und Verpflegungskosten.
-        Methode wird auch von der AnlageV_Base_Logic und der AnlageV_Preview_Logic verwendet.
-        (Betrifft die alte Version des ICC. Ob das mit v2 auch noch so sein wird, ist derzeit (März 2023) offen.)
         :param reise:
-        :return:
+        :return: Die Bestandteile der Reisekosten in Form eines Dictionary mit den Keys vpfl, uebn, km
         """
         jahr = datehelper.getDateParts( reise.von )[0]
         pausch: XPauschale = self.getPauschale( jahr )
@@ -181,10 +176,25 @@ class GeschaeftsreiseLogic:
         if dauer > 2:
             ganzetage = dauer - 2
             vpflkosten += (ganzetage * pausch.vpfl_24)
-        vpflkosten = vpflkosten * -1
-        uekosten = reise.uebernacht_kosten
-        kmkosten = reise.km * pausch.km * -1
-        summe = vpflkosten + uekosten + kmkosten
+        dic = dict()
+        dic["vpfl"] = vpflkosten * -1
+        dic["uebn"] = reise.uebernacht_kosten
+        dic["km"] = reise.km * pausch.km * -1
+        return dic
+
+    def getGeschaeftsreisekosten2( self, reise:XGeschaeftsreise ) -> float:
+        """
+        Ermittelt die Kosten für eine Geschäftsreise.
+        ACHTUNG: Hotelkosten sind echte Abflüsse (im Ggs zum km-Geld und der Vpfl.-Pauschale).
+                 Der in die Tabelle einaus eingetragene Betrag setzt sich also zusammen aus den (tatsächlichen)
+                 Hotelkosten und den kalkulatorischen Fahrt- und Verpflegungskosten.
+        Methode wird auch von der AnlageV_Base_Logic und der AnlageV_Preview_Logic verwendet.
+        (Betrifft die alte Version des ICC. Ob das mit v2 auch noch so sein wird, ist derzeit (März 2023) offen.)
+        :param reise:
+        :return:
+        """
+        dic = self.getGeschaeftsreisekostenParts( reise )
+        summe = dic["vpfl"] + dic["uebn"] + dic["km"]
         return summe
 
     def _getGeschaeftsreisekosten( self, geschaeftsreisen: List[XGeschaeftsreise] ) -> float:
@@ -214,16 +224,19 @@ class GeschaeftsreiseLogic:
         xea.leistung = "Geschaeftsreise"
         xea.jahr = x.jahr
         xea.monat = monat
-        xea.betrag = self.getGeschaeftsreisekosten2( x )
+        dic = self.getGeschaeftsreisekostenParts( x )
+        xea.betrag = dic["vpfl"] + dic["uebn"] + dic["km"]
+        #xea.betrag = self.getGeschaeftsreisekosten2( x )
         xea.ea_art = EinAusArt.SONSTIGE_KOSTEN.display
         xea.verteilt_auf = None
         xea.umlegbar = Umlegbar.NEIN.value
         xea.buchungstext = "Geschäftsreisekosten bestehen aus\n" \
-                           "tatsächlich abgeflossenen Hotelkosten und\n" \
-                           "kalkulatorischen Fahrt- und Verpflegungskosten."
+                           "tatsächlich abgeflossenen Hotelkosten (%.2f €) und\n" \
+                           "kalkulatorischen Fahrt- (%.2f €) und Verpflegungskosten (%.2f €)." % \
+                           (dic["uebn"], dic["km"], dic["vpfl"])
         return xea
 
-    def insertGeschaeftsreise( self, x:XGeschaeftsreise ) -> str:
+    def insertGeschaeftsreise( self, x:XGeschaeftsreise ) -> XEinAus:
         self._data.insertGeschaeftsreise( x )
         x.reise_id = self._data.getMaxId( "geschaeftsreise", "reise_id" )
         # in die Tabelle einaus einfügen lassen:
@@ -235,12 +248,20 @@ class GeschaeftsreiseLogic:
                              "Unerwartete Fehlermeldung aus EinAusLogic.trySaveZahlung() erhalten:\n'%s'\n"
                              "\nZu speicherndes XEinAus-Objekt:\n%s" % (msg, xea.toString()) )
         self._data.commit()
-        return ""
+        return xea
 
-    def updateGeschaeftsreise( self, x:XGeschaeftsreise ):
+    def updateGeschaeftsreise( self, x:XGeschaeftsreise ) -> (XEinAus, float):
+        """
+        Macht mit den Daten in <x> einen Update auf den entsprechenden Satz in Tabelle <geschaeftsreise>.
+        Wandelt die Daten in <x> um in eine XEinAus-Objekt und macht einen Update auf den entsprechenden Satz
+        in Tabelle <einaus>
+        :param x:
+        :return: Den aktualisierten Satz der Tabelle <einaus> in einem XEinAus-Objekt sowie das Delta des alten
+        und neuen Betrags in Tabelle <einaus>. Dieses Delta kann 0 sein.
+        """
         self._data.updateGeschaeftsreise( x )
         ea_logic = EinAusLogic()
-        xea_alt = ea_logic.getZahlungen( EinAusArt.SONSTIGE_KOSTEN.display, x.jahr, "reise_id=%d" % x.reise_id )[0]
+        xea_alt = ea_logic.getZahlungen( EinAusArt.SONSTIGE_KOSTEN.display, x.jahr, "and reise_id=%d" % x.reise_id )[0]
         ea_id = xea_alt.ea_id
         xea_neu = self._createXeinausFromXgeschaeftsreise( x )
         xea_neu.ea_id = ea_id
@@ -255,13 +276,21 @@ class GeschaeftsreiseLogic:
                                  "Unerwartete Fehlermeldung aus EinAusLogic.trySaveZahlung() erhalten:\n'%s'\n"
                                  "\nZu speicherndes XEinAus-Objekt:\n%s" % (msg, xea_neu.toString()) )
         self._data.commit()
+        delta = round( xea_neu.betrag - xea_alt.betrag, 2)
+        return xea_neu, delta
 
-    def deleteGeschaeftsreise( self, reise_id:int ):
+    def deleteGeschaeftsreise( self, reise_id:int ) -> Dict:
+        """
+        Löscht die Geschäftsreise mit id <reise_id> aus den Tabellen <geschaeftsreise> und <einaus>
+        :param reise_id:
+        :return: ein Dictionary mit den Keys ea_id und betrag (aus <einaus> gelöschter Betrag)
+        """
         self._data.deleteGeschaeftsreise( reise_id )
         ea_logic = EinAusLogic()
-        ea_id = ea_logic.getEaIdByForeignKey( "reise_id", reise_id )
-        ea_logic.deleteZahlung( ea_id )
+        dic = ea_logic.getEaIdAndBetragByForeignKey( "reise_id", reise_id )
+        ea_logic.deleteZahlung( dic["ea_id"] )
         self._data.commit()
+        return dic
 
 ########################################################################################
 
