@@ -12,9 +12,6 @@ from v2.icc.icclogic import IccLogic, IccTableModel
 from v2.icc.interfaces import XAbrechnung, XHGAbrechnung, XNKAbrechnung, XVerwaltung, XEinAus, XTeilzahlung
 
 ################   AbrechnungTableModel   ####################
-from verwaltung.verwaltungdata import VerwaltungData
-
-
 class AbrechnungTableModel( IccTableModel ):
     def __init__( self, rowlist:List[XAbrechnung], jahr ):
         IccTableModel.__init__( self, rowlist, jahr )

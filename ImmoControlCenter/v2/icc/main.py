@@ -6,8 +6,7 @@ from PySide2.QtCore import QSize
 from PySide2.QtGui import QIcon
 from PySide2.QtWidgets import QApplication, QWidget, QMessageBox
 
-from base.messagebox import WarningBox
-from messagebox import ErrorBox
+from base.messagebox import WarningBox, ErrorBox
 from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
 from v2.icc.iccmainwindow import IccMainWindow
 from v2.icc.login import login

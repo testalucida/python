@@ -3,8 +3,6 @@ from datetime import datetime
 from sqlite3 import Connection
 from typing import List, Tuple, Dict, Type
 
-#from definitions import DATABASE
-from interfaces import XBase
 
 
 ###########################  DatabaseConnection  ###########################
@@ -36,6 +34,9 @@ from interfaces import XBase
 
 
 ###########################  DatabaseCommon  ############################
+from base.interfaces import XBase
+
+
 class DatabaseCommon:
     """
     Basisklasse für Anmeldung und Zugriffe auf eine Sqlite-Datenbank.

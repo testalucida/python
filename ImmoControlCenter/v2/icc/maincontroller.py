@@ -16,6 +16,7 @@ from v2.icc.iccmainwindow import IccMainWindow
 from v2.icc.iccwidgets import IccCheckTableViewFrame
 from v2.icc.interfaces import XEinAus, XSummen
 from v2.icc.mainlogic import MainLogic
+from v2.mietobjekt.mietobjektcontroller import MietobjektController
 from v2.mtleinaus.mtleinauscontroller import MieteController, HausgeldController, AbschlagController
 
 
@@ -32,16 +33,18 @@ class MainController( IccController ):
         self._nkaCtrl = NKAbrechnungController()
         self._hgaCtrl = HGAbrechnungController()
         self._reiseCtrl = GeschaeftsreiseController()
-        #self._win.setShutdownCallback( self.onShutdown )
-        # todo: connect to EinAusWriteDispatcher wg. Versorgung Summenfelder
+        self._mietObjektCtrl = MietobjektController()
+        # connect to EinAusWriteDispatcher wg. Versorgung Summenfelder
         EinAusWriteDispatcher.inst().ea_inserted.connect( self.onEinAusInserted )
         EinAusWriteDispatcher.inst().ea_updated.connect( self.onEinAusUpdated )
         EinAusWriteDispatcher.inst().ea_deleted.connect( self.onEinAusDeleted )
-        # Summenfelder versorgen
 
     def createGui( self ) -> IccMainWindow:
         self._win = IccMainWindow( self._env )
         self._win.addMenu( self.getMenu() )
+        menu = self._mietObjektCtrl.getMenu()
+        if menu:
+            self._win.addMenu( menu )
         menu = self._mieteCtrl.getMenu()
         if menu:
             self._win.addMenu( menu )

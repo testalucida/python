@@ -73,6 +73,7 @@ class OkCancelDialog2( QDialog ):
         QDialog.__init__( self, parent )
         self.title = title
         self._layout = QGridLayout()
+        self._widgetsDic = dict()
         self._okButton = QPushButton( "OK" )
         self._cancelButton = QPushButton( "Abbrechen" )
         self._createGui()
@@ -108,9 +109,10 @@ class OkCancelDialog2( QDialog ):
     def addWidget( self, widget:QWidget, row:int ) -> None:
         if row > 2: raise Exception( "OkCancelDialog.addWidget() -- invalid row index: %d" % ( row ) )
         self._layout.addWidget( widget, row, 0 )
+        self._widgetsDic[row] = widget
 
-    def getItemAt( self, row:int ) -> QWidget:
-        return self._layout.itemAt( QModelIndex( row, 0 ) )
+    def getWidget( self, row:int ) -> QWidget:
+        return self._widgetsDic[row]
 
 ########################   OkDialog   #######################
 class OkDialog( QDialog ):

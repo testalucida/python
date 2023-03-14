@@ -300,6 +300,95 @@ class XMietobjekt( XBase ):
         if valuedict:
             self.setFromDict( valuedict )
 
+#################  MietobjektExt  #############################
+class XMietobjektExt( XBase ):
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self )
+        ### zuerst die Master-Daten ###
+        #self.master_id:int = 0 # ID des Master-Objekts (Tabelle masterobjekt)
+        self.master_name:str = ""
+        self.strasse_hnr:str = ""
+        self.plz:str = ""
+        self.ort:str = ""
+        self.gesamt_wfl:int = 0
+        self.anz_whg:int = 0
+        self.veraeussert_am:str = ""
+        self.hauswart:str = ""
+        self.hauswart_telefon:str = ""
+        self.hauswart_mailto:str = ""
+        self.bemerkung_masterobjekt:str = "" ### ACHTUNG: Dieses Feld heißt in der Tabelle masterobjekt "bemerkung" --
+                                                # Beim Select berücksichtigen!
+        ### dann die Daten des Mietobjekts, das ausgesucht wurde
+        self.mobj_id:str = "" # ID des Mietobjekts (Tabelle mietobjekt)
+        self.whg_bez:str = ""
+        self.qm:int = 0  # Größe der Wohnung -- ist identisch mit gesamt_wfl, wenn es sich beim Masterobjekt nicht um ein
+                         # ganzes Haus handelt
+        self.container_nr:str = "" # Nummer des zur Wohnung gehörenden Abfallcontainers
+        self.bemerkung_mietobjekt:str = "" ### ACHTUNG: Dieses Feld heißt in der Tabelle mietobjekt "bemerkung" --
+                                            # Beim Select berücksichtigen!
+        # Ergänzende Daten zu Mieter, Miete, NKV, Verwaltung und HGV
+        self.mieter:str = ""
+        self.telefon_mieter:str = ""
+        self.mailto_mieter:str = ""
+        self.nettomiete:float = 0.0
+        self.nkv:float = 0.0
+        self.kaution:float = 0.0
+        self.weg_name:str = ""
+        self.verwalter:str = ""
+        self.hgv_netto:float = 0.0
+        self.ruezufue:float = 0.0
+        self.hgv_brutto:float = 0.0
+        if valuedict:
+            self.setFromDict( valuedict )
+
+class XMietobjektAuswahl( XBase ):
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self )
+        self.master_name = ""
+        self.mobj_id = ""
+        self.mv_id = ""
+        self.name = ""
+        if valuedict:
+            self.setFromDict( valuedict )
+
+###################  Mietverhältnis  #########################
+class XMietverhaeltnis( XBase ):
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self )
+        self.id = 0
+        self.mv_id = ""
+        self.mobj_id = ""
+        self.von = ""
+        self.bis = ""
+        self.name = ""
+        self.vorname = ""
+        self.name2 = ""
+        self.vorname2 = ""
+        self.telefon = ""
+        self.mobil = ""
+        self.mailto = ""
+        self.anzahl_pers = 1
+        self.IBAN = ""
+        self.nettomiete = 0.0
+        self.nkv = 0.0
+        self.kaution = 0
+        self.kaution_bezahlt_am = ""
+        self.bemerkung1 = ""
+        self.bemerkung2 = ""
+        if valuedict:
+            self.setFromDict( valuedict )
+
+#####################  Mieterwechsel  ############################
+#!!! ACHTUNG: nicht von XBase abgeleitet !!!
+class XMieterwechsel:
+    def __init__( self, mietverhaeltnis_alt:XMietverhaeltnis=None, mietverhaeltnis_next:XMietverhaeltnis=None ):
+        self.mietverhaeltnis_alt = mietverhaeltnis_alt
+        self.mietverhaeltnis_next = mietverhaeltnis_next
+
+    def equals( self, other ) -> bool:
+        return ( self.mietverhaeltnis_alt.equals( other.mietverhaeltnis_alt ) and
+                 self.mietverhaeltnis_next.equals( other.mietverhaeltnis_next ) )
+
 class XLeistung( XBase ):
     def __init__( self, valuedict:Dict=None ):
         XBase.__init__( self )

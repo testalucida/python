@@ -18,7 +18,7 @@ from v2.icc.icccontroller import IccController
 from v2.icc.iccwidgets import IccCheckTableViewFrame, IccTableView
 from v2.icc.interfaces import XMtlZahlung, XEinAus
 from v2.mietobjekt.mietobjektcontroller import MietobjektController
-from v2.mietverhaeltnis.mietverhaeltniscontroller import MietverhaeltnisController
+#from v2.mietverhaeltnis.mietverhaeltniscontroller import MietverhaeltnisController
 from v2.mtleinaus.mtleinauslogic import MieteLogic, MtlEinAusTableModel, MtlEinAusLogic, MieteTableModel, HausgeldLogic, \
     HausgeldTableModel, AbschlagLogic, AbschlagTableModel
 from v2.mtleinaus.mtleinausview import MieteTableView, MieteTableViewFrame, \
@@ -405,8 +405,8 @@ class MieteController( MtlEinAusController ):
         model: MieteTableModel = self.getModel()
         idx = self._tv.selectedIndexes()[0]
         mv_id = model.getValue( idx.row(), idx.column() )
-        mvCtrl = MietverhaeltnisController.fromMietverhaeltnis( mv_id )
-        mvCtrl.createGui()
+        #mvCtrl = MietverhaeltnisController.fromMietverhaeltnis( mv_id )
+        #mvCtrl.createGui()
 
     def _showNettomiete( self ):
         model: MieteTableModel = self.getModel()

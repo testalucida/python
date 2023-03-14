@@ -6,7 +6,6 @@ from PySide2.QtWidgets import QWidget, QApplication, QMessageBox, QMenu
 from base.baseqtderivates import BaseAction
 from base.messagebox import ErrorBox, QuestionBox
 from generictable_stuff.okcanceldialog import OkCancelDialog, OkDialog
-from screen import setScreenSize, getScreenWidth
 from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
 from v2.geschaeftsreise.geschaeftsreiseeditcontroller import GeschaeftsreiseEditController
 #from v2.geschaeftsreise.geschaeftsreiselogic import GeschaeftsreiseUcc
@@ -16,6 +15,7 @@ from v2.geschaeftsreise.geschaeftsreisenview import GeschaeftsreisenView
 from v2.icc.constants import EinAusArt
 from v2.icc.icccontroller import IccController
 from v2.icc.interfaces import XGeschaeftsreise, XEinAus
+from v2.icc.screen import getScreenWidth, setScreenSize
 
 
 class GeschaeftsreiseController( IccController ):
@@ -155,7 +155,7 @@ class GeschaeftsreiseController( IccController ):
                 box.exec_()
                 return
             model:GeschaeftsreiseTableModel = self._view.getModel()
-            model.insert( x )
+            model.addObject( x )
 
     def onEdit( self, x: XGeschaeftsreise ):
         editCtrl = GeschaeftsreiseEditController( x )
@@ -169,7 +169,7 @@ class GeschaeftsreiseController( IccController ):
                 box.exec_()
                 return
             model: GeschaeftsreiseTableModel = self._view.getModel()
-            model.update( x )
+            model.objectUpdatedExternally( x )
 
     def onDelete( self, x: XGeschaeftsreise ):
         try:
@@ -182,7 +182,7 @@ class GeschaeftsreiseController( IccController ):
             box.exec_()
             return
         model: GeschaeftsreiseTableModel = self._view.getModel()
-        model.delete( x )
+        model.removeObject( x )
 
 
 ##############################  T E S T  ############################

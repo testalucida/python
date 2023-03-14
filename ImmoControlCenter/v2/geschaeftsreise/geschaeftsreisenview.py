@@ -4,14 +4,13 @@ from PySide2.QtCore import Signal, QModelIndex
 from PySide2.QtGui import QFont, Qt, QIcon
 from PySide2.QtWidgets import QTableView, QGridLayout, QPushButton, QComboBox, QApplication, QHBoxLayout
 
-from definitions import ICON_DIR
 from generictable_stuff.customtableview import EditableTableViewWidget, CustomTableView
-from geschaeftsreise.geschaeftsreisentablemodel import GeschaeftsreisenTableModel
-from icc.iccview import IccView
-from interfaces import XGeschaeftsreise
+from v2.geschaeftsreise.geschaeftsreisetablemodel import GeschaeftsreiseTableModel
+from v2.icc.iccwidgets import IccTableView
+from v2.icc.interfaces import XGeschaeftsreise
 
 
-class GeschaeftsreisenView( IccView ):
+class GeschaeftsreisenView( IccTableView ):
     """
     Eine View, die aus einer Toolbar, einer TableView und einer Button-Leiste zum Editieren besteht.
     """
@@ -20,8 +19,8 @@ class GeschaeftsreisenView( IccView ):
     createItem = Signal()
     editItem = Signal( XGeschaeftsreise )
     deleteItem = Signal( XGeschaeftsreise )
-    def __init__( self, geschaeftsreisenTableModel:GeschaeftsreisenTableModel=None ):
-        IccView.__init__(self )
+    def __init__( self, geschaeftsreisenTableModel:GeschaeftsreiseTableModel=None ):
+        IccTableView.__init__(self )
         self._layout = QGridLayout()
         self.setLayout( self._layout )
         # self._btnSave = QPushButton()
@@ -76,9 +75,9 @@ class GeschaeftsreisenView( IccView ):
     def getModel( self ) -> Any:
         return self._etv.getTableModel()
 
-    def setModel( self, model: GeschaeftsreisenTableModel ) -> None:
+    def setModel( self, model: GeschaeftsreiseTableModel ) -> None:
         self._etv.setTableModel( model )
-        model.sortingFinished.connect( self.afterSort )
+        #model.sortingFinished.connect( self.afterSort )
         model.setSortable( True )
         ## mehrzeilige Texte auch nach dem Sortieren richtig anzeigen:
         model.layoutChanged.connect( self.getTableView().resizeRowsToContents() )
@@ -97,11 +96,11 @@ class GeschaeftsreisenView( IccView ):
         self.createItem.emit()
 
     def onEdit( self, index:QModelIndex ):
-        xgeschaeftsreise = self._etv.getTableModel().getXBaseObject( index.row() )
+        xgeschaeftsreise = self._etv.getTableModel().getElement( index.row() )
         self.editItem.emit( xgeschaeftsreise )
 
     def onDelete( self, index:QModelIndex ):
-        xgeschaeftsreise = self._etv.getTableModel().getXBaseObject( index.row() )
+        xgeschaeftsreise = self._etv.getTableModel().getElement( index.row() )
         self.deleteItem.emit( xgeschaeftsreise )
 
 def jahrChanged( arg ):

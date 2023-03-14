@@ -1,2 +1,0 @@
-imagepath=../../common/images/
-databasepath=../
