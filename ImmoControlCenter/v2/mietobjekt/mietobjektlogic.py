@@ -38,21 +38,36 @@ class MietobjektLogic( IccLogic ):
 
     def getMietobjektExt( self, mobj_id: str ) -> XMietobjektExt:
         xmo: XMietobjektExt = self._data.getMietobjektExt( mobj_id )
+        dic = self._data.getVerwalterNameTelMailto( xmo.master_name )
+        if dic:
+            if xmo.weg_name and len( xmo.weg_name ) > 0:
+                # es ist eine echte Verwaltung
+                xmo.verwalter = dic["name"] + " (" + dic["telefon_1"] + ") "
+                if dic["mailto"]:
+                    xmo.verwalter += ("\n" + dic["mailto"])
+            else:
+                # Kleiststr, Eich, Scheidt: ganzes Haus, es gibt nur einen Hauswart
+                xmo.hauswart = dic["name"]
+                xmo.hauswart_telefon = dic["telefon_1"]
+                xmo.hauswart_mailto = dic["mailto"]
         xmv: XMietverhaeltnis = MietverhaeltnisLogic().getAktuellesMietverhaeltnisByMietobjekt( xmo.mobj_id )
-        if not xmv: xmv = XMietverhaeltnis()
-        xmo.mieter = xmv.vorname + " " + xmv.name
-        if xmv.telefon:
-            xmo.telefon_mieter = xmv.telefon
-        if xmv.mobil:
+        if not xmv:
+            xmv = XMietverhaeltnis()
+        else:
+            xmo.mv_id = xmv.mv_id
+            xmo.mieter = xmv.vorname + " " + xmv.name
             if xmv.telefon:
-                xmo.telefon_mieter += ", "
-            xmo.telefon_mieter += xmv.mobil
-        if xmv.mailto:
-            xmo.mailto_mieter = xmv.mailto
+                xmo.telefon_mieter = xmv.telefon
+            if xmv.mobil:
+                if xmv.telefon:
+                    xmo.telefon_mieter += ", "
+                xmo.telefon_mieter += xmv.mobil
+            if xmv.mailto:
+                xmo.mailto_mieter = xmv.mailto
 
-        xmo.nettomiete = xmv.nettomiete
-        xmo.nkv = xmv.nkv
-        xmo.kaution = xmv.kaution
+            xmo.nettomiete = xmv.nettomiete
+            xmo.nkv = xmv.nkv
+            xmo.kaution = xmv.kaution
         xsh: XSollHausgeld = SollHausgeldLogic().getCurrentSollHausgeld( xmo.mobj_id )
         #xmo.verwalter = xsh.vw_id
         xmo.weg_name = xsh.weg_name

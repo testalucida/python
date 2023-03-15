@@ -66,7 +66,7 @@ class HGAbrechnungData( AbrechnungData ):
 
     def getObjekteUndAbrechnungen( self, ab_jahr:int ) -> List[XHGAbrechnung]:
         sql = "select master.master_name, " \
-              "vwg.vwg_id, coalesce(vwg.weg_name, '') as weg_name, coalesce(vwg.mobj_id, '') as mobj_id, " \
+              "vwg.vwg_id, coalesce(vwg.weg_name, '') as weg_name, " \
               "coalesce(vwg.vw_id, '') as vw_id, " \
               "coalesce(vwg.von, '') as vwg_von, coalesce(vwg.bis, '') as vwg_bis, " \
               "coalesce(hga.hga_id, 0) as abr_id, coalesce(hga.ab_datum, '') as ab_datum, " \

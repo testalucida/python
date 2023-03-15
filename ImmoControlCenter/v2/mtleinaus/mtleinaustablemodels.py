@@ -201,6 +201,13 @@ class MieteTableModel( MtlEinAusTableModel ):
 class HausgeldTableModel( MtlEinAusTableModel ):
     def __init__( self, rowList:List[XMtlHausgeld], jahr:int, editableMonthIdx:int ):
         MtlEinAusTableModel.__init__( self, rowList, jahr, editableMonthIdx, ( "soll", "summe" ) )
+        self.setKeyHeaderMappings2(
+        ("master_name", self.getDebiKrediKey(), "soll", "ok", "nok", "jan", "feb", "mrz", "apr", "mai", "jun", "jul",
+         "aug",
+         "sep", "okt", "nov", "dez", "summe"),
+        ("Objekt", self.getDebiKrediHeader(), "Soll", "ok", "nok", "Jan", "Feb", "Mrz", "Apr", "Mai", "Jun", "Jul",
+         "Aug",
+         "Sep", "Okt", "Nov", "Dez", "Summe") )
 
     def getDebiKrediKey( self ) -> str:
         return "weg_name"

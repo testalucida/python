@@ -11,7 +11,7 @@ class HausgeldData( IccData ):
     def getSollHausgelder( self, jahr: int ) -> List[XSollHausgeld]:
         minbis = "%d-%02d-%02d" % (jahr, 1, 1)
         maxvon = "%d-%02d-%02d" % (jahr, 12, 31)
-        sql = "select shg.shg_id, shg.vwg_id, vwg.weg_name, vwg.master_name, vwg.mobj_id, shg.von, shg.bis, " \
+        sql = "select shg.shg_id, shg.vwg_id, vwg.weg_name, vwg.master_name, shg.von, shg.bis, " \
               "shg.netto, shg.ruezufue, shg.bemerkung " \
               "from sollhausgeld shg " \
               "inner join verwaltung vwg on vwg.vwg_id = shg.vwg_id " \

@@ -117,14 +117,28 @@ class IccData( DatabaseCommon ):
     def getVerwaltungen( self, jahr:int ) -> List[XVerwaltung]:
         minbis = "%d-%02d-%02d" % (jahr, 1, 1)
         maxvon = "%d-%02d-%02d" % (jahr, 12, 31)
-        sql = "select vwg_id, master_name, coalesce(mobj_id, '') as mobj_id, " \
-              "vw_id, weg_name, von, coalesce(bis, '') as bis " \
+        sql = "select vwg_id, master_name, " \
+              "vw_id, coalesce(weg_name, '') as weg_name, von, coalesce(bis, '') as bis " \
               "from verwaltung " \
               "where (bis is NULL or bis = '' or bis >= '%s') " \
               "and not von > '%s' " \
               "order by weg_name asc " % ( minbis, maxvon )
         l: List[XVerwaltung] = self.readAllGetObjectList( sql, XVerwaltung )
         return l
+
+    def getVerwalterNameTelMailto( self, master_name:str ) -> Dict or None:
+        """
+        Liefert den aktuelle Verwalter zu einem Mietobjekt
+        :param master_name:
+        :return: ein Dict mit den keys name und telefon_1
+        """
+        sql = "select vw.name, vw.telefon_1, mailto " \
+              "from verwalter vw " \
+              "inner join verwaltung vwg on vwg.vw_id = vw.vw_id " \
+              "where vwg.master_name = '%s' " \
+              "and vwg.von <= CURRENT_DATE " \
+              "and (vwg.bis is NULL or vwg.bis = '' or vwg.bis >= CURRENT_DATE )" % master_name
+        return self.readOneGetDict( sql )
 
     def getAnschaffungsUndVerkaufsdatum( self, mobj_id:str ) -> [str, str]:
         sql = "select master.angeschafft_am, master.veraeussert_am " \

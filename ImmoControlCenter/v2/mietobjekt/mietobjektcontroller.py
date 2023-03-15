@@ -2,11 +2,13 @@ from PySide2.QtCore import QSize
 from PySide2.QtWidgets import QMenu, QWidget
 
 from base.baseqtderivates import BaseAction
+from base.messagebox import ErrorBox, InfoBox
 from generictable_stuff.okcanceldialog import OkCancelDialog2
 from v2.icc.icccontroller import IccController
 from v2.icc.interfaces import XMietobjektAuswahl
 from v2.mietobjekt.mietobjektlogic import MietobjektLogic, MietobjektTableModel
-from v2.mietobjekt.mietobjektview import MietobjektAuswahlTableView
+from v2.mietobjekt.mietobjektview import MietobjektAuswahlTableView, MietobjektView, MietobjektDialog
+
 
 ######################   MietobjektAuswahl   #########################
 class MietobjektAuswahl:
@@ -72,7 +74,6 @@ class MietobjektController( IccController ):
     def __init__( self, mobj_id:str=None ):
         IccController.__init__( self )
         self._logic = MietobjektLogic()
-        self._selectedObject: XMietobjektAuswahl = None
 
     def createGui( self ) -> QWidget:
         pass
@@ -90,8 +91,28 @@ class MietobjektController( IccController ):
 
     def onObjektStamdaten( self ):
         ausw = MietobjektAuswahl()
-        xausw = ausw.selectMietobjekt()
-        #print( "selected: ", xausw.mobj_id if xausw else "nothing selected " )
+        xmobj_sel = ausw.selectMietobjekt()
+        xmobj_ext = self._logic.getMietobjektExt( xmobj_sel.mobj_id )
+        v = MietobjektView( xmobj_ext )
+        v.edit_miete.connect( self.onEditMiete )
+        v.edit_mieter.connect( self.onEditMieter )
+        v.edit_hausgeld.connect( self.onEditHausgeld )
+        dlg = MietobjektDialog( v, xmobj_ext.master_name + " / " + xmobj_ext.mobj_id )
+        dlg.exec_()
+
+    def onEditMieter( self, mv_id:str ):
+        self._notYetImplemented( " '%s': Funktion Mieter Ändern noch nicht realisiert" % mv_id )
+
+    def onEditMiete( self, mv_id:str ):
+        self._notYetImplemented( "'%s': Funktion Miete Ändern noch nicht realisiert" % mv_id )
+
+    def onEditHausgeld( self, mobj_id:str ):
+        self._notYetImplemented( "'%s': Funktion Hausgeld Ändern noch nicht realisiert" % mobj_id )
+
+    def _notYetImplemented( self, msg:str ):
+        box = InfoBox( "Not yet implemented", msg, "", "OK" )
+        box.exec_()
+
 
 
 def test():

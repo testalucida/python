@@ -27,9 +27,9 @@ class MietobjektAuswahlTableView( IccTableView ):
 class MietobjektView( QWidget ):
     save = Signal()  # speichere Änderungen am Hauswart, der Masterobjekt-Bemerkung,
     # des Mietobjekt-Containers und der Mietobjekt-Bemerkung
-    edit_mieter = Signal()
-    edit_miete = Signal()
-    edit_hausgeld = Signal()
+    edit_mieter = Signal( str ) # mv_id
+    edit_miete = Signal( str ) # mv_id
+    edit_hausgeld = Signal( str ) # mobj_id
 
     def __init__( self, x: XMietobjektExt ):
         QWidget.__init__( self )
@@ -267,7 +267,7 @@ class MietobjektView( QWidget ):
         ################################## Button Edit Mietverhältnis
         c = 11
         btn = EditIconButton()
-        btn.clicked.connect( self.edit_mieter.emit )
+        btn.clicked.connect( lambda x: self.edit_mieter.emit( self._mietobjekt.mv_id ) )
         self._layout.addWidget( btn, r, c, 1, 1, alignment=Qt.AlignRight )
         #################### Netto-Miete und NKV
         r, c = r + 1, 0
@@ -295,7 +295,7 @@ class MietobjektView( QWidget ):
         # ######################### Button Edit Miete
         c = 11
         btn = EditIconButton()
-        btn.clicked.connect( self.edit_miete.emit )
+        btn.clicked.connect( lambda x: self.edit_miete.emit( self._mietobjekt.mv_id ) )
         self._layout.addWidget( btn, r, c, 1, 1, alignment=Qt.AlignRight )
         # #################### HGV und RüZuFü
         r, c = r + 1, 0
@@ -319,7 +319,7 @@ class MietobjektView( QWidget ):
         # ############################# Button Edit HGV
         c = 11
         btn = EditIconButton()
-        btn.clicked.connect( self.edit_hausgeld.emit )
+        btn.clicked.connect( lambda x: self.edit_hausgeld.emit( self._mietobjekt.mobj_id ) )
         self._layout.addWidget( btn, r, c, 1, 1, alignment=Qt.AlignRight )
         # #################### qm
         r, c = r + 1, 0
@@ -420,7 +420,7 @@ class MietobjektView( QWidget ):
 
 ##################   MietobjektDialog   ######################
 class MietobjektDialog( OkDialog ):
-    def __init__( self, view:MietobjektView, title:str=None ):
+    def __init__( self, view:MietobjektView, title:str="" ):
         OkDialog.__init__( self, title + " (nur Ansicht, Änderungen noch nicht möglich)" )
         self._view = view
         self.addWidget( view, 0 )

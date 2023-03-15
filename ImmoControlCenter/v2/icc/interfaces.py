@@ -305,7 +305,7 @@ class XMietobjektExt( XBase ):
     def __init__( self, valuedict:Dict=None ):
         XBase.__init__( self )
         ### zuerst die Master-Daten ###
-        #self.master_id:int = 0 # ID des Master-Objekts (Tabelle masterobjekt)
+        self.master_id:int = 0 # ID des Master-Objekts (Tabelle masterobjekt)
         self.master_name:str = ""
         self.strasse_hnr:str = ""
         self.plz:str = ""
@@ -327,6 +327,7 @@ class XMietobjektExt( XBase ):
         self.bemerkung_mietobjekt:str = "" ### ACHTUNG: Dieses Feld heißt in der Tabelle mietobjekt "bemerkung" --
                                             # Beim Select berücksichtigen!
         # Ergänzende Daten zu Mieter, Miete, NKV, Verwaltung und HGV
+        self.mv_id = ""
         self.mieter:str = ""
         self.telefon_mieter:str = ""
         self.mailto_mieter:str = ""
