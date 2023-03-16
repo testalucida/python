@@ -28,6 +28,7 @@ class MietverhaeltnisData( IccData ):
               "where mv.mv_id = '%s' " \
               "and mv.von <= CURRENT_DATE " \
               "and sm.von <= CURRENT_DATE " \
+              "and (sm.bis is NULL or sm.bis = '' or sm.bis >= CURRENT_DATE)" \
               "order by mv.von desc, sm.von desc " % mv_id
         listofdicts = self.readAllGetDict( sql )
         if len( listofdicts ) == 0:
@@ -68,29 +69,6 @@ class MietverhaeltnisData( IccData ):
         tupleList = self.read( sql )
         return len( tupleList ) > 0
 
-    # def getAktuellesOderZukuenftigesMietverhaeltnis( self, mv_id:str ) -> XMietverhaeltnis:
-    #    Diese Methode ist vermutlich Quatsch. Wer will ein aktuelles ODER zukünftiges Mietverhältnis???
-    #     """
-    #     Liefert das aktuelle Mietverhältnis zur gegebenen mv_id (aktiv oder gekündigt).
-    #     NICHT abgedeckt ist der Fall, dass ein Mieter 2 Wohnungen bewohnt.
-    #     Dann wird eine Exception geworfen.
-    #     :param mv_id: Selektionsparameter
-    #     :return: XMietverhaeltnis
-    #     """
-    #     sql = "select mv.id, mv.mv_id, mv.mobj_id, mv.von, coalesce(mv.bis, '') as bis, mv.name, mv.vorname, " \
-    #           "coalesce(mv.name2, '') as name2, coalesce(mv.vorname2, '') as vorname2, " \
-    #           "coalesce(mv.telefon, '') as telefon, coalesce(mv.mobil, '') as mobil, coalesce(mv.mailto, '') as mailto," \
-    #           "mv.anzahl_pers, mv.IBAN, " \
-    #           "mv.bemerkung1, mv.bemerkung2, mv.kaution, coalesce(mv.kaution_bezahlt_am, '') as kaution_bezahlt_am, " \
-    #           "sm.netto as nettomiete, sm.nkv " \
-    #           "from mietverhaeltnis mv " \
-    #           "inner join sollmiete sm on sm.mv_id = mv.mv_id " \
-    #           "where mv.mv_id = '%s' " \
-    #           "order by mv.von desc, sm.von desc " % mv_id
-    #     listofdicts = self.readAllGetDict( sql )
-    #     x = XMietverhaeltnis( listofdicts[0] )
-    #     return x
-
     def getAktuelleMV_IDzuMietobjekt( self, mobj_id:str ) -> str:
         """
         Aktuell heißt: "von" muss
@@ -111,30 +89,38 @@ class MietverhaeltnisData( IccData ):
         return tuplelist[0][0]
 
     def getMietverhaeltnisse( self, mobj_id:str ) -> List[XMietverhaeltnis]:
+        """
+        Liefert alle Mietverhältnisse zu einem Mietobjekt.
+        Die Attribute XMietverhaeltnis.nettomiete und XMietverhaeltnis.nkv werden nicht versorgt,
+        da es sonst zur Verdopplung von Mietverhältnissen käme, die mehr als 1 Sollmiete in ihrer Historie haben.
+        :param mobj_id:
+        :return:
+        """
         sql = "select mv.id, mv.mv_id, mv.mobj_id, mv.von, coalesce(mv.bis, '') as bis, mv.name, mv.vorname, " \
               "coalesce(mv.name2, '') as name2, coalesce(mv.vorname2, '') as vorname2, " \
               "coalesce(mv.telefon, '') as telefon, coalesce(mv.mobil, '') as mobil, coalesce(mv.mailto, '') as mailto," \
               "mv.anzahl_pers, mv.IBAN,  " \
               "mv.bemerkung1, mv.bemerkung2, " \
-              "coalesce(mv.kaution, 0) as kaution, coalesce(mv.kaution_bezahlt_am, '') as kaution_bezahlt_am, " \
-              "sm.netto as nettomiete, sm.nkv " \
+              "coalesce(mv.kaution, 0) as kaution, coalesce(mv.kaution_bezahlt_am, '') as kaution_bezahlt_am " \
               "from mietverhaeltnis mv " \
-              "inner join sollmiete sm on sm.mv_id = mv.mv_id " \
               "where mv.mobj_id = '%s' " \
-              "order by mv.von desc, sm.sm_id desc " % mobj_id
+              "order by mv.von desc " % mobj_id
         return self.readAllGetObjectList( sql, XMietverhaeltnis )
 
-    def getMietverhaeltnisById( self, id: int ) -> XMietverhaeltnis:
+    def getMietverhaeltnisById( self, mv_id: str ) -> XMietverhaeltnis:
+        """
+        Liefert das Mietverhältnis zu <mv_id>
+        :param mv_id:
+        :return:
+        """
         sql = "select mv.id, mv.mv_id, mv.mobj_id, mv.von, coalesce(mv.bis, '') as bis, mv.name, mv.vorname, " \
               "coalesce(mv.name2, '') as name2, coalesce(mv.vorname2, '') as vorname2, " \
               "coalesce(mv.telefon, '') as telefon, coalesce(mv.mobil, '') as mobil, coalesce(mv.mailto, '') as mailto," \
               "mv.anzahl_pers, mv.IBAN,  " \
               "mv.bemerkung1, mv.bemerkung2, " \
-              "coalesce(mv.kaution, 0) as kaution, coalesce(mv.kaution_bezahlt_am, '') as kaution_bezahlt_am, " \
-              "sm.netto as nettomiete, sm.nkv " \
+              "coalesce(mv.kaution, 0) as kaution, coalesce(mv.kaution_bezahlt_am, '') as kaution_bezahlt_am " \
               "from mietverhaeltnis mv " \
-              "inner join sollmiete sm on sm.mv_id = mv.mv_id " \
-              "where mv.id = %d " % id
+              "where mv.mv_id = '%s' " % mv_id
         d = self.readOneGetDict( sql )
         x = XMietverhaeltnis( d )
         return x

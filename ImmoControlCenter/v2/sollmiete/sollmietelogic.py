@@ -15,8 +15,8 @@ class SollmieteLogic:
     def __init__( self ):
         self._db:SollmieteData = SollmieteData()
 
-    def getCurrentSollmiete( self, mv_id: str ) -> XSollMiete:
-        return self._db.getCurrentSollmiete( mv_id )
+    def getLetzteSollmiete( self, mv_id: str ) -> XSollMiete:
+        return self._db.getLetzteSollmiete( mv_id )
 
     def _validate( self, xsm:XSollMiete ) -> str:
         if not xsm.mv_id:

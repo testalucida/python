@@ -9,6 +9,7 @@ from v2.icc.icclogic import IccLogic
 
 class IccController( QObject ):
     def __init__( self ):
+        QObject.__init__( self )
         dic = datehelper.getCurrentYearAndMonth()
         self._year = dic["year"]
         self._month = dic["month"] - 1

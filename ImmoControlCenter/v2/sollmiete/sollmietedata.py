@@ -8,21 +8,23 @@ class SollmieteData( IccData ):
     def __init__( self ):
         IccData.__init__( self )
 
-    def getCurrentSollmiete( self, mv_id:str ) -> XSollMiete:
+    def getLetzteSollmiete( self, mv_id:str ) -> XSollMiete or None:
         """
         Liefert die letzte (jüngste) Sollmiete für <mv_id>.
         Diese Sollmiete kann auch schon inaktiv sein (<bis> kleiner als current date).
         :param mv_id:
-        :return:
+        :return: ein Sollmiete-Objekt oder None, wenn keines gefunden wurde
         """
-        sql = "select sm_id, mv_id, von, von, coalesce(bis, '') as bis, netto, nkv, bemerkung " \
+        sql = "select sm_id, mv_id, von, von, coalesce(bis, '') as bis, netto, nkv, netto+nkv as brutto, bemerkung " \
               "from sollmiete " \
               "where mv_id = '%s' " \
               "order by von desc " % mv_id
         dictlist:List[Dict] = self.readAllGetDict( sql )
-        d = dictlist[0]
-        x = XSollMiete( d )
-        return x
+        if len( dictlist ) > 0:
+            d = dictlist[0]
+            x = XSollMiete( d )
+            return x
+        return None
 
     def insertSollmiete( self, x: XSollMiete ) -> int:
         bis = "NULL" if not x.bis else "'" + x.bis + "'"

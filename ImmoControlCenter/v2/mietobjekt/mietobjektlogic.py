@@ -42,7 +42,8 @@ class MietobjektLogic( IccLogic ):
         if dic:
             if xmo.weg_name and len( xmo.weg_name ) > 0:
                 # es ist eine echte Verwaltung
-                xmo.verwalter = dic["name"] + " (" + dic["telefon_1"] + ") "
+                tel = "" if not dic["telefon_1"] else dic["telefon_1"]
+                xmo.verwalter = dic["name"] + " (" + tel + ") "
                 if dic["mailto"]:
                     xmo.verwalter += ("\n" + dic["mailto"])
             else:

@@ -44,7 +44,7 @@ class OkCancelDialog( QDialog ):
     def onRejected( self ):
         rc = True
         if self._cancellationFnc:
-            rc = self._cancellationFnc
+            rc = self._cancellationFnc()
         if rc:
             self.reject()
 

@@ -23,34 +23,32 @@ class MietverhaeltnisLogic:
         self._db:MietverhaeltnisData = MietverhaeltnisData()
 
     def getAktuellesMietverhaeltnis( self, mv_id:str ) -> XMietverhaeltnis:
-        try:
-            return self._db.getAktuellesMietverhaeltnis( mv_id )
-        except Exception as ex:
-            raise Exception( "Fehler beim Lesen des Aktuellen Mietverhältnisses für '%s':\n'%s' " % (mv_id, str(ex)) )
+        return self._db.getAktuellesMietverhaeltnis( mv_id )
 
     def getAktuellesMietverhaeltnisByMietobjekt( self, mobj_id:str ) -> XMietverhaeltnis:
-        try:
-            mv_id = self._db.getAktuelleMV_IDzuMietobjekt( mobj_id )
-            xmv = self._db.getAktuellesMietverhaeltnis( mv_id )
-            return xmv
-        except Exception as ex:
-            raise Exception( "Fehler beim Lesen des Aktuellen Mietverhältnisses zu Mietobjekt '%s':\n'%s' " %
-                             ( mobj_id, str(ex)) )
+        mv_id = self._db.getAktuelleMV_IDzuMietobjekt( mobj_id )
+        xmv = self._db.getAktuellesMietverhaeltnis( mv_id )
+        return xmv
 
     def getMietverhaeltnisListe( self, mobj_id:str ) -> List[XMietverhaeltnis]:
-        try:
-            return self._db.getMietverhaeltnisse( mobj_id )
-        except Exception as ex:
-            raise Exception( "Fehler beim Lesen der Liste der Mietverhältnisse zu Mietobjekt '%s':\n'%s' " %
-                             ( mobj_id, str(ex)) )
+        xmvlist:List[XMietverhaeltnis] = self._db.getMietverhaeltnisse( mobj_id )
+        smlogic = SollmieteLogic()
+        for xmv in xmvlist:
+            xsm = smlogic.getLetzteSollmiete( xmv.mv_id )
+            if xsm:
+                xmv.nettomiete = xsm.netto
+                xmv.nkv = xsm.nkv
+                xmv.bruttomiete = xsm.brutto
+                xmv.sollmiete_bemerkung = xsm.bemerkung
+        return xmvlist
 
-    def getMietverhaeltnisById( self, id:int ) -> XMietverhaeltnis:
+    def getMietverhaeltnisById( self, mv_id:str ) -> XMietverhaeltnis:
         """
-        Liefert das Mietverhältnis mit der Mietverhältnis-ID <id>
+        Liefert das Mietverhältnis mit der Mietverhältnis-ID <mv_id>
         :param id:
         :return:
         """
-        return self._db.getMietverhaeltnisById( id )
+        return self._db.getMietverhaeltnisById( mv_id )
 
     def getKuendigungsdatumParts( self, mv_id:str ) -> (int, int, int) or None :
         dic = self._db.getAktuellesMietverhaeltnisVonBis( mv_id )
@@ -180,7 +178,7 @@ class MietverhaeltnisLogic:
                              % (mv_id, str(ex) ) )
         # aktive Sollmiete lesen
         smlogic = SollmieteLogic()
-        sm: XSollMiete = smlogic.getCurrentSollmiete( mv_id )
+        sm: XSollMiete = smlogic.getLetzteSollmiete( mv_id )
         if kuenddatum and sm.von > kuenddatum:
             raise Exception( "BusinessLogic.kuendigeMietverhaeltnis( '%s', '%s' ): "
                              "Sollmiete-von ('%s') > Sollmiete-bis nicht erlaubt" %
@@ -224,9 +222,10 @@ class MietverhaeltnisLogic:
         return ""
 
 def test():
-    mv = MietverhaeltnisLogic()
-    ret = mv.getKuendigungsdatumParts( "yilmaz_yasar" )
-    print( ret )
+    mvlogic = MietverhaeltnisLogic()
+    #ret = mv.getKuendigungsdatumParts( "yilmaz_yasar" )
+    xmv = mvlogic.getMietverhaeltnisById( "gulsum_cakir" )
+    xmv.print()
 
 if __name__ == "__main__":
     test()

@@ -1,4 +1,4 @@
-from PySide2.QtCore import QSize
+from PySide2.QtCore import QSize, Signal, QObject
 from PySide2.QtWidgets import QMenu, QWidget
 
 from base.baseqtderivates import BaseAction
@@ -71,6 +71,9 @@ class MietobjektAuswahl:
 
 ######################   MietobjektController   #########################
 class MietobjektController( IccController ):
+    edit_mieter = Signal( str )
+    edit_miete = Signal( str )
+
     def __init__( self, mobj_id:str=None ):
         IccController.__init__( self )
         self._logic = MietobjektLogic()
@@ -90,21 +93,20 @@ class MietobjektController( IccController ):
         return menu
 
     def onObjektStamdaten( self ):
+        """
+        Wird aufgerufen, wenn in der Menübar der Anwendung "Mietobjekt anzeigen und bearbeiten..." geklickt wurde
+        :return:
+        """
         ausw = MietobjektAuswahl()
         xmobj_sel = ausw.selectMietobjekt()
-        xmobj_ext = self._logic.getMietobjektExt( xmobj_sel.mobj_id )
-        v = MietobjektView( xmobj_ext )
-        v.edit_miete.connect( self.onEditMiete )
-        v.edit_mieter.connect( self.onEditMieter )
-        v.edit_hausgeld.connect( self.onEditHausgeld )
-        dlg = MietobjektDialog( v, xmobj_ext.master_name + " / " + xmobj_ext.mobj_id )
-        dlg.exec_()
-
-    def onEditMieter( self, mv_id:str ):
-        self._notYetImplemented( " '%s': Funktion Mieter Ändern noch nicht realisiert" % mv_id )
-
-    def onEditMiete( self, mv_id:str ):
-        self._notYetImplemented( "'%s': Funktion Miete Ändern noch nicht realisiert" % mv_id )
+        if xmobj_sel:
+            xmobj_ext = self._logic.getMietobjektExt( xmobj_sel.mobj_id )
+            v = MietobjektView( xmobj_ext )
+            v.edit_miete.connect( self.edit_miete.emit ) # weiterleiten
+            v.edit_mieter.connect( self.edit_mieter.emit ) # weiterleiten
+            v.edit_hausgeld.connect( self.onEditHausgeld )
+            dlg = MietobjektDialog( v, xmobj_ext.master_name + " / " + xmobj_ext.mobj_id )
+            dlg.exec_()
 
     def onEditHausgeld( self, mobj_id:str ):
         self._notYetImplemented( "'%s': Funktion Hausgeld Ändern noch nicht realisiert" % mobj_id )
@@ -116,9 +118,13 @@ class MietobjektController( IccController ):
 
 
 def test():
+    def myslot( arg ):
+        print( "myslot; arg=", arg )
     from PySide2.QtWidgets import QWidget, QMenu, QApplication
     app = QApplication()
     c = MietobjektController()
+    c.edit_miete.connect( myslot )
+    c.edit_mieter.connect( myslot )
     c.onObjektStamdaten()
     app.exec_()
 

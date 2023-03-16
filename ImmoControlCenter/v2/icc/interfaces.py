@@ -372,6 +372,8 @@ class XMietverhaeltnis( XBase ):
         self.IBAN = ""
         self.nettomiete = 0.0
         self.nkv = 0.0
+        self.bruttomiete = 0.0
+        self.sollmiete_bemerkung = ""
         self.kaution = 0
         self.kaution_bezahlt_am = ""
         self.bemerkung1 = ""

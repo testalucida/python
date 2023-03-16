@@ -1,16 +1,16 @@
 from typing import Any, List
 
-from PySide2.QtCore import QPoint
+from PySide2.QtCore import QPoint, Slot
 from PySide2.QtGui import QCursor
-from PySide2.QtWidgets import QWidget, QApplication
+from PySide2.QtWidgets import QWidget, QApplication, QMenu
 
-from business import BusinessLogic
-from icc.icccontroller import IccController
-from interfaces import XMietverhaeltnis
-from messagebox import InfoBox
-from mietobjekt.mietobjektauswahl import MietobjektAuswahl
-from mietverhaeltnis.mietverhaeltnisgui import MietverhaeltnisDialog, MietverhaeltnisView
-from mietverhaeltnis.mietverhaeltnislogic import MietverhaeltnisLogic
+from base.baseqtderivates import BaseAction
+from base.messagebox import InfoBox
+from v2.icc.icccontroller import IccController
+from v2.icc.interfaces import XMietverhaeltnis
+from v2.mietobjekt.mietobjektcontroller import MietobjektAuswahl
+from v2.mietverhaeltnis.mietverhaeltnisgui import MietverhaeltnisView, MietverhaeltnisDialog
+from v2.mietverhaeltnis.mietverhaeltnislogic import MietverhaeltnisLogic
 
 
 class MietverhaeltnisController( IccController ):
@@ -21,47 +21,64 @@ class MietverhaeltnisController( IccController ):
         self._mvlist:List[XMietverhaeltnis] = None # Liste der Mietverhältnisse eines Mietobjekts
         self._mv: XMietverhaeltnis = None # das aktuell im View angezeigte Mietverhältnis
 
-    def showMietverhaeltnis( self, mv_id:str, point:QPoint ):
+    def createGui( self ) -> QWidget:
+        pass
+
+    def getMenu( self ) -> QMenu or None:
         """
-        Altlast: diese Methode wird aufgerufen, wenn in der Mieten-Tabelle per Kontextmenü
-        (rechter Mausklick auf den Namen) "Mietverhältnis anzeigen" gewählt wird.
+        Jeder Controller liefert dem MainController ein Menu, das im MainWindow in der Menubar angezeigt wird
+        :return:
+        """
+        menu = QMenu( "Mietverhältnis" )
+        action = BaseAction( "Mietverhältnis anschauen und bearbeiten...", parent=menu )
+        action.triggered.connect( self.onMietverhaeltnis )
+        menu.addAction( action )
+        return menu
+
+    @Slot()
+    def onMietverhaeltnis( self ):
+        """
+        Wird aufgerufen, wenn in der Menübar der Anwendung "Mietverhältnis anzeigen und bearbeiten..." geklickt wurde
+        :return:
+        """
+        # zuerst über den Auswahldialog bestimmen, welche Daten für die View selektiert werden müssen
+        mietobjektAuswahl = MietobjektAuswahl()
+        xmo = mietobjektAuswahl.selectMietobjekt()
+        if not xmo: return None
+        self.createView( xmo.mobj_id )
+        dlg = MietverhaeltnisDialog( self._view )
+        dlg.exec_()
+
+    def showMietverhaeltnis( self, mv_id:str ):
+        """
+        Methode wird aus aer Mieten-Tabelle aufgerufen, nach Mausklick auf Kontextmenü "Mietverhältnis anzeigen"
         :param mv_id:
         :param point:
         :return:
         """
         #mv:XMietverhaeltnis = BusinessLogic.inst().getAktuellesOderZukuenftigesMietverhaeltnis( mv_id )
-        mv = self._mvlogic.getAktuellesMietverhaeltnis( mv_id )
-        if not mv: # wenn z.B. der Mieter schon in der Tabelle erscheint, aber das Mietverhältnis noch nicht begonnen hat.
-            box = InfoBox( "Sorry", "Die Daten können nicht angezeigt werden.", "Das Mietverhältnis hat noch nicht begonnen.", "OK" )
+        xmv:XMietverhaeltnis = self._mvlogic.getAktuellesMietverhaeltnis( mv_id )
+        if not xmv: # wenn z.B. der Mieter schon in der Tabelle erscheint, aber das Mietverhältnis noch nicht begonnen hat.
+            box = InfoBox( "Sorry...", "Die Daten können nicht angezeigt werden.",
+                           "Das Mietverhältnis hat noch nicht begonnen.", "OK" )
             box.exec_()
         else:
-            dlg = MietverhaeltnisDialog( mv )
+            dlg = MietverhaeltnisDialog.fromMietverhaeltnis( xmv )
             dlg.exec_()
 
-    def createView( self ) -> QWidget or None:
-        # zuerst über den Auswahldialog bestimmen, welche Daten für die View selektiert werden müssen
-        mietobjektAuswahl = MietobjektAuswahl()
-        mobj_id = mietobjektAuswahl.selectMietobjekt()
-        if not mobj_id: return None
-        #xmv:XMietverhaeltnis = self._mvlogic.getAktuellesMietverhaeltnisByMietobjekt( mobj_id )
+    def createView( self, mobj_id:str ):
         self._mvlist = self._mvlogic.getMietverhaeltnisListe( mobj_id )
-        # busi = BusinessLogic.inst()
-        # mv_id = busi.getAktuelleMietverhaeltnisId( mobj_id )
-        # xmv:XMietverhaeltnis = busi.getAktuellesOderZukuenftigesMietverhaeltnis( mv_id )
         mvlist_len = len( self._mvlist )
         if mvlist_len > 0:
             self._mv = self._mvlist[0]
             enableBrowsing = True if mvlist_len > 1 else False
-            self._view = MietverhaeltnisView( self._mv , withSaveButton=True, enableBrowsing=enableBrowsing )
-            self._view.save.connect( self.writeChanges )
+            self._view = MietverhaeltnisView( self._mv, enableBrowsing=enableBrowsing )
             self._view.prevMv.connect( self.onPrevMv )
             self._view.nextMv.connect( self.onNextMv )
-            return self._view
         else:
             box = InfoBox( "Mietverhältnis anzeigen", "Das Objekt '" + mobj_id + "' ist nicht vermietet.", "", "OK" )
             box.moveToCursor()
             box.exec_()
-            return None
 
     def onPrevMv( self ):
         self._browse( False )
@@ -86,7 +103,7 @@ class MietverhaeltnisController( IccController ):
                 return
             self._mv = self._mvlist[idx-1]
             self._view.clear()
-            self._view.setMietverhaeltnisData( self._mv )
+            self._view._setMietverhaeltnisData( self._mv )
         else: # "previous" geklickt
             if idx == max:
                 box = InfoBox( "Blättern in Mietverhältnissen", "Blättern nicht möglich.",
@@ -96,7 +113,7 @@ class MietverhaeltnisController( IccController ):
                 return
             self._mv = self._mvlist[idx+1]
             self._view.clear()
-            self._view.setMietverhaeltnisData( self._mv )
+            self._view._setMietverhaeltnisData( self._mv )
 
 
 
@@ -134,20 +151,20 @@ class MietverhaeltnisController( IccController ):
     def getChanges( self ) -> Any:
         pass
 
-    def writeChanges( self, changes: Any = None ) -> bool:
-        if self._validate():
-            self._view.applyChanges()
-            try:
-                BusinessLogic.inst().saveMietverhaeltnis( self._mv )
-                self._view.resetChangeFlag()
-                return True
-            except Exception as ex:
-                self.showErrorMessage( "Mietverhältnis: Speichern fehlgeschlagen", str( ex ) )
-                return False
-        return False
-
-    def clearChanges( self ) -> None:
-        pass
+    # def writeChanges( self, changes: Any = None ) -> bool:
+    #     if self._validate():
+    #         self._view.applyChanges()
+    #         try:
+    #             BusinessLogic.inst().saveMietverhaeltnis( self._mv )
+    #             self._view.resetChangeFlag()
+    #             return True
+    #         except Exception as ex:
+    #             self.showErrorMessage( "Mietverhältnis: Speichern fehlgeschlagen", str( ex ) )
+    #             return False
+    #     return False
+    #
+    # def clearChanges( self ) -> None:
+    #     pass
 
     def getViewTitle( self ) -> str:
         title = "Mieterdaten von Mieter: " + self._mv.vorname + " " + self._mv.name
@@ -163,8 +180,10 @@ class MietverhaeltnisController( IccController ):
 def test():
     app = QApplication()
     c = MietverhaeltnisController()
-    v = c.createView()
-    v.show()
+    c.onMietverhaeltnis()
+    #c.showMietverhaeltnis( "pfeifer_martina" )
+    # v = c.createView()
+    #v.show()
     app.exec_()
 
 if __name__ == "__main__":

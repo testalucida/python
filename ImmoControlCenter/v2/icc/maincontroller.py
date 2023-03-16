@@ -17,6 +17,7 @@ from v2.icc.iccwidgets import IccCheckTableViewFrame
 from v2.icc.interfaces import XEinAus, XSummen
 from v2.icc.mainlogic import MainLogic
 from v2.mietobjekt.mietobjektcontroller import MietobjektController
+from v2.mietverhaeltnis.mietverhaeltniscontroller import MietverhaeltnisController
 from v2.mtleinaus.mtleinauscontroller import MieteController, HausgeldController, AbschlagController
 
 
@@ -34,29 +35,53 @@ class MainController( IccController ):
         self._hgaCtrl = HGAbrechnungController()
         self._reiseCtrl = GeschaeftsreiseController()
         self._mietObjektCtrl = MietobjektController()
+        self._mietObjektCtrl.edit_miete.connect( self.onEditMiete )
+        self._mietObjektCtrl.edit_mieter.connect( self.onEditMieter )
+        self._mvCtrl = MietverhaeltnisController()
         # connect to EinAusWriteDispatcher wg. Versorgung Summenfelder
         EinAusWriteDispatcher.inst().ea_inserted.connect( self.onEinAusInserted )
         EinAusWriteDispatcher.inst().ea_updated.connect( self.onEinAusUpdated )
         EinAusWriteDispatcher.inst().ea_deleted.connect( self.onEinAusDeleted )
 
+    def onEditMieter( self, mv_id:str ):
+        self._notYetImplemented( " '%s': Funktion Mieter Ändern noch nicht realisiert" % mv_id )
+
+    def onEditMiete( self, mv_id:str ):
+        self._notYetImplemented( "'%s': Funktion Miete Ändern noch nicht realisiert" % mv_id )
+
+    @staticmethod
+    def _notYetImplemented( msg: str ):
+        box = InfoBox( "Not yet implemented", msg, "", "OK" )
+        box.exec_()
+
     def createGui( self ) -> IccMainWindow:
         self._win = IccMainWindow( self._env )
         self._win.addMenu( self.getMenu() )
+
         menu = self._mietObjektCtrl.getMenu()
         if menu:
             self._win.addMenu( menu )
+
+        menu = self._mvCtrl.getMenu()
+        if menu:
+            self._win.addMenu( menu )
+
         menu = self._mieteCtrl.getMenu()
         if menu:
             self._win.addMenu( menu )
+
         menu = self._hausgeldCtrl.getMenu()
         if menu:
             self._win.addMenu( menu )
+
         menu = self._abschlagCtrl.getMenu()
         if menu:
             self._win.addMenu( menu )
+
         menu = self._einausCtrl.getMenu()
         if menu:
             self._win.addMenu( menu )
+
         menu = self._reiseCtrl.getMenu()
         if menu:
             self._win.addMenu( menu )
