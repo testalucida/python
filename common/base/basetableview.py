@@ -56,9 +56,9 @@ class BaseTableView( QTableView ):
         # self.horizontalHeader().sortIndicatorChanged.connect( self.afterSort )
         # self.btvCellEnter.connect( self._onCellEnter )
         # self.btvCellLeave.connect( self._onCellLeave )
-        self._vheaderView = BaseHeaderView( Qt.Orientation.Vertical )
-        self.setVerticalHeader( self._vheaderView )
-        self._vheaderView.bhvMouseMove.connect( self.onMouseMoveOutside )
+        # self._vheaderView = BaseHeaderView( Qt.Orientation.Vertical )
+        # self.setVerticalHeader( self._vheaderView )
+        # self._vheaderView.bhvMouseMove.connect( self.onMouseMoveOutside )
         # self._hheaderView = BaseHeaderView( Qt.Orientation.Horizontal )
         # self._hheaderView.bhvMouseMove.connect( self.onMouseMoveOutside )
         # self.setHorizontalHeader( self._hheaderView )  # mit dem CustomHeaderView funktioniert das Sortieren nicht
@@ -220,7 +220,8 @@ class BaseTableView( QTableView ):
 
     def getPreferredHeight( self ) -> int:
         rowcount = self.model().rowCount()
-        h = self._vheaderView.height()
+        #h = self._vheaderView.height()
+        h = 0
         for row in range( 0, rowcount ):
             h += self.rowHeight( row )
         return h + 25

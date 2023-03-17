@@ -501,6 +501,23 @@ class XPauschale( XBase ):
         if valuedict:
             self.setFromDict( valuedict )
 
+##################   XMasterEinAus   ###########################
+class XMasterEinAus( XBase ):
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self, valuedict )
+        self.master_id = 0
+        self.master_name = ""
+        self.qm = 0
+        self.monate = 0 # Anzahl vermietete Monate
+        self.einnahmen = 0 # Bruttomiete plus NKA
+        self.netto_je_qm = 0.0
+        self.hg = 0 # HGV inkl. RüZuFü plus HGA (Entn. Rü. bleibt unberücksichtigt, da die RüZuFü zu den Rep.-Kosten zählen)
+        self.sonder_u = 0 # wird als Ausgabe gewertet
+        self.allg_kosten = 0 # Kostenarten a, g, v
+        self.rep_kosten = 0 # nicht verteilte und verteilte
+        self.sonst_kosten = 0 # Kostenart s
+        self.ertrag = 0
+
 
 
 #####################################################################################################################

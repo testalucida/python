@@ -1,5 +1,6 @@
 from typing import List, Iterable
 
+from PySide2.QtCore import Slot
 from PySide2.QtWidgets import QMenu
 
 import datehelper
@@ -9,6 +10,7 @@ from v2.abrechnungen.abrechnungcontroller import NKAbrechnungController, HGAbrec
 from v2.einaus.einauscontroller import EinAusController
 #from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
 from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
+from v2.extras.extrascontroller import ExtrasController
 from v2.geschaeftsreise.geschaeftsreisecontroller import GeschaeftsreiseController
 from v2.icc.constants import EinAusArt
 from v2.icc.icccontroller import IccController
@@ -38,14 +40,17 @@ class MainController( IccController ):
         self._mietObjektCtrl.edit_miete.connect( self.onEditMiete )
         self._mietObjektCtrl.edit_mieter.connect( self.onEditMieter )
         self._mvCtrl = MietverhaeltnisController()
+        self._extrasCtrl = ExtrasController()
         # connect to EinAusWriteDispatcher wg. Versorgung Summenfelder
         EinAusWriteDispatcher.inst().ea_inserted.connect( self.onEinAusInserted )
         EinAusWriteDispatcher.inst().ea_updated.connect( self.onEinAusUpdated )
         EinAusWriteDispatcher.inst().ea_deleted.connect( self.onEinAusDeleted )
 
+    @Slot( str )
     def onEditMieter( self, mv_id:str ):
-        self._notYetImplemented( " '%s': Funktion Mieter Ändern noch nicht realisiert" % mv_id )
+        self._mvCtrl.showMietverhaeltnis( mv_id )
 
+    @Slot( str )
     def onEditMiete( self, mv_id:str ):
         self._notYetImplemented( "'%s': Funktion Miete Ändern noch nicht realisiert" % mv_id )
 
@@ -85,6 +90,11 @@ class MainController( IccController ):
         menu = self._reiseCtrl.getMenu()
         if menu:
             self._win.addMenu( menu )
+
+        menu = self._extrasCtrl.getMenu()
+        if menu:
+            self._win.addMenu( menu )
+
         ### die Views für die monatlichen Zahlungen erzeugen und dem MainWindow hinzufügen
         # Mietzahlungen
         tvf:IccCheckTableViewFrame = self._mieteCtrl.createGui()
