@@ -18,10 +18,18 @@ iccMonthIdxToShortName = {
     11 : iccMonthShortNames[11]
 }
 
+def getMonthIdxFromShortName( monthShortName:str ) -> int:
+    """
+    :param monthShortName:
+    :return: Index of monthShortName from 0 (jan) to 11 (dez)
+    """
+    return iccMonthShortNames.index( monthShortName )
+
 class Action( IntEnum ):
     SHOW_MASTEROBJEKT = auto()
     SHOW_MIETOBJEKT = auto()
     SHOW_MIETVERHAELTNIS = auto()
+    KUENDIGE_MIETVERHAELTNIS = auto()
     SHOW_NETTOMIETE_UND_NKV = auto()
     SHOW_NEBENKOSTEN_ABRECHNUNG = auto()
     SHOW_WEG_UND_VERWALTER = auto()

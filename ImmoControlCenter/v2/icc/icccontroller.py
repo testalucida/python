@@ -1,10 +1,13 @@
 from abc import abstractmethod
 from typing import List
+
+from PySide2 import QtWidgets
 from PySide2.QtCore import QObject
 from PySide2.QtWidgets import QWidget, QMenu
 
 import datehelper
 from v2.icc.icclogic import IccLogic
+from v2.icc.iccmainwindow import IccMainWindow
 
 
 class IccController( QObject ):
@@ -25,6 +28,15 @@ class IccController( QObject ):
         Jeder Controller liefert ein Menu, das im MainWindow in der Menubar angezeigt wird
         :return:
         """
+
+    def getMainWindow( self ) -> IccMainWindow or None:
+        """
+        :return:
+        """
+        for w in QtWidgets.QApplication.topLevelWidgets():
+            if w.inherits( 'IccMainWindow' ):
+                return w
+        return None
 
     def getYearAndMonthToStartWith( self ):
         """

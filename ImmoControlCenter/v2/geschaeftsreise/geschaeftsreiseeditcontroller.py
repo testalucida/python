@@ -35,7 +35,7 @@ class GeschaeftsreiseEditController:
         self._view = GeschaeftsreiseEditView( masterlist, self._xgeschaeftsreise )
         self._dlg = OkCancelDialog()
         self._dlg.addWidget( self._view, 1 )
-        self._dlg.setValidationFunction( self.validate )
+        self._dlg.setBeforeAcceptFunction( self.validate )
         self._dlg.setCancellationFunction( self.mayCancel )
 
     def validate( self ) -> bool:

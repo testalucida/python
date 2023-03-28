@@ -343,6 +343,16 @@ class BaseGridLayout( QGridLayout ):
         QGridLayout.__init__( self )
 
     def addPair( self, lbl:str, widget:QWidget, row:int, startCol:int=0, rowspan:int=1, colspan:int=1 ):
+        """
+        Platziert ein Widget mit vorausgestelltem Label in diesem GridLayout.
+        :param lbl:  das vorangestellte Label, immer in Column <startCol>
+        :param widget:  das Widget, beginnend ab column startCol + 1
+        :param row:  : gewünschte Zeile im GridLayout
+        :param startCol: Column, in die das Label platziert wird
+        :param rowspan:
+        :param colspan: Anzahl der Column (beginnend ab startCol + 1), die <widget> umfassen soll.
+        :return:
+        """
         self.addWidget( BaseLabel( lbl ), row, startCol )
         startCol += 1
         self.addWidget( widget, row, startCol, rowspan, colspan )
@@ -422,12 +432,14 @@ class CalendarDialog( QDialog ):
 
 #########################  SmartDateEdit  #####################################
 class SmartDateEdit( QLineEdit, GetSetValue ):
-    def __init__( self, parent=None ):
+    def __init__( self, parent=None, isReadOnly:bool=False ):
         QLineEdit.__init__( self, parent )
+        self.setReadOnly( isReadOnly )
 
     def mouseDoubleClickEvent( self, event ):
         #print( "Double Click SmartDateEdit at pos: ", event.pos() )
-        self.showCalendar()
+        if not self.isReadOnly():
+            self.showCalendar()
 
     def setDate( self, year:int, month:int, day:int, format:str="yyyy-MM-dd" ):
         dt = QDate( year, month, day )
@@ -524,7 +536,8 @@ class BaseLabel( QLabel, AutoWidth, GetSetValue ):
         self.setStyleSheet( "background: " + color + ";" )
 
     def setTextAndBackgroundColor( self, textcolor, backgroundcolor ):
-        self.setStyleSheet( "QLabel { background-color : red; color : blue; }" );
+        self.setStyleSheet( "QLabel { background-color : red; color : blue; }" )
+
 
 ###################   BaseLink   ########################
 class BaseLink( BaseLabel ):
@@ -594,12 +607,13 @@ class BaseEdit( QLineEdit, AutoWidth, GetSetValue ):
 
 #########################  FloatEdit  ################################
 class FloatEdit( BaseEdit ):
-    def __init__( self, parent=None, showNegativNumbersRed:bool=True ):
+    def __init__( self, parent=None, showNegativNumbersRed:bool=True, isReadOnly=False ):
         BaseEdit.__init__( self, parent )
         self._showNegativNumbersRed = showNegativNumbersRed
         floatval = QDoubleValidator()
         self.setValidator( floatval )
         self.setAlignment( Qt.AlignRight )
+        self.setReadOnly( isReadOnly )
 
     def getFloatValue( self ) -> float:
         val = self.text()
@@ -824,8 +838,9 @@ class TextDocument( QTextDocument ):
 
 ################ LineEdit #########################
 class LineEdit( BaseEdit ):
-    def __init__( self, parent=None ):
+    def __init__( self, parent=None, isReadOnly:bool=False ):
         BaseEdit.__init__( self, parent )
+        self.setReadOnly( isReadOnly )
 
     def setValue( self, value:Any ) -> None:
         self.setText( value )
@@ -840,8 +855,9 @@ class LineEdit( BaseEdit ):
 
 ################  MultiLineEdit  ##################
 class MultiLineEdit( QTextEdit, GetSetValue ):
-    def __init__( self, parent=None ):
+    def __init__( self, parent=None, isReadOnly:bool=True ):
         QTextEdit.__init__( self, parent )
+        self.setReadOnly( isReadOnly )
 
     def getValue( self ) -> str:
         return self.toPlainText()

@@ -63,7 +63,7 @@ class ErtragLogic:
         :param jahr:
         :return:
         """
-        tm = self._getEinAusEinzelnTableModel( master_name, jahr, (EinAusArt.REPARATUR.dbvalue) )
+        tm = self._getEinAusEinzelnTableModel( master_name, jahr, (EinAusArt.REPARATUR.dbvalue, ) )
         tm.setKeyHeaderMappings2( ( "mobj_id", "debi_kredi", "leistung", "buchungsdatum", "buchungstext", "betrag"),
                                   ("Objekt", "Kreditor", "Leistung", "Datum", "Reparatur", "Betrag") )
         return tm
@@ -82,8 +82,7 @@ class ErtragLogic:
         return tm
 
     def getSonstigeKostenEinzeln( self, master_name, jahr ) -> SumTableModel:
-        tm = self._getEinAusEinzelnTableModel( master_name, jahr, (EinAusArt.SONSTIGE_KOSTEN.dbvalue,
-                                                                   EinAusArt.SONDERUMLAGE.dbvalue ) )
+        tm = self._getEinAusEinzelnTableModel( master_name, jahr, (EinAusArt.SONSTIGE_KOSTEN.dbvalue, ) )
         tm.setKeyHeaderMappings2( ("debi_kredi", "mobj_id", "buchungsdatum", "buchungstext", "ea_art", "betrag"),
                                   ("Kreditor", "Objekt", "Datum", "Buchungstext", "EinAusArt", "Betrag") )
         return tm

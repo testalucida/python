@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import List
 
-from PySide2.QtCore import QModelIndex, QSize
+from PySide2.QtCore import QModelIndex, QSize, Signal
 from PySide2.QtGui import QCursor
 from PySide2.QtWidgets import QAction, QDialog, QMenu
 
@@ -26,6 +26,9 @@ from v2.mtleinaus.mtleinausview import MieteTableView, MieteTableViewFrame, \
 
 
 #############  MtlEinAusController  #####################
+from v2.sollmiete.sollmietecontroller import SollMieteController
+
+
 class MtlEinAusController( IccController ):
     def __init__( self ):
         IccController.__init__( self )
@@ -81,7 +84,7 @@ class MtlEinAusController( IccController ):
         pass
 
     @abstractmethod
-    def getShowDebiKrediAction( self ) -> BaseAction:
+    def getShowDebiKrediActions( self ) -> List[BaseAction]:
         pass
 
     @abstractmethod
@@ -125,7 +128,9 @@ class MtlEinAusController( IccController ):
             if mobj_id:
                 l.append( BaseAction( text="Objektdaten anzeigen...", ident=Action.SHOW_MIETOBJEKT ) )
         if key == debikredi_key:
-            l.append( self.getShowDebiKrediAction() )
+            alist = self.getShowDebiKrediActions()
+            for a in alist:
+                l.append( a )
         if key == "soll":
             l.append( self.getSollAction() )
         if key in ( "leistung", "vnr" ):
@@ -397,23 +402,50 @@ class MieteController( MtlEinAusController ):
 
     def onSpecificAction( self, action: BaseAction ):
         if action.ident == Action.SHOW_NETTOMIETE_UND_NKV:
-            self._showNettomiete()
+            self._showNettomieteAndNkv()
         elif action.ident == Action.SHOW_MIETVERHAELTNIS:
             self._showMietverhaeltnis()
+        elif action.ident == Action.KUENDIGE_MIETVERHAELTNIS:
+            self._kuendigeMietverhaeltnis()
 
     def _showMietverhaeltnis( self ):
-        model: MieteTableModel = self.getModel()
-        idx = self._tv.selectedIndexes()[0]
-        mv_id = model.getValue( idx.row(), idx.column() )
-        #mvCtrl = MietverhaeltnisController.fromMietverhaeltnis( mv_id )
-        #mvCtrl.createGui()
+        mv_id, year, monthIdx = self._getSelection()
+        # todo
 
-    def _showNettomiete( self ):
+    def _kuendigeMietverhaeltnis( self ):
+        """
+        Im Kontextmenü "Mietverhältnis kündigen..." ausgewählt
+        :return:
+        """
+        mv_id, year, monthIdx = self._getSelection()
+        # todo
+
+    def _showNettomieteAndNkv( self ):
+        mv_id, year, monthIdx = self._getSelection()
+        # model: MieteTableModel = self.getModel()
+        # idx = self._tv.selectedIndexes()[0]
+        # mv_id = model.getElement( idx.row() ).getValue( "mv_id" )
+        # year = model.getSelectedYear()
+        # monthIdx = model.getSelectedMonthIdx() # 0 -> jan, ..., 11 -> dez
+        sollMieteCtrl = SollMieteController()
+        sollMieteCtrl.showSollMieteAndNkv( mv_id, year, monthIdx+1 )
+        # box = InfoBox( "Nettomiete und NKV", "Hieraus entsteht die Anzeige von Nettomiete und NKV für '%s'" % mv_id, "", "OK" )
+        # box.exec_()
+
+    def _getSelection( self ) -> [str, int, int]:
+        """
+        Liefert folgende Daten der aktuellen Selektion:
+        - mv_id
+        - jahr
+        - selektierte Monatsspalte ( 0 -> jan, ..., 11 -> dez )
+        :return: mv_id, jahr, monatsIndex
+        """
         model: MieteTableModel = self.getModel()
         idx = self._tv.selectedIndexes()[0]
         mv_id = model.getElement( idx.row() ).getValue( "mv_id" )
-        box = InfoBox( "Nettomiete und NKV", "Hieraus entsteht die Anzeige von Nettomiete und NKV für '%s'" % mv_id, "", "OK" )
-        box.exec_()
+        year = model.getSelectedYear()
+        monthIdx = model.getSelectedMonthIdx()  # 0 -> jan, ..., 11 -> dez
+        return mv_id, year, monthIdx
 
     def onYearChanged( self, newYear:int ):
         tm = self._logic.createMietzahlungenModel( newYear, self.getModel().getEditableMonthIdx() )
@@ -423,12 +455,14 @@ class MieteController( MtlEinAusController ):
     #     model: MtlEinAusTableModel = self.getModel()
     #     model.setEditableMonth( newMonthIdx )
 
-    def getShowDebiKrediAction( self ) -> BaseAction:
-        return BaseAction( "Mietverhaeltnisdaten anzeigen", ident=Action.SHOW_MIETVERHAELTNIS )
+    def getShowDebiKrediActions( self ) -> List[BaseAction]:
+        a1 = BaseAction( "Mietverhältnisdaten anzeigen...", ident=Action.SHOW_MIETVERHAELTNIS )
+        a2 = BaseAction( "Mietverhältnis kündigen...", ident=Action.KUENDIGE_MIETVERHAELTNIS )
+        return [a1, a2]
 
     def getSollAction( self ) -> BaseAction:
         """
-        User hat im Kontextmenü der Miete-Tabelle die rechte Maustaste gedrückt.
+        User hat im Kontextmenü der Miete-Tabelle, Spalte Sollmiete, die rechte Maustaste gedrückt.
         :return:
         """
         return BaseAction( "Nettomiete und NKV anzeigen", ident=Action.SHOW_NETTOMIETE_UND_NKV )
@@ -488,13 +522,13 @@ class HausgeldController( MtlEinAusController ):
         self._tv.setModel( tm )
 
 
-    def getShowDebiKrediAction( self ) -> BaseAction:
+    def getShowDebiKrediActions( self ) -> List[BaseAction]:
         """
         Anzeige, die gebracht werden soll, wenn der User in der Tableview mit der rechten Maustaste auf
         den WEG-Namen geklickt hat
         :return:
         """
-        return BaseAction( "Verwaltungsdetails anzeigen...", ident=Action.SHOW_WEG_UND_VERWALTER )
+        return list( BaseAction( "Verwaltungsdetails anzeigen...", ident=Action.SHOW_WEG_UND_VERWALTER ), )
 
     def getSollAction( self ) -> BaseAction:
         """
@@ -558,7 +592,7 @@ class AbschlagController( MtlEinAusController ):
         tm = self.createModel( newYear, self.getModel().getEditableMonthIdx() )
         self._tv.setModel( tm )
 
-    def getShowDebiKrediAction( self ) -> BaseAction:
+    def getShowDebiKrediActions( self ) -> List[BaseAction]:
         """
         Anzeige, die gebracht werden soll, wenn der User in der Tableview mit der rechten Maustaste auf
         den Kreditor-Namen geklickt hat

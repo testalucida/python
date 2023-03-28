@@ -11,7 +11,7 @@ class OkCancelDialog( QDialog ):
         self._okButton = QPushButton( "OK" )
         self._cancelButton = QPushButton( "Abbrechen" )
         self._createGui()
-        self._validationFnc = None
+        self._beforeAcceptFnc = None
         self._cancellationFnc = None
 
     def _createGui( self ):
@@ -36,8 +36,8 @@ class OkCancelDialog( QDialog ):
 
     def onAccepted(self):
         rc = True
-        if self._validationFnc:
-            rc = self._validationFnc()
+        if self._beforeAcceptFnc:
+            rc = self._beforeAcceptFnc()
         if rc:
             self.accept()
 
@@ -55,8 +55,8 @@ class OkCancelDialog( QDialog ):
         if row > 2: raise Exception( "OkCancelDialog.addWidget() -- invalid row index: %d" % ( row ) )
         self._layout.addWidget( w, row, 0 )
 
-    def setValidationFunction( self, fnc ):
-        self._validationFnc = fnc
+    def setBeforeAcceptFunction( self, fnc ):
+        self._beforeAcceptFnc = fnc
 
     def setCancellationFunction( self, fnc ):
         self._cancellationFnc = fnc

@@ -1,5 +1,8 @@
-from typing import List, Dict
+from typing import List, Dict, Iterable
 
+from base import constants
+from datehelper import getNumberOfDays
+from v2.icc.constants import getMonthIdxFromShortName
 from v2.icc.iccdata import IccData
 from v2.icc.interfaces import XSollMiete
 
@@ -8,30 +11,101 @@ class SollmieteData( IccData ):
     def __init__( self ):
         IccData.__init__( self )
 
-    def getLetzteSollmiete( self, mv_id:str ) -> XSollMiete or None:
+    def getLetzteSollmiete( self, mv_id:str ) -> XSollMiete:
         """
         Liefert die letzte (jüngste) Sollmiete für <mv_id>.
-        Diese Sollmiete kann auch schon inaktiv sein (<bis> kleiner als current date).
+        Diese Sollmiete kann auch schon inaktiv sein (<bis> LT current date).
+        Sie kann aber auch in der Zukunft liegen (also noch nicht aktiv, <von> GT current date)
         :param mv_id:
-        :return: ein Sollmiete-Objekt oder None, wenn keines gefunden wurde
+        :return: ein Sollmiete-Objekt
         """
-        sql = "select sm_id, mv_id, von, von, coalesce(bis, '') as bis, netto, nkv, netto+nkv as brutto, bemerkung " \
-              "from sollmiete " \
-              "where mv_id = '%s' " \
-              "order by von desc " % mv_id
+        sql = "select sm.sm_id, mv.mv_id, mv.mobj_id, sm.von, coalesce(sm.bis, '') as bis, " \
+              "netto, nkv, netto+nkv as brutto, sm.bemerkung " \
+              "from sollmiete sm " \
+              "inner join mietverhaeltnis mv on mv.mv_id = sm.mv_id " \
+              "where sm.mv_id = '%s' " \
+              "order by sm.von desc " % mv_id
         dictlist:List[Dict] = self.readAllGetDict( sql )
         if len( dictlist ) > 0:
             d = dictlist[0]
             x = XSollMiete( d )
             return x
-        return None
+        else:
+            raise Exception( "SollmieteData.getLetzteSollmiete:\nZu '%s' keine aktuelle Sollmiete gefunden." % mv_id )
+
+    def getAktuelleSollmiete( self, mv_id:str ) -> XSollMiete:
+        """
+        Liefert die aktuelle Sollmiete für <mv_id>.
+        Diese kann auch schon inaktiv sein (<bis> LT current date)
+        Sie kann aber NICHT in der Zukunft liegen.
+        :param mv_id:
+        :return: ein Sollmiete-Objekt oder None, wenn keines gefunden wurde
+        """
+        sql = "select sm_id, mv.mv_id, mv.mobj_id, sm.von, coalesce(sm.bis, '') as bis, " \
+              "netto, nkv, netto+nkv as brutto, sm.bemerkung " \
+              "from sollmiete sm " \
+              "inner join mietverhaeltnis mv on mv.mv_id = sm.mv_id " \
+              "where sm.mv_id = '%s' " \
+              "and sm.von <= CURRENT_DATE " \
+              "order by sm.von desc " % mv_id
+
+        l:List[XSollMiete] = self.readAllGetObjectList( sql, XSollMiete )
+        if len( l ) < 1:
+            raise Exception( "SollmieteData.getAktuelleSollmiete:\nZu '%s' keine aktuelle Sollmiete gefunden." % mv_id )
+        return l[0]
+
+    def getSollmieteHistorie( self, mv_id ) -> List[XSollMiete]:
+        """
+        Liefert eine Liste aller Sollmieten für <mv_id>.
+        Diese kann sowohl inaktive wie auch zukünftige Sollmieten enthalten.
+        :param mv_id:
+        :return: ein Liste von Sollmiete-Objekten
+        """
+        sql = "select sm_id, mv.mv_id, mv.mobj_id, sm.von, coalesce(sm.bis, '') as bis, " \
+              "netto, nkv, netto+nkv as brutto, sm.bemerkung " \
+              "from sollmiete sm " \
+              "inner join mietverhaeltnis mv on mv.mv_id = sm.mv_id " \
+              "where sm.mv_id = '%s' " \
+              "order by sm.von desc " % mv_id
+        return self.readAllGetObjectList( sql, XSollMiete )
+
+    def getSollmieteAm( self, mv_id, jahr:int, monthNumber:int ) -> XSollMiete or None:
+        """
+        :param mv_id:
+        :param jahr:
+        :param monthNumber: 1 -> Januar, ... , 12 -> Dezember
+        :return:
+        """
+        von = "%4d-%.2d-01" % ( jahr, monthNumber )
+        lastday = getNumberOfDays( monthNumber )
+        bis = "%4d-%.2d-%d" % ( jahr, monthNumber, lastday )
+        sql = "select sm_id, mv.mv_id, mv.mobj_id, sm.von, coalesce(sm.bis, '') as bis, " \
+              "netto, nkv, netto+nkv as brutto, sm.bemerkung " \
+              "from sollmiete sm " \
+              "inner join mietverhaeltnis mv on mv.mv_id = sm.mv_id " \
+              "where sm.mv_id = '%s' " \
+              "and sm.von <= '%s' " \
+              "and (sm.bis is NULL or sm.bis = '' or sm.bis  >= '%s' ) " % ( mv_id, von, bis )
+        x = self.readOneGetObject( sql, XSollMiete )
+        return x
+
+    def getSollmiete( self, sm_id:int ) -> XSollMiete:
+        sql = "select sm_id, mv.mv_id, mv.mobj_id, sm.von, coalesce(sm.bis, '') as bis, " \
+              "netto, nkv, netto+nkv as brutto, sm.bemerkung " \
+              "from sollmiete sm " \
+              "inner join mietverhaeltnis mv on mv.mv_id = sm.mv_id " \
+              "where sm_id = %d " % sm_id
+        x = self.readOneGetObject( sql, XSollMiete )
+        return x
 
     def insertSollmiete( self, x: XSollMiete ) -> int:
         bis = "NULL" if not x.bis else "'" + x.bis + "'"
         sql = "insert into sollmiete " \
               "(mv_id, von, bis, netto, nkv, bemerkung ) " \
               "values( '%s', '%s', %s, %.2f, %.2f, '%s' ) " % (x.mv_id, x.von, bis, x.netto, x.nkv, x.bemerkung)
-        return self.write( sql )
+        lastRowId = self.write( sql )
+        x.sm_id = self.getMaxId( "sollmiete", "sm_id" )
+        return lastRowId
 
     def updateSollmiete( self, x: XSollMiete ):
         """
@@ -66,15 +140,14 @@ class SollmieteData( IccData ):
         return self.write( sql )
 
 def test():
-    x = XSollMiete()
-    x.mv_id = "test_duempfel"
-    x.von = "2021-11-11"
-    x.netto = 450
-    x.nkv = 100
-
-    x2 = XSollMiete()
-    x2.mv_id = "anger_inge"
-    x2.von = "2021-11-12"
-    x2.netto = 300
-    x2.nkv = 80
+   data = SollmieteData()
+   l = data.getSollmieteHistorie( "lukas_franz" )
+   for x in l:
+       x.print()
+   x = data.getLetzteSollmiete( "lukas_franz" )
+   x.print()
+   x = data.getAktuelleSollmiete( "lukas_franz" )
+   x.print()
+   x = data.getSollmieteAm( "lukas_franz", 2022, 1 )
+   x.print()
 

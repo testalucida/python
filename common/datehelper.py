@@ -6,8 +6,12 @@ from typing import Tuple, Dict
 
 from base.constants import monthLongNames, monatsletzter
 
-def getNumberOfDays( month:int ) -> int:
-    return monatsletzter[monthLongNames[month - 1]]
+def getNumberOfDays( monthNumber:int ) -> int:
+    """
+    :param monthNumber: 1 -> Januar, ... , 12 -> Dezember
+    :return:
+    """
+    return monatsletzter[monthLongNames[monthNumber - 1]]
 
 def currentDateIso() -> str:
     """
@@ -49,6 +53,11 @@ def getFirstOfNextMonth() -> str:
     return dt
 
 def getFirstOfFollowingMonth( isodate:str ) -> str:
+    """
+    returns start of month following <isodate>
+    :param isodate:
+    :return:
+    """
     y, m, d = getDateParts( isodate )
     if m < 12:
         m += 1
