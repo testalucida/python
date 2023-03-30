@@ -86,6 +86,15 @@ class IccLogic:
             return x
         return None
 
+    def getNachnameVornameFromMv_id( self, mv_id:str ) -> str:
+        nameparts = mv_id.split( "_" )
+        if len( nameparts ) == 2:
+            vorname = nameparts[1].capitalize()
+            nachname = nameparts[0].capitalize()
+            return nachname + ", " + vorname
+        else:
+            return mv_id
+
     def getLeistungen( self, master_name, kreditor:str ) -> List[str]:
         kredleistlist:List[XLeistung] = self._iccdata.getLeistungen( master_name, kreditor )
         leistungen = [l.leistung for l in kredleistlist]

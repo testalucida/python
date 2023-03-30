@@ -410,6 +410,8 @@ class MieteController( MtlEinAusController ):
 
     def _showMietverhaeltnis( self ):
         mv_id, year, monthIdx = self._getSelection()
+        box = InfoBox( "Mietverhältnis für '%s' anzeigen" % mv_id, "Funktion ist noch nicht realisiert." )
+        box.exec_()
         # todo
 
     def _kuendigeMietverhaeltnis( self ):
@@ -418,19 +420,14 @@ class MieteController( MtlEinAusController ):
         :return:
         """
         mv_id, year, monthIdx = self._getSelection()
+        box = InfoBox( "Mietverhältnis '%s' kündigen" % mv_id, "Funktion ist noch nicht realisiert." )
+        box.exec_()
         # todo
 
     def _showNettomieteAndNkv( self ):
         mv_id, year, monthIdx = self._getSelection()
-        # model: MieteTableModel = self.getModel()
-        # idx = self._tv.selectedIndexes()[0]
-        # mv_id = model.getElement( idx.row() ).getValue( "mv_id" )
-        # year = model.getSelectedYear()
-        # monthIdx = model.getSelectedMonthIdx() # 0 -> jan, ..., 11 -> dez
         sollMieteCtrl = SollMieteController()
         sollMieteCtrl.showSollMieteAndNkv( mv_id, year, monthIdx+1 )
-        # box = InfoBox( "Nettomiete und NKV", "Hieraus entsteht die Anzeige von Nettomiete und NKV für '%s'" % mv_id, "", "OK" )
-        # box.exec_()
 
     def _getSelection( self ) -> [str, int, int]:
         """
@@ -528,7 +525,7 @@ class HausgeldController( MtlEinAusController ):
         den WEG-Namen geklickt hat
         :return:
         """
-        return list( BaseAction( "Verwaltungsdetails anzeigen...", ident=Action.SHOW_WEG_UND_VERWALTER ), )
+        return [BaseAction( "Verwaltungsdetails anzeigen...", ident=Action.SHOW_WEG_UND_VERWALTER ),]
 
     def getSollAction( self ) -> BaseAction:
         """

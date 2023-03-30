@@ -2,14 +2,17 @@ from typing import Any, List
 
 from PySide2.QtCore import QPoint, Slot
 from PySide2.QtGui import QCursor
-from PySide2.QtWidgets import QWidget, QApplication, QMenu
+from PySide2.QtWidgets import QWidget, QApplication, QMenu, QDialog
 
-from base.baseqtderivates import BaseAction
-from base.messagebox import InfoBox
+from base.baseqtderivates import BaseAction, BaseEdit, FloatEdit, IntEdit, SmartDateEdit
+from base.dynamicattributeui import DynamicAttributeDialog
+from base.interfaces import XBaseUI, VisibleAttribute
+from base.messagebox import InfoBox, ErrorBox
 from v2.icc.icccontroller import IccController
 from v2.icc.interfaces import XMietverhaeltnis
 from v2.mietobjekt.mietobjektcontroller import MietobjektAuswahl
-from v2.mietverhaeltnis.mietverhaeltnisgui import MietverhaeltnisView, MietverhaeltnisDialog
+from v2.mietverhaeltnis.mietverhaeltnisgui import MietverhaeltnisView, MietverhaeltnisDialog, \
+    MietverhaeltnisKuendigenDialog
 from v2.mietverhaeltnis.mietverhaeltnislogic import MietverhaeltnisLogic
 
 
@@ -31,12 +34,15 @@ class MietverhaeltnisController( IccController ):
         """
         menu = QMenu( "Mietverhältnis" )
         action = BaseAction( "Mietverhältnis anschauen und bearbeiten...", parent=menu )
-        action.triggered.connect( self.onMietverhaeltnis )
+        action.triggered.connect( self.onMietverhaeltnisShow )
+        menu.addAction( action )
+        action = BaseAction( "Mietverhältnis kündigen...", parent=menu ) #
+        action.triggered.connect( self.onMietverhaeltnisKuendigen )
         menu.addAction( action )
         return menu
 
     @Slot()
-    def onMietverhaeltnis( self ):
+    def onMietverhaeltnisShow( self ):
         """
         Wird aufgerufen, wenn in der Menübar der Anwendung "Mietverhältnis anzeigen und bearbeiten..." geklickt wurde
         :return:
@@ -45,9 +51,18 @@ class MietverhaeltnisController( IccController ):
         mietobjektAuswahl = MietobjektAuswahl()
         xmo = mietobjektAuswahl.selectMietobjekt()
         if not xmo: return None
-        self.createView( xmo.mobj_id )
+        self.createMvView( xmo.mobj_id )
         dlg = MietverhaeltnisDialog( self._view )
         dlg.exec_()
+
+    @Slot()
+    def onMietverhaeltnisKuendigen( self ):
+        """
+        Wird aufgerufen, wenn in der Menübar der Anwendung "Mietverhältnis kündigen..." geklickt wurde
+        :return:
+        """
+        ctrl = MietverhaeltnisKuendigenController()
+        ctrl.processKuendigung()
 
     def showMietverhaeltnis( self, mv_id:str ):
         """
@@ -66,7 +81,7 @@ class MietverhaeltnisController( IccController ):
             dlg = MietverhaeltnisDialog.fromMietverhaeltnis( xmv )
             dlg.exec_()
 
-    def createView( self, mobj_id:str ):
+    def createMvView( self, mobj_id:str ):
         self._mvlist = self._mvlogic.getMietverhaeltnisListe( mobj_id )
         mvlist_len = len( self._mvlist )
         if mvlist_len > 0:
@@ -115,8 +130,6 @@ class MietverhaeltnisController( IccController ):
             self._view.clear()
             self._view._setMietverhaeltnisData( self._mv )
 
-
-
     def _validate( self ) -> bool:
         # Validierung sollte im ***Model*** sein, nicht im Controller.
         # siehe: https://stackoverflow.com/questions/5651175/mvc-question-should-i-put-form-validation-rules-in-the-controller-or-model
@@ -151,21 +164,6 @@ class MietverhaeltnisController( IccController ):
     def getChanges( self ) -> Any:
         pass
 
-    # def writeChanges( self, changes: Any = None ) -> bool:
-    #     if self._validate():
-    #         self._view.applyChanges()
-    #         try:
-    #             BusinessLogic.inst().saveMietverhaeltnis( self._mv )
-    #             self._view.resetChangeFlag()
-    #             return True
-    #         except Exception as ex:
-    #             self.showErrorMessage( "Mietverhältnis: Speichern fehlgeschlagen", str( ex ) )
-    #             return False
-    #     return False
-    #
-    # def clearChanges( self ) -> None:
-    #     pass
-
     def getViewTitle( self ) -> str:
         title = "Mieterdaten von Mieter: " + self._mv.vorname + " " + self._mv.name
         if self._mv.name2: title += ( " und " + self._mv.vorname2 + " " + self._mv.vorname2 )
@@ -176,15 +174,68 @@ class MietverhaeltnisController( IccController ):
         return False if xcopy.equals( self._mv ) else True
 
 
+#####################   MietverhaeltnisKuendigenController   #############
+class MietverhaeltnisKuendigenController:
+    def __init__( self ):
+        self._view:MietverhaeltnisView = None
+        self._mvlogic = MietverhaeltnisLogic()
+        # self._mv: XMietverhaeltnis = None # das aktuell im View angezeigte Mietverhältnis
+
+    def processKuendigung( self ):
+        # zuerst über den Auswahldialog bestimmen, welche Daten für die View selektiert werden müssen
+        mietobjektAuswahl = MietobjektAuswahl()
+        xmo = mietobjektAuswahl.selectMietobjekt()
+        if not xmo: return None
+        xmv:XMietverhaeltnis = self._mvlogic.getAktuellesMietverhaeltnis( xmo.mv_id )
+        self.showDialog( xmv )
+
+    def showDialog( self, xmv ):
+        def validate():
+            v = dlg.getDynamicAttributeView()
+            xcopy:XMietverhaeltnis = v.getModifiedXBaseCopy()
+            return self._mvlogic.validateKuendigungDaten( xcopy )
+        xui = XBaseUI( xmv )
+        vislist = (VisibleAttribute( "name_vorname", BaseEdit, "Mieter: ", editable=False, nextRow=True, columnspan=4 ),
+                   VisibleAttribute( "nettomiete", FloatEdit, "Nettomiete (€): ", widgetWidth=80, editable=False, nextRow=False ),
+                   VisibleAttribute( "nkv", FloatEdit, "NKV (€): ", widgetWidth=80, editable=False ),
+                   VisibleAttribute( "kaution", IntEdit, "Kaution (€): ", editable=False, widgetWidth=50 ),
+                   VisibleAttribute( "bis", SmartDateEdit, "Ende des Mietverhältnisses: ", widgetWidth=80 ) )
+        xui.addVisibleAttributes( vislist )
+        dlg = DynamicAttributeDialog( xui, "Kündigen eines Mietverhältnisses" )
+        dlg.getApplyButton().setEnabled( False )
+        dlg.setCallbacks( beforeAcceptCallback=validate )
+        if dlg.exec_() == QDialog.Accepted:
+            v = dlg.getDynamicAttributeView()
+            v.updateData()  # Validierung war ok, also Übernahme der Änderungen ins XBase-Objekt
+            try:
+                self._mvlogic.kuendigeMietverhaeltnis( xmv )
+            except Exception as ex:
+                box = ErrorBox( "MietverhaeltnisKuendigenController.showDialog():\n"
+                                "Fehler beim Speichern der Kündigung", str( ex ), xmv.toString( True ) )
+                box.exec_()
+                return
+        else:
+            # cancelled
+            return
+
+
 ###################################################################################
+
+def testKuendigen():
+    app = QApplication()
+    c = MietverhaeltnisKuendigenController()
+    c.processKuendigung()
+
+    app.exec_()
+
 def test():
     app = QApplication()
     c = MietverhaeltnisController()
-    c.onMietverhaeltnis()
+    c.onMietverhaeltnisShow()
     #c.showMietverhaeltnis( "pfeifer_martina" )
     # v = c.createView()
     #v.show()
     app.exec_()
-
-if __name__ == "__main__":
-    test()
+#
+# if __name__ == "__main__":
+#     test()

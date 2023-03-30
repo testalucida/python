@@ -1,5 +1,6 @@
 import copy
 
+import Xlib.X
 from PySide2.QtCore import Signal, QSize
 from PySide2.QtGui import QFont, Qt
 from PySide2.QtWidgets import QWidget, QApplication
@@ -13,12 +14,13 @@ class SollMieteEditView( QWidget ):
     """
     Eine View, mit der man eine Sollmiete neu anlegen oder ändern kann
     """
+    delete_sollmiete = Signal( XSollMiete )
     def __init__( self, x:XSollMiete ):
         QWidget.__init__( self )
         self._x:XSollMiete = x
         self._layout = BaseGridLayout()
         self._sdVon = SmartDateEdit( isReadOnly=False )
-        #self._sdBis = SmartDateEdit( isReadOnly=True )
+        self._btnDelete = BaseButton( "Diese Sollmiete löschen" )
         self._feNetto = FloatEdit( isReadOnly=False  )
         self._feNkv = FloatEdit( isReadOnly=False  )
         self._lblBrutto = BaseLabel()
@@ -41,14 +43,15 @@ class SollMieteEditView( QWidget ):
         self._layout.addPair( "Sollmiete-ID: ", lblSmId, r, 0 )
         r += 1
         hline = HLine()
-        columns = self._layout.columnCount()
-        self._layout.addWidget( hline, r, 0, 1, columns )
+        self._layout.addWidget( hline, r, 0, 1, 3 )
         r += 1
         self._sdVon.setMaximumWidth( W )
         self._layout.addPair( "Diese Sollmiete gilt ab: ", self._sdVon, r, 0 )
+        self._btnDelete.setEnabled( True if self._x.sm_id > 0 else False )
+        self._btnDelete.clicked.connect( lambda x: self.delete_sollmiete.emit( self._x ) )
+        self._layout.addWidget( self._btnDelete, r, 2 )
         r += 1
         self._feNetto.setMaximumWidth( W )
-        #self._feNetto.focusOutEvent = self.nettoOrNkvOutEvent
         self._feNetto.textChanged.connect( self.nettoOrNkvChanged )
         self._layout.addPair( "Nettomiete: ", self._feNetto, r, 0 )
         r += 1
@@ -66,22 +69,13 @@ class SollMieteEditView( QWidget ):
         self._layout.addPair( "Bruttomiete: ", self._lblBrutto, r, 0 )
         r += 1
         self._mlBemerkung.setMaximumHeight( 60 )
-        self._layout.addPair( "Bemerkung: ", self._mlBemerkung, r, 0 )
-        # r += 1
-        # dummy = BaseLabel()
-        # dummy.setMaximumHeight( 20 )
-        # self._layout.addWidget( dummy, r, 0 )
-        # r += 1
-        # self._btnOk.clicked.connect( self.ok_clicked.emit )
-        # self._btnEdit.clicked.connect( self.edit_clicked.emit )
-        # self._layout.addWidget( self._btnOk, r, 0 )
-        # self._layout.addWidget( self._btnEdit, r, 1 )
+        self._layout.addPair( "Bemerkung: ", self._mlBemerkung, r, 0, 1, 2 )
 
     def getTitle( self ) -> str:
         return self.windowTitle()
 
     def nettoOrNkvChanged( self, arg ):
-        print( "text changed", arg )
+        #print( "text changed", arg )
         brutto = self._feNetto.getValue() + self._feNkv.getValue()
         self._lblBrutto.setValue( str(brutto) )
 
@@ -104,7 +98,7 @@ class SollMieteEditView( QWidget ):
         x.von = self._sdVon.getValue()
         x.bemerkung = self._mlBemerkung.getValue()
         x.netto = self._feNetto.getFloatValue()
-        x.nk = self._feNkv.getFloatValue()
+        x.nkv = self._feNkv.getFloatValue()
         x.bemerkung = self._mlBemerkung.getValue()
 
     def applyChanges( self ) -> XSollMiete:

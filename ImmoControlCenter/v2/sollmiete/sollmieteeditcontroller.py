@@ -1,3 +1,4 @@
+from PySide2.QtCore import Signal
 from PySide2.QtWidgets import QApplication, QDialog
 
 from base.messagebox import ErrorBox
@@ -13,12 +14,14 @@ from v2.sollmiete.sollmieteview import SollMieteView, SollMieteDialog
 
 
 class SollMieteEditController( IccController ):
+    endofcurrentsoll_modified = Signal( str )
+
     def __init__( self ):
         IccController.__init__( self )
         self._logic = SollmieteLogic()
         self._tableViewFrame:IccCheckTableViewFrame = None
         self._tv:IccTableView = None
-        #self._x:XSollMiete = None # hier wird eine neue/geänderte Sollmiete geparkt
+        self._dlg:SollMieteEditDialog = None
 
     def createGui( self ) -> IccCheckTableViewFrame:
         pass
@@ -51,16 +54,30 @@ class SollMieteEditController( IccController ):
             else:
                 return True
         v = SollMieteEditView( x )
-        dlg = SollMieteEditDialog( v )
-        dlg.setBeforeAcceptFunction( validate )
-        if dlg.exec_() == QDialog.Accepted:
+        v.delete_sollmiete.connect( self.onDeleteSollmiete )
+        self._dlg = SollMieteEditDialog( v )
+        self._dlg.setBeforeAcceptFunction( validate )
+        if self._dlg.exec_() == QDialog.Accepted:
             # Wenn wir hier landen, wurde die Validierung bereits positiv erledigt.
             v.applyChanges()
             try:
-                self._logic.saveFolgeSollmiete( x )
+                bis_current_sollmiete = self._logic.saveFolgeSollmiete( x )
+                # Dem SollmieteController bescheidsagen, dass er das bis-Feld in der View ändern muss
+                self.endofcurrentsoll_modified.emit( bis_current_sollmiete )
             except Exception as ex:
                 box = ErrorBox( "Fehler beim Speichern der Sollmiete", str(ex), "" )
                 box.exec_()
+
+    def onDeleteSollmiete( self, x:XSollMiete ):
+        try:
+            bis_current_sollmiete = self._logic.deleteFolgeSollmiete( x )
+            # Dem SollmieteController bescheidsagen, dass er das bis-Feld in der View ändern muss
+            self.endofcurrentsoll_modified.emit( bis_current_sollmiete )
+        except Exception as ex:
+            box = ErrorBox( "Fehler beim Löschen der Sollmiete mit sm_id %d " % x.sm_id, str(ex), "" )
+            box.exec_()
+        self._dlg.close()
+
 
 def test():
     app = QApplication()

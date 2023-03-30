@@ -1,13 +1,14 @@
 from typing import List
 
 import datehelper
+from v2.icc.icclogic import IccLogic
 from v2.icc.interfaces import XMietverhaeltnis, XMieterwechsel, XMietverhaeltnisKurz, XSollMiete
 from v2.mietverhaeltnis.mietverhaeltnisdata import MietverhaeltnisData
 from v2.mtleinaus.mtleinauslogic import MtlEinAusLogic
 from v2.sollmiete.sollmietelogic import SollmieteLogic
 
 
-class MietverhaeltnisLogic:
+class MietverhaeltnisLogic( IccLogic ):
     """
     Stellt die Funktionen zur Selektion, Neuanlage, Änderung und Kündigung von Mietverhältnissen bereit.
     Außerdem eine Methode zur Ermittlung der Daten für einen Mieterwechsel.
@@ -23,11 +24,14 @@ class MietverhaeltnisLogic:
         self._db:MietverhaeltnisData = MietverhaeltnisData()
 
     def getAktuellesMietverhaeltnis( self, mv_id:str ) -> XMietverhaeltnis:
-        return self._db.getAktuellesMietverhaeltnis( mv_id )
+        xmv:XMietverhaeltnis = self._db.getAktuellesMietverhaeltnis( mv_id )
+        xmv.name_vorname = self.getNachnameVornameFromMv_id( xmv.mv_id )
+        return xmv
 
     def getAktuellesMietverhaeltnisByMietobjekt( self, mobj_id:str ) -> XMietverhaeltnis:
         mv_id = self._db.getAktuelleMV_IDzuMietobjekt( mobj_id )
         xmv = self._db.getAktuellesMietverhaeltnis( mv_id )
+        xmv.name_vorname = self.getNachnameVornameFromMv_id( xmv.mv_id )
         return xmv
 
     def getMietverhaeltnisListe( self, mobj_id:str ) -> List[XMietverhaeltnis]:
@@ -36,6 +40,7 @@ class MietverhaeltnisLogic:
         for xmv in xmvlist:
             xsm = smlogic.getLetzteSollmiete( xmv.mv_id )
             if xsm:
+                xmv.name_vorname = self.getNachnameVornameFromMv_id( xmv.mv_id )
                 xmv.nettomiete = xsm.netto
                 xmv.nkv = xsm.nkv
                 xmv.bruttomiete = xsm.brutto
@@ -155,39 +160,24 @@ class MietverhaeltnisLogic:
                              % (xmv.mv_id, str( ex )) )
 
 
-    def kuendigeMietverhaeltnis( self, mv_id: str, kuenddatum: str ):
+    def kuendigeMietverhaeltnis( self, xmv:XMietverhaeltnis ):
         """
         Kündigung in Tabelle mietverhaeltnis eintragen -
         aber nur, wenn sich das Kündigungsdatum geändert hat.
         Der Update auf sollmiete muss hier erfolgen, da es fachlich falsch ist,
         ein MV ohne den zugehörigen Sollmietensatz zu kündigen.
         """
-        if not datehelper.isValidIsoDatestring( kuenddatum ):
-            raise Exception( "Mietende: kein gültiges Datumsformat" )
-        # aktives Mietverhältnis lesen
-        try:
-            d = self._db.getAktuellesMietverhaeltnisVonBis( mv_id )
-            if kuenddatum and d["von"] > kuenddatum:
-                raise Exception( "MietverhaeltnisLogic.kuendigeMietverhaeltnis( '%s', '%s' ): " \
-                                 "Mietverhältnis-von ('%s') > Mietverhältnis-bis: Nicht erlaubt"\
-                                % (mv_id, d["von"], kuenddatum) )
-            if kuenddatum == d["bis"]:
-                return
-        except Exception as ex:
-            raise Exception( "Kündigung des Mietverhältnisses von '%s' fehlgeschlagen:\n'%s'"
-                             % (mv_id, str(ex) ) )
-        # aktive Sollmiete lesen
-        smlogic = SollmieteLogic()
-        sm: XSollMiete = smlogic.getLetzteSollmiete( mv_id )
-        if kuenddatum and sm.von > kuenddatum:
-            raise Exception( "BusinessLogic.kuendigeMietverhaeltnis( '%s', '%s' ): "
-                             "Sollmiete-von ('%s') > Sollmiete-bis nicht erlaubt" %
-                             (mv_id, sm.von, kuenddatum) )
-
+        xmvCheck = self._db.getAktuellesMietverhaeltnis( xmv.mv_id )
+        if xmvCheck.bis == xmv.bis: return
+        msg = self.validateKuendigungDaten( xmv )
+        if msg:
+            raise Exception( "MietverhaeltnisLogic.kuendigeMietverhaeltnis:\nValidierungsfehler:\n" + msg )
         # Mietverhältnis beenden
-        self._db.updateMietverhaeltnis2( d["id"], "bis", kuenddatum )
+        self._db.updateMietverhaeltnis2( xmv.id, "bis", xmv.bis )
         # Sollmietensatz beenden
-        smlogic.beendeSollmiete( sm.sm_id, kuenddatum )
+        smlogic = SollmieteLogic()
+        smlogic.handleSollmieteBeiMvKuendigung( xmv.mv_id, xmv.bis )
+        self._db.commit()
 
     def updateMietverhaeltnis( self, xmv:XMietverhaeltnis ):
         """
@@ -219,6 +209,21 @@ class MietverhaeltnisLogic:
             return "Vorame des Mieters fehlt"
         if not xmv.mobj_id:
             return "Objekt fehlt"
+        return ""
+
+    def validateKuendigungDaten( self, xmv:XMietverhaeltnis ) -> str:
+        if not xmv.bis:
+            return "Kündigungsdatum fehlt."
+        if not datehelper.isValidIsoDatestring( xmv.bis ):
+            return "Datum nicht im vorgeschriebenen ISO-Format: '%s'" % xmv.bis
+        # prüfen, ob das MV zum ENDE des Monats gekündigt wird - nur das ist zulässig
+        monthNumber = int(xmv.bis[5:7])
+        letzter = datehelper.getNumberOfDays( monthNumber )
+        if int(xmv.bis[8:]) != letzter:
+            return "Die Kündigung darf nur zum Letzten eines Monats erfolgen."
+        if xmv.von > xmv.bis:
+            return "Das Ende des Mietverhältnisses ('%s') darf nicht vor dessen Beginn ('%s') liegen." \
+                   % ( xmv.bis, xmv.von )
         return ""
 
 def test():

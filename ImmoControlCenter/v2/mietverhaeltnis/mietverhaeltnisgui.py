@@ -4,7 +4,8 @@ from PySide2.QtCore import QSize, Signal
 from PySide2.QtGui import Qt, QIcon
 from PySide2.QtWidgets import QWidget, QGridLayout, QLabel, QHBoxLayout, QApplication, QPushButton
 
-from base.baseqtderivates import SmartDateEdit, BaseEdit, IntEdit, FloatEdit, MultiLineEdit, HLine, BaseLabel
+from base.baseqtderivates import SmartDateEdit, BaseEdit, IntEdit, FloatEdit, MultiLineEdit, HLine, BaseLabel, \
+    BaseGridLayout
 from base.messagebox import WarningBox, MessageBox
 from generictable_stuff.okcanceldialog import OkCancelDialog
 from imagefactory import ImageFactory
@@ -365,6 +366,25 @@ class MietverhaeltnisDialog( OkCancelDialog ):
     def fromMietverhaeltnis( cls, xmv:XMietverhaeltnis ):
         view = MietverhaeltnisView( xmv )
         return cls( view )
+
+
+##################   MietverhaeltnisKuendigenView   #################
+class MietverhaeltnisKuendigenView( QWidget ):
+    def __init__( self, xmv:XMietverhaeltnis, parent=None ):
+        QWidget.__init__( self, parent )
+        self._xmv = xmv
+        self._layout = BaseGridLayout()
+        self.setLayout( self._layout )
+        self._createGui()
+
+    def _createGui( self ):
+        pass
+
+##################   MietverhaeltnisKuendigenDialog   ##################
+class MietverhaeltnisKuendigenDialog( OkCancelDialog ):
+    def __init__( self, view:MietverhaeltnisKuendigenView ):
+        OkCancelDialog.__init__( self )
+        pass
 
 ##############  TEST TEST TEST   #######################
 def onPrevMv():

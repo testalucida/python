@@ -23,13 +23,7 @@ class MietobjektLogic( IccLogic ):
 
     def getMietobjektTableModel( self ) -> MietobjektTableModel:
         def setName( x:XMietobjektAuswahl ):
-            nameparts = x.mv_id.split( "_" )
-            if len( nameparts ) == 2:
-                vorname = nameparts[1].capitalize()
-                nachname = nameparts[0].capitalize()
-                x.name = nachname + ", " + vorname
-            else:
-                x.name = x.mv_id
+            x.name = self.getNachnameVornameFromMv_id( x.mv_id )
             return x
         l:List[XMietobjektAuswahl] = self._data.getMietobjekte()
         l = [setName( x ) for x in l]

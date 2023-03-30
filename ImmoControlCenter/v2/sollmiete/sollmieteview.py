@@ -31,7 +31,7 @@ class SollMieteView( QWidget ):
         self._lblBrutto = BaseLabel()
         self._mlBemerkung = MultiLineEdit( isReadOnly=False )
         # self._btnOk = BaseButton( "OK" )
-        self._btnEdit = BaseButton( "Sollmiete ändern..." )
+        self._btnEdit = BaseButton( "Folge-Soll erfassen oder ändern..." )
         self._createGui()
         if x:
             self._setFieldsFromData()
@@ -107,6 +107,15 @@ class SollMieteView( QWidget ):
         """
         self._setDataFromFields( self._x )
         return self._x
+
+    def setBis( self, bis:str ):
+        """
+        Wird aufgerufen, wenn im SollmieteEditView ein Folge-Intervall gelöscht wurde.
+        Dann wird das Ende-Datum des aktuellen Intervalls angepasst und muss hier entsprechend angezeigt werden.
+        :param bis: anzuzeigendes Ende-Datum
+        :return:
+        """
+        self._sdBis.setValue( bis )
 
     def _setFieldsFromData( self ):
         x = self._x

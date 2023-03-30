@@ -2,7 +2,7 @@ import copy
 from typing import Iterable, List
 
 import datehelper
-from v2.icc.interfaces import XSollMiete
+from v2.icc.interfaces import XSollMiete, XMietverhaeltnis
 from v2.sollmiete.sollmietedata import SollmieteData
 
 
@@ -31,7 +31,8 @@ class SollmieteLogic:
             # es gibt noch kein Folge-Intervall, deshalb erzeugen wir eines (ohne zu speichern)
             folgeX = copy.copy( currentX )
             folgeX.sm_id = 0
-            folgeX.von = datehelper.getFirstOfNextMonth()
+            folgeX.von = datehelper.getFirstOfNextMonth() if not currentX.bis \
+                         else datehelper.getFirstOfFollowingMonth( currentX.bis )
             folgeX.bis = ""
             return folgeX
         else:
@@ -96,6 +97,11 @@ class SollmieteLogic:
             monatsletzter = datehelper.getNumberOfDays( int(monat) ) # z.B. 31
             if not xsm.bis[8:] == str(monatsletzter):
                 return "Das Ende eines Sollmietenzeitraums muss der Monatsletzte sein."
+        # prüfen, ob das MV bereits gekündigt ist. Wenn ja, darf das xsm.bis nicht größer sein als das Künd.datum
+        xmv = self._getAktuellesMietverhaeltnis( xsm.mv_id )
+        if xmv.bis and ( not xsm.bis or xsm.bis > xmv.bis ):
+            return "Das Ende-Datum des Sollmiete-Intervalls ('%s') darf nicht weiter in der Zukunft liegen " \
+                   "als das Kündigungsdatum ('%s') " % ( xsm.bis, xmv.bis )
         if not xsm.netto:
             return "Nettomiete fehlt."
         if not xsm.nkv:
@@ -114,13 +120,13 @@ class SollmieteLogic:
             self._db.updateSollmiete( xsm )
             self._db.commit()
 
-    def saveFolgeSollmiete( self, folgeX:XSollMiete ):
+    def saveFolgeSollmiete( self, folgeX:XSollMiete ) -> str:
         """
         Prüft, ob ein Insert oder Update erfolgen muss und führt ihn entsprechend aus.
         Führt eine Validierung durch.
         Wirft eine Exception, wenn es einen Fehler beim Validieren oder Speichern gibt.
         :param folgeX:
-        :return:
+        :return: das Ende-Datum, das in das aktuelle Sollmiete-Intervall eingetragen wurde.
         """
         msg = self.validate( folgeX )
         if msg:
@@ -170,6 +176,7 @@ class SollmieteLogic:
         currentX.bis = datehelper.addDaysToIsoString( folgeX.von, -1 )
         self._db.updateSollmiete( currentX )
         self._db.commit()
+        return currentX.bis
 
     def createSollmiete( self, xsm:XSollMiete ):
         """
@@ -185,8 +192,62 @@ class SollmieteLogic:
         sm_id = self._db.getMaxId( "sollmiete", "sm_id" )
         xsm.sm_id = sm_id
 
-    def beendeSollmiete( self, sm_id:int, bis:str ):
-        self._db.terminateSollmiete( sm_id, bis )
+    def deleteFolgeSollmiete( self, x:XSollMiete ) -> str:
+        """
+        Löscht (pyhsisch) ein Sollmiete-Intervall, das in der Zukunft beginnt.
+        (Davon darf es nur eines geben.)
+        Passt danach das Ende-Datum <bis> des aktuellen Intervalls an das Mietverhaeltnis-Bis-Datum an.
+        :param x: das zu löschende Sollmiete-Folge-Intervall
+        :return: das Datum, auf das das Bis-Datum des aktuellen Sollmiete-Intervalls zurückgesetzt wurde. (=Bis-Datum
+        des Mietverhältnisses)
+        """
+        if x.von < datehelper.getTodayAsIsoString():
+            raise Exception( "Das Sollmiete-Intervall mit sm_id %d hat bereits am %s begonnen\n"
+                             "und kann daher nicht gelöscht werden." % (x.sm_id, x.von) )
+        self._db.deleteSollmiete( x.sm_id )
+        # das Vorgänger-Intervall holen:
+        xsm:XSollMiete = self._db.getLetzteSollmiete( x.mv_id )
+        if not xsm:
+            raise Exception( "SollmieteLogic.deleteFolgeSollmiete:\n"
+                             "Es gibt kein aktuelles Sollmiete-Intervall für Mieter '%s'." % x.mv_id )
+
+        xmv = self._getAktuellesMietverhaeltnis( x.mv_id )
+        if not xmv:
+            raise Exception( "SollmieteLogic.deleteFolgeSollmiete:\n"
+                             "Es gibt kein aktuelles Mietverhältnis für Mieter '%s'." % x.mv_id )
+        xsm.bis = xmv.bis
+        self._db.updateSollmiete( xsm )
+        self._db.commit()
+        return xsm.bis
+
+    @staticmethod
+    def _getAktuellesMietverhaeltnis( mv_id:str ) -> XMietverhaeltnis :
+        from v2.mietverhaeltnis.mietverhaeltnislogic import MietverhaeltnisLogic  # muss hier importiert werden
+        # wegen Gefahr des Zirkelbezugs
+        mvlogic = MietverhaeltnisLogic()
+        xmv:XMietverhaeltnis = mvlogic.getAktuellesMietverhaeltnis( mv_id )
+        return xmv
+
+    def handleSollmieteBeiMvKuendigung( self, mv_id:str, kuenddatum:str ):
+        """
+        Wird aufgerufen von MietverhaeltnisLogic.kuendigeMietverhaeltnis().
+        Beendet das aktuelle Sollmiete-Intervall von Mieter mv_id zu <kuenddatum>
+        und löscht (physisch) ein ggf. vorhandenes  Folge-Sollmiete-Intervall aus der Tabelle <sollmiete>.
+        :param mv_id: Mieter
+        :param kuenddatum: KÜndigungsdatum des Mietvertrags
+        :return:
+        """
+        xsmlist:List[XSollMiete] = self._db.getSollmieteHistorie( mv_id )
+        if len( xsmlist ) < 1:
+            raise Exception( "SollmieteLogic.handleSollmieteBeiMvKuendigung():\n"
+                             "Für Mieter '%s' kein aktuelles Sollmieten-Intervall gefunden." % mv_id )
+        for xsm in xsmlist:
+            if xsm.von > kuenddatum:
+                # Folge-Intervall:löschen
+                self._db.deleteSollmiete( xsm.sm_id )
+            else:
+                self._db.terminateSollmiete( xsm.sm_id, kuenddatum )
+                break # wir wollen nur das aktuelle Intervall beenden, nicht die historischen
 
 
 def test():

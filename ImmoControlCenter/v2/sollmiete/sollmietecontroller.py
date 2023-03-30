@@ -15,8 +15,6 @@ class SollMieteController( IccController ):
     def __init__( self ):
         IccController.__init__( self )
         self._logic = SollmieteLogic()
-        self._tableViewFrame:IccCheckTableViewFrame = None
-        self._tv:IccTableView = None
 
     def createGui( self ) -> IccCheckTableViewFrame:
         pass
@@ -35,14 +33,17 @@ class SollMieteController( IccController ):
         # dlg.show()
         dlg = SollMieteDialog( v )
         dlg.setWindowTitle( "Sollmiete und NKV für '%s' (%s)" % (x.mv_id, x.mobj_id) )
-        dlg.edit_clicked.connect( lambda: self.onEditSollmiete( x ) )
+        dlg.edit_clicked.connect( lambda: self.onEditSollmiete( x, v ) )
         if dlg.exec_() == QDialog.Accepted:
             # Die Bemerkung könnte geändert sein. Keine Validierung, direkt an die Logik zum Speichern übergeben.
             v.applyChanges()
             self._logic.updateSollmieteBemerkung( x.sm_id, x.bemerkung )
 
-    def onEditSollmiete( self, x:XSollMiete ):
+    def onEditSollmiete( self, x:XSollMiete, view:SollMieteView ):
+        def onBisChanged( bis:str ):
+            view.setBis( bis )
         smEditCtrl = SollMieteEditController()
+        smEditCtrl.endofcurrentsoll_modified.connect( onBisChanged )
         smEditCtrl.handleFolgeSollmiete( x )
 
 def test():

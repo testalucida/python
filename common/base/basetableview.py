@@ -6,6 +6,7 @@ from PySide2.QtWidgets import QTableView, QAbstractItemView, QAbstractScrollArea
     QAction, QComboBox
 
 #####################  CellEvent  #################################
+from base.baseqtderivates import BaseAction
 from base.interfaces import XBase, TestItem
 from base.basetablemodel import BaseTableModel
 
@@ -194,20 +195,37 @@ class BaseTableView( QTableView ):
             self._mouseOverCol = -1
 
     def onRightClick( self, point:QPoint ):
-        #selected_indexes = self.selectedIndexes()
         #print( "BaseTableView.onRightClick:", point )
+        index = self.indexAt( point )
+        if not index.isValid(): return
+        selectedIndexes = self.selectedIndexes()
         if self._contextMenuActionsProvider:
-            index = self.indexAt( point )
-            if index.isValid():
-                selectedIndexes = self.selectedIndexes()
-                actions = self._contextMenuActionsProvider( index, point, selectedIndexes )
-                if actions and len( actions ) > 0:
-                    menu = QMenu()
-                    for action in actions:
-                        menu.addAction( action )
-                    selectedAction = menu.exec_( self.viewport().mapToGlobal( point ) )
-                    if selectedAction:
-                        self._contextMenuActionActor( selectedAction )
+            actions = self._contextMenuActionsProvider( index, point, selectedIndexes )
+            if actions and len( actions ) > 0:
+                menu = QMenu()
+                for action in actions:
+                    menu.addAction( action )
+                selectedAction = menu.exec_( self.viewport().mapToGlobal( point ) )
+                if selectedAction and self._contextMenuActionActor:
+                    self._contextMenuActionActor( selectedAction )
+        else:
+            actions = self.getContextMenuActions( index, point, selectedIndexes )
+            if actions and len( actions ) > 0:
+                menu = QMenu()
+                for action in actions:
+                    menu.addAction( action )
+                menu.exec_( self.viewport().mapToGlobal( point ) )
+
+    def getContextMenuActions( self, index:QModelIndex, point:QPoint, selectedIndexes:List[int] ) -> List[BaseAction] or None:
+        """
+        TableViews, die von BaseTableView abgeleitet sind und bei Rechtsklick ein Kontextmenü zeigen möchten,
+        müssen diese Methode überschreiben (oder sie nutzen das alte Verfahren mit setContextMenuCallbacks).
+        :param index: Index der Zeile, auf die geklickt wurde
+        :param point:
+        :param selectedIndexes:
+        :return:
+        """
+        return None
 
     def onLeftClick( self, index:QModelIndex ):
         # wird aufgerufen, wenn die Maustaste losgelassen wird

@@ -127,6 +127,10 @@ class SollmieteData( IccData ):
               "where sm_id = %d" % (x.von, bis, x.netto, x.nkv, x.bemerkung, x.sm_id)
         return self.write( sql )
 
+    def deleteSollmiete( self, sm_id:int ):
+        sql = "delete from sollmiete where sm_id = %d " % sm_id
+        self.write( sql )
+
     def terminateSollmiete( self, sm_id:int, bis:str ) -> int:
         """
         Beendet die Gültigkeit eines Sollmiete-Intervalls

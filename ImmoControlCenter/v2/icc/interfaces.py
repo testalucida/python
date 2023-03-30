@@ -363,6 +363,7 @@ class XMietverhaeltnis( XBase ):
         self.bis = ""
         self.name = ""
         self.vorname = ""
+        self.name_vorname = ""
         self.name2 = ""
         self.vorname2 = ""
         self.telefon = ""

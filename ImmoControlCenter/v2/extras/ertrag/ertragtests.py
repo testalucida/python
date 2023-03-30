@@ -55,6 +55,9 @@ def test():
     def showDetails():
         print( "showDetails" )
 
+    def onReparaturDetail( arg ) :
+        print( arg )
+
     def onProvideContext( index:QModelIndex, point:QPoint, selectedIndexes:List[QModelIndex] ) -> List[BaseAction]:
         l = list()
         col = index.column()
@@ -67,6 +70,7 @@ def test():
         elif col == tm.colIdxRep:
             action = BaseAction( "Details...", ident="rep" )
             action.setData( x )
+            #action.triggered.connect( onReparaturDetail )
             l.append( action )
         elif col == tm.colIdxSonstKosten:
             action = BaseAction( "Details...", ident="sonst" )
@@ -102,6 +106,7 @@ def test():
     tm = ealogic.getErtragTableModel( jahr )
     app = QApplication()
     tv = BaseTableView()
+    #tv.getContextMenuActions = getContextMenuActions
     # tv.setModel( tm )
     # tv.setAlternatingRowColors( True )
     # tv.setContextMenuCallbacks( onProvideContext, onSelectedAction )

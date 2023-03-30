@@ -39,9 +39,15 @@ class MessageBox( QMessageBox ):
 
 #########################  InfoBox  ########################
 class InfoBox( MessageBox ):
-    def __init__( self, title:str, info:str, more:str, yesText ):
+    def __init__( self, title:str, info:str, more:str="", yesText="OK" ):
         MessageBox.__init__( self, title, info, more, yesText )
         self.setIcon( QuestionBox.Information )
+
+# #########################  InfoBox2  ########################
+# class InfoBox2( MessageBox ):
+#     def __init__( self, title:str, info:str ):
+#         MessageBox.__init__( self, title, info, "", "OK" )
+#         self.setIcon( QuestionBox.Information )
 
 #########################  QuestionBox  ########################
 class QuestionBox( MessageBox ):
@@ -57,7 +63,7 @@ class WarningBox( MessageBox ):
 
 #########################  CriticalMessageBox  ########################
 class ErrorBox( MessageBox ):
-    def __init__( self, title:str, msg:str, more:str  ):
+    def __init__( self, title:str, msg:str, more:str=""  ):
         MessageBox.__init__( self, title, msg, more, "OK", )
         self.setIcon( QuestionBox.Critical )
 
