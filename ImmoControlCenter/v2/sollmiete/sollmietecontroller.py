@@ -1,3 +1,4 @@
+from PySide2.QtCore import Slot
 from PySide2.QtWidgets import QApplication, QDialog
 
 from v2.icc.icccontroller import IccController
@@ -18,6 +19,7 @@ class SollMieteController( IccController ):
 
     def createGui( self ) -> IccCheckTableViewFrame:
         pass
+
 
     def showSollMieteAndNkv( self, mv_id:str, jahr:int, monthNumber:int ):
         """

@@ -5,7 +5,7 @@ from base.baseqtderivates import BaseAction
 from base.messagebox import ErrorBox, InfoBox
 from generictable_stuff.okcanceldialog import OkCancelDialog2
 from v2.icc.icccontroller import IccController
-from v2.icc.interfaces import XMietobjektAuswahl
+from v2.icc.interfaces import XMietobjektAuswahl, XMietobjektExt
 from v2.mietobjekt.mietobjektlogic import MietobjektLogic, MietobjektTableModel
 from v2.mietobjekt.mietobjektview import MietobjektAuswahlTableView, MietobjektView, MietobjektDialog
 
@@ -101,12 +101,20 @@ class MietobjektController( IccController ):
         xmobj_sel = ausw.selectMietobjekt()
         if xmobj_sel:
             xmobj_ext = self._logic.getMietobjektExt( xmobj_sel.mobj_id )
-            v = MietobjektView( xmobj_ext )
-            v.edit_miete.connect( self.edit_miete.emit ) # weiterleiten
-            v.edit_mieter.connect( self.edit_mieter.emit ) # weiterleiten
-            v.edit_hausgeld.connect( self.onEditHausgeld )
-            dlg = MietobjektDialog( v, xmobj_ext.master_name + " / " + xmobj_ext.mobj_id )
-            dlg.exec_()
+            self._showMietobjektView( xmobj_ext )
+
+    def onShowObjekt( self, mobj_id:str ):
+        # print( "onShowObjekt ", mobj_id )
+        xmobj_ext = self._logic.getMietobjektExt( mobj_id )
+        self._showMietobjektView( xmobj_ext )
+
+    def _showMietobjektView( self, xmobj_ext: XMietobjektExt ):
+        v = MietobjektView( xmobj_ext )
+        v.edit_miete.connect( self.edit_miete.emit )  # weiterleiten
+        v.edit_mieter.connect( self.edit_mieter.emit )  # weiterleiten
+        v.edit_hausgeld.connect( self.onEditHausgeld )
+        dlg = MietobjektDialog( v, xmobj_ext.master_name + " / " + xmobj_ext.mobj_id )
+        dlg.exec_()
 
     def onEditHausgeld( self, mobj_id:str ):
         self._notYetImplemented( "'%s': Funktion Hausgeld Ändern noch nicht realisiert" % mobj_id )

@@ -42,27 +42,35 @@ class MietverhaeltnisController( IccController ):
         return menu
 
     @Slot()
-    def onMietverhaeltnisShow( self ):
+    def onMietverhaeltnisShow( self, mv_id:str = None ):
         """
         Wird aufgerufen, wenn in der Menübar der Anwendung "Mietverhältnis anzeigen und bearbeiten..." geklickt wurde
         :return:
         """
-        # zuerst über den Auswahldialog bestimmen, welche Daten für die View selektiert werden müssen
-        mietobjektAuswahl = MietobjektAuswahl()
-        xmo = mietobjektAuswahl.selectMietobjekt()
-        if not xmo: return None
-        self.createMvView( xmo.mobj_id )
+        mobj_id = ""
+        if not mv_id:
+            # zuerst über den Auswahldialog bestimmen, welche Daten für die View selektiert werden müssen
+            mietobjektAuswahl = MietobjektAuswahl()
+            xmo = mietobjektAuswahl.selectMietobjekt()
+            if not xmo: return None
+            mobj_id = xmo.mobj_id
+        else:
+            xmv = self._mvlogic.getAktuellesMietverhaeltnis( mv_id )
+            mobj_id = xmv.mobj_id
+        self.createMvView( mobj_id )
         dlg = MietverhaeltnisDialog( self._view )
         dlg.exec_()
 
     @Slot()
-    def onMietverhaeltnisKuendigen( self ):
+    def onMietverhaeltnisKuendigen( self, mv_id:str=None ):
         """
         Wird aufgerufen, wenn in der Menübar der Anwendung "Mietverhältnis kündigen..." geklickt wurde
+        :param mv_id: ist versorgt, wenn der Aufruf dieses Slots aus dem Context-Menü der Miete-TableView kommt.
+                      Wenn der Aufruf aus der Toolbar der Anwendung kommt, ist mv_id leer.
         :return:
         """
         ctrl = MietverhaeltnisKuendigenController()
-        ctrl.processKuendigung()
+        ctrl.processKuendigung( mv_id )
 
     def showMietverhaeltnis( self, mv_id:str ):
         """
@@ -181,12 +189,14 @@ class MietverhaeltnisKuendigenController:
         self._mvlogic = MietverhaeltnisLogic()
         # self._mv: XMietverhaeltnis = None # das aktuell im View angezeigte Mietverhältnis
 
-    def processKuendigung( self ):
-        # zuerst über den Auswahldialog bestimmen, welche Daten für die View selektiert werden müssen
-        mietobjektAuswahl = MietobjektAuswahl()
-        xmo = mietobjektAuswahl.selectMietobjekt()
-        if not xmo: return None
-        xmv:XMietverhaeltnis = self._mvlogic.getAktuellesMietverhaeltnis( xmo.mv_id )
+    def processKuendigung( self, mv_id:str=None ):
+        if not mv_id:
+            # zuerst über den Auswahldialog bestimmen, welche Daten für die View selektiert werden müssen
+            mietobjektAuswahl = MietobjektAuswahl()
+            xmo = mietobjektAuswahl.selectMietobjekt()
+            if not xmo: return None
+            mv_id = xmo.mv_id
+        xmv:XMietverhaeltnis = self._mvlogic.getAktuellesMietverhaeltnis( mv_id )
         self.showDialog( xmv )
 
     def showDialog( self, xmv ):

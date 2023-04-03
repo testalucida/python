@@ -21,6 +21,8 @@ from v2.icc.mainlogic import MainLogic
 from v2.mietobjekt.mietobjektcontroller import MietobjektController
 from v2.mietverhaeltnis.mietverhaeltniscontroller import MietverhaeltnisController
 from v2.mtleinaus.mtleinauscontroller import MieteController, HausgeldController, AbschlagController
+from v2.sollhausgeld.sollhausgeldcontroller import SollHausgeldController
+from v2.sollmiete.sollmietecontroller import SollMieteController
 
 
 class MainController( IccController ):
@@ -41,10 +43,34 @@ class MainController( IccController ):
         self._mietObjektCtrl.edit_mieter.connect( self.onEditMieter )
         self._mvCtrl = MietverhaeltnisController()
         self._extrasCtrl = ExtrasController()
+        self._connectToSignals()
+
+    def _connectToSignals( self ):
         # connect to EinAusWriteDispatcher wg. Versorgung Summenfelder
         EinAusWriteDispatcher.inst().ea_inserted.connect( self.onEinAusInserted )
         EinAusWriteDispatcher.inst().ea_updated.connect( self.onEinAusUpdated )
         EinAusWriteDispatcher.inst().ea_deleted.connect( self.onEinAusDeleted )
+
+        self._mieteCtrl.show_objekt.connect( self._mietObjektCtrl.onShowObjekt )
+        self._mieteCtrl.show_mietverhaeltnis.connect( self._mvCtrl.onMietverhaeltnisShow )
+        self._mieteCtrl.kuendige_mietverhaeltnis.connect( self._mvCtrl.onMietverhaeltnisKuendigen )
+        self._mieteCtrl.show_NettomieteAndNkv.connect( self.onShowNettomieteAndNkv )
+        self._hausgeldCtrl.show_verwaltung.connect( self.onShowVerwaltung )
+        self._hausgeldCtrl.show_hgaAndRueZuFue.connect( self.onShowHgaAndRueZuFue )
+
+    @Slot( str, int, int )
+    def onShowNettomieteAndNkv( self, mv_id:str, year:int, monthNumber:int ):
+        ctrl = SollMieteController()
+        ctrl.showSollMieteAndNkv( mv_id, year, monthNumber )
+
+    @Slot( str, int, int )
+    def onShowVerwaltung( self, weg_name:str, year:int, monthNumber:int ):
+        print( "onShowVerwaltung ", weg_name )
+
+    @Slot( str, int, int )
+    def onShowHgaAndRueZuFue( self, weg_name:str, year:int, monthNumber:int ):
+        ctrl = SollHausgeldController()
+        ctrl.showHgvAndRueZuFue( weg_name, year, monthNumber )
 
     @Slot( str )
     def onEditMieter( self, mv_id:str ):

@@ -1,11 +1,11 @@
 from abc import abstractmethod
 from typing import List
 
-from PySide2.QtCore import QModelIndex, QSize, Signal
+from PySide2.QtCore import QModelIndex, QSize, Signal, Slot
 from PySide2.QtGui import QCursor
 from PySide2.QtWidgets import QAction, QDialog, QMenu
 
-from base.baseqtderivates import BaseEdit, FloatEdit, IntEdit, MultiLineEdit, BaseAction, SumDialog
+from base.baseqtderivates import BaseEdit, FloatEdit, IntEdit, MultiLineEdit, BaseAction, SumDialog, Separator
 from base.basetablefunctions import BaseTableFunctions
 from base.dynamicattributeui import DynamicAttributeDialog
 from base.interfaces import XBaseUI, VisibleAttribute
@@ -30,6 +30,7 @@ from v2.sollmiete.sollmietecontroller import SollMieteController
 
 
 class MtlEinAusController( IccController ):
+    show_objekt = Signal( str )
     def __init__( self ):
         IccController.__init__( self )
         self._tableViewFrame:IccCheckTableViewFrame = None
@@ -48,7 +49,7 @@ class MtlEinAusController( IccController ):
         tb.addMonthCombo( self.onMonthChanged )
         tb.setMonthIdx( monthIdx )
         tv = tvf.getTableView()
-        tv.setContextMenuCallbacks( self.provideActions, self.onSelected )
+        tv.setContextMenuCallbacks( self.provideActions, None ) #self.onSelected )
         tv.okClicked.connect( self.onBetragOk )
         tv.nokClicked.connect( self.onBetragEdit )
         self._tableViewFrame = tvf
@@ -84,6 +85,10 @@ class MtlEinAusController( IccController ):
         pass
 
     @abstractmethod
+    def provideContextMenuActions( self, model:MtlEinAusTableModel, row:int, key:str ) -> List[BaseAction]:
+        pass
+
+    @abstractmethod
     def getShowDebiKrediActions( self ) -> List[BaseAction]:
         pass
 
@@ -114,47 +119,27 @@ class MtlEinAusController( IccController ):
         :param selectedIndexes:
         :return:
         """
-        def isNumeric( row, col ) -> bool:
-            val = model.getValue( row, col )
-            return type( val ) in (int, float)
-
         model: MieteTableModel = self._tv.model()
         col = index.column()
         key = model.keys[col]
-        debikredi_key = self._logic.getDebiKrediKey()
-        l = list()
-        if key == "mobj_id":
-            mobj_id = model.getValue( index.row(), index.column() )
-            if mobj_id:
-                l.append( BaseAction( text="Objektdaten anzeigen...", ident=Action.SHOW_MIETOBJEKT ) )
-        if key == debikredi_key:
-            alist = self.getShowDebiKrediActions()
-            for a in alist:
-                l.append( a )
-        if key == "soll":
-            l.append( self.getSollAction() )
-        if key in ( "leistung", "vnr" ):
-            l.append( BaseAction( text="Leistungsvertrag anzeigen...", ident=Action.SHOW_LEISTUNGSVERTRAG ) )
-        if key not in ( "mobj_id", debikredi_key, "soll", "ok", "nok", "summe" ):
+        actions = self.provideContextMenuActions( model, index.row(), key )
+        if actions:
+            actions.append( Separator() )
+        else:
+            actions = list()
+        if col >= model.idxJanuarColumn:
             idxlist = self._tv.selectedIndexes()
             if len( idxlist ) > 1:
-                l.append( BaseAction( "Berechne Summe...", ident=Action.COMPUTE_SUMME ) )
-        if key not in ( "ok", "nok" ):
-            sep = BaseAction()
-            sep.setSeparator( True )
-            l.append( sep )
-            l.append( BaseAction( "Kopiere", ident=Action.COPY ) )
-        return l
-
-    def onSelected( self, action: BaseAction ):
-        if action.ident == Action.SHOW_MIETOBJEKT:
-            self._showMietobjekt()
-        elif action.ident == Action.COMPUTE_SUMME:
-            self._computeSumme()
-        elif action.ident == Action.COPY:
-            self._copySelectionToClipboard()
-        else:
-            self.onSpecificAction( action )
+                action = BaseAction( "Berechne Summe..." )
+                action.triggered.connect(  self._computeSumme )
+                if not actions:
+                    actions = list()
+                actions.append( action )
+                actions.append( Separator() )
+        a = BaseAction( "Kopiere" )
+        a.triggered.connect( self.copySelectionToClipboard )
+        actions.append( a )
+        return actions
 
     def onBetragOk( self, index:QModelIndex ):
         model:MtlEinAusTableModel = self.getModel()
@@ -348,23 +333,20 @@ class MtlEinAusController( IccController ):
         # aktualisiert werden
         EinAusWriteDispatcher.inst().einaus_deleted( ea_id_list, ea_art, delta )
 
-    def _showMietobjekt( self ):
-        model:MtlEinAusTableModel = self.getModel()
-        idx = self._tv.selectedIndexes()[0]
-        mobj_id = model.getValue( idx.row(), idx.column() )
-        mobjCtrl = MietobjektController.fromMietobjekt( mobj_id )
-        mobjCtrl.createGui()
-
     def _computeSumme( self ):
         btf = BaseTableFunctions()
         btf.computeSumme( self._tv, 5 )
 
-    def _copySelectionToClipboard( self ):
+    def copySelectionToClipboard( self ):
         btf = BaseTableFunctions()
         btf.copySelectionToClipboard( self._tv )
 
 ##############  MieteController  ####################
 class MieteController( MtlEinAusController ):
+    show_mietverhaeltnis = Signal( str )
+    kuendige_mietverhaeltnis = Signal( str )
+    show_NettomieteAndNkv = Signal( str, int, int ) # (mv_id, jahr, monthNumber)
+
     def __init__( self ):
         MtlEinAusController.__init__( self )
         self._logic = MieteLogic()
@@ -400,34 +382,10 @@ class MieteController( MtlEinAusController ):
         eatm.setKeyHeaderMappings2( keys, headers )
         return eatm
 
-    def onSpecificAction( self, action: BaseAction ):
-        if action.ident == Action.SHOW_NETTOMIETE_UND_NKV:
-            self._showNettomieteAndNkv()
-        elif action.ident == Action.SHOW_MIETVERHAELTNIS:
-            self._showMietverhaeltnis()
-        elif action.ident == Action.KUENDIGE_MIETVERHAELTNIS:
-            self._kuendigeMietverhaeltnis()
-
-    def _showMietverhaeltnis( self ):
+    @Slot()
+    def onShowNettomieteAndNkv( self ):
         mv_id, year, monthIdx = self._getSelection()
-        box = InfoBox( "Mietverhältnis für '%s' anzeigen" % mv_id, "Funktion ist noch nicht realisiert." )
-        box.exec_()
-        # todo
-
-    def _kuendigeMietverhaeltnis( self ):
-        """
-        Im Kontextmenü "Mietverhältnis kündigen..." ausgewählt
-        :return:
-        """
-        mv_id, year, monthIdx = self._getSelection()
-        box = InfoBox( "Mietverhältnis '%s' kündigen" % mv_id, "Funktion ist noch nicht realisiert." )
-        box.exec_()
-        # todo
-
-    def _showNettomieteAndNkv( self ):
-        mv_id, year, monthIdx = self._getSelection()
-        sollMieteCtrl = SollMieteController()
-        sollMieteCtrl.showSollMieteAndNkv( mv_id, year, monthIdx+1 )
+        self.show_NettomieteAndNkv.emit( mv_id, year, monthIdx+1 )
 
     def _getSelection( self ) -> [str, int, int]:
         """
@@ -448,24 +406,40 @@ class MieteController( MtlEinAusController ):
         tm = self._logic.createMietzahlungenModel( newYear, self.getModel().getEditableMonthIdx() )
         self._tv.setModel( tm )
 
-    # def onMonthChanged( self, newMonthIdx:int, newMonthLongName:str = "" ) :
-    #     model: MtlEinAusTableModel = self.getModel()
-    #     model.setEditableMonth( newMonthIdx )
-
-    def getShowDebiKrediActions( self ) -> List[BaseAction]:
-        a1 = BaseAction( "Mietverhältnisdaten anzeigen...", ident=Action.SHOW_MIETVERHAELTNIS )
-        a2 = BaseAction( "Mietverhältnis kündigen...", ident=Action.KUENDIGE_MIETVERHAELTNIS )
-        return [a1, a2]
-
-    def getSollAction( self ) -> BaseAction:
+    def provideContextMenuActions( self, model:MieteTableModel, row:int, key:str ) -> List[BaseAction] or None:
         """
-        User hat im Kontextmenü der Miete-Tabelle, Spalte Sollmiete, die rechte Maustaste gedrückt.
+        Liefert die Actions für diese TableView in Abhängigkeit von der geklickten Spalte (key)
+        :param model: MieteTableModel
+        :param row: selektierte Zeile
+        :param key: Key der selektierten Spalte
         :return:
         """
-        return BaseAction( "Nettomiete und NKV anzeigen", ident=Action.SHOW_NETTOMIETE_UND_NKV )
+        if key in ( "mv_id", "mobj_id", "soll" ):
+            val = model.getValueByName( row, key )
+            actions = list()
+            if key == "mv_id":
+                a = BaseAction( "Mietverhältnis anschauen und bearbeiten..." )
+                a.triggered.connect( lambda: self.show_mietverhaeltnis.emit( val ) )
+                actions.append( a )
+                a = BaseAction( "Mietverhältnis kündigen..." )
+                a.triggered.connect( lambda: self.kuendige_mietverhaeltnis.emit( val ) )
+                actions.append( a )
+            elif key == "mobj_id":
+                a = BaseAction( "Objektstammdaten..." )
+                a.triggered.connect( lambda: self.show_objekt.emit( val ) )
+                actions.append( a )
+            elif key == "soll":
+                a = BaseAction( "Nettomiete und NKV anzeigen..." )
+                a.triggered.connect( self.onShowNettomieteAndNkv )
+                actions.append( a )
+            return actions
+        return None
 
 #############  HausgeldController  ####################
 class HausgeldController( MtlEinAusController ):
+    show_hgaAndRueZuFue = Signal( str, int, int )
+    show_verwaltung = Signal( str, int, int )
+
     def __init__( self ):
         MtlEinAusController.__init__( self )
         self._logic = HausgeldLogic()
@@ -501,38 +475,48 @@ class HausgeldController( MtlEinAusController ):
         eatm.setKeyHeaderMappings2( keys, headers )
         return eatm
 
-    def onSpecificAction( self, action: BaseAction ):
-        if action.ident == Action.SHOW_HAUSGELD_UND_RUEZUFUE:
-            self._showHausgeld()
-
-    def _showHausgeld( self ):
-        model: HausgeldTableModel = self.getModel()
-        idx = self._tv.selectedIndexes()[0]
-        weg_name = model.getElement( idx.row() ).getValue( "weg_name" )
-        box = InfoBox( "Hausgeld und RüZuFü", "Hieraus entsteht die Anzeige von Hausgeld und "
-                                              "Rücklagenzuführung für '%s'" % weg_name,
-                       "", "OK" )
-        box.exec_()
-
     def onYearChanged( self, newYear:int ):
         tm = self._logic.createHausgeldzahlungenModel( newYear, self.getModel().getEditableMonthIdx() )
         self._tv.setModel( tm )
 
-
-    def getShowDebiKrediActions( self ) -> List[BaseAction]:
+    def provideContextMenuActions( self, model: HausgeldTableModel, row: int, key: str ) -> List[BaseAction] or None:
         """
-        Anzeige, die gebracht werden soll, wenn der User in der Tableview mit der rechten Maustaste auf
-        den WEG-Namen geklickt hat
+        Liefert die Actions für diese TableView in Abhängigkeit von der geklickten Spalte (key)
+        :param model: HausgeldTableModel
+        :param row: selektierte Zeile
+        :param key: Key der selektierten Spalte
         :return:
         """
-        return [BaseAction( "Verwaltungsdetails anzeigen...", ident=Action.SHOW_WEG_UND_VERWALTER ),]
+        if key in ("weg_name", "soll"):
+            weg_name, year, monthIdx = self._getSelection()
+            val = model.getValueByName( row, key )
+            actions = list()
+            if key == "weg_name":
+                if not weg_name: return None
+                a = BaseAction( "Verwaltung..." )
+                a.triggered.connect( lambda: self.show_verwaltung.emit( weg_name, year, monthIdx+1 ) )
+                actions.append( a )
+            elif key == "soll":
+                a = BaseAction( "Hausgeld und RüZuFü anzeigen..." )
+                a.triggered.connect( lambda: self.show_hgaAndRueZuFue.emit( weg_name, year, monthIdx+1 ) )
+                actions.append( a )
+            return actions
+        return None
 
-    def getSollAction( self ) -> BaseAction:
+    def _getSelection( self ) -> [str, int, int]:
         """
-        User hat im Kontextmenü der Miete-Tabelle die rechte Maustaste gedrückt.
-        :return:
+        Liefert folgende Daten der aktuellen Selektion:
+        - weg_name
+        - jahr
+        - selektierte Monatsspalte ( 0 -> jan, ..., 11 -> dez )
+        :return: mv_id, jahr, monatsIndex
         """
-        return BaseAction( "Netto-Hausgeld und RüZuFü anzeigen", ident=Action.SHOW_HAUSGELD_UND_RUEZUFUE )
+        model: HausgeldTableModel = self.getModel()
+        idx = self._tv.selectedIndexes()[0]
+        weg_name = model.getElement( idx.row() ).getValue( "weg_name" )
+        year = model.getSelectedYear()
+        monthIdx = model.getSelectedMonthIdx()  # 0 -> jan, ..., 11 -> dez
+        return weg_name, year, monthIdx
 
 #############  AbschlagController  ####################
 class AbschlagController( MtlEinAusController ):
@@ -573,14 +557,15 @@ class AbschlagController( MtlEinAusController ):
         # eatm.setKeyHeaderMappings2( keys, headers )
         return eatm
 
-    def onSpecificAction( self, action: BaseAction ):
-        if action.ident == Action.SHOW_LEISTUNGSVERTRAG:
-            self._showLeistungsvertrag()
-
-    def _showLeistungsvertrag( self ):
+    def onShowLeistungsvertrag( self, sab_id:int, year:int, monthNumber:int ):
+        """
+        Zeigt die Details des Leistungsvertrags <sab_id>
+        :param sab_id:
+        :param year:
+        :param monthNumber:
+        :return:
+        """
         model: AbschlagTableModel = self.getModel()
-        idx = self._tv.selectedIndexes()[0]
-        sab_id = model.getElement( idx.row() ).getValue( "sab_id" )
         box = InfoBox( "Leistungsvertrag", "Hieraus entsteht die Anzeige des Leistungsvertrags "
                                            "für sab_id = '%d'" % sab_id, "", "OK" )
         box.exec_()
@@ -589,20 +574,43 @@ class AbschlagController( MtlEinAusController ):
         tm = self.createModel( newYear, self.getModel().getEditableMonthIdx() )
         self._tv.setModel( tm )
 
-    def getShowDebiKrediActions( self ) -> List[BaseAction]:
+    def provideContextMenuActions( self, model:AbschlagTableModel, row:int, key:str ) -> List[BaseAction]:
         """
-        Anzeige, die gebracht werden soll, wenn der User in der Tableview mit der rechten Maustaste auf
-        den Kreditor-Namen geklickt hat
+        Liefert die Actions für diese TableView in Abhängigkeit von der geklickten Spalte (key)
+        :param key:
         :return:
         """
+        if key in ( "kreditor", "leistung", "vnr", "soll" ):
+            sab_id, year, monthIdx = self._getSelection()
+            val = model.getValueByName( row, key )
+            actions = list()
+            a = BaseAction( "Leistungsvertrag..." )
+            a.triggered.connect( lambda: self.onShowLeistungsvertrag( sab_id, year, monthIdx+1 ) )
+            actions.append( a )
+            return actions
         return None
 
-    def getSollAction( self ) -> BaseAction:
+    def _getSelection( self ) -> [int, int, int]:
         """
-        User hat im Kontextmenü der Miete-Tabelle die rechte Maustaste gedrückt.
-        :return:
+        Liefert folgende Daten der aktuellen Selektion:
+        - weg_name
+        - jahr
+        - selektierte Monatsspalte ( 0 -> jan, ..., 11 -> dez )
+        :return: weg_name, jahr, monatsIndex
         """
-        return BaseAction( "Leistungsvertrag anzeigen", ident=Action.SHOW_LEISTUNGSVERTRAG )
+        model: MieteTableModel = self.getModel()
+        idx = self._tv.selectedIndexes()[0]
+        sab_id = model.getElement( idx.row() ).getValue( "sab_id" )
+        year = model.getSelectedYear()
+        monthIdx = model.getSelectedMonthIdx()  # 0 -> jan, ..., 11 -> dez
+        return sab_id, year, monthIdx
 
+    # def getSollAction( self ) -> BaseAction:
+    #     """
+    #     User hat im Kontextmenü der Miete-Tabelle die rechte Maustaste gedrückt.
+    #     :return:
+    #     """
+    #     return BaseAction( "Leistungsvertrag anzeigen", ident=Action.SHOW_LEISTUNGSVERTRAG )
+    #
 
 
