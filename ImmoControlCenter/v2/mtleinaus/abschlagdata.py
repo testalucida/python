@@ -21,6 +21,13 @@ class AbschlagData( IccData ):
         l:List[XSollAbschlag] = self.readAllGetObjectList( sql, XSollAbschlag )
         return l
 
+    def getSollAbschlag( self, sab_id:int ) -> XSollAbschlag:
+        sql = "select sab_id, kreditor, vnr, leistung, ea_art, master_name, mobj_id, von, coalesce(bis, '') as bis, " \
+              "betrag, umlegbar, bemerkung " \
+              "from sollabschlag " \
+              "where sab_id = %d " % sab_id
+        return self.readOneGetObject( sql, XSollAbschlag )
+
     def getVnrUndEaArtUndUmlegbar( self, sab_id:int ) -> Dict:
         sql = "select vnr, ea_art, umlegbar from sollabschlag where sab_id = " + str( sab_id )
         dic = self.readOneGetDict( sql )

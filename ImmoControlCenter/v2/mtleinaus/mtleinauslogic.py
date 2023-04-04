@@ -561,6 +561,11 @@ class AbschlagLogic( MtlEinAusLogic ):
     def getDebiKrediKey( self ) -> Any:
         return "kreditor"
 
+    def getSollAbschlag( self, sab_id:int ) -> XSollAbschlag:
+        xsa:XSollAbschlag = self._abschlagData.getSollAbschlag( sab_id )
+        xsa.ea_art = EinAusArt.getDisplay( xsa.ea_art )
+        return xsa
+
     def getEinzelzahlungenModel( self, sab_id:int, year:int, monthIdx:int ) -> EinAusTableModel:
         eatm:EinAusTableModel = self._ealogic.getZahlungenModel4( sab_id, year, monthIdx )
         keys = ("master_name", "mobj_id", "debi_kredi", "sab_id", "jahr", "monat", "betrag", "write_time")

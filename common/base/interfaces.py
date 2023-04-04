@@ -63,7 +63,7 @@ class ButtonDefinition:
 class VisibleAttribute:
     def __init__( self, key:str, type_:Type, label:str, editable=True,
                   widgetWidth=-1, widgetHeight=-1, nextRow=True, columnspan=1,
-                  comboValues:List[str]=None, comboCallback=None, trailingButton:ButtonDefinition=None ):
+                  comboValues:Iterable[str]=None, comboCallback=None, trailingButton:ButtonDefinition=None ):
         self.key = key
         self.type = type_
         self.label = label

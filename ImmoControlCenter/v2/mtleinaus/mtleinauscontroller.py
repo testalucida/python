@@ -1,11 +1,12 @@
 from abc import abstractmethod
-from typing import List
+from typing import List, Iterable, Callable
 
 from PySide2.QtCore import QModelIndex, QSize, Signal, Slot
 from PySide2.QtGui import QCursor
-from PySide2.QtWidgets import QAction, QDialog, QMenu
+from PySide2.QtWidgets import QAction, QDialog, QMenu, QApplication
 
-from base.baseqtderivates import BaseEdit, FloatEdit, IntEdit, MultiLineEdit, BaseAction, SumDialog, Separator
+from base.baseqtderivates import BaseEdit, FloatEdit, IntEdit, MultiLineEdit, BaseAction, SumDialog, Separator, \
+    SmartDateEdit, BaseComboBox, SignedNumEdit
 from base.basetablefunctions import BaseTableFunctions
 from base.dynamicattributeui import DynamicAttributeDialog
 from base.interfaces import XBaseUI, VisibleAttribute
@@ -13,10 +14,10 @@ from base.messagebox import ErrorBox, InfoBox
 from v2.einaus.einauslogic import EinAusTableModel
 from v2.einaus.einausview import EinAusTableView, TeilzahlungDialog, ValueDialog
 from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
-from v2.icc.constants import Action
+from v2.icc.constants import Action, Modus, EinAusArt, Umlegbar
 from v2.icc.icccontroller import IccController
 from v2.icc.iccwidgets import IccCheckTableViewFrame, IccTableView
-from v2.icc.interfaces import XMtlZahlung, XEinAus
+from v2.icc.interfaces import XMtlZahlung, XEinAus, XSollAbschlag, XMtlAbschlag
 from v2.mietobjekt.mietobjektcontroller import MietobjektController
 #from v2.mietverhaeltnis.mietverhaeltniscontroller import MietverhaeltnisController
 from v2.mtleinaus.mtleinauslogic import MieteLogic, MtlEinAusTableModel, MtlEinAusLogic, MieteTableModel, HausgeldLogic, \
@@ -523,8 +524,11 @@ class AbschlagController( MtlEinAusController ):
     def __init__( self ):
         MtlEinAusController.__init__( self )
         self._logic = AbschlagLogic()
-        self._tv: AbschlagTableView = None
-        self._tvframe: AbschlagTableViewFrame = None
+        # self._tv: AbschlagTableView = None
+        # self._tvframe: AbschlagTableViewFrame = None
+        self._cboMasternames: BaseComboBox = None
+        self._cboMietobjekte: BaseComboBox = None
+        self._cboEinAusArt: BaseComboBox = None
 
     def getTableView( self ) -> AbschlagTableView:
         return self._tv
@@ -551,24 +555,86 @@ class AbschlagController( MtlEinAusController ):
     def getEinzelzahlungenModelMonat( self, debikredi: str, sab_id:int, jahr: int, monthIdx: int ) -> EinAusTableModel:
         # für die Anzeige, aus welchen Einzelzahlungen sich der ausgewiesene Monatswert zusammensetzt
         # todo: Einzelzahlungen anhand sab_id ermitteln
-        eatm = self._logic.getEinzelzahlungenModel( sab_id, jahr, monthIdx )
+        #eatm = self._logic.getEinzelzahlungenModel( sab_id, jahr, monthIdx )
         # keys = ("master_name", "mobj_id", "debi_kredi", "sab_id", "jahr", "monat", "betrag", "write_time")
         # headers = ("Haus", "Wohnung", "Firma", "sab_id", "Jahr", "Monat", "Betrag", "gebucht am")
         # eatm.setKeyHeaderMappings2( keys, headers )
-        return eatm
+        #return eatm
+        pass
 
-    def onShowLeistungsvertrag( self, sab_id:int, year:int, monthNumber:int ):
+    def onShowLeistungsvertrag( self, sab_id:int ):
+        xsa = self._logic.getSollAbschlag( sab_id )
+        self.showVertragDialog( xsa, Modus.MODIFY )
+
+    def showVertragDialog( self, xsa: XSollAbschlag, modus:Modus ):
         """
-        Zeigt die Details des Leistungsvertrags <sab_id>
-        :param sab_id:
-        :param year:
-        :param monthNumber:
+        Zeigt die Details des Leistungsvertrags <xsa>
+        :param xsa: XSollAbschlag-Objekt
+        :param modus: NEW oder MODIFY
         :return:
         """
-        model: AbschlagTableModel = self.getModel()
-        box = InfoBox( "Leistungsvertrag", "Hieraus entsteht die Anzeige des Leistungsvertrags "
-                                           "für sab_id = '%d'" % sab_id, "", "OK" )
-        box.exec_()
+        def validate():
+            v = dlg.getDynamicAttributeView()
+            xcopy:XSollAbschlag = v.getModifiedXBaseCopy()
+            return self._mvlogic.validateKuendigungDaten( xcopy )
+        xui = XBaseUI( xsa )
+        masternames = self._logic.getMasterNamen()
+        if modus == Modus.NEW:
+            xsa.master_name = masternames[0]
+        mietobjektenames = self._logic.getMietobjektNamen( xsa.master_name )
+        ea_art_list = (EinAusArt.ALLGEMEINE_KOSTEN.display, EinAusArt.SONSTIGE_KOSTEN.display,
+                       EinAusArt.VERSICHERUNG.display)
+        vislist = self._createVisibleAttributesList( masternames, mietobjektenames, ea_art_list, self.onMasterChanged )
+        xui.addVisibleAttributes( vislist )
+        dlg = DynamicAttributeDialog( xui, "Anzeige Leistungsvertrag" )
+        dlg.getApplyButton().setEnabled( False )
+        dlg.setCallbacks( beforeAcceptCallback=validate )
+        v = dlg.getDynamicAttributeView()
+        self._cboMasternames: BaseComboBox = v.getWidget( "master_name" )
+        self._cboMietobjekte: BaseComboBox = v.getWidget( "mobj_id" )
+        self._cboEinAusArt: BaseComboBox = v.getWidget( "ea_art" )
+        if dlg.exec_() == QDialog.Accepted:
+            v = dlg.getDynamicAttributeView()
+            v.updateData()  # Validierung war ok, also Übernahme der Änderungen ins XBase-Objekt
+            try:
+                # Logik-Aufruf zum Speichern
+                pass
+            except Exception as ex:
+                box = ErrorBox( "AbschlagController.onShowLeistungsvertrag():\n"
+                                "Fehler beim Speichern des Vertrags", str( ex ), xsa.toString( True ) )
+                box.exec_()
+                return
+        else:
+            # cancelled
+            return
+
+    @staticmethod
+    def _createVisibleAttributesList( masternames:List[str], mietobjekte:List[str], ea_art_list:Iterable[str],
+                                      onMasterChangedCallback:Callable ) \
+            -> Iterable[VisibleAttribute]:
+        smallW = 85
+        vislist = (VisibleAttribute( "sab_id", IntEdit, "sab_id: ", widgetWidth=smallW, editable=False, nextRow=True ),
+                   VisibleAttribute( "master_name", BaseComboBox, "Haus: ", nextRow=False,
+                                     comboValues=masternames, comboCallback=onMasterChangedCallback ),
+                   VisibleAttribute( "mobj_id", BaseComboBox, "Wohnung: ", widgetWidth=150, comboValues=mietobjekte ),
+                   VisibleAttribute( "kreditor", BaseEdit, "Kreditor: ", editable=True, nextRow=True ),
+                   VisibleAttribute( "vnr", BaseEdit, "Vertragsnummer o.ä.: ", editable=True, columnspan=4 ),
+                   VisibleAttribute( "leistung", BaseEdit, "Leistung: ", editable=True, columnspan=4 ),
+                   VisibleAttribute( "betrag", SignedNumEdit, "Abschlag (€): ", widgetWidth=smallW, editable=True ),
+                   VisibleAttribute( "ea_art", BaseComboBox, "EinAus-Art: ", editable=True,
+                                     comboValues=ea_art_list ),
+                   VisibleAttribute( "umlegbar", BaseComboBox, "umlegbar: ", widgetWidth=smallW,
+                                     comboValues=[Umlegbar.JA.value, Umlegbar.NEIN.value], editable=True ),
+                   VisibleAttribute( "von", SmartDateEdit, "beginnt: ", widgetWidth=smallW ),
+                   VisibleAttribute( "bis", SmartDateEdit, "endet: ", widgetWidth=smallW ),
+                   VisibleAttribute( "bemerkung", BaseEdit, "Bemerkung: ", columnspan=4, editable=True ))
+        return vislist
+
+    def onMasterChanged( self, newMaster:str ):
+        # Mietobjektnamen für geänderten Master ermitteln:
+        mietobjektnamen = self._logic.getMietobjektNamen( newMaster )
+        self._cboMietobjekte.clear()
+        self._cboMietobjekte.addItems( mietobjektnamen )
 
     def onYearChanged( self, newYear:int ):
         tm = self.createModel( newYear, self.getModel().getEditableMonthIdx() )
@@ -577,15 +643,16 @@ class AbschlagController( MtlEinAusController ):
     def provideContextMenuActions( self, model:AbschlagTableModel, row:int, key:str ) -> List[BaseAction]:
         """
         Liefert die Actions für diese TableView in Abhängigkeit von der geklickten Spalte (key)
-        :param key:
+        :param model:
+        :param row: die selektierte Zeile
+        :param key: Key der selektierten Spalte
         :return:
         """
         if key in ( "kreditor", "leistung", "vnr", "soll" ):
             sab_id, year, monthIdx = self._getSelection()
-            val = model.getValueByName( row, key )
             actions = list()
             a = BaseAction( "Leistungsvertrag..." )
-            a.triggered.connect( lambda: self.onShowLeistungsvertrag( sab_id, year, monthIdx+1 ) )
+            a.triggered.connect( lambda: self.onShowLeistungsvertrag( sab_id ) )
             actions.append( a )
             return actions
         return None
@@ -605,12 +672,22 @@ class AbschlagController( MtlEinAusController ):
         monthIdx = model.getSelectedMonthIdx()  # 0 -> jan, ..., 11 -> dez
         return sab_id, year, monthIdx
 
-    # def getSollAction( self ) -> BaseAction:
-    #     """
-    #     User hat im Kontextmenü der Miete-Tabelle die rechte Maustaste gedrückt.
-    #     :return:
-    #     """
-    #     return BaseAction( "Leistungsvertrag anzeigen", ident=Action.SHOW_LEISTUNGSVERTRAG )
-    #
 
+def test():
+    app = QApplication()
+    # xsa = XSollAbschlag()
+    # xsa.sab_id = 1234
+    # xsa.master_name = "SB_Kaiser"
+    # xsa.mobj_id = ""
+    # xsa.kreditor = "energis"
+    # xsa.vnr = "GGPP 12345/54321 Kd.Nr. 3345"
+    # xsa.leistung = "Hausratversichterung"
+    # xsa.ea_art = EinAusArt.VERSICHERUNG.display
+    # xsa.umlegbar = "nein"
+    # xsa.von = "2022-05-01"
+    # xsa.bis = ""
+    # xsa.betrag = -65.78
+    # xsa.bemerkung = "Strom vom Stromlieferanten"
+    ctrl = AbschlagController()
+    ctrl.onShowLeistungsvertrag( 3 )
 
