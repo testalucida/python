@@ -490,7 +490,6 @@ class HausgeldController( MtlEinAusController ):
         """
         if key in ("weg_name", "soll"):
             weg_name, year, monthIdx = self._getSelection()
-            val = model.getValueByName( row, key )
             actions = list()
             if key == "weg_name":
                 if not weg_name: return None
@@ -498,8 +497,10 @@ class HausgeldController( MtlEinAusController ):
                 a.triggered.connect( lambda: self.show_verwaltung.emit( weg_name, year, monthIdx+1 ) )
                 actions.append( a )
             elif key == "soll":
+                x = model.getElement( row )
+                mobj_id = x.mobj_id
                 a = BaseAction( "Hausgeld und RüZuFü anzeigen..." )
-                a.triggered.connect( lambda: self.show_hgaAndRueZuFue.emit( weg_name, year, monthIdx+1 ) )
+                a.triggered.connect( lambda: self.show_hgaAndRueZuFue.emit( mobj_id, year, monthIdx+1 ) )
                 actions.append( a )
             return actions
         return None

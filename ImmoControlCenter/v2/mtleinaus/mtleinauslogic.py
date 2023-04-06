@@ -19,6 +19,8 @@ from v2.mtleinaus.mietedata import MieteData
 ################  MtlEinAusLogic  ############################
 from v2.mtleinaus.mtleinaustablemodels import MtlEinAusTableModel, MieteTableModel, HausgeldTableModel, \
     AbschlagTableModel
+from v2.sollhausgeld.sollhausgelddata import SollHausgeldData
+from v2.sollmiete.sollmietedata import SollmieteData
 
 
 class MtlEinAusLogic( IccLogic ):
@@ -305,7 +307,8 @@ class MieteLogic( MtlEinAusLogic ):
         :return:
         """
         check = "%d-%02d-%02d" % (jahr, monatIdx+1, 1)
-        l:List[XSollMiete] = self._mieteData.getSollmieten( jahr )
+        sollmietedata = SollmieteData()
+        l:List[XSollMiete] = sollmietedata.getSollmieten( jahr )
         retlist:List[XSollMiete] = list()
         for x in l:
             if datehelper.isWithin( check, x.von, x.bis ):
@@ -403,7 +406,7 @@ class HausgeldLogic( MtlEinAusLogic ):
             # für jede Verwaltung ein XMtlHausgeld-Objekt anlegen
             xhg = XMtlHausgeld() # ein XMtlHausgel-OBjekt entspricht einer Zeile in der Tabelle
             xhg.master_name = vw.master_name
-            xhg.mobj_id = vw.mobj_id
+            # xhg.mobj_id = vw.mobj_id  # mobj_id gibt's im XVerwaltung-Objekt nicht mehr - ist unlogisch
             xhg.weg_name = vw.weg_name #+ " (" + vw.vw_id + ") "
             self._provideVonBis( jahr, xhg, vw )
             for xea in zlist:
@@ -430,7 +433,7 @@ class HausgeldLogic( MtlEinAusLogic ):
         sollHgList = self.getSollHausgelder( jahr, monatIdx )
         for hg in xhglist:
             for soll in sollHgList:
-                if soll.weg_name == hg.weg_name and soll.mobj_id == hg.mobj_id:
+                if soll.weg_name == hg.weg_name:
                     hg.soll = soll.brutto
                     break
         return xhglist
@@ -444,7 +447,8 @@ class HausgeldLogic( MtlEinAusLogic ):
         :return:
         """
         check = "%d-%02d-%02d" % (jahr, monatIdx+1, 1)
-        l:List[XSollHausgeld] = self._hausgeldData.getSollHausgelder( jahr )
+        shgdata = SollHausgeldData()
+        l:List[XSollHausgeld] = shgdata.getSollHausgelder( jahr )
         retlist:List[XSollHausgeld] = list()
         for x in l:
             if datehelper.isWithin( check, x.von, x.bis ):

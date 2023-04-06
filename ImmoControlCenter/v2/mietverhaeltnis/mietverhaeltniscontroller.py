@@ -33,6 +33,9 @@ class MietverhaeltnisController( IccController ):
         :return:
         """
         menu = QMenu( "Mietverhältnis" )
+        action = BaseAction( "Neues Mietverhältnis anlegen...", parent=menu )
+        action.triggered.connect( self.onMietverhaeltnisNeu )
+        menu.addAction( action )
         action = BaseAction( "Mietverhältnis anschauen und bearbeiten...", parent=menu )
         action.triggered.connect( self.onMietverhaeltnisShow )
         menu.addAction( action )
@@ -40,6 +43,24 @@ class MietverhaeltnisController( IccController ):
         action.triggered.connect( self.onMietverhaeltnisKuendigen )
         menu.addAction( action )
         return menu
+
+    @Slot()
+    def onMietverhaeltnisNeu( self, mobj_id:str=None ):
+        """
+        Wird aufgerufen, wenn in der Menübar der Anwendung "Mietverhältnis anzeigen und bearbeiten..." geklickt wurde
+        :return:
+        """
+        if not mobj_id:
+            # zuerst über den Auswahldialog bestimmen, welche Daten für die View selektiert werden müssen
+            mietobjektAuswahl = MietobjektAuswahl()
+            xmo = mietobjektAuswahl.selectMietobjekt()
+            if not xmo: return None
+            mobj_id = xmo.mobj_id
+        # letztes Mietverhältnis holen
+        xmv:XMietverhaeltnis = self._mvlogic.getAktuellesMietverhaeltnisByMietobjekt( mobj_id )
+        self.createMvView( mobj_id )
+        dlg = MietverhaeltnisDialog( self._view )
+        dlg.exec_()
 
     @Slot()
     def onMietverhaeltnisShow( self, mv_id:str = None ):

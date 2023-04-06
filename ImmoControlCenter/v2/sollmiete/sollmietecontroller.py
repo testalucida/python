@@ -4,14 +4,11 @@ from PySide2.QtWidgets import QApplication, QDialog
 from v2.icc.icccontroller import IccController
 from v2.icc.iccwidgets import IccCheckTableViewFrame, IccTableView
 from v2.icc.interfaces import XMtlZahlung, XEinAus, XSollMiete
-
-
-#############  SollMieteController  #####################
 from v2.sollmiete.sollmieteeditcontroller import SollMieteEditController
 from v2.sollmiete.sollmietelogic import SollmieteLogic
 from v2.sollmiete.sollmieteview import SollMieteView, SollMieteDialog
 
-
+#############  SollMieteController  #####################
 class SollMieteController( IccController ):
     def __init__( self ):
         IccController.__init__( self )

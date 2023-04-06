@@ -12,6 +12,15 @@ class SollHausgeldLogic( IccLogic ):
         x:XSollHausgeld = self._data.getCurrentSollHausgeld( mobj_id )
         return x
 
+    def getSollHausgeldAm( self, mobj_id:str, jahr: int, monthNumber: int ) -> XSollHausgeld or None:
+        """
+        :param mobj_id:
+        :param jahr:
+        :param monthNumber: 1 -> Januar,..., 12 -> Dezember
+        :return:
+        """
+        return self._data.getSollHausgeldAm( mobj_id, jahr, monthNumber )
+
 
 ###################  TEST   TEST   TEST   ##################
 def test():

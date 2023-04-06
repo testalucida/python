@@ -4,35 +4,40 @@ from PySide2.QtWidgets import QApplication, QDialog
 from base.messagebox import ErrorBox
 from v2.icc.icccontroller import IccController
 from v2.icc.iccwidgets import IccCheckTableViewFrame, IccTableView
-from v2.icc.interfaces import XSollMiete
+from v2.icc.interfaces import XMtlZahlung, XEinAus, XSollMiete, XSollHausgeld
+
+#############  SollMieteController  #####################
+from v2.sollhausgeld.sollhausgeldeditview import SollHausgeldEditView, SollHausgeldEditDialog
+from v2.sollhausgeld.sollhausgeldlogic import SollHausgeldLogic
 from v2.sollmiete.sollmieteeditview import SollMieteEditView, SollMieteEditDialog
 from v2.sollmiete.sollmietelogic import SollmieteLogic
+from v2.sollmiete.sollmieteview import SollMieteView, SollMieteDialog
 
-#############  SollMieteEditController  #####################
-class SollMieteEditController( IccController ):
+
+class SollHausgeldEditController( IccController ):
     endofcurrentsoll_modified = Signal( str )
 
     def __init__( self ):
         IccController.__init__( self )
-        self._logic = SollmieteLogic()
-        self._dlg:SollMieteEditDialog = None
+        self._logic = SollHausgeldLogic()
+        self._dlg:SollHausgeldEditDialog = None
 
     def createGui( self ) -> IccCheckTableViewFrame:
         pass
 
-    def handleFolgeSollmiete( self, currentSoll:XSollMiete ):
+    def handleFolgeSollHausgeld( self, currentSoll:XSollHausgeld ):
         """
-        currentSoll ist die derzeitige Sollmiete.
-        Von der Geschäftslogik holen wir erstmal ein passendes Folge-Sollmiete-Objekt und zeigen das dann zur
-        Änderung im SollMieteEditDialog an.
+        currentSoll ist das derzeitige Soll-Hausgeld.
+        Von der Geschäftslogik holen wir erstmal ein passendes Folge-Soll-Hausgeld-Objekt und zeigen das dann zur
+        Änderung im SollHausgeldEditDialog an.
         :param currentSoll: derzeitige Sollmiete
         :return:
         """
         assert( currentSoll.sm_id > 0 )
-        folgeX:XSollMiete = self._logic.getFolgeSollmiete( currentSoll )
+        folgeX:XSollHausgeld = self._logic.getFolgeSollHausgeld( currentSoll )
         self.showSollMieteEditDialog( folgeX )
 
-    def showSollMieteEditDialog( self, x:XSollMiete ):
+    def showSollHausgeldEditDialog( self, x:XSollHausgeld ):
         """
         Zeigt den SollmieteEditDialog, um ein neues Sollmiete-Intervall anzulegen bzw. ein schon für die Zukunft
         angelegtes zu bearbeiten.
@@ -47,35 +52,38 @@ class SollMieteEditController( IccController ):
                 return False
             else:
                 return True
-        v = SollMieteEditView( x )
-        v.delete_sollmiete.connect( self.onDeleteSollmiete )
-        self._dlg = SollMieteEditDialog( v )
+        v = SollHausgeldEditView( x )
+        v.delete_sollhausgeld.connect( self.onDeleteSollHausgeld )
+        self._dlg = SollHausgeldEditDialog( v )
         self._dlg.setBeforeAcceptFunction( validate )
         if self._dlg.exec_() == QDialog.Accepted:
             # Wenn wir hier landen, wurde die Validierung bereits positiv erledigt.
             v.applyChanges()
             try:
-                bis_current_sollmiete = self._logic.saveFolgeSollmiete( x )
+                bis_current_sollhausgeld = self._logic.saveFolgeSollHausgeld( x )
                 # Dem SollmieteController bescheidsagen, dass er das bis-Feld in der View ändern muss
-                self.endofcurrentsoll_modified.emit( bis_current_sollmiete )
+                self.endofcurrentsoll_modified.emit( bis_current_sollhausgeld )
             except Exception as ex:
-                box = ErrorBox( "Fehler beim Speichern der Sollmiete", str(ex), "" )
+                box = ErrorBox( "Fehler beim Speichern der Soll-Hausgelds", str(ex), "" )
                 box.exec_()
 
-    def onDeleteSollmiete( self, x:XSollMiete ):
+    def onDeleteSollHausgeld( self, x:XSollHausgeld ):
         try:
-            bis_current_sollmiete = self._logic.deleteFolgeSollmiete( x )
+            bis_current_sollhausgeld = self._logic.deleteFolgeSollHausgeld( x )
             # Dem SollmieteController bescheidsagen, dass er das bis-Feld in der View ändern muss
-            self.endofcurrentsoll_modified.emit( bis_current_sollmiete )
+            self.endofcurrentsoll_modified.emit( bis_current_sollhausgeld )
         except Exception as ex:
-            box = ErrorBox( "Fehler beim Löschen der Sollmiete mit sm_id %d " % x.sm_id, str(ex), "" )
+            box = ErrorBox( "Fehler beim Löschen des Soll-Hausgelds mit shg_id %d " % x.shg_id, str(ex), "" )
             box.exec_()
         self._dlg.close()
 
 
 def test():
     app = QApplication()
-    ctrl = SollMieteEditController()
-    #ctrl.showSollMieteEditDialog( "lukas_franz", 2022, 5 )
+    ctrl = SollHausgeldEditController()
+    x = XSollHausgeld()
+    x.weg_name = "WEG Wilhelm-Marx-Str. 15"
+    x.mobj_id = "wilhelmmarx"
+    ctrl.showSollHausgeldEditDialog( x )
 
     app.exec_()

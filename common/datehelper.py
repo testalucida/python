@@ -8,6 +8,7 @@ from base.constants import monthLongNames, monatsletzter
 
 def getNumberOfDays( monthNumber:int ) -> int:
     """
+    Schaltjahre werden vernachlässigt
     :param monthNumber: 1 -> Januar, ... , 12 -> Dezember
     :return:
     """

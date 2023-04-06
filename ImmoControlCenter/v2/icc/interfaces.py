@@ -193,7 +193,7 @@ class XVerwaltung( XBase ):
         XBase.__init__( self )
         self.vwg_id = 0
         self.master_name = ""
-        self.mobj_id = ""
+        #self.mobj_id = "" # verwaltet wird ein ganzes Haus, niemals nur eine Wohnung
         self.weg_name = ""
         self.vw_id = ""
         self.von = ""
@@ -234,6 +234,7 @@ class XSollHausgeld( XBase ):
         XBase.__init__( self )
         self.shg_id = 0
         self.vwg_id = 0
+        self.vw_id = ""
         self.weg_name = ""
         self.mobj_id = ""
         self.von = ""

@@ -68,9 +68,9 @@ class MainController( IccController ):
         print( "onShowVerwaltung ", weg_name )
 
     @Slot( str, int, int )
-    def onShowHgaAndRueZuFue( self, weg_name:str, year:int, monthNumber:int ):
+    def onShowHgaAndRueZuFue( self, mobj_id:str, year:int, monthNumber:int ):
         ctrl = SollHausgeldController()
-        ctrl.showHgvAndRueZuFue( weg_name, year, monthNumber )
+        ctrl.showHgvAndRueZuFue( mobj_id, year, monthNumber )
 
     @Slot( str )
     def onEditMieter( self, mv_id:str ):

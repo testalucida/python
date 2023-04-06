@@ -572,9 +572,10 @@ class BoolSwitch(QComboBox, AutoWidth):
 #######################  BaseEdit  ###################################
 class BaseEdit( QLineEdit, AutoWidth, GetSetValue ):
     key_pressed = Signal( int )
-    def __init__( self, parent=None ):
+    def __init__( self, parent=None, isReadOnly=False ):
         QLineEdit.__init__( self, parent )
         #self.textChanged.connect( self.on_change )
+        self.setReadOnly( isReadOnly )
 
     def getValue( self ) -> str:
         return self.text()
@@ -608,12 +609,12 @@ class BaseEdit( QLineEdit, AutoWidth, GetSetValue ):
 #########################  FloatEdit  ################################
 class FloatEdit( BaseEdit ):
     def __init__( self, parent=None, showNegativNumbersRed:bool=True, isReadOnly=False ):
-        BaseEdit.__init__( self, parent )
+        BaseEdit.__init__( self, parent, isReadOnly=isReadOnly )
         self._showNegativNumbersRed = showNegativNumbersRed
         floatval = QDoubleValidator()
         self.setValidator( floatval )
         self.setAlignment( Qt.AlignRight )
-        self.setReadOnly( isReadOnly )
+        #self.setReadOnly( isReadOnly )
 
     def getFloatValue( self ) -> float:
         val = self.text()
@@ -646,11 +647,13 @@ class FloatEdit( BaseEdit ):
 
 #########################  SignedFloatEdit  ###########################
 class SignedNumEdit( QWidget ):
+    textChanged = Signal( str )
     class Sign( BaseButton ):
         PLUS = "+"
         MINUS = "-"
-        def __init__( self, sign=MINUS ):
+        def __init__( self, sign=MINUS, isEnabled=True ):
             BaseButton.__init__( self, text=sign )
+            self.setEnabled( isEnabled )
             self._currentSign = sign
             font = QFont( "Arial", 20 )
             font.setBold( True )
@@ -686,14 +689,15 @@ class SignedNumEdit( QWidget ):
             else:
                 self.setStyleSheet( "background-color: green; color: white" )
 
-    def __init__( self, numtype:type=float, sign="-", parent=None ):
+    def __init__( self, numtype:type=float, sign="-", parent=None, isReadOnly=False ):
         QWidget.__init__( self, parent )
         self._type = numtype
-        self._sign = self.Sign( sign )
+        self._sign = self.Sign( sign, isEnabled=not isReadOnly )
         if numtype == int:
-            self._numEdit = IntEdit( showNegativNumbersRed=False )
+            self._numEdit = IntEdit( showNegativNumbersRed=False, isReadOnly=isReadOnly )
         else:
-            self._numEdit = FloatEdit( showNegativNumbersRed=False )
+            self._numEdit = FloatEdit( showNegativNumbersRed=False, isReadOnly=isReadOnly )
+        self._numEdit.textChanged.connect( self.textChanged.emit )
         self._sign.pressed.connect( self.onSignPressed )
         self._setStyleSheet( self._sign.isPlus() )
 
@@ -767,8 +771,8 @@ class SignedNumEdit( QWidget ):
 
 #########################  FloatEdit  ################################
 class IntEdit( BaseEdit ):
-    def __init__( self, parent=None, showNegativNumbersRed:bool=True ):
-        BaseEdit.__init__( self, parent )
+    def __init__( self, parent=None, showNegativNumbersRed:bool=True, isReadOnly=False ):
+        BaseEdit.__init__( self, parent, isReadOnly=isReadOnly )
         self._showNegativNumbersRed = showNegativNumbersRed
         intval = QIntValidator()
         self.setValidator( intval )

@@ -2,17 +2,12 @@ from PySide2.QtCore import Slot
 from PySide2.QtWidgets import QApplication, QDialog
 
 from v2.icc.icccontroller import IccController
-from v2.icc.iccwidgets import IccCheckTableViewFrame, IccTableView
-from v2.icc.interfaces import XMtlZahlung, XEinAus, XSollMiete
-
+from v2.icc.iccwidgets import IccCheckTableViewFrame
+from v2.icc.interfaces import XSollHausgeld
+from v2.sollhausgeld.sollhausgeldlogic import SollHausgeldLogic
+from v2.sollhausgeld.sollhausgeldview import SollHausgeldView, SollHausgeldDialog
 
 #############  SollMieteController  #####################
-from v2.sollhausgeld.sollhausgeldlogic import SollHausgeldLogic
-from v2.sollmiete.sollmieteeditcontroller import SollMieteEditController
-from v2.sollmiete.sollmietelogic import SollmieteLogic
-from v2.sollmiete.sollmieteview import SollMieteView, SollMieteDialog
-
-
 class SollHausgeldController( IccController ):
     def __init__( self ):
         IccController.__init__( self )
@@ -22,19 +17,33 @@ class SollHausgeldController( IccController ):
         pass
 
 
-    def showHgvAndRueZuFue( self, weg_name:str, jahr:int, monthNumber:int ):
+    def showHgvAndRueZuFue( self, mobj_id:str, jahr:int, monthNumber:int ):
         """
         Zeigt die SollHausgeld-View mit den gewünschten Daten
-        :param weg_name: WEG, der beauskunftet werden soll
+        :param mobj_id:
         :param jahr:
         :param monthNumber: 1 -> Januar, ... , 12 -> Dezember
         :return:
         """
-        print( "showHgvAndRueZuFue ", weg_name )
+        x:XSollHausgeld = self._logic.getSollHausgeldAm( mobj_id, jahr, monthNumber )
+        v = SollHausgeldView( x )
+        dlg = SollHausgeldDialog( v )
+        dlg.setWindowTitle( "Soll-Hausgeld für '%s' (%s)" % (x.weg_name, x.mobj_id) )
+        dlg.edit_clicked.connect( lambda: self.onEditSollHausgeld( x, v ) )
+        if dlg.exec_() == QDialog.Accepted:
+            # Die Bemerkung könnte geändert sein. Keine Validierung, direkt an die Logik zum Speichern übergeben.
+            v.applyChanges()
+            self._logic.updateSollHausgeldBemerkung( x.shg_id, x.bemerkung )
+
+
+    def onEditHausgeld( self, x: XSollHausgeld, view: SollHausgeldView ):
+        def onBisChanged( bis: str ):
+            view.setBis( bis )
+        # shgEditCtrl = SollHausgeldEditController()
+        # shgEditCtrl.endofcurrentsoll_modified.connect( onBisChanged )
+        # shgEditCtrl.handleFolgeSollHausgeld( x )
 
 def test():
     app = QApplication()
     ctrl = SollHausgeldController()
     ctrl.showHgvAndRueZuFue( "WEG Remigiusstr. 17-23", 2023, 3 )
-
-    app.exec_()
