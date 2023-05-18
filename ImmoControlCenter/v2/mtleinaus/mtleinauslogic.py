@@ -20,6 +20,7 @@ from v2.mtleinaus.mietedata import MieteData
 from v2.mtleinaus.mtleinaustablemodels import MtlEinAusTableModel, MieteTableModel, HausgeldTableModel, \
     AbschlagTableModel
 from v2.sollhausgeld.sollhausgelddata import SollHausgeldData
+from v2.sollhausgeld.sollhausgeldlogic import SollHausgeldLogic
 from v2.sollmiete.sollmietedata import SollmieteData
 
 
@@ -208,10 +209,10 @@ class MtlEinAusLogic( IccLogic ):
         for ea in einausList:
             for ea2 in einausList:
                 if not ea == ea2 \
-                        and ea.monat == ea2.monat \
-                        and ea.master_name == ea2.master_name \
-                        and ea.mobj_id == ea2.mobj_id  \
-                        and ea.debi_kredi == ea2.debi_kredi:
+                and ea.monat == ea2.monat \
+                and ea.master_name == ea2.master_name \
+                and ea.mobj_id == ea2.mobj_id  \
+                and ea.debi_kredi == ea2.debi_kredi:
                     ea.betrag += ea2.betrag
                     einausList.remove( ea2 )
         return einausList
@@ -367,67 +368,63 @@ class MieteLogic( MtlEinAusLogic ):
                 mtlmiete.soll = 0
 
 
-
-
 #####################  HausgeldLogic ############################
 class HausgeldLogic( MtlEinAusLogic ):
     def __init__( self ):
         MtlEinAusLogic.__init__( self )
         self._hausgeldData = HausgeldData()
 
-    # def createHausgeldzahlungenModel( self, jahr: int, checkmonatIdx:int=None ) -> HausgeldTableModel:
-    #     zlist:List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.HAUSGELD_VORAUS, jahr )
-    #     zlist = self.getCondensedEinAusList( zlist )
-    #     # die XEinAus-Liste in XMtlHausgeld-Liste umwandeln:
-    #     xhglist:List[XMtlHausgeld] = list()
-    #     memo = ""
-    #     xhg:XMtlHausgeld = None
-    #     for xea in zlist:
-    #         if xea.debi_kredi != memo:
-    #             xhg = XMtlHausgeld()
-    #             xhg.weg_name = xea.debi_kredi
-    #             xhg.mobj_id = xea.mobj_id
-    #             self._provideVonBis( jahr, xhg )
-    #             xhglist.append( xhg )
-    #             memo = xea.debi_kredi
-    #         xhg.__dict__[xea.monat] = xea.betrag
-    #         xhg.computeSum()
-    #     self._provideSollHausgelder( jahr, checkmonatIdx, xhglist )
-    #     tm = HausgeldTableModel( xhglist, jahr, checkmonatIdx )
-    #     return tm
-
     def createHausgeldzahlungenModel( self, jahr: int, checkmonatIdx:int=None ) -> HausgeldTableModel:
-        vwlist:List[XVerwaltung] = self._hausgeldData.getVerwaltungen( jahr )
-        zlist:List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.HAUSGELD_VORAUS.display, jahr )
-        zlist = self.getCondensedEinAusList( zlist )
-        # die XEinAus-Liste in XMtlHausgeld-Liste umwandeln:
-        xhglist:List[XMtlHausgeld] = list()
-        for vw in vwlist:
-            # für jede Verwaltung ein XMtlHausgeld-Objekt anlegen
-            xhg = XMtlHausgeld() # ein XMtlHausgel-OBjekt entspricht einer Zeile in der Tabelle
-            xhg.master_name = vw.master_name
-            # xhg.mobj_id = vw.mobj_id  # mobj_id gibt's im XVerwaltung-Objekt nicht mehr - ist unlogisch
-            xhg.weg_name = vw.weg_name #+ " (" + vw.vw_id + ") "
-            self._provideVonBis( jahr, xhg, vw )
-            for xea in zlist:
-                # die Monatsbeträge aus den XEinAus-Objekten in das XMtlHausgeld-Objekt übertragen
-                if xea.debi_kredi == xhg.weg_name:
-                    xhg.__dict__[xea.monat] = xea.betrag
+        def condense( eaList:List[XEinAus] ) -> List[XEinAus]:
+            """
+            Fasst etwaige Teilzahlungen eines Monats für eine Kombination Master, Mietobjekt, WEG zu EINER Monatszahlung
+            (einem EinAus-Objekt) zusammen.
+            :param eaList:
+            :return:
+            """
+            def makeKey( master_name, mobj_id, debi_kredi ):
+                key = master_name
+                if mobj_id:
+                    key += mobj_id
+                if debi_kredi:
+                    key += debi_kredi
+                return key
+
+            einausList = sorted( eaList, key=lambda x: makeKey( x.master_name, x.mobj_id, x.debi_kredi ) )
+            for ea1 in einausList:
+                for ea2 in einausList:
+                    if not ea1 == ea2 \
+                    and ea1.monat == ea2.monat \
+                    and ea1.master_name == ea2.master_name \
+                    and ea1.mobj_id == ea2.mobj_id \
+                    and ea1.debi_kredi == ea2.debi_kredi:
+                        ea1.betrag += ea2.betrag
+                        einausList.remove( ea2 )
+            return einausList
+        xhglist = self._hausgeldData.getMtlHausgeldListe()
+        ea_list:List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.HAUSGELD_VORAUS.display, jahr )
+        ea_list = condense( ea_list )
+        for xhg in xhglist:
+            self._provideFirstLastSollHgZahlung( xhg, jahr )
+            # die ea_ist ist sortiert nach master_name, mobj_id, debi_kredi (WEG-Name)
+            for ea in ea_list:
+                if ea.mobj_id == xhg.mobj_id:
+                    xhg.__dict__[ea.monat] = ea.betrag
                     xhg.computeSum()
-            xhglist.append( xhg )
         self._provideSollHausgelder( jahr, checkmonatIdx, xhglist )
         tm = HausgeldTableModel( xhglist, jahr, checkmonatIdx )
         return tm
 
-    def _provideVonBis( self, jahr, xhg:XMtlHausgeld, vw:XVerwaltung ):
-        """
-        Versorgt die Attribute xhg.vonMonat und xhg.bisMonat mit dem im Jahr <jahr> aktiven Monatsintervall.
-        Basis sind die Datümer vw.von und vw.bis
-        :param xhg:
-        :return:
-        """
-        # anschaffungsdatum, verkaufsdatum = self._hausgeldData.getAnschaffungsUndVerkaufsdatum2( xhg.master_name )
-        xhg.vonMonat, xhg.bisMonat =  self.getMonthIntervallForCurrentYear( jahr, vw.von, vw.bis )
+    @staticmethod
+    def _provideFirstLastSollHgZahlung( xhg:XMtlHausgeld, jahr ) -> bool:
+        shglogic = SollHausgeldLogic()
+        firstMonShort, lastMonthShort = shglogic.getSollHausgeldzahlungVonBis( xhg.mobj_id, jahr )
+        if not firstMonShort or not lastMonthShort:
+            return False
+        xhg.vonMonat = firstMonShort
+        xhg.bisMonat = lastMonthShort
+        return True
+
 
     def _provideSollHausgelder( self, jahr:int, monatIdx:int, xhglist:List[XMtlHausgeld] ) -> List[XMtlHausgeld]:
         sollHgList = self.getSollHausgelder( jahr, monatIdx )
@@ -438,7 +435,8 @@ class HausgeldLogic( MtlEinAusLogic ):
                     break
         return xhglist
 
-    def getSollHausgelder( self, jahr: int, monatIdx:int ) -> List[XSollHausgeld]:
+    @staticmethod
+    def getSollHausgelder( jahr: int, monatIdx:int ) -> List[XSollHausgeld]:
         """
         Liefert alle Soll-Hausgelder, die im Jahr <jahr> und Monat <monat> gültig waren.
         Annahme: Hausgelder ändern sich ausschließlich zum 1. eines Moants

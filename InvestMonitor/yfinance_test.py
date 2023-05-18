@@ -5,7 +5,8 @@ def test1():
     # Ticker zu Firma, Ticker zu ISIN finden: https://finance.yahoo.com
     #t = yfinance.Ticker( "MSF.DE" )
     #t = yfinance.Ticker( "EUSRI.PA" )
-    t = yfinance.Ticker( "LU0831568729.SG" )
+    #t = yfinance.Ticker( "LU0831568729.SG" )
+    t = yfinance.Ticker( "VAPX.L" )
     print( t.info["regularMarketPrice"], " ", t.info["currency"] )
     print( "------------------------------" )
     print( t.history( period='1d', interval='1d' ) )

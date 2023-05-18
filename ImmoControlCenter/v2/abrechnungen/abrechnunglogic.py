@@ -6,6 +6,7 @@ import datehelper
 from v2.abrechnungen.abrechnungdata import NKAbrechnungData, HGAbrechnungData
 from v2.einaus.einausdata import EinAusData
 from v2.einaus.einauslogic import EinAusLogic
+from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
 from v2.icc import constants
 from v2.icc.constants import EinAusArt
 from v2.icc.icclogic import IccLogic, IccTableModel
@@ -21,9 +22,9 @@ class HGAbrechnungTableModel( AbrechnungTableModel ):
     def __init__(self, rowlist:List[XHGAbrechnung], jahr ):
         AbrechnungTableModel.__init__( self, rowlist, jahr )
         self.setKeyHeaderMappings2(
-            ("master_name", "weg_name", "vw_id", "vwg_von", "vwg_bis", "ab_datum", "forderung", "entnahme_rue",
+            ("master_name", "mobj_id", "weg_name", "vw_id", "vwg_von", "vwg_bis", "ab_datum", "forderung", "entnahme_rue",
              "bemerkung", "zahlung" ),
-            ( "Wohnung", "WEG", "Verwalter", "Vwtg. von", "Vwtg. bis", "abgerechnet am", "Forderung", "Entn.Rü.",
+            ( "Haus", "Wohnung", "WEG", "Verwalter", "Vwtg. von", "Vwtg. bis", "abgerechnet am", "Forderung", "Entn.Rü.",
               "Bemerkung", "Zahlung" )
         )
 
@@ -173,18 +174,25 @@ class AbrechnungLogic( IccLogic ):
             if tz.ea_id > 0:
                 # update Teilzahlung
                 xea = self._eaData.getEinAusZahlung( tz.ea_id )
-                if tz.betrag != xea.betrag or \
-                   tz.buchungsdatum != xea.buchungsdatum or tz.buchungstext != xea.buchungstext:
+                if tz.betrag != xea.betrag \
+                or tz.buchungsdatum != xea.buchungsdatum \
+                or tz.buchungstext != xea.buchungstext:
+                    delta = 0
+                    if tz.betrag != xea.betrag:
+                        delta = tz.betrag - xea.betrag
                     xea.betrag = tz.betrag
                     xea.buchungsdatum = tz.buchungsdatum
                     xea.buchungstext = tz.buchungstext
                     self._eaData.updateEinAusZahlung( xea )
+                    if delta != 0:
+                        EinAusWriteDispatcher.inst().ea_updated.emit( xea, delta )
             else:
                 # Neue Teilzahlung
                 # Aus dem tz-Objekt ein EinAus-Objekt machen, dann an _eaData übergeben zum Insert
                 xea = self._createXeinausFromTeilzahlung( xabr, tz )
                 try:
                     self._eaData.insertEinAusZahlung( xea )
+                    EinAusWriteDispatcher.inst().ea_inserted.emit( xea )
                 except Exception as ex:
                     self._eaData.rollback()
                     msg = "AbrechnungLogic._checkSaveTeilzahlungen():\nFehler beim Insert einer Teilzahlung für " \
@@ -193,7 +201,7 @@ class AbrechnungLogic( IccLogic ):
         return ""
 
     def _checkDeleteTeilzahlungen( self, abr_id: int, tzlist: List[XTeilzahlung] ) -> str:
-        ealist = self.getEinAusZahlungen( abr_id )
+        ealist = self.getEinAusZahlungen( abr_id ) # alle Teilzahlungen, die die Abrechnung <abr_id> betreffen
         tz_ea_id_list = [tz.ea_id for tz in tzlist]
         for ea in ealist:
             if not ea.ea_id in tz_ea_id_list:
@@ -202,6 +210,7 @@ class AbrechnungLogic( IccLogic ):
                 # Diese muss aus der DB gelöscht werden.
                 try:
                     self._eaData.deleteEinAusZahlung( ea.ea_id )
+                    EinAusWriteDispatcher.inst().ea_deleted.emit( (ea.ea_id,), ea.ea_art, ea.betrag*(-1) )
                 except Exception as ex:
                     self._eaData.rollback()
                     msg = "AbrechnungLogic._checkDeleteTeilzahlungen():\nFehler beim Löschen der Zahlung " \

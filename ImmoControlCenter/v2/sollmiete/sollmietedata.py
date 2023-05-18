@@ -3,7 +3,7 @@ from typing import List, Dict, Iterable
 from base import constants
 from datehelper import getNumberOfDays
 from v2.icc.constants import getMonthIdxFromShortName
-from v2.icc.iccdata import IccData
+from v2.icc.iccdata import IccData, DbAction
 from v2.icc.interfaces import XSollMiete
 
 
@@ -142,8 +142,10 @@ class SollmieteData( IccData ):
         return self.write( sql )
 
     def deleteSollmiete( self, sm_id:int ):
+        currentX = self.getSollmiete( sm_id )
         sql = "delete from sollmiete where sm_id = %d " % sm_id
-        self.write( sql )
+        self.writeAndLog( sql, DbAction.DELETE, "sollmiete", "shg_id", sm_id,
+                          newvalues=None, oldvalues=currentX.toString( printWithClassname=True ) )
 
     def terminateSollmiete( self, sm_id:int, bis:str ) -> int:
         """

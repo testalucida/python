@@ -10,22 +10,6 @@ from base.baseqtderivates import SmartDateEdit, FloatEdit, BaseLabel, BaseGridLa
 from generictable_stuff.okcanceldialog import OkCancelDialog
 from v2.icc.interfaces import XSollMiete, XSollHausgeld
 
-"""
-class XSollHausgeld( XBase ):
-    def __init__( self, valuedict:Dict=None ):
-        XBase.__init__( self )
-        self.shg_id = 0
-        self.vwg_id = 0
-        self.vw_id = ""
-        self.weg_name = ""
-        self.mobj_id = ""
-        self.von = ""
-        self.bis = ""
-        self.netto = 0.0
-        self.ruezufue = 0.0
-        self.brutto = 0.0 # Summe von netto + nkv
-        self.bemerkung = ""
-"""
 class SollHausgeldView( QWidget ):
     """
     Eine (fast) reine ReadOnly-View, die einen Edit-Button enthält, durch dessen Betätigung man zur

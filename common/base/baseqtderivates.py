@@ -859,7 +859,7 @@ class LineEdit( BaseEdit ):
 
 ################  MultiLineEdit  ##################
 class MultiLineEdit( QTextEdit, GetSetValue ):
-    def __init__( self, parent=None, isReadOnly:bool=True ):
+    def __init__( self, parent=None, isReadOnly:bool=False ):
         QTextEdit.__init__( self, parent )
         self.setReadOnly( isReadOnly )
 

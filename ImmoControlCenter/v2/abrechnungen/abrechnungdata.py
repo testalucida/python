@@ -23,6 +23,18 @@ class AbrechnungData( IccData ):
         pass
 
 ###################   HGAbrechnungData   #########################
+"""
+# Die Tabelle hg_abrechnung wurde nachträglich um die Spalte mobj_id erweitert.
+# Um sie zu initialisieren, wird folgendes Update-Statement verwendet:
+update hg_abrechnung 
+set mobj_id = (
+	select mo.mobj_id 
+	from mietobjekt mo 
+	inner join verwaltung vwg on vwg.master_name = mo.master_name
+	where vwg.vwg_id = hg_abrechnung.vwg_id
+)
+"""
+
 class HGAbrechnungData( AbrechnungData ):
     def __init__( self ):
         AbrechnungData.__init__( self )
@@ -31,11 +43,12 @@ class HGAbrechnungData( AbrechnungData ):
         vwg_id = "NULL" if not xhga.vwg_id else str(xhga.vwg_id)
         bemerkung = "NULL" if not xhga.bemerkung else ("'%s'" % xhga.bemerkung)
         sql = "insert into hg_abrechnung " \
-              "(ab_jahr, vwg_id, forderung, entnahme_rue, ab_datum, bemerkung) " \
+              "(mobj_id, ab_jahr, vwg_id, forderung, entnahme_rue, ab_datum, bemerkung) " \
               "values " \
-              "(   %d,     %s,      %.2f,      %.2f,         '%s',     %s )" % (xhga.ab_jahr, vwg_id,
-                                                                                xhga.forderung, xhga.entnahme_rue,
-                                                                                xhga.ab_datum, bemerkung)
+              "( '%s',    %d,     %s,      %.2f,      %.2f,         '%s',     %s )" % \
+                                                                                (xhga.mobj_id, xhga.ab_jahr, vwg_id,
+                                                                                 xhga.forderung, xhga.entnahme_rue,
+                                                                                 xhga.ab_datum, bemerkung)
         inserted_id = self.writeAndLog( sql, DbAction.INSERT, "hg_abrechnung", "hga_id", 0,
                                         newvalues=xhga.toString( printWithClassname=True ), oldvalues=None )
         xhga.abr_id = inserted_id
@@ -43,44 +56,66 @@ class HGAbrechnungData( AbrechnungData ):
 
     def updateAbrechnung( self, xhga:XHGAbrechnung ) -> int:
         oldX = self.getAbrechnung( xhga.abr_id )
-        if oldX.ab_jahr == xhga.ab_jahr \
+        if oldX.mobj_id == xhga.mobj_id \
+        and oldX.ab_jahr == xhga.ab_jahr \
         and oldX.vwg_id == xhga.vwg_id \
         and oldX.forderung == xhga.forderung \
         and oldX.entnahme_rue == xhga.entnahme_rue \
         and oldX.ab_datum == xhga.ab_datum \
         and oldX.bemerkung == xhga.bemerkung:
+            return 0
+        else:
             bemerkung = "NULL" if not xhga.bemerkung else ("'%s'" % xhga.bemerkung)
             sql = "update hg_abrechnung " \
-                  "set ab_jahr = %d, " \
+                  "set mobj_id = '%s', " \
+                  "ab_jahr = %d, " \
                   "vwg_id = %d, " \
                   "forderung = %.2f, " \
                   "entnahme_rue = %.2f, " \
                   "ab_datum = '%s', " \
                   "bemerkung = %s " \
-                  "where hga_id = %d " % (xhga.ab_jahr, xhga.vwg_id, xhga.forderung, xhga.entnahme_rue, xhga.ab_datum,
-                                          bemerkung, xhga.abr_id)
+                  "where hga_id = %d " % (xhga.mobj_id, xhga.ab_jahr, xhga.vwg_id, xhga.forderung, xhga.entnahme_rue,
+                                          xhga.ab_datum, bemerkung, xhga.abr_id)
             rowsAffected = self.writeAndLog( sql, DbAction.UPDATE, "hg_abrechnung", "hga_id", xhga.abr_id,
                                              newvalues=xhga.toString( True ), oldvalues=oldX.toString( True ) )
             return rowsAffected
-        return 0
 
-    def getObjekteUndAbrechnungen( self, ab_jahr:int ) -> List[XHGAbrechnung]:
-        sql = "select master.master_name, " \
-              "vwg.vwg_id, coalesce(vwg.weg_name, '') as weg_name, " \
-              "coalesce(vwg.vw_id, '') as vw_id, " \
-              "coalesce(vwg.von, '') as vwg_von, coalesce(vwg.bis, '') as vwg_bis, " \
-              "coalesce(hga.hga_id, 0) as abr_id, coalesce(hga.ab_datum, '') as ab_datum, " \
-              "coalesce(hga.forderung, 0) as forderung, coalesce(hga.entnahme_rue, 0) as entnahme_rue, " \
+    # def getObjekteUndAbrechnungen( self, ab_jahr:int ) -> List[XHGAbrechnung]:
+    #     sql = "select master.master_name, " \
+    #           "vwg.vwg_id, coalesce(vwg.weg_name, '') as weg_name, " \
+    #           "coalesce(vwg.vw_id, '') as vw_id, " \
+    #           "coalesce(vwg.von, '') as vwg_von, coalesce(vwg.bis, '') as vwg_bis, " \
+    #           "coalesce(hga.hga_id, 0) as abr_id, " \
+    #           "coalesce(hga.mobj_id, '') as mobj_id, " \
+    #           "coalesce(hga.ab_datum, '') as ab_datum, " \
+    #           "coalesce(hga.forderung, 0) as forderung, coalesce(hga.entnahme_rue, 0) as entnahme_rue, " \
+    #           "coalesce(hga.bemerkung, '') as bemerkung " \
+    #             "from masterobjekt master " \
+    #             "inner join verwaltung vwg on vwg.master_name = master.master_name " \
+    #             "left outer join hg_abrechnung hga on (hga.ab_jahr = %d and hga.vwg_id = vwg.vwg_id) " \
+    #             "where master.aktiv > 0 " \
+    #             "order by master.master_name, vwg.von " % ab_jahr
+    #     return self.readAllGetObjectList( sql, XHGAbrechnung )
+
+    def getObjekteUndAbrechnungen( self, ab_jahr: int ) -> List[XHGAbrechnung]:
+        sql = "select mo.master_name, mo.mobj_id, " \
+              "vwg.vwg_id, vwg.weg_name, " \
+              "vwg.vw_id, vwg.von, coalesce(vwg.bis, '') as vwg_bis, " \
+              "coalesce(hga.hga_id, 0) as abr_id, " \
+              "coalesce(hga.ab_jahr, 0) as ab_jahr, " \
+              "coalesce(hga.ab_datum, '') as ab_datum, " \
+              "coalesce(hga.forderung, 0) as forderung, " \
+              "coalesce(hga.entnahme_rue, 0) as entnahme_rue, " \
               "coalesce(hga.bemerkung, '') as bemerkung " \
-                "from masterobjekt master " \
-                "inner join verwaltung vwg on (vwg.master_name = master.master_name and hga_relevant = 1) " \
-                "left outer join hg_abrechnung hga on (hga.ab_jahr = %d and hga.vwg_id = vwg.vwg_id) " \
-                "where master.aktiv > 0 " \
-                "order by master.master_name, vwg.von " % ab_jahr
+              "from mietobjekt mo " \
+              "inner join verwaltung vwg on vwg.master_name = mo.master_name " \
+              "left outer join hg_abrechnung hga on (hga.ab_jahr = %d and hga.mobj_id = mo.mobj_id) " \
+              "where mo.aktiv > 0 " \
+              "order by mo.master_name, vwg.von " % ab_jahr
         return self.readAllGetObjectList( sql, XHGAbrechnung )
 
     def getAbrechnung( self, hga_id:int ) -> XHGAbrechnung:
-        sql = "select hga_id, ab_jahr, vwg_id, forderung, entnahme_rue, ab_datum, bemerkung " \
+        sql = "select hga_id, mobj_id, ab_jahr, vwg_id, forderung, entnahme_rue, ab_datum, bemerkung " \
               "from hg_abrechnung " \
               "where hga_id = %d " % hga_id
         x = self.readOneGetObject( sql, XHGAbrechnung )

@@ -33,15 +33,15 @@ class SollHausgeldEditController( IccController ):
         :param currentSoll: derzeitige Sollmiete
         :return:
         """
-        assert( currentSoll.sm_id > 0 )
+        assert( currentSoll.shg_id > 0 )
         folgeX:XSollHausgeld = self._logic.getFolgeSollHausgeld( currentSoll )
-        self.showSollMieteEditDialog( folgeX )
+        self.showSollHausgeldEditDialog( folgeX )
 
     def showSollHausgeldEditDialog( self, x:XSollHausgeld ):
         """
-        Zeigt den SollmieteEditDialog, um ein neues Sollmiete-Intervall anzulegen bzw. ein schon für die Zukunft
+        Zeigt den SollHausgeldEditDialog, um ein neues Soll-Hausgeld-Intervall anzulegen bzw. ein schon für die Zukunft
         angelegtes zu bearbeiten.
-        :param x: XSollMiete-Objekt, das hier bearbeitet werden soll
+        :param x: XSollHausgeld-Objekt, das hier bearbeitet werden soll
         :return:
         """
         def validate() -> bool:
@@ -60,7 +60,7 @@ class SollHausgeldEditController( IccController ):
             # Wenn wir hier landen, wurde die Validierung bereits positiv erledigt.
             v.applyChanges()
             try:
-                bis_current_sollhausgeld = self._logic.saveFolgeSollHausgeld( x )
+                bis_current_sollhausgeld = self._logic.saveFolgeHausgeld( x )
                 # Dem SollmieteController bescheidsagen, dass er das bis-Feld in der View ändern muss
                 self.endofcurrentsoll_modified.emit( bis_current_sollhausgeld )
             except Exception as ex:

@@ -119,10 +119,12 @@ class DatabaseCommon:
         cur.close()
         return dicList
 
-    def readOneGetObject( self, sql, xbase: Type[XBase] ) -> XBase:
+    def readOneGetObject( self, sql, xbase: Type[XBase] ) -> XBase or None:
         dic = self.readOneGetDict( sql )
-        x = xbase( dic )
-        return x
+        if dic:
+            x = xbase( dic )
+            return x
+        return None
 
     def readAllGetObjectList( self, sql, xbase:Type[XBase] ) -> List[XBase]:
         """

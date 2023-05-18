@@ -103,7 +103,7 @@ class SollHausgeldEditView( QWidget ):
         x.von = self._sdVon.getValue()
         x.bemerkung = self._mlBemerkung.getValue()
         x.netto = self._feNetto.getFloatValue()
-        x.nkv = self._feNkv.getFloatValue()
+        x.ruezufue = self._feRueZuFue.getFloatValue()
         x.bemerkung = self._mlBemerkung.getValue()
 
     def applyChanges( self ) -> XSollHausgeld:

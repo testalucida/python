@@ -8,7 +8,7 @@ from v2.icc.interfaces import XEinAus
 class EinAusWriteDispatcher( QObject ):
     ea_inserted = Signal( XEinAus )
     ea_updated = Signal( XEinAus, int or float ) # das geänderte XEinAus-Objekt und die Betragsänderung (ggf. 0)
-    ea_deleted = Signal( list, str, int or float ) # Liste von ea_id (gelöschte Sätze), die betroffen ea_art
+    ea_deleted = Signal( list, str, int or float ) # Liste von ea_id (gelöschte Sätze), die betroffene ea_art
                                                 # (darf nur *eine* sein) und das Delta, um das sich die Summe
                                                 # aller Zahlungen geändert hat
     __instance = None

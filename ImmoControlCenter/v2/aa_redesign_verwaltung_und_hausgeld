@@ -1,0 +1,85 @@
+Projekt: Redesign Verwaltung und (Soll-)Hausgeld
+-------------------------------------------------
+Vorhaben:
+In den Tabellen verwaltung und sollhausgeld sollen nur noch die
+tatsächlich verwalteten Objekte geführt werden,
+nicht mehr die Häuser SB_Kaiser, NK_Kleist und ILL_Eich.
+Die Zahlungen an deren Hauswarte sollen als Verträge in Tabelle sollabschlag geführt werden,
+mit der EinAusArt "allg" und <umlegbar> = "ja".
+
+--
+Konzeptionelle Entscheidungen:
+- Tabelle verwaltung mit <master_name> oder <mobj_id>?
+  (Derzeit. Stand (V2): <master_name> -- entspricht der Realität,
+  verwaltet werden ganze Häuser, nicht einzelne Wohnungen.
+  Aber: Selects könnten umständlich werden)
+  ==> master_name bleibt
+
+- Tabelle sollhausgeld: mit <master_name> oder <mobj_id>?
+  ==> master_name wird gelöscht, mobj_id bleibt
+
+Todo:
+A) DATENBANK V2
+- Tab. sollhausgeld:
+    - Entfernen Spalte master_name -- ok
+- Tab. verwalter:
+    - Fritsche, Eickhoff, Müller, Scupin entfernen. -- ok
+- Tab. verwaltung:
+    - dto.  -- ok
+- Tab. sollabschlag:
+    - enthält nur <mobj_id>
+      Muss <master_name> eingefügt werden?
+    - Hauswartverträge anlegen:
+        - Fritsche: bis 30.6.22
+        - Eickhoff: ab 1.7.22
+        - Müller: ?? im Mietkonto prüfen
+        - Scupin: noch nie überwiesen
+- Tab. einaus:
+    - siehe Datenübernahme
+
+----------------------------------------------
+B) CODE
+B1) Interfaces
+- XSollHausgeld:
+    - Entfernen <master_name> -- ok
+- XMtlHausgeld:
+    - muss <master_name> entfernt werden?
+      JA -- ok
+
+B2) GUI
+- Mtl. Hausgeld-Tabelle: Spalte "Haus" durch "Wohnung" ersetzen
+- SollHausgeldView überprüfen -- ok
+- SollHausgeldEditView überprüfen -- ok
+
+B3) Controller
+- sollhausgeldcontroller.py: ?
+- sollhausgeldeditcontroller.py: ?
+- HausgeldController:
+    - def provideContextMenuActions überarbeiten
+
+B4) Logic
+- SollHausgeldLogic:
+    - def getHausgeldzahlungSeitBis implementieren.
+      Klären: Aufrufparameter mobj_id?
+    - def _provideMinMaxVerwaltung implementieren
+- HausgeldLogic:
+    - def createHausgeldzahlungenModel:
+      Überarbeiten: <von> wird nicht versorgt (Bsp. Am Stadtpark)
+
+B5) Data
+- iccdata.py
+    - def getVerwaltungen etc prüfen
+
+- sollhausgelddata.py
+    - Entfernen "master_name" aus allen Selects -- ok
+
+----------------------------------------------
+C) Datenübernahme_v2:
+- Datenübernahme durchführen wie vorbereitet
+- Alle Sätze aus Tabelle einaus, wo ea_art == "hgv" UND
+  master_name in ('SB_Kaiser', 'NK_Kleist', 'ILL_Eich'):
+     - ea_art ändern von 'hgv' auf 'allg'
+     - umlegbar ändern auf 'ja'
+     - leistung ändern auf 'hauswart'
+     - mobj_id auf NULL setzen
+- Hauswart-Verträge in Tabelle sollabschlag eintragen

@@ -176,7 +176,8 @@ class MtlEinAusTableModel( IccSumTableModel ):
             mon = self.getKey( indexcolumn )
             idxmon = constants.iccMonthShortNames.index( mon )
             e:XMtlZahlung = self.getElement( indexrow )
-            #if isinstance( e, XMtlMiete ):
+            if not e.vonMonat or not e.bisMonat:
+                return self._inactiveBrush
             idxaktivvon = constants.iccMonthShortNames.index( e.vonMonat )
             idxaktivbis = constants.iccMonthShortNames.index( e.bisMonat )
             if not (idxaktivvon <= idxmon <= idxaktivbis):
@@ -202,12 +203,10 @@ class HausgeldTableModel( MtlEinAusTableModel ):
     def __init__( self, rowList:List[XMtlHausgeld], jahr:int, editableMonthIdx:int ):
         MtlEinAusTableModel.__init__( self, rowList, jahr, editableMonthIdx, ( "soll", "summe" ) )
         self.setKeyHeaderMappings2(
-        ("master_name", self.getDebiKrediKey(), "soll", "ok", "nok", "jan", "feb", "mrz", "apr", "mai", "jun", "jul",
-         "aug",
-         "sep", "okt", "nov", "dez", "summe"),
+        ("mobj_id", self.getDebiKrediKey(), "soll", "ok", "nok", "jan", "feb", "mrz", "apr", "mai", "jun", "jul",
+         "aug", "sep", "okt", "nov", "dez", "summe"),
         ("Objekt", self.getDebiKrediHeader(), "Soll", "ok", "nok", "Jan", "Feb", "Mrz", "Apr", "Mai", "Jun", "Jul",
-         "Aug",
-         "Sep", "Okt", "Nov", "Dez", "Summe") )
+         "Aug", "Sep", "Okt", "Nov", "Dez", "Summe") )
 
     def getDebiKrediKey( self ) -> str:
         return "weg_name"

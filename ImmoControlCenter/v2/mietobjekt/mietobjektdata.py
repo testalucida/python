@@ -43,6 +43,7 @@ class MietobjektData( IccData ):
 
 
 
+
 def testExt():
     data = MietobjektData()
     xext = data.getMietobjektExt( "kleist_12" )

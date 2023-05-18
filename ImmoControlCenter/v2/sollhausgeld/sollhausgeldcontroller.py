@@ -4,6 +4,7 @@ from PySide2.QtWidgets import QApplication, QDialog
 from v2.icc.icccontroller import IccController
 from v2.icc.iccwidgets import IccCheckTableViewFrame
 from v2.icc.interfaces import XSollHausgeld
+from v2.sollhausgeld.sollhausgeldeditcontroller import SollHausgeldEditController
 from v2.sollhausgeld.sollhausgeldlogic import SollHausgeldLogic
 from v2.sollhausgeld.sollhausgeldview import SollHausgeldView, SollHausgeldDialog
 
@@ -36,14 +37,22 @@ class SollHausgeldController( IccController ):
             self._logic.updateSollHausgeldBemerkung( x.shg_id, x.bemerkung )
 
 
-    def onEditHausgeld( self, x: XSollHausgeld, view: SollHausgeldView ):
+    def onEditSollHausgeld( self, x: XSollHausgeld, view: SollHausgeldView ):
+        """
+        Im SollHausgeldDialog wurde der Button "Folge-Soll erfassen oder ändern..." gedrückt.
+        Wir instanzieren den SollHausgeldEditController und lassen ihn die Anlage eines neuen
+        Hausgeld-Intervalls behandeln
+        :param x: das derzeitige XSollHausgeld-Objekt
+        :param view: die SollHausgeldView, in der o.a. Button gedrückt wurde.
+        :return:
+        """
         def onBisChanged( bis: str ):
             view.setBis( bis )
-        # shgEditCtrl = SollHausgeldEditController()
-        # shgEditCtrl.endofcurrentsoll_modified.connect( onBisChanged )
-        # shgEditCtrl.handleFolgeSollHausgeld( x )
+        shgEditCtrl = SollHausgeldEditController()
+        shgEditCtrl.endofcurrentsoll_modified.connect( onBisChanged )
+        shgEditCtrl.handleFolgeSollHausgeld( x )
 
 def test():
     app = QApplication()
     ctrl = SollHausgeldController()
-    ctrl.showHgvAndRueZuFue( "WEG Remigiusstr. 17-23", 2023, 3 )
+    ctrl.showHgvAndRueZuFue( "remigius", 2023, 3 )

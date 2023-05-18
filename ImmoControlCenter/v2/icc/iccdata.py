@@ -7,7 +7,7 @@ from v2.icc.constants import EinAusArt, Umlegbar
 
 from v2.icc.definitions import DATABASE
 from v2.icc.interfaces import XHandwerkerKurz, XEinAus, XMietverhaeltnisKurz, XVerwaltung, XMasterobjekt, XMietobjekt, \
-    XKreditorLeistung, XLeistung
+    XKreditorLeistung, XLeistung, XMtlHausgeld
 
 
 class DbAction:
@@ -113,6 +113,12 @@ class IccData( DatabaseCommon ):
               "order by mobj_id " % master_name
         xlist = self.readAllGetObjectList( sql, XMietobjekt )
         return xlist
+
+    def getVerwaltung( self, vwg_id:int ) -> XVerwaltung:
+        sql = "select vwg_id, master_name, vw_id, weg_name, von, bis " \
+              "from verwaltung " \
+              "where vwg_id = %d " % vwg_id
+        return self.readOneGetObject( sql, XVerwaltung )
 
     def getVerwaltungen( self, jahr:int ) -> List[XVerwaltung]:
         minbis = "%d-%02d-%02d" % (jahr, 1, 1)
@@ -228,8 +234,6 @@ class IccData( DatabaseCommon ):
         if action == DbAction.INSERT:
             id_value = ret
         self._writeLog( sql, action, table, id_name, id_value, newvalues, oldvalues )
-
-
         return ret
 
     def _writeLog( self, sql:str, action:str, table:str, id_name:str, id_value:int,

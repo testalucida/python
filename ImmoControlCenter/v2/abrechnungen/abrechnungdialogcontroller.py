@@ -132,8 +132,9 @@ class AbrechnungDialogController:
     def _createVisibleAttributeListHGA( self ) -> Iterable[VisibleAttribute]:
         smallW = 90
         vislist = (
-            VisibleAttribute( "master_name", BaseEdit, "Objekt: ", editable=False ),
+            VisibleAttribute( "master_name", BaseEdit, "Haus: ", editable=False ),
             VisibleAttribute( "weg_name", BaseEdit, "WEG: ", editable=False ),
+            VisibleAttribute( "mobj_id", BaseEdit, "Wohnung: ", editable=False ),
             VisibleAttribute( "vw_id", BaseEdit, "Verwalter: ", editable=False ),
             VisibleAttribute( "ab_jahr", IntEdit, "Abrechnung für: ", editable=False, widgetWidth=smallW ),
             VisibleAttribute( "ab_datum", SmartDateEdit, "abgerechnet am: ", widgetWidth=smallW ),
