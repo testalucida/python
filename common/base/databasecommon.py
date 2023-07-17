@@ -4,8 +4,7 @@ from sqlite3 import Connection
 from typing import List, Tuple, Dict, Type
 
 #from definitions import DATABASE
-from interfaces import XBase
-
+from base.interfaces import XBase
 
 ###########################  DatabaseConnection  ###########################
 class DatabaseConnection:
