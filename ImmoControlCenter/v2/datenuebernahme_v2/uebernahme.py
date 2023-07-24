@@ -9,7 +9,7 @@ from base.interfaces import XBase
 from base.messagebox import WarningBox, InfoBox, ErrorBox, MessageBox
 from v2.geschaeftsreise.geschaeftsreiselogic import GeschaeftsreiseLogic
 from v2.icc.constants import EinAusArt, Umlegbar, iccMonthShortNames
-from v2.icc.definitions import DATENUEBERNAHME_DIR, ROOT_DIR
+#from v2.icc.definitions import DATENUEBERNAHME_DIR, ROOT_DIR
 from v2.icc.interfaces import XPauschale
 from v2.sammelabgabe.sammelabgabelogic import SammelabgabeLogic
 
@@ -640,6 +640,8 @@ class DatenUebernahmeLogic:
             # hgv repräsentiert einen Satz aus der Tabelle zahlung mit der zahl_art == 'hgv'
             debi_kredi = hgv["weg_name"]
             mobj_id = hgv["mobj_id"]
+            ea_art = EinAusArt.ALLGEMEINE_KOSTEN.dbvalue # nur für Kleist und Kaiser, sonst hgv
+            umlegbar = Umlegbar.JA.value # nur für Kleist und Kaiser (Hauswart), sonst nein (Verwaltung)
             leistung = "Verwaltung"
             if hgv["master_name"] == "NK_Kleist":
                 debi_kredi = "Müller, H.J."
@@ -652,6 +654,9 @@ class DatenUebernahmeLogic:
                     debi_kredi = "Eickhoff, Sascha"
                 else:
                     debi_kredi = "Fritsche"
+            else:
+                ea_art = EinAusArt.HAUSGELD_VORAUS.dbvalue
+                umlegbar = Umlegbar.NEIN.value
             einaus = {
                 "master_name": hgv["master_name"],
                 "mobj_id": mobj_id,
@@ -660,8 +665,8 @@ class DatenUebernahmeLogic:
                 "jahr": hgv["jahr"],
                 "monat": hgv["monat"],
                 "betrag": hgv["betrag"],
-                "ea_art": EinAusArt.ALLGEMEINE_KOSTEN.dbvalue,
-                "umlegbar": Umlegbar.JA.value,
+                "ea_art": ea_art,
+                "umlegbar": umlegbar,
                 "write_time": hgv["write_time"]
             }
             return einaus
@@ -729,10 +734,6 @@ class DatenUebernahmeLogic:
             self._destData.resetAutoIncrement( table )
         destcols = self._destData.getColumnNames( table )
         for dic in srcContent:
-            # for k, v in dic.items():
-                # print( "key: ", k, " - value: ", v,
-                #        " - is None: ", v is None,
-                #        " - isNumeric: ", isinstance( v, numbers.Number ) )
             insert_stmt = self._destData.createInsertStatement( table, destcols, dic )
             # insert:
             try:
@@ -745,15 +746,16 @@ class DatenUebernahmeLogic:
 
 def runUebernahme():
     app = QApplication()
-    print( ROOT_DIR )
-    pathFile = DATENUEBERNAHME_DIR + "/datenuebernahmeTEST.path"
-    f = open( pathFile, "r" )
-    paths = f.read()
-    paths = paths.split( "\n" )
-    print( paths )
-    srcpath = paths[0].split( "=" )[1] + "immo.db"
+    # print( ROOT_DIR )
+    # pathFile = DATENUEBERNAHME_DIR + "/datenuebernahmeTEST.path"
+    # f = open( pathFile, "r" )
+    # paths = f.read()
+    # paths = paths.split( "\n" )
+    # print( paths )
+    # srcpath = paths[0].split( "=" )[1] + "immo.db"
+    srcpath = "/home/martin/Vermietung/ImmoControlCenter/immo.db" ### !!! Das ist die PRODUKTIVE Datenbank !!!
     print( "SourcePath = ", srcpath )
-    destpath = paths[1].split( "=" )[1] + "immo_ueb.db"
+    destpath = "/home/martin/Projects/python/ImmoControlCenter/v2/icc/immo.db"
     print( "DestPath = ", destpath )
     more = "Quelle: %s\n\nZiel: %s\n" % (srcpath, destpath)
     box = WarningBox( "Datenübernahme", "\nBei Drücken von OK startet die Datenübernahme!\n\n", more, "OK", "KREIIISCH NEIN" )

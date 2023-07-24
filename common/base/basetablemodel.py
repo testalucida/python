@@ -470,12 +470,14 @@ class BaseTableModel( QAbstractTableModel ):
         key = self.getKey( self.sort_col )
         v1 = x1.getValue( key )
         v2 = x2.getValue( key )
+        if v1 is None: return -1 if self.sort_descending else 1
+        if v2 is None: return 1 if self.sort_descending else -1
         if isinstance( v1, str ):
             v1 = v1.lower()
             v2 = v2.lower()
         if v1 < v2: return -1 if self.sort_descending else 1
         if v1 > v2: return 1 if self.sort_descending else -1
-        if v1 == v2: return 0
+        return 0 # v1 == v2
 
 ##################  SumTableModel  #########################
 class SumTableModel( BaseTableModel ):

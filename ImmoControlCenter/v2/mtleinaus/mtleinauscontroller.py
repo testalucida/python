@@ -377,6 +377,13 @@ class MieteController( MtlEinAusController ):
         return None
 
     def getEinzelzahlungenModelMonat( self, debikredi: str, sab_id:int, jahr: int, monthIdx: int ) -> EinAusTableModel:
+        """
+        :param debikredi: Mieter
+        :param sab_id: wird hier nicht benötigt
+        :param jahr:
+        :param monthIdx:
+        :return:
+        """
         eatm = self._logic.getZahlungenModelDebiKrediMonat( debikredi, jahr, monthIdx )
         keys = ("mobj_id", "debi_kredi", "jahr", "monat", "betrag", "write_time")
         headers = ("Wohnung", "Mieter", "Jahr", "Monat", "Betrag", "gebucht am")
@@ -555,13 +562,11 @@ class AbschlagController( MtlEinAusController ):
 
     def getEinzelzahlungenModelMonat( self, debikredi: str, sab_id:int, jahr: int, monthIdx: int ) -> EinAusTableModel:
         # für die Anzeige, aus welchen Einzelzahlungen sich der ausgewiesene Monatswert zusammensetzt
-        # todo: Einzelzahlungen anhand sab_id ermitteln
-        #eatm = self._logic.getEinzelzahlungenModel( sab_id, jahr, monthIdx )
-        # keys = ("master_name", "mobj_id", "debi_kredi", "sab_id", "jahr", "monat", "betrag", "write_time")
-        # headers = ("Haus", "Wohnung", "Firma", "sab_id", "Jahr", "Monat", "Betrag", "gebucht am")
-        # eatm.setKeyHeaderMappings2( keys, headers )
-        #return eatm
-        pass
+        eatm = self._logic.getEinzelzahlungenModel( sab_id, jahr, monthIdx )
+        keys = ("master_name", "mobj_id", "debi_kredi", "buchungstext", "leistung", "jahr", "monat", "betrag", "write_time")
+        headers = ("Haus", "Wohnung", "Kreditor", "Buchungstext(Vnr)", "Leistung", "Jahr", "Monat", "Betrag", "write_time")
+        eatm.setKeyHeaderMappings2( keys, headers )
+        return eatm
 
     def onShowLeistungsvertrag( self, sab_id:int ):
         xsa = self._logic.getSollAbschlag( sab_id )

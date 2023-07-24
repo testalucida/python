@@ -185,15 +185,16 @@ class IccData( DatabaseCommon ):
     def getLetzteBuchung( self ) -> Dict:
         """
         Liefert ein paar Kenndaten der letzten Zahlung, die im Hauptfenster als "Letzte Buchung" angezeigt werden.
-        :return: einen Dict mit den keys ebi_kredi, leistung, betrag, buchungsdatum, write_time
+        :return: einen Dict mit den keys debi_kredi, leistung, betrag, buchungsdatum, write_time
         """
-        sql = "select max(ea_id) as ea_id from einaus "
+        sql = "select max(write_time) as write_time from einaus "
         dic = self.readOneGetDict( sql )
-        ea_id = dic["ea_id"]
-        if not ea_id: return
+        write_time = dic["write_time"]
+        if not write_time: return {"debi_kredi":"", "leistung": "",
+                                   "betrag": 0.0, "buchungsdatum":"1900-01-01", "write_time": "1900-01-01:00.00.00"}
         sql = "select debi_kredi, leistung, betrag, buchungsdatum, write_time " \
               "from einaus " \
-              "where ea_id = %d " % ea_id
+              "where write_time = '%s' " % write_time
         d = self.readOneGetDict( sql )
         return d
 

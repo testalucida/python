@@ -1,9 +1,6 @@
 from typing import List
-
 from PySide2.QtCore import QObject, Signal
-
 from v2.icc.interfaces import XEinAus
-
 
 class EinAusWriteDispatcher( QObject ):
     ea_inserted = Signal( XEinAus )

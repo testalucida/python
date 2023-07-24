@@ -5,10 +5,11 @@ from PySide2 import QtCore
 from PySide2.QtCore import QSize
 from PySide2.QtGui import QIcon
 from PySide2.QtWidgets import QApplication, QWidget, QMessageBox
-
+sys.path.append( "../../../common" )
+sys.path.append( "../../" )
+print( "sys.path: ", sys.path )
 from base.messagebox import WarningBox, ErrorBox
 from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
-from v2.icc.iccmainwindow import IccMainWindow
 from v2.icc.login import login
 from v2.icc.maincontroller import MainController
 

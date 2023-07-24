@@ -259,13 +259,16 @@ class EinAusData( IccData ):
         :param mv_id: ID des Mieters
         :return: List[XEinAus]
         """
-        sql = "select ea_id, master_name, mobj_id, debi_kredi, leistung, sab_id, hga_id, nka_id, reise_id, " \
-              "jahr, monat, betrag, " \
-              "ea_art, verteilt_auf, umlegbar, buchungsdatum, buchungstext, write_time " \
-              "from einaus " \
-              "where jahr = %d " \
-              "and monat = '%s' " \
-              "and sab_id = %d " % (jahr, monat, sab_id )
+        sql = "select ea.ea_id, ea.master_name, ea.mobj_id, ea.debi_kredi, ea.leistung, ea.sab_id, ea.hga_id, " \
+              "ea.nka_id, ea.reise_id, " \
+              "ea.jahr, ea.monat, ea.betrag, " \
+              "ea.ea_art, ea.verteilt_auf, ea.umlegbar, ea.buchungsdatum, ea.buchungstext, ea.write_time," \
+              "sab.vnr " \
+              "from einaus ea " \
+              "inner join sollabschlag sab on sab.sab_id = ea.sab_id " \
+              "where ea.jahr = %d " \
+              "and ea.monat = '%s' " \
+              "and ea.sab_id = %d " % (jahr, monat, sab_id )
         xlist = self.readAllGetObjectList( sql, XEinAus )
         self._mapDbValueToDisplay( xlist )
         return xlist
