@@ -1,8 +1,8 @@
 from functools import partial
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Callable
 
 from PySide2 import QtCore, QtWidgets, QtGui
-from PySide2.QtCore import Qt
+from PySide2.QtCore import Qt, Signal
 from PySide2.QtWidgets import QApplication, QMainWindow, QWidget, QMenuBar, QToolBar, QAction, QMessageBox, QLineEdit, \
     QLabel, \
     QMenu, QTabWidget
@@ -100,6 +100,7 @@ class MainTabWidget( BaseTabWidget ):
 class IccMainWindow( QMainWindow ):
     def __init__( self, environment ):
         QMainWindow.__init__( self )
+        self.shutdownCallback:Callable = None
         self.setWindowTitle( "ImmoControlCenter   " + environment )
         self._menubar:QMenuBar = None
         self._mainTab = MainTabWidget()
@@ -122,6 +123,15 @@ class IccMainWindow( QMainWindow ):
         self._actionCallbackFnc = None #callback function for all action callbacks
         self._shutdownCallback = None  # callback function for shutdown action
         self._createUI()
+
+    def setShutdownCallback( self, cb:Callable ):
+        """
+        :param cb: Callback-Function, die keine Argumente empfängt und einen bool-Wert zurückgeben muss:
+                    True: alles in Ordnung, Anwendung kann geschlossen werden
+                    False: Anwendung nicht schließen
+        :return: None
+        """
+        self._shutdownCallback = cb
 
     def setSummenValues( self, x:XSummen ):
         self._idSumEin.setIntValue( x.sumEin )
@@ -449,8 +459,10 @@ class IccMainWindow( QMainWindow ):
         return spacer
 
     def canShutdown( self ) -> bool:
-        # todo ?
-        return True
+        if self._shutdownCallback:
+            return self._shutdownCallback()
+        else:
+            return True
 
     def setLetzteBuchung( self, datum:str, text:str ) -> None:
         self._sdLetzteBuchung.setDateFromIsoString( datum )

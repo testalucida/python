@@ -1,11 +1,11 @@
 from typing import List, Iterable
 
 from PySide2.QtCore import Slot
-from PySide2.QtWidgets import QMenu
+from PySide2.QtWidgets import QMenu, QMessageBox, QInputDialog, QLineEdit
 
 import datehelper
 from base.baseqtderivates import BaseAction
-from base.messagebox import InfoBox, ErrorBox
+from base.messagebox import InfoBox, ErrorBox, WarningBox
 from v2.abrechnungen.abrechnungcontroller import NKAbrechnungController, HGAbrechnungController
 from v2.einaus.einauscontroller import EinAusController
 #from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
@@ -87,6 +87,7 @@ class MainController( IccController ):
 
     def createGui( self ) -> IccMainWindow:
         self._win = IccMainWindow( self._env )
+        self._win.setShutdownCallback( self.onBeforeShutdown )
         self._win.addMenu( self.getMenu() )
 
         menu = self._mietObjektCtrl.getMenu()
@@ -225,7 +226,8 @@ class MainController( IccController ):
 
     def onExportDatabase( self ):
         try:
-            self._logic.exportDatabaseToServer()
+            dic = self._win.getLetzteBuchung()
+            self._logic.exportDatabaseToServer( dic["datum"], dic["text"] )
             box = InfoBox( "Datenbank-Export", "Export der Datenbank abgeschlossen.", "", "OK" )
             box.exec_()
         except Exception as ex:
@@ -233,9 +235,18 @@ class MainController( IccController ):
             box.exec_()
 
     def onImportDatabase( self ):
+
+        dlg = QInputDialog()
+        dlg.move( self._mainwin.cursor().pos() )
+        name, ok = dlg.getText( self._mainwin, "Immo-Datenbank importieren",
+                                "Datenbank wird ins Verzeichnis\n\n'%s'\n\n importiert.\n\n"
+                                "<<<<Sie wird nicht für die laufende Anwendung verwendet!!>>>>\n\n"
+                                "Lokalen Namen für die Datenbank angeben: " % self._logic.getFtpLocalPath(),
+                                QLineEdit.Normal, "immo.db.imported" )
+
+        if not (ok and name): return
         try:
-            self._logic.importDatabaseFromServer()
-            # todo: nach Dateinamen fragen etc.
+            self._logic.importDatabaseFromServer( name )
             box = InfoBox( "Datenbank-Import", "Import der Datenbank abgeschlossen.", "", "OK" )
             box.exec_()
         except Exception as ex:
@@ -245,8 +256,15 @@ class MainController( IccController ):
     def onExit( self ):
         print( "onExit" )
 
-    def onShutdown( self ) -> bool:
-        return True
+    def onBeforeShutdown( self ) -> bool:
+        dic = self._win.getLetzteBuchung()
+        try:
+            self._logic.saveLetzteBuchung( dic["datum"], dic["text"])
+            return True
+        except Exception as ex:
+            box = WarningBox( "Speichern der letzten Buchung", "Speichern fehlgeschlagen: " + str(ex),
+                              "Anwendung trotzdem schließen?", "Ja", "Nein" )
+            return (box.exec_() == QMessageBox.Yes)
 
 ####################################################################################
 def testScreenSize( win:IccMainWindow ):

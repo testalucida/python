@@ -182,7 +182,7 @@ class IccData( DatabaseCommon ):
             leist.ea_art = EinAusArt.getDisplay( leist.ea_art )
         return l
 
-    def getLetzteBuchung( self ) -> Dict:
+    def _getLetzteBuchung_alt( self ) -> Dict:
         """
         Liefert ein paar Kenndaten der letzten Zahlung, die im Hauptfenster als "Letzte Buchung" angezeigt werden.
         :return: einen Dict mit den keys debi_kredi, leistung, betrag, buchungsdatum, write_time
@@ -197,6 +197,17 @@ class IccData( DatabaseCommon ):
               "where write_time = '%s' " % write_time
         d = self.readOneGetDict( sql )
         return d
+
+    def getLetzteBuchung( self ) -> Dict:
+        return self.readOneGetDict( "select datum, text from letztebuchung" )
+
+    def deleteLetzteBuchung( self ) -> int:
+        sql = "delete from letztebuchung"
+        return self.write( sql )
+
+    def insertLetzteBuchung( self, datum: str, text: str ) -> int:
+        sql = "insert into letztebuchung (datum, text) values ('%s', '%s')" % (datum, text)
+        return self.write( sql )
 
     def insertKreditorLeistung( self, x:XKreditorLeistung ):
         bemerkung = "NULL" if not x.bemerkung else "'%s'" % x.bemerkung

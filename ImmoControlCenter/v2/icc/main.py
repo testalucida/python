@@ -41,7 +41,7 @@ def saveDatabase() -> None:
         try:
             copyfile( src, dest )
         except Exception as ex:
-            box = WarningBox( "Datenbank auf lokalen Datenträger sichern", "Sicherung nicht möglich",
+            box = WarningBox( "Datenbank auf lokalen Datenträger sichern", "Sicherung nicht möglich:\n\n" + str(ex),
                               "Ist der Datenträger eingehängt?", "Nochmal versuchen", "Beenden" )
             rc = box.exec_()
             if rc == QMessageBox.Yes:
@@ -52,7 +52,7 @@ def saveDatabase() -> None:
     src = "./immo.db"
     if "Vermietung" in scriptdir:
         print( "Running in REL; try to copy immo.db" )
-        dest = "/media/martin/Elements1/Vermietung/ImmoControlCenter/v2/immo.db"
+        dest = "/media/martin/Elements1/Vermietung_V2/ImmoControlCenter/v2/icc/immo.db"
         if os.path.isfile( src ):
             box = QMessageBox()
             box.setIcon( QMessageBox.Question )
@@ -116,7 +116,7 @@ def main():
         env = "RELEASE"
     # Die one-and-only-Instanz des EinAusWriteDispatchers erzeugen:
     EinAusWriteDispatcher()
-    mainCtrl = MainController( "DEVELOP" )
+    mainCtrl = MainController( env )
     mainwin = mainCtrl.createGui()
     shutDownFilter = ShutDownFilter( mainwin, app )
     mainwin.installEventFilter( shutDownFilter )

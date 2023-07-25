@@ -109,7 +109,7 @@ class IccLogic:
                 return leistungslist[0]
         else: return None
 
-    def getLetzteBuchung( self ) -> [str, str]:
+    def _getLetzteBuchung_alt( self ) -> [str, str]:
         """
         Liefert den letzten Eintrag aus der Tabelle einaus
         :return: datum, text, so wie es im Mainwindow angezeigt werden soll
@@ -125,6 +125,14 @@ class IccLogic:
             datum = ea["write_time"][0:10]
             text += " (Datum=Eintragung)"
         return datum, text
+
+    def getLetzteBuchung( self ) -> [str, str]:
+        """
+        Liefert den beim letzten Shutdown gespeicherten (einzigen) Satz aus Tabelle letztebuchung
+        :return: datum, text, so wie es im Mainwindow angezeigt werden soll
+        """
+        datumtext:Dict = self._iccdata.getLetzteBuchung()
+        return datumtext["datum"], datumtext["text"]
 
 
 
