@@ -1,6 +1,7 @@
 
 from ftp import FtpIni, Ftp
 from v2.einaus.einauslogic import EinAusLogic
+from v2.icc.definitions import ROOT_DIR
 from v2.icc.iccdata import IccData
 from v2.icc.icclogic import IccLogic
 from v2.icc.interfaces import XSummen
@@ -31,10 +32,14 @@ class MainLogic( IccLogic ):
         :param text:  Text der letzten Buchung
         :return:
         """
-        import os
-        path = os.getcwd()
-        print( "current work directory: ", path )
-        ftpini = FtpIni( "v2/ftp.ini" )
+        # import os
+        # import sys
+        # path = os.getcwd()
+        # print( "ROOT_DIR: ", ROOT_DIR )
+        # print( "current work directory: ", path )
+        # print( "location of this script: ", sys.argv[0])
+        # print( "os.path.dirname(): ", os.path.dirname(sys.argv[0] ) )
+        ftpini = FtpIni( ROOT_DIR + "/ftp.ini" )
         ftp = Ftp( ftpini )
         # store last booking
         self.saveLetzteBuchung( datum, text )

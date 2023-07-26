@@ -106,6 +106,7 @@ def quit_app( self ):
     self._app.quit()
 
 def main():
+    #os.chdir("~")
     app = QApplication()
     env = "DEVELOP"
     if not runningInDev():
