@@ -21,6 +21,19 @@ class GeschaeftsreiseData( IccData ):
               "where jahr = %d" % jahr
         return self.readAllGetObjectList( sql, XGeschaeftsreise )
 
+    def getGeschaeftsreise( self, reise_id:int ) -> XGeschaeftsreise:
+        """
+        Ermittelt die Daten einer Geschäftsreise
+        :param reise_id:
+        :return:
+        """
+        sql = "select reise_id, master_name, von, bis, jahr, zweck, km, personen, " \
+              "uebernachtung, uebernacht_kosten " \
+              "from geschaeftsreise " \
+              "where reise_id = %d " % reise_id
+        x = self.readOneGetObject( sql, XGeschaeftsreise )
+        return x
+
     def getGeschaeftsreisen( self, master_name:str, jahr:int ) -> List[XGeschaeftsreise]:
         """
         Ermittelt alle Geschäftsreisen zu einem Masterobjekt.

@@ -14,6 +14,7 @@ class FilterCondition:
     def __init__( self ):
         self.header = ""  # Name der Spalte
         self.value = ""   # Vergleichswert
+        self.value_num = None
         self.op = "=" # Vergleichsopeartor {'startsWith', 'contains', '=', '>=', '<=', '>', '<'}
         self.caseSensitive = False
 
@@ -379,6 +380,7 @@ class BaseTableModel( QAbstractTableModel ):
 
     #################   filtering  ##############################
     def applyFilter( self, condlist:List[FilterCondition] ):
+        self.resetFilter()
         self._filterConditionList = condlist
         self._applyFilter( 0, self.rowCount()-1 )
 
@@ -399,6 +401,7 @@ class BaseTableModel( QAbstractTableModel ):
         if isinstance( value, str ) and not cond.caseSensitive:
             value = value.lower()
         compValue = cond.value
+        compValueNum = cond.value_num
         op = cond.op
         if not value and not compValue: return True
         if not value and compValue: return False
@@ -407,18 +410,22 @@ class BaseTableModel( QAbstractTableModel ):
         # und geprüft wird.
         if op == "startsWith": return str(value).startswith( compValue )
         if op == "contains": return compValue in str( value )
-        if op == "=": return value == compValue
-        if op == "<>": return value != compValue
-        if op == "<": return value < compValue
-        if op == ">": return value > compValue
-        if op == "<=": return value <= compValue
-        if op == ">=": return value >= compValue
+        if op == "=": return (value == compValue or value == compValueNum)
+        if op == "<>": return (value != compValue and value != compValueNum)
+        value_is_num = isinstance( value, numbers.Number )
+        if op == "<": return value < compValue if not value_is_num else value < compValueNum
+        if op == ">": return value > compValue if not value_is_num else value > compValueNum
+        if op == "<=": return value <= compValue if not value_is_num else value <= compValueNum
+        if op == ">=": return value >= compValue if not value_is_num else value >= compValueNum
 
     def _setElementsUnvisible( self, elements:List[XBase] ) -> None:
         if not self._rowListUnfiltered:
             self._rowListUnfiltered = copy.deepcopy( self.rowList )
         for x in elements:
-            self.rowList.remove( x )
+            try:
+                self.rowList.remove( x )
+            except:
+                pass
         self.layoutChanged.emit()
 
     def resetFilter( self ) -> None:

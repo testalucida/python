@@ -549,7 +549,8 @@ class AbschlagLogic( MtlEinAusLogic ):
     def addMonatsZahlung( self, x:XMtlAbschlag, selectedYear:int, selectedMonth:int,
                           value:float, mehrtext:str= "" ) -> XEinAus:
         dic = self._abschlagData.getVnrUndEaArtUndUmlegbar( x.sab_id )
-        x.leistung += (" (%s)" % dic["vnr"])
+        if dic["vnr"]:
+            x.leistung += (" (%s)" % dic["vnr"])
         x.ea_art = EinAusArt.getDisplay( dic["ea_art"] )
         xeinaus = self._ealogic.addZahlung2( x.ea_art, x.master_name, x.mobj_id, x.kreditor,
                                              x.sab_id, x.leistung,

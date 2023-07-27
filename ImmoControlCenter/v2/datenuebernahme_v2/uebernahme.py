@@ -10,7 +10,7 @@ from base.messagebox import WarningBox, InfoBox, ErrorBox, MessageBox
 from v2.geschaeftsreise.geschaeftsreiselogic import GeschaeftsreiseLogic
 from v2.icc.constants import EinAusArt, Umlegbar, iccMonthShortNames
 #from v2.icc.definitions import DATENUEBERNAHME_DIR, ROOT_DIR
-from v2.icc.interfaces import XPauschale
+from v2.icc.interfaces import XPauschale, XGeschaeftsreise, XEinAus
 from v2.sammelabgabe.sammelabgabelogic import SammelabgabeLogic
 
 
@@ -520,6 +520,11 @@ class DatenUebernahmeLogic:
     def _processReisekosten( self, clearEinAusBeforeWrite:bool ):
         # def isBetween( jahr, jahr_von, jahr_bis ) -> bool:
         #     return jahr >= jahr_von and jahr <= jahr_bis
+
+        ######## ACHTUNG ##########
+        # !!!Darf nicht mehr laufen - die Kosten werden falsch berechnet!!!
+        ########## ACHTUNG #########
+
         reiselist: List[Dict] = self._destData.selectReisen()
         jahr = 0
         xpausch:XPauschale = None
@@ -743,7 +748,6 @@ class DatenUebernahmeLogic:
                 box.exec_()
                 return
 
-
 def runUebernahme():
     app = QApplication()
     # print( ROOT_DIR )
@@ -767,5 +771,24 @@ def runUebernahme():
     box = InfoBox( "Datenübernahme", "Die Datenübernahme ist beendet.", "", "OK" )
     box.exec_()
 
+
+def correctReisekosten():
+    from v2.einaus.einauslogic import EinAusLogic
+    ealogic = EinAusLogic()
+    reiselogic = GeschaeftsreiseLogic()
+    ealist:List[XEinAus] = ealogic.getZahlungen( EinAusArt.SONSTIGE_KOSTEN.display, 2021,
+                                                 "and leistung = 'Geschaeftsreise' ")
+    for ea in ealist:
+        reise:XGeschaeftsreise = reiselogic.getGeschaeftsreise( ea.reise_id )
+        ea_tmp:XEinAus = reiselogic._createXeinausFromXgeschaeftsreise( reise )
+        kosten: float = reiselogic.getGeschaeftsreisekosten2( reise )
+        print( "Kosten für Reise %d in Tabelle einaus: %.2f -- korrigiere zu %.2f" % (reise.reise_id, ea.betrag, kosten) )
+        ea.betrag = kosten
+        ea.buchungstext = ea_tmp.buchungstext
+        ealogic.updateZahlung( ea )
+    #ealogic.commit()
+
 def test():
-    runUebernahme()
+    #runUebernahme()
+    #correctReisekosten()
+    pass

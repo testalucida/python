@@ -1,6 +1,6 @@
 import numbers
 from functools import cmp_to_key
-from typing import List, Dict
+from typing import List, Dict, Any
 
 from PySide2.QtCore import QObject, Qt, SIGNAL, QSize
 from PySide2.QtWidgets import QGridLayout, QDialog, QApplication
@@ -21,6 +21,8 @@ from base.interfaces import XBase, TestItem
 #     def toString( self ):
 #         return "Column: " + self.header + " - op: '" + self.op + "' - comp.value: " + self.value + \
 #                " - exactMatch: " + str( self.exactMatch ) + " - caseSensitive: " + str( self.caseSensitive )
+from numberhelper import NumberHelper
+
 
 class DefinitionRow:
     """
@@ -128,11 +130,11 @@ class FilterDialog( BaseDialog ):
                 filter.header = header
                 filter.op = defi.cboOp.currentText()
                 filter.value = defi.edValue.text()
+                filter.value_num = NumberHelper.getFloatOrIntOrNone( filter.value )
                 filter.caseSensitive = True if defi.btnCaseSensitive.isChecked() else False
                 # filter.exactMatch = True if defi.btnExactMatch.isChecked() else False
                 l.append( filter )
         return l
-
 
 #######################   MultiSortHandler   ################
 class FilterHandler( QObject ):
@@ -204,6 +206,7 @@ def test():
     tm = makeTestModel2()
     tv.setModel( tm )
     fh = FilterHandler( tv )
-    fh.onFilter()
-    #app.exec_()
+    tv.show()
+    #fh.onFilter()
+    app.exec_()
 

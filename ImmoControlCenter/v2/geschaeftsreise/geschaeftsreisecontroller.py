@@ -1,14 +1,13 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from PySide2.QtCore import QSize
-from PySide2.QtWidgets import QWidget, QApplication, QMessageBox, QMenu
+from PySide2.QtWidgets import QWidget, QApplication, QMenu
 
 from base.baseqtderivates import BaseAction
-from base.messagebox import ErrorBox, QuestionBox
-from generictable_stuff.okcanceldialog import OkCancelDialog, OkDialog
+from base.messagebox import ErrorBox
+from generictable_stuff.okcanceldialog import OkDialog
 from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
 from v2.geschaeftsreise.geschaeftsreiseeditcontroller import GeschaeftsreiseEditController
-#from v2.geschaeftsreise.geschaeftsreiselogic import GeschaeftsreiseUcc
 from v2.geschaeftsreise.geschaeftsreiselogic import GeschaeftsreiseLogic
 from v2.geschaeftsreise.geschaeftsreisetablemodel import GeschaeftsreiseTableModel
 from v2.geschaeftsreise.geschaeftsreisenview import GeschaeftsreisenView
@@ -71,76 +70,53 @@ class GeschaeftsreiseController( IccController ):
         return self._view
 
     def onYearChanged( self, newyear:int ):
-        if self.isChanged():
-            box = QuestionBox( "Änderungen speichern?", "Sollen die Änderungen an Geschäftsreisen gespeichert werden?",
-                               "Ja", "Nein", "Abbrechen" )
-            rc = box.exec_()
-            if rc == QMessageBox.Yes:
-                if not self.onSave():
-                    #title: str, msg: str, more: str
-                    box = ErrorBox( "Fehler beim Speichern", "Speichern hat nicht funktioniert", "" )
-                    box.exec_()
-                else:
-                    self._setNewModel( newyear )
-            elif rc == QMessageBox.No: # Anwender will die Änderungen nicht speichern
-                self._setNewModel( newyear )
-            else:
-                pass # Anwender hat Abbrechen gedrückt
-        else:
-            self._setNewModel( newyear )
+        self._setNewModel( newyear )
 
     def _setNewModel( self, jahr:int ):
         tm: GeschaeftsreiseTableModel = self._logic.getGeschaeftsreisenTableModel( jahr )
         self._view.setModel( tm )
         tm.setSortable( True )
 
-    def onSave( self ) -> bool:
-        if self.writeChanges( self._view.getModel().getChanges() ):
-           model: GeschaeftsreiseTableModel = self._view.getModel()
-           model.clearChanges()
-           return True
-        return False
+    # def getChanges( self ) -> Any:
+    #     model:GeschaeftsreiseTableModel = self._view.getModel()
+    #     return model.getChanges()
 
-    def getChanges( self ) -> Any:
-        model:GeschaeftsreiseTableModel = self._view.getModel()
-        return model.getChanges()
+    # def writeChanges( self, changes: Any = None ) -> bool:
+    #     changes:Dict[str, List[XGeschaeftsreise]] = self.getChanges()
+    #     for x in changes["INSERT"]:
+    #         try:
+    #             self._logic.insertGeschaeftsreise( x )
+    #         except Exception as ex:
+    #             box = ErrorBox( "Fehler beim Einfügen der Geschäftsreise", str( ex ), "" )
+    #             box.exec_()
+    #             return False
+    #     for x in changes["UPDATE"]:
+    #         try:
+    #             self._logic.updateGeschaeftsreise( x )
+    #         except Exception as ex:
+    #             box = ErrorBox( "Fehler beim Ändern der Geschäftsreise", str( ex ), "" )
+    #             box.exec_()
+    #             return False
+    #     for x in changes["DELETE"]:
+    #         try:
+    #             self._logic.deleteGeschaeftsreise( x.reise_id )
+    #         except Exception as ex:
+    #             box = ErrorBox( "Fehler beim Löschen der Geschäftsreise", str( ex ), "" )
+    #             box.exec_()
+    #             return False
+    #     return True
 
-    def writeChanges( self, changes: Any = None ) -> bool:
-        changes:Dict[str, List[XGeschaeftsreise]] = self.getChanges()
-        for x in changes["INSERT"]:
-            try:
-                self._logic.insertGeschaeftsreise( x )
-            except Exception as ex:
-                box = ErrorBox( "Fehler beim Einfügen der Geschäftsreise", str( ex ), "" )
-                box.exec_()
-                return False
-        for x in changes["UPDATE"]:
-            try:
-                self._logic.updateGeschaeftsreise( x )
-            except Exception as ex:
-                box = ErrorBox( "Fehler beim Ändern der Geschäftsreise", str( ex ), "" )
-                box.exec_()
-                return False
-        for x in changes["DELETE"]:
-            try:
-                self._logic.deleteGeschaeftsreise( x.reise_id )
-            except Exception as ex:
-                box = ErrorBox( "Fehler beim Löschen der Geschäftsreise", str( ex ), "" )
-                box.exec_()
-                return False
-        return True
-
-    def clearChanges( self ) -> None:
-        model:GeschaeftsreiseTableModel = self._view.getModel()
-        model.clearChanges()
+    # def clearChanges( self ) -> None:
+    #     model:GeschaeftsreiseTableModel = self._view.getModel()
+    #     model.clearChanges()
 
     @staticmethod
     def getViewTitle() -> str:
         return "Geschäftsreisen"
 
-    def isChanged( self ) -> bool:
-        model:GeschaeftsreiseTableModel = self._view.getModel()
-        return model.isChanged()
+    # def isChanged( self ) -> bool:
+    #     model:GeschaeftsreiseTableModel = self._view.getModel()
+    #     return model.isChanged()
 
     def onCreate( self ):
         editCtrl = GeschaeftsreiseEditController()

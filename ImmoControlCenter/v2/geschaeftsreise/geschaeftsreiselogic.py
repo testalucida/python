@@ -44,6 +44,9 @@ class GeschaeftsreiseLogic:
             self._pauschalen[jahr] = pausch
             return pausch
 
+    def getGeschaeftsreise( self, reise_id:int ) -> XGeschaeftsreise:
+        return self._data.getGeschaeftsreise( reise_id )
+
     def getGeschaeftsreisen( self, master_name: str, jahr: int ) -> List[XGeschaeftsreise]:
         xlist = self._data.getGeschaeftsreisen( master_name, jahr )
         return xlist
