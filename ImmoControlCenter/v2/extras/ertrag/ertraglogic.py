@@ -96,4 +96,5 @@ class ErtragLogic:
 def test():
     logic = ErtragLogic()
     tm = logic.getErtragTableModel( 2022 )
+
     print( tm )

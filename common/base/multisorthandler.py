@@ -89,6 +89,8 @@ class MultiSortHandler( QObject ):
             self._tv.horizontalHeader().setSortIndicatorShown( True )
 
     def onMultiSort( self ):
+        self._tm = self._tv.model()
+        self._sortKeys.clear()
         headers:List[str] = self._tm.getHeaders()
         if not self._dlg:
             self._dlg = MultiSortDialog( headers )

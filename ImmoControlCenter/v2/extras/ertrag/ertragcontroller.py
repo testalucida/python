@@ -9,7 +9,7 @@ from base.basetableview import BaseTableView
 from base.basetableviewframe import BaseTableViewFrame
 from base.printhandler import PrintHandler
 from generictable_stuff.okcanceldialog import OkDialog
-from v2.extras.ertrag.ertraglogic import ErtragLogic
+from v2.extras.ertrag.ertraglogic import ErtragLogic, ErtragTableModel
 from v2.icc.icccontroller import IccController
 from v2.icc.interfaces import XMasterEinAus
 
@@ -46,7 +46,7 @@ class ErtragController( IccController ):
             else:
                 jahr = jahre[0]
         self._jahr = jahr
-        model = self._logic.getErtragTableModel( jahr )
+        model:ErtragTableModel = self._logic.getErtragTableModel( jahr )
         v = self._view
         v.setModel( model )
         v.setAlternatingRowColors( True )

@@ -156,6 +156,9 @@ class NKAbrechnungData( AbrechnungData ):
 
 
     def getObjekteUndAbrechnungen( self, ab_jahr:int ) -> List[XNKAbrechnung]:
+        if not ab_jahr > 2000: raise  Exception( "Abrechnungsjahr muss vierstellig angegeben werden." )
+        mv_min_bis = "'%d-01-01'" % ab_jahr
+        mv_max_von = "'%d-12-31'" % ab_jahr
         sql = "select master.master_name, " \
               "mo.mobj_id, mv.mv_id, mv.von, coalesce(mv.bis, '') as bis, " \
               "coalesce(nka.nka_id, 0) as abr_id, coalesce(nka.ab_datum, '') as ab_datum, " \
@@ -163,10 +166,12 @@ class NKAbrechnungData( AbrechnungData ):
               "coalesce(nka.bemerkung, '') as bemerkung " \
               "from masterobjekt master " \
               "inner join mietobjekt mo on mo.master_name = master.master_name " \
-              "inner join mietverhaeltnis mv on (mv.mobj_id = mo.mobj_id and nka_relevant = 1) " \
+              "inner join mietverhaeltnis mv on (mv.mobj_id = mo.mobj_id) " \
               "left outer join nk_abrechnung nka on (nka.ab_jahr = %d and nka.mv_id = mv.mv_id) " \
               "where master.aktiv > 0 " \
-              "order by master.master_name, mv.von desc " % ab_jahr
+              "and mv.von < %s " \
+              "and (mv.bis is null or mv.bis = '' or mv.bis > %s ) " \
+              "order by master.master_name, mv.von desc " % (ab_jahr, mv_max_von, mv_min_bis)
         return self.readAllGetObjectList( sql, XNKAbrechnung )
 
     def getAbrechnung( self, nka_id: int ) -> XNKAbrechnung:

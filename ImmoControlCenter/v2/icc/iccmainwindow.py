@@ -387,7 +387,7 @@ class IccMainWindow( QMainWindow ):
         # Menüpunkt "Neue Abfrage
         action = QAction( self, text="Neue Datenbankabfrage" )
         action.setShortcut( QKeySequence( "Ctrl+n" ) )
-        icon = QtGui.QIcon( "../images/sql.xpm" )
+        icon = QtGui.QIcon( "images/sql.xpm" )
         action.setIcon( icon )
         action.triggered.connect( self.onNewSql )
         menu.addAction( action )

@@ -174,7 +174,8 @@ class EinAusData( IccData ):
         :param jahr: z.B. 2022
         :return:
         """
-        sql = "select ea_id, master_name, mobj_id, debi_kredi, coalesce(leistung, '') as leistung, " \
+        sql = "select ea_id, master_name, coalesce(mobj_id, '') as mobj_id, coalesce(debi_kredi, '') as debi_kredi, " \
+              "coalesce(leistung, '') as leistung, " \
               "sab_id, hga_id, nka_id, reise_id, jahr, monat, betrag, ea_art, " \
               "coalesce(verteilt_auf, '') as verteilt_auf, umlegbar, " \
               "coalesce( buchungsdatum, '') as buchungsdatum, coalesce(buchungstext, '') as buchungstext, " \

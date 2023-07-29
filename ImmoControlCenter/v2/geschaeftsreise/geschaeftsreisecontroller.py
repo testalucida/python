@@ -40,7 +40,7 @@ class GeschaeftsreiseController( IccController ):
         dlg = OkDialog( "Geschäftsreisen bearbeiten" )
         dlg.setOkButtonText( "Schließen" )
         dlg.addWidget( view, 0 )
-        dlg.resize( QSize( 800, 800 ) )
+        dlg.resize( QSize( 1350, 800 ) )
         dlg.exec_()
 
     def createGui( self ) -> QWidget:

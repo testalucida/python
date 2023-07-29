@@ -19,7 +19,7 @@ class ErtragData( IccData ):
               % (master_name, jahr, EinAusArt.BRUTTOMIETE.dbvalue, EinAusArt.NEBENKOSTEN_ABRECHNG.dbvalue)
         tuplelist = self.read( sql )
         summe = tuplelist[0][0]
-        return int( round( summe ) ) if summe else 0.0
+        return int( round( summe ) ) if summe else 0
 
     def getAnzahlVermieteteMonate( self, master_name:str, jahr:int ) -> int:
         sql = "select count(*) " \
@@ -39,7 +39,7 @@ class ErtragData( IccData ):
               "and ea_art = '%s' " % (master_name, jahr, ea_art_db )
         tuplelist = self.read( sql )
         summe = tuplelist[0][0]
-        return int( round( summe ) ) if summe else 0.0
+        return int( round( summe ) ) if summe else 0
 
     # def getReparaturenEinzeln( self, master_name:str, jahr:int ) -> List[XEinAus]:
     #     sql = "select master_name, mobj_id, debi_kredi, buchungsdatum, buchungstext, ea_art, betrag " \
@@ -84,7 +84,7 @@ class ErtragData( IccData ):
               % ( master_name, jahr, EinAusArt.HAUSGELD_VORAUS.dbvalue, EinAusArt.HAUSGELD_ABRECHNG.dbvalue )
         tuplelist = self.read( sql )
         summe = tuplelist[0][0]
-        return int( round( summe ) ) if summe else 0.0
+        return int( round( summe ) ) if summe else 0
 
     def getNettomieteAktuell( self, master_name:str ) -> float:
         current_date = datehelper.getCurrentDateIso()
@@ -97,6 +97,6 @@ class ErtragData( IccData ):
               "and (sm.bis is '' or sm.bis is NULL or sm.bis >= '%s') " % (master_name, current_date, current_date)
         tuplelist = self.read( sql )
         summe = tuplelist[0][0]
-        return summe if summe else 0.0
+        return summe if summe else 0
 
 

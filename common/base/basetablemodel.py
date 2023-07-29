@@ -165,7 +165,8 @@ class BaseTableModel( QAbstractTableModel ):
 
     def getValue( self, indexrow: int, indexcolumn: int ) -> Any:
         e:XBase = self.getElement( indexrow )
-        return e.getValue( self.keys[indexcolumn] )
+        val = e.getValue( self.keys[indexcolumn] )
+        return "" if val is None else val
 
     def getText( self, indexrow: int, indexcolumn: int ) -> str:
         item = self.getValue( indexrow, indexcolumn )

@@ -8,8 +8,8 @@ class GeschaeftsreiseTableModel( BaseTableModel ):
     def __init__( self, reiseList:List[XGeschaeftsreise] ):
         BaseTableModel.__init__( self, reiseList )
         self.setKeyHeaderMappings2(
-            ("master_name", "von", "bis", "zweck", "personen", "uebernachtung", "uebernacht_kosten", "km"),
-            ( "Haus", "Beginn", "Ende", "Zweck", "Anz.\nPers.", "Übernachtung", "Übernacht.\nkosten", "Gef. km" )
+            ("reise_id", "master_name", "von", "bis", "zweck", "personen", "uebernachtung", "uebernacht_kosten", "km"),
+            ( "ID", "Haus", "Beginn", "Ende", "Zweck", "Anz.\nPers.", "Übernachtung", "Übernacht.\nkosten", "Gef. km" )
         )
         # self.setKeyHeaderMappings( {
         #     "Haus": "master_name",
