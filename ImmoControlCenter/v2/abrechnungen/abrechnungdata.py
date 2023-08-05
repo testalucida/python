@@ -98,6 +98,8 @@ class HGAbrechnungData( AbrechnungData ):
     #     return self.readAllGetObjectList( sql, XHGAbrechnung )
 
     def getObjekteUndAbrechnungen( self, ab_jahr: int ) -> List[XHGAbrechnung]:
+        max_vwg_von = str(ab_jahr) + "-12-31"
+        min_vwg_bis = str(ab_jahr) + "-01-01"
         sql = "select mo.master_name, mo.mobj_id, " \
               "vwg.vwg_id, vwg.weg_name, " \
               "vwg.vw_id, vwg.von, coalesce(vwg.bis, '') as vwg_bis, " \
@@ -111,8 +113,11 @@ class HGAbrechnungData( AbrechnungData ):
               "inner join verwaltung vwg on vwg.master_name = mo.master_name " \
               "left outer join hg_abrechnung hga on (hga.ab_jahr = %d and hga.mobj_id = mo.mobj_id) " \
               "where mo.aktiv > 0 " \
-              "order by mo.master_name, vwg.von " % ab_jahr
-        return self.readAllGetObjectList( sql, XHGAbrechnung )
+              "and vwg.von <= '%s' " \
+              "and (vwg.bis is NULL or vwg.bis = '' or vwg.bis >= '%s') " \
+              "order by mo.master_name, vwg.von " % (ab_jahr, max_vwg_von, min_vwg_bis)
+        abrlist = self.readAllGetObjectList( sql, XHGAbrechnung )
+        return abrlist
 
     def getAbrechnung( self, hga_id:int ) -> XHGAbrechnung:
         sql = "select hga_id, mobj_id, ab_jahr, vwg_id, forderung, entnahme_rue, ab_datum, bemerkung " \
