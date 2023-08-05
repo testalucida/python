@@ -77,39 +77,6 @@ class GeschaeftsreiseController( IccController ):
         self._view.setModel( tm )
         tm.setSortable( True )
 
-    # def getChanges( self ) -> Any:
-    #     model:GeschaeftsreiseTableModel = self._view.getModel()
-    #     return model.getChanges()
-
-    # def writeChanges( self, changes: Any = None ) -> bool:
-    #     changes:Dict[str, List[XGeschaeftsreise]] = self.getChanges()
-    #     for x in changes["INSERT"]:
-    #         try:
-    #             self._logic.insertGeschaeftsreise( x )
-    #         except Exception as ex:
-    #             box = ErrorBox( "Fehler beim Einfügen der Geschäftsreise", str( ex ), "" )
-    #             box.exec_()
-    #             return False
-    #     for x in changes["UPDATE"]:
-    #         try:
-    #             self._logic.updateGeschaeftsreise( x )
-    #         except Exception as ex:
-    #             box = ErrorBox( "Fehler beim Ändern der Geschäftsreise", str( ex ), "" )
-    #             box.exec_()
-    #             return False
-    #     for x in changes["DELETE"]:
-    #         try:
-    #             self._logic.deleteGeschaeftsreise( x.reise_id )
-    #         except Exception as ex:
-    #             box = ErrorBox( "Fehler beim Löschen der Geschäftsreise", str( ex ), "" )
-    #             box.exec_()
-    #             return False
-    #     return True
-
-    # def clearChanges( self ) -> None:
-    #     model:GeschaeftsreiseTableModel = self._view.getModel()
-    #     model.clearChanges()
-
     @staticmethod
     def getViewTitle() -> str:
         return "Geschäftsreisen"

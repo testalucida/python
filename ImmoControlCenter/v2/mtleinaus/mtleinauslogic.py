@@ -401,7 +401,7 @@ class HausgeldLogic( MtlEinAusLogic ):
                         ea1.betrag += ea2.betrag
                         einausList.remove( ea2 )
             return einausList
-        xhglist = self._hausgeldData.getMtlHausgeldListe()
+        xhglist = self._hausgeldData.getMtlHausgeldListe( jahr )
         ea_list:List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.HAUSGELD_VORAUS.display, jahr )
         ea_list = condense( ea_list )
         for xhg in xhglist:
@@ -430,7 +430,7 @@ class HausgeldLogic( MtlEinAusLogic ):
         sollHgList = self.getSollHausgelder( jahr, monatIdx )
         for hg in xhglist:
             for soll in sollHgList:
-                if soll.weg_name == hg.weg_name:
+                if soll.weg_name == hg.weg_name and soll.mobj_id == hg.mobj_id:
                     hg.soll = soll.brutto
                     break
         return xhglist

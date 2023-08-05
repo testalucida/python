@@ -8,23 +8,21 @@ class HausgeldData( IccData ):
     def __init__(self):
         IccData.__init__( self )
 
-    def getMtlHausgeldListe( self, aktiv=True ) -> List[XMtlHausgeld]:
+    def getMtlHausgeldListe( self, jahr:int ) -> List[XMtlHausgeld]:
         """
         Liefert die Mietobjekte, für die Hausgeld entrichtet wird (=die von einem Verwalter verwaltet werden)
         als Liste von XMtlHausgeld.
         D.h., ILL_Eich, NK_Kleist und SB_Kaiser werden nicht berücksichtigt.
-        :param aktiv: Wenn False, werden ALLE (verwalteten) Mietobjekte geliefert, sonst nur die, bei denen dieses
-                      Kennzeichen auf 1 steht (Tabelle mietobjekt)
-                      Auch nach einem Verkauf ist ein Objekt noch solange "aktiv", bis die
-                      z.B. die HG-Abrechnung mit dem Verwalter oder dem Käufer erfolgt ist.
-                      Das kann ggf. mehrere Monate dauern.
+        :param: jahr:
         :return:
         """
-        aktiv = 1 if aktiv == True else False
+        max_von = str(jahr) + "-12-31"
+        min_bis = str(jahr) + "-01-01"
         sql = "select distinct mo.master_name, mo.mobj_id, vwg.weg_name " \
               "from mietobjekt mo " \
               "inner join verwaltung vwg on vwg.master_name = mo.master_name " \
-              "where mo.aktiv = %d " % aktiv
+              "where vwg.von <= '%s' " \
+              "and (vwg.bis is NULL or vwg.bis = '' or vwg.bis >= '%s' ) " % (max_von, min_bis)
         return self.readAllGetObjectList( sql, XMtlHausgeld )
 
 

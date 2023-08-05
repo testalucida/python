@@ -34,6 +34,7 @@ class GeschaeftsreiseEditController:
         masterlist = GeschaeftsreiseLogic().getMasterNamen()
         self._view = GeschaeftsreiseEditView( masterlist, self._xgeschaeftsreise )
         self._dlg = OkCancelDialog()
+        self._dlg.setWindowTitle( "Geschäftsreise bearbeiten" )
         self._dlg.addWidget( self._view, 1 )
         self._dlg.setBeforeAcceptFunction( self.validate )
         self._dlg.setCancellationFunction( self.mayCancel )
@@ -58,7 +59,7 @@ class GeschaeftsreiseEditController:
         return True
 
     def mayCancel( self ) -> bool:
-        return False
+        return True
 
     def createGeschaeftsreise( self, jahr:int ) -> XGeschaeftsreise or None:
         self._xgeschaeftsreise = XGeschaeftsreise()
