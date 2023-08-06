@@ -1,6 +1,7 @@
 from numbers import Number
 from typing import List, Callable, Tuple
-from PySide2.QtCore import QAbstractTableModel, Qt, Signal, QModelIndex, QPoint, QItemSelectionModel, QItemSelection
+from PySide2.QtCore import QAbstractTableModel, Qt, Signal, QModelIndex, QPoint, QItemSelectionModel, QItemSelection, \
+    QSize
 from PySide2.QtGui import QMouseEvent, QGuiApplication, QIcon
 from PySide2.QtWidgets import QTableView, QAbstractItemView, QAbstractScrollArea, QHeaderView, QApplication, QMenu, \
     QAction, QComboBox
@@ -109,6 +110,9 @@ class BaseTableView( QTableView ):
         #model.sorting_finished.connect( self.onSortingFinished )
         model.rowsAddedSignal.connect( self.onRowsAdded )
         self.resizeRowsAndColumns()
+        # h = self.getPreferredHeight()
+        # w = self.getPreferredWidth()
+        # self.resize( QSize(w, h) )
 
     def onBeforeSort( self ):
         selectionlist = self.selectedIndexes()

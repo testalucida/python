@@ -8,12 +8,15 @@ from PySide2.QtWidgets import QAction, QDialog, QMenu, QApplication
 from base.baseqtderivates import BaseEdit, FloatEdit, IntEdit, MultiLineEdit, BaseAction, SumDialog, Separator, \
     SmartDateEdit, BaseComboBox, SignedNumEdit
 from base.basetablefunctions import BaseTableFunctions
+from base.basetableview import BaseTableView
 from base.dynamicattributeui import DynamicAttributeDialog
 from base.interfaces import XBaseUI, VisibleAttribute
 from base.messagebox import ErrorBox, InfoBox
+from generictable_stuff.okcanceldialog import OkCancelDialog
 from v2.einaus.einauslogic import EinAusTableModel
 from v2.einaus.einausview import EinAusTableView, TeilzahlungDialog, ValueDialog
 from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
+from v2.icc import constants
 from v2.icc.constants import Action, Modus, EinAusArt, Umlegbar
 from v2.icc.icccontroller import IccController
 from v2.icc.iccwidgets import IccCheckTableViewFrame, IccTableView
@@ -137,10 +140,38 @@ class MtlEinAusController( IccController ):
                     actions = list()
                 actions.append( action )
                 actions.append( Separator() )
+            else:
+                if key != 'summe':
+                    a = BaseAction( "Zahlungsdetails anzeigen..." )
+                    a.triggered.connect( self.onShowZahlungsdetails )
+                    actions.append( a )
+                    actions.append( Separator() )
         a = BaseAction( "Kopiere" )
         a.triggered.connect( self.copySelectionToClipboard )
         actions.append( a )
         return actions
+
+    def onShowZahlungsdetails( self, dummy ):
+        indexes = self._tv.selectedIndexes()
+        model: MtlEinAusTableModel = self.getModel()
+        #val = model.getValue( indexes[0].row(), indexes[0].column() )
+        mieter = model.getDebiKredi( indexes[0].row() )
+        monat = model.getHeader( indexes[0].column() )
+        monatkey = model.getKeyByHeader( monat )
+        monatidx = constants.iccMonthShortNames.index( monatkey )
+        # todo: wenn es sich um die Abschläge-Tabelle handelt, müssen wir die ea_art aus der sollabschlag-Tabelle
+        # ermitteln, bevor wie u.a. Methode aufrufen.
+        #eamodel = self.getLogic().getZahlungenModelDebiKrediMonat( mieter, model.getSelectedYear(), monatidx )
+        eamodel = self.getEinzelzahlungenModelMonat( mieter, None, model.getSelectedYear(), monatidx )
+        tv = BaseTableView()
+        tv.setModel( eamodel )
+        dlg = OkCancelDialog()
+        dlg.setWindowTitle( "Zahlungsdetails " + mieter + " im Monat " + monat + " " + str(model.getSelectedYear() ) )
+        dlg.addWidget( tv, 0 )
+        h = tv.getPreferredHeight()
+        w = tv.getPreferredWidth()
+        dlg.resize( QSize( w+50, h+100 ) )
+        dlg.exec_()
 
     def onBetragOk( self, index:QModelIndex ):
         model:MtlEinAusTableModel = self.getModel()
@@ -162,11 +193,11 @@ class MtlEinAusController( IccController ):
 
     def onBetragEdit( self, index: QModelIndex ):
         def showValueDialog():
-            dlg = ValueDialog()
+            vdlg = ValueDialog()
             crsr = QCursor.pos()
-            dlg.setCallback( editing_done )
-            dlg.move( crsr.x(), crsr.y() )
-            dlg.exec_()
+            vdlg.setCallback( editing_done )
+            vdlg.move( crsr.x(), crsr.y() )
+            vdlg.exec_()
 
         def editing_done( val:float, bemerkung:str ):
             # callback für den ValueDialog, der dann zum Einsatz kommt, wenn es für einen Monat keine oder nur eine
@@ -198,9 +229,9 @@ class MtlEinAusController( IccController ):
                         VisibleAttribute( "buchungstext", MultiLineEdit, "Bemerkung: ", widgetHeight=60 ),
                         VisibleAttribute( "write_time", BaseEdit, "gebucht am: ", editable=False, columnspan=2 ) )
             xui.addVisibleAttributes( vislist )
-            dlg = DynamicAttributeDialog( xui, "Ändern einer Monatszahlung" )
-            if dlg.exec_() == QDialog.Accepted:
-                v = dlg.getDynamicAttributeView()
+            dyndlg = DynamicAttributeDialog( xui, "Ändern einer Monatszahlung" )
+            if dyndlg.exec_() == QDialog.Accepted:
+                v = dyndlg.getDynamicAttributeView()
                 xcopy = v.getModifiedXBaseCopy()
                 msg = self.getLogic().validateMonatsZahlung( xcopy )
                 if msg:
@@ -260,6 +291,8 @@ class MtlEinAusController( IccController ):
             # Es gibt noch keine Zahlung für den betreff. Monat,
             # deshalb können wir den "kleinen" Dialog zeigen
             showValueDialog()
+
+
 
     def _addZahlung( self, row:int, value:float, bemerkung="" ) -> XEinAus or None:
         model: MtlEinAusTableModel = self.getModel()
@@ -385,8 +418,8 @@ class MieteController( MtlEinAusController ):
         :return:
         """
         eatm = self._logic.getZahlungenModelDebiKrediMonat( debikredi, jahr, monthIdx )
-        keys = ("mobj_id", "debi_kredi", "jahr", "monat", "betrag", "write_time")
-        headers = ("Wohnung", "Mieter", "Jahr", "Monat", "Betrag", "gebucht am")
+        keys = ("mobj_id", "debi_kredi", "jahr", "monat", "betrag", "buchungsdatum", "buchungstext", "write_time")
+        headers = ("Wohnung", "Mieter", "Jahr", "Monat", "Betrag", "Buchg. am", "Buchungstext", "gebucht am")
         eatm.setKeyHeaderMappings2( keys, headers )
         return eatm
 
@@ -478,8 +511,8 @@ class HausgeldController( MtlEinAusController ):
 
     def getEinzelzahlungenModelMonat( self, debikredi: str, sab_id:int, jahr: int, monthIdx: int ) -> EinAusTableModel:
         eatm = self._logic.getZahlungenModelDebiKrediMonat( debikredi, jahr, monthIdx )
-        keys = ("debi_kredi", "jahr", "monat", "betrag", "write_time")
-        headers = ("WEG", "Jahr", "Monat", "Betrag", "gebucht am")
+        keys = ("master_name", "mobj_id", "debi_kredi", "jahr", "monat", "betrag", "buchungsdatum", "buchungstext", "write_time")
+        headers = ("Haus",     "Wohnung", "WEG",        "Jahr", "Monat", "Betrag", "Buch.datum", "Buch.text", "gebucht am")
         eatm.setKeyHeaderMappings2( keys, headers )
         return eatm
 
@@ -562,6 +595,8 @@ class AbschlagController( MtlEinAusController ):
 
     def getEinzelzahlungenModelMonat( self, debikredi: str, sab_id:int, jahr: int, monthIdx: int ) -> EinAusTableModel:
         # für die Anzeige, aus welchen Einzelzahlungen sich der ausgewiesene Monatswert zusammensetzt
+        if not sab_id:
+            sab_id = self._getSelection()[0]
         eatm = self._logic.getEinzelzahlungenModel( sab_id, jahr, monthIdx )
         keys = ("master_name", "mobj_id", "debi_kredi", "buchungstext", "leistung", "jahr", "monat", "betrag", "write_time")
         headers = ("Haus", "Wohnung", "Kreditor", "Buchungstext(Vnr)", "Leistung", "Jahr", "Monat", "Betrag", "write_time")
@@ -666,7 +701,7 @@ class AbschlagController( MtlEinAusController ):
     def _getSelection( self ) -> [int, int, int]:
         """
         Liefert folgende Daten der aktuellen Selektion:
-        - weg_name
+        - sab_id
         - jahr
         - selektierte Monatsspalte ( 0 -> jan, ..., 11 -> dez )
         :return: weg_name, jahr, monatsIndex
