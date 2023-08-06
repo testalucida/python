@@ -47,6 +47,7 @@ class AbrechnungController( IccController ):
         if not x.ab_jahr:
             # neue Abrechnung, existiert noch nicht in der DB
             x.ab_jahr = self.abrechJahr
+            x.ab_datum = datehelper.getCurrentDateIso()
         abrdlgctrl = AbrechnungDialogController( x, self.logic )
         abrdlgctrl.processAbrechnung()
 

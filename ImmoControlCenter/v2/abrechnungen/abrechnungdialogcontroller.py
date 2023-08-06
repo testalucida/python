@@ -2,22 +2,17 @@ import copy
 from typing import Iterable, List
 
 from PySide2.QtCore import QSize, QObject, Signal
-from PySide2.QtWidgets import QGridLayout, QDialog
 
 import datehelper
 from base.baseqtderivates import BaseEdit, SmartDateEdit, FloatEdit, MultiLineEdit, ButtonIdent, IntEdit, \
-    BaseDialogWithButtons, getOkCancelButtonDefinitions
+    BaseDialogWithButtons, getOkCancelButtonDefinitions, SignedNumEdit
 from base.basetableview import BaseTableView
 from base.basetableviewframe import BaseTableViewFrame
 from base.dynamicattributeui import DynamicAttributeDialog
 from base.interfaces import VisibleAttribute, ButtonDefinition
-from base.messagebox import ErrorBox
-from v2.abrechnungen.abrechnungenview import HGAbrechnungTableView, NKAbrechnungTableView, HGAbrechnungTableViewFrame, \
-    NKAbrechnungTableViewFrame, XAbrechnungUI
-from v2.abrechnungen.abrechnunglogic import HGAbrechnungLogic, HGAbrechnungTableModel, AbrechnungTableModel, \
-    TeilzahlungTableModel, AbrechnungLogic
-from v2.einaus.einausview import ValueDialog, TeilzahlungDialog, ValueDialog2
-from v2.icc.icccontroller import IccController
+from v2.abrechnungen.abrechnungenview import XAbrechnungUI
+from v2.abrechnungen.abrechnunglogic import HGAbrechnungLogic, TeilzahlungTableModel, AbrechnungLogic
+from v2.einaus.einausview import ValueDialog, TeilzahlungDialog
 from v2.icc.interfaces import XHGAbrechnung, XAbrechnung, XTeilzahlung, XNKAbrechnung
 
 
@@ -49,6 +44,9 @@ class AbrechnungDialogController:
         btnApply.setEnabled( False )
         dlg.setCallbacks( self.onOk, None, self.onCancel )
         dlg.setMinimumWidth( 500 )
+        v = dlg.getDynamicAttributeView()
+        w = v.getWidget( "forderung" )
+        w.setFocus()
         dlg.exec_()
 
     def onOk( self ) -> str:
@@ -119,7 +117,7 @@ class AbrechnungDialogController:
             VisibleAttribute( "mv_id", BaseEdit, "Mieter: ", editable=False ),
             VisibleAttribute( "ab_jahr", IntEdit, "Abrechnung für: ", editable=False, widgetWidth=smallW ),
             VisibleAttribute( "ab_datum", SmartDateEdit, "abgerechnet am: ", widgetWidth=smallW ),
-            VisibleAttribute( "forderung", FloatEdit, "Forderung (€): ", widgetWidth=smallW ),
+            VisibleAttribute( "forderung", SignedNumEdit, "Forderung (€): ", widgetWidth=smallW ),
             VisibleAttribute( "bemerkung", MultiLineEdit, "Bemerkung: ", widgetHeight=55 ),
             VisibleAttribute( "zahlung", FloatEdit, "Zahlung (€): ", widgetWidth=smallW, editable=False,
                               trailingButton=ButtonDefinition(
@@ -138,7 +136,7 @@ class AbrechnungDialogController:
             VisibleAttribute( "vw_id", BaseEdit, "Verwalter: ", editable=False ),
             VisibleAttribute( "ab_jahr", IntEdit, "Abrechnung für: ", editable=False, widgetWidth=smallW ),
             VisibleAttribute( "ab_datum", SmartDateEdit, "abgerechnet am: ", widgetWidth=smallW ),
-            VisibleAttribute( "forderung", FloatEdit, "Forderung (€): ", widgetWidth=smallW ),
+            VisibleAttribute( "forderung", SignedNumEdit, "Forderung (€): ", widgetWidth=smallW ),
             VisibleAttribute( "entnahme_rue", FloatEdit, "Entnahme aus Rückl. (€): ", widgetWidth=smallW ),
             VisibleAttribute( "bemerkung", MultiLineEdit, "Bemerkung: ", widgetHeight=55 ),
             VisibleAttribute( "zahlung", FloatEdit, "Zahlung (€): ", widgetWidth=smallW, editable=False,
@@ -207,6 +205,9 @@ class TeilzahlungController( QObject ):
             return ""
         valuedlg = ValueDialog( mitBuchungsdatum=True)
         valuedlg.setCallback( validate )
+        if not parentIsTzDialog:
+            valuedlg.setValue( self._xabr.forderung )
+            valuedlg.setBuchungsdatum( datehelper.getCurrentDateIso() )
         valuedlg.exec_()
 
     def _processViaTeilzahlungDialog( self ):
@@ -292,6 +293,8 @@ def test():
     xhga.vwg_id = 33
     xhga.vwg_von = "2019-01-01"
     xhga.ab_jahr = 2022
+    xhga.ab_datum = datehelper.getCurrentDateIso()
+    xhga.forderung = 123.40
     logic = HGAbrechnungLogic()
     c = AbrechnungDialogController( xhga, logic )
     c.processAbrechnung()
