@@ -116,10 +116,13 @@ class EinAusDialogController( QObject ):
 
 
     def _resetDialog( self ):
-        self._feBetrag.setValue( 0.0 )
+        self._sneBetrag.setValue( 0.0 )
         self._ieVerteiltAuf.setValue( VERTEILT_AUF_DEFAULT )
         self._beBuchungstext.setValue( "" )
-        #self._mleMehrtext.setValue( "" )
+        self._x.ea_id = 0
+        self._x.betrag = 0.0
+        self._x.verteilt_auf = VERTEILT_AUF_DEFAULT
+        self._x.buchungstext = ""
 
     def processNewEinAus( self ):
         """
@@ -131,7 +134,8 @@ class EinAusDialogController( QObject ):
         self._x.verteilt_auf = VERTEILT_AUF_DEFAULT
         self._x.umlegbar = UMLEGBAR_DEFAULT
         dlg = self._createGui()
-        if dlg.exec_() == QDialog.Accepted:
+        rc = dlg.exec_()
+        if rc == QDialog.Accepted:
             EinAusWriteDispatcher.inst().einaus_inserted( self._x )
 
     def processEinAusModification( self, x:XEinAus ):
