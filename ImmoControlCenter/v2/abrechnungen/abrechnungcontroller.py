@@ -3,6 +3,7 @@ from PySide2.QtWidgets import QMenu
 
 import datehelper
 from base.dynamicattributeui import DynamicAttributeDialog
+from base.messagebox import WarningBox, ErrorBox, InfoBox
 from v2.abrechnungen.abrechnungdialogcontroller import AbrechnungDialogController
 from v2.abrechnungen.abrechnungenview import HGAbrechnungTableView, NKAbrechnungTableView, HGAbrechnungTableViewFrame, \
     NKAbrechnungTableViewFrame, AbrechnungTableViewFrame, AbrechnungTableView
@@ -30,6 +31,7 @@ class AbrechnungController( IccController ):
         tb.addYearCombo( jahre, self.onYearChanged )
         tb.setYear( self.abrechJahr )
         self.tvframe.editItem.connect( self.onOpenAbrechnungDialog )
+        self.tvframe.deleteItems.connect( self.onDeleteItems )
         return self.tvframe
 
     def getMenu( self ) -> QMenu or None:
@@ -50,6 +52,28 @@ class AbrechnungController( IccController ):
             x.ab_datum = datehelper.getCurrentDateIso()
         abrdlgctrl = AbrechnungDialogController( x, self.logic )
         abrdlgctrl.processAbrechnung()
+
+    def onDeleteItems( self, rowsToDelete ):
+        tm:AbrechnungTableModel = self.tv.model()
+        xabrechnglist = tm.getElements( rowsToDelete )
+        if xabrechnglist[0].abr_id > 0:
+            box = WarningBox( "Löschen Jahresabrechnung(en)", "Abrechnung(en) wirklich löschen?",
+                              "", "Ja", "Nein" )
+            rc = box.exec_()
+            if rc == WarningBox.Yes:
+                try:
+                    self.logic.deleteAbrechnungen( xabrechnglist )
+                    for row in rowsToDelete:
+                        tm.objectUpdatedExternally2( row )
+                except Exception as ex:
+                    box = ErrorBox( "Löschen einer Abrechnung fehlgeschlagen", str(ex) )
+                    box.exec_()
+        else:
+            box = InfoBox( "Löschen der gewählten Abrechnung(en) nicht möglich",
+                           "Zu den ausgewählten Abrechnungen sind noch keine Daten vorhanden."
+                           "\nEs kann deshalb nichts gelöscht werden." )
+            box.exec_()
+        return
 
     def onYearChanged( self, newYear: int ):
         tm: AbrechnungTableModel = self.logic.getAbrechnungTableModel( newYear )

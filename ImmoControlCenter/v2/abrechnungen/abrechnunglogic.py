@@ -192,6 +192,7 @@ class AbrechnungLogic( IccLogic ):
                 xea = self._createXeinausFromTeilzahlung( xabr, tz )
                 try:
                     self._eaData.insertEinAusZahlung( xea )
+                    tz.ea_id = xea.ea_id
                     EinAusWriteDispatcher.inst().ea_inserted.emit( xea )
                 except Exception as ex:
                     self._eaData.rollback()
@@ -233,6 +234,39 @@ class AbrechnungLogic( IccLogic ):
         xea.buchungstext = tz.buchungstext
         xea.write_time = datehelper.getCurrentTimestampIso()
         return xea
+
+    @abstractmethod
+    def deleteAbrechnung( self, xabr:XAbrechnung ):
+        pass
+
+    def deleteAbrechnungen( self, xabrechnungen:List[XAbrechnung] ):
+        """
+        Löscht die übergebenen NK- bzw. HG-Abrechnungen.
+        Für jede Abrechnung gilt:
+        Es ist der Satz in der jeweiligen Tabelle  nk_abrechnung bzw. hg_abrechnung zu löschen sowie alle
+        Teilzahlungen in der Tabelle einaus, die sich auf die gelöschte Abrechnung beziehen.
+        :param xabrechnungen: Liste zu löschender Abrechnungen
+        :return:
+        """
+        for xabr in xabrechnungen:
+            # erst die Teilzahlungen auf diese Abrechnung in Tabelle einaus löschen:
+            for tz in xabr.teilzahlungen:
+                try:
+                    self._eaData.deleteEinAusZahlung( tz.ea_id )
+                except Exception as ex:
+                    self._eaData.rollback()
+                    raise Exception( str(ex) +
+                                     "\nBetroffene Teilzahlung: \n'%s'" % tz.toString( printWithClassname=True ) )
+            # jetzt die Abrechnung in nk_abrechnung bzw. hg_abrechnung löschen: (Methode hat eigenen try-catch-Block)
+            self.deleteAbrechnung( xabr )
+        self._commit()
+        # jetzt die Anzeige aktualisieren:
+        for xabr in xabrechnungen:
+            xabr.abr_id = 0
+            xabr.forderung = 0
+            xabr.ab_datum = None
+            xabr.teilzahlungen.clear()
+            xabr.zahlung = 0.0
 
     @abstractmethod
     def getAbrechnungTableModelType( self ) -> type:
@@ -351,6 +385,13 @@ class HGAbrechnungLogic( AbrechnungLogic ):
                   "Masterobjekt '%s'\n\nFehlermeldung:\n%s " % (xhga.ab_jahr, xhga.master_name, str( ex ))
             return msg
 
+    def deleteAbrechnung( self, xabr:XAbrechnung ):
+        try:
+            self._hgaData.deleteAbrechnung( xabr )
+        except Exception as ex:
+            self._hgaData.rollback()
+            raise Exception( str(ex) + "\nBetroffene HG-Abrechnung: %d" % xabr.abr_id )
+
     def _commit( self ):
         self._hgaData.commit()
 
@@ -407,7 +448,7 @@ class NKAbrechnungLogic( AbrechnungLogic ):
                   "Masterobjekt '%s'\n\nFehlermeldung:\n%s " % (xnka.ab_jahr, xnka.master_name, str( ex ))
             return msg
 
-    def _updateAbrechnung( self, xnka: XHGAbrechnung ) -> str:
+    def _updateAbrechnung( self, xnka: XNKAbrechnung ) -> str:
         try:
             self._nkaData.updateAbrechnung( xnka )
             return ""
@@ -416,6 +457,13 @@ class NKAbrechnungLogic( AbrechnungLogic ):
             msg = "NKAbrechnungLogic._updateAbrechnung():\nFehler beim Update der Abrechnung %d für " \
                   "Masterobjekt '%s'\n\nFehlermeldung:\n%s " % (xnka.ab_jahr, xnka.master_name, str( ex ))
             return msg
+
+    def deleteAbrechnung( self, xabr:XAbrechnung ):
+        try:
+            self._nkaData.deleteAbrechnung( xabr )
+        except Exception as ex:
+            self._nkaData.rollback()
+            raise Exception( str(ex) + "\nBetroffene NK-Abrechnung: %d" % xabr.abr_id )
 
     def _commit( self ):
         self._nkaData.commit()

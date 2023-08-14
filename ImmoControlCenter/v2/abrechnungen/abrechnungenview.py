@@ -13,7 +13,7 @@ class AbrechnungTableViewFrame( IccTableViewFrame ):
     def __init__( self, tableView:AbrechnungTableView ):
         IccTableViewFrame.__init__( self, tableView, withEditButtons=True )
         self.setNewButtonEnabled( False )
-        self.setDeleteButtonEnabled( False )
+        self.setDeleteButtonEnabled( True )
 
 ###############   HGAbrechnungTableView  ################
 class HGAbrechnungTableView( AbrechnungTableView ):

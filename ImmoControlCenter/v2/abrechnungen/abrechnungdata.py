@@ -80,6 +80,11 @@ class HGAbrechnungData( AbrechnungData ):
                                              newvalues=xhga.toString( True ), oldvalues=oldX.toString( True ) )
             return rowsAffected
 
+    def deleteAbrechnung( self, xhga:XHGAbrechnung ):
+        sql = "delete from hg_abrechnung where hga_id = %d " % xhga.abr_id
+        self.writeAndLog( sql, DbAction.DELETE, "hg_abrechnung", "hga_id", xhga.abr_id,
+                          newvalues=None, oldvalues=xhga.toString( printWithClassname=True ) )
+
     # def getObjekteUndAbrechnungen( self, ab_jahr:int ) -> List[XHGAbrechnung]:
     #     sql = "select master.master_name, " \
     #           "vwg.vwg_id, coalesce(vwg.weg_name, '') as weg_name, " \
@@ -159,6 +164,10 @@ class NKAbrechnungData( AbrechnungData ):
                                          newvalues=xnka.toString( True ), oldvalues=oldX.toString( True ) )
         return rowsAffected
 
+    def deleteAbrechnung( self, xnka: XNKAbrechnung ):
+        sql = "delete from nk_abrechnung where nka_id = %d " % xnka.abr_id
+        self.writeAndLog( sql, DbAction.DELETE, "nk_abrechnung", "nka_id", xnka.abr_id,
+                          newvalues=None, oldvalues=xnka.toString( printWithClassname=True ) )
 
     def getObjekteUndAbrechnungen( self, ab_jahr:int ) -> List[XNKAbrechnung]:
         if not ab_jahr > 2000: raise  Exception( "Abrechnungsjahr muss vierstellig angegeben werden." )

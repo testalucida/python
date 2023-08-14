@@ -215,6 +215,14 @@ class BaseTableModel( QAbstractTableModel ):
         indexZ = self.createIndex( row, self.columnCount() - 1 )
         self.dataChanged.emit( indexA, indexZ, [Qt.DisplayRole] )
 
+    def objectUpdatedExternally2( self, row:int ):
+        """
+        Diese Methode löst ein dataChanged-Signal für row <row> aus, damit die Anzeige aktualisiert wird.
+        """
+        indexA = self.createIndex( row, 0 )
+        indexZ = self.createIndex( row, self.columnCount() - 1 )
+        self.dataChanged.emit( indexA, indexZ, [Qt.DisplayRole] )
+
     def addObject( self, x:XBase ):
         """
         Wird aufgerufen, um ein neues Objekt (eine neue Tabellenzeile) hinzuzufügen.
