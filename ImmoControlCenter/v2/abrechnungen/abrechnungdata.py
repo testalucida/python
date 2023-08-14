@@ -112,8 +112,8 @@ class HGAbrechnungData( AbrechnungData ):
               "from mietobjekt mo " \
               "inner join verwaltung vwg on vwg.master_name = mo.master_name " \
               "left outer join hg_abrechnung hga on (hga.ab_jahr = %d and hga.mobj_id = mo.mobj_id) " \
-              "where mo.aktiv > 0 " \
-              "and vwg.von <= '%s' " \
+              "\n--where mo.aktiv > 0 \n " \
+              "where vwg.von <= '%s' " \
               "and (vwg.bis is NULL or vwg.bis = '' or vwg.bis >= '%s') " \
               "order by mo.master_name, vwg.von " % (ab_jahr, max_vwg_von, min_vwg_bis)
         abrlist = self.readAllGetObjectList( sql, XHGAbrechnung )
@@ -173,8 +173,8 @@ class NKAbrechnungData( AbrechnungData ):
               "inner join mietobjekt mo on mo.master_name = master.master_name " \
               "inner join mietverhaeltnis mv on (mv.mobj_id = mo.mobj_id) " \
               "left outer join nk_abrechnung nka on (nka.ab_jahr = %d and nka.mv_id = mv.mv_id) " \
-              "where master.aktiv > 0 " \
-              "and mv.von < %s " \
+              "\n--where master.aktiv > 0\n " \
+              "where mv.von < %s " \
               "and (mv.bis is null or mv.bis = '' or mv.bis > %s ) " \
               "order by master.master_name, mv.von desc " % (ab_jahr, mv_max_von, mv_min_bis)
         return self.readAllGetObjectList( sql, XNKAbrechnung )

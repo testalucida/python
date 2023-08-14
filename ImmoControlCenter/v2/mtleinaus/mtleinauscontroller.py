@@ -154,14 +154,10 @@ class MtlEinAusController( IccController ):
     def onShowZahlungsdetails( self, dummy ):
         indexes = self._tv.selectedIndexes()
         model: MtlEinAusTableModel = self.getModel()
-        #val = model.getValue( indexes[0].row(), indexes[0].column() )
         mieter = model.getDebiKredi( indexes[0].row() )
         monat = model.getHeader( indexes[0].column() )
         monatkey = model.getKeyByHeader( monat )
         monatidx = constants.iccMonthShortNames.index( monatkey )
-        # todo: wenn es sich um die Abschläge-Tabelle handelt, müssen wir die ea_art aus der sollabschlag-Tabelle
-        # ermitteln, bevor wie u.a. Methode aufrufen.
-        #eamodel = self.getLogic().getZahlungenModelDebiKrediMonat( mieter, model.getSelectedYear(), monatidx )
         eamodel = self.getEinzelzahlungenModelMonat( mieter, None, model.getSelectedYear(), monatidx )
         tv = BaseTableView()
         tv.setModel( eamodel )
