@@ -6,7 +6,7 @@ from PySide2.QtGui import QDoubleValidator
 from PySide2.QtWidgets import QDialog, QGridLayout, QHBoxLayout, QPushButton
 
 from base.baseqtderivates import BaseEdit, FloatEdit, BaseComboBox, BaseDialogWithButtons, getCloseButtonDefinition, \
-    SmartDateEdit
+    SmartDateEdit, SignedNumEdit
 from base.dynamicattributeui import DynamicAttributeDialog
 from base.interfaces import XBaseUI, VisibleAttribute
 from base.messagebox import ErrorBox
@@ -67,11 +67,12 @@ class ValueDialog( QDialog ):
         layout = QGridLayout( self )
         row = 0
 
-        self._numEntry = QtWidgets.QLineEdit( self )
+        self._numEntry = SignedNumEdit() # QtWidgets.QLineEdit( self )
         self._numEntry.setPlaceholderText( "Betrag" )
         layout.addWidget( self._numEntry, row, 0 )
         self._numEntry.setAlignment( Qt.AlignRight | Qt.AlignTrailing | Qt.AlignVCenter )
-        self._numEntry.setValidator( QDoubleValidator( -9999, 9999, 2, self ) )
+        doubleValidator = QDoubleValidator( -9999, 9999, 2, self )
+        self._numEntry.setValidator( doubleValidator )
         self._numEntry.setFocus()
 
         self._sdBuchungsdatum:SmartDateEdit = None
@@ -151,7 +152,7 @@ class ValueDialog( QDialog ):
         self._doCallback()
 
 ######################   ValueDialog2  #################################
-class ValueDialog2( QDialog ):
+class ValueDialog2__probably_not_used( QDialog ):
     """
     Vereinfachte Variante des ValueDialog.
     Er enthält außer dem Value-Feld und der Bemerkung immer ein Buchungsdatum.

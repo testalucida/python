@@ -7,7 +7,7 @@ from typing import Any, List, Tuple, Callable, Iterable
 from PySide2 import QtWidgets, QtCore
 from PySide2.QtCore import QDate, Qt, QAbstractTableModel, QRect, Signal, QSize, QMargins
 from PySide2.QtGui import QDoubleValidator, QIntValidator, QFont, QGuiApplication, QStandardItemModel, QStandardItem, \
-    QMouseEvent, QTextDocument, QIcon, QFontMetrics
+    QMouseEvent, QTextDocument, QIcon, QFontMetrics, QValidator
 from PySide2.QtWidgets import QDialog, QCalendarWidget, QVBoxLayout, QBoxLayout, QLineEdit, QGridLayout, QPushButton, \
     QHBoxLayout, QApplication, QListView, QComboBox, QLabel, QTextEdit, QCheckBox, QFrame, QWidget, QAction, QTabWidget, \
     QToolBar, QMenuBar, QStatusBar, QMessageBox
@@ -719,6 +719,15 @@ class SignedNumEdit( QWidget ):
 
     def setFocus( self ):
         self._numEdit.setFocus()
+
+    def setPlaceholderText( self, text:str ):
+        self._numEdit.setPlaceholderText( text )
+
+    def setValidator( self, validator:QValidator ):
+        self._numEdit.setValidator( validator )
+
+    def setAlignment( self, align ):
+        self._layout.setAlignment( align )
 
     def setPlus( self ):
         self._sign.setPlus()
