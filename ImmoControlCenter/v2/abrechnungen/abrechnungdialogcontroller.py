@@ -137,7 +137,7 @@ class AbrechnungDialogController:
             VisibleAttribute( "ab_jahr", IntEdit, "Abrechnung für: ", editable=False, widgetWidth=smallW ),
             VisibleAttribute( "ab_datum", SmartDateEdit, "abgerechnet am: ", widgetWidth=smallW ),
             VisibleAttribute( "forderung", SignedNumEdit, "Forderung (€): ", widgetWidth=smallW ),
-            VisibleAttribute( "entnahme_rue", FloatEdit, "Entnahme aus Rückl. (€): ", widgetWidth=smallW ),
+            VisibleAttribute( "entnahme_rue", SignedNumEdit, "Entnahme aus Rückl. (€): ", widgetWidth=smallW ),
             VisibleAttribute( "bemerkung", MultiLineEdit, "Bemerkung: ", widgetHeight=55 ),
             VisibleAttribute( "zahlung", FloatEdit, "Zahlung (€): ", widgetWidth=smallW, editable=False,
                               trailingButton=ButtonDefinition(

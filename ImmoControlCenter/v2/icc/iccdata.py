@@ -107,6 +107,7 @@ class IccData( DatabaseCommon ):
         return tpl[0][0]
 
     def getMietobjekte( self, master_name:str ) -> List[XMietobjekt]:
+        # Wird vom Dialog "Neue Zahlung anlegen" benutzt
         sql = "select mobj_id, whg_bez, qm, container_nr, bemerkung " \
               "from mietobjekt " \
               "where master_name = '%s' " \

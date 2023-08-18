@@ -10,7 +10,7 @@ class MietobjektData( IccData ):
 
     def getMietobjekte( self ) -> List[XMietobjektAuswahl]:
         """
-        Liefert Mietobjekte mit den *aktuellen* Mietern
+        Liefert Mietobjekte mit den *aktuellen* Mietern (oder ohne, wenn gerade nicht vermietet ist)
         :return:
         """
         sql = "select mobj.master_name, mobj.mobj_id, mv.mv_id " \
@@ -19,6 +19,15 @@ class MietobjektData( IccData ):
               "where mobj.aktiv = 1 " \
               "and mv.von <= current_date " \
               "and (mv.bis is NULL or mv.bis = '' or mv.bis >= current_date) " \
+              "UNION " \
+              "select mobj.master_name, mobj.mobj_id, '' " \
+              "from mietobjekt mobj " \
+              "where mobj.aktiv = 1 " \
+              "and mobj.mobj_id not in " \
+              "(select mv.mobj_id " \
+              "from mietverhaeltnis mv " \
+              "where mv.von <= current_date " \
+              "and (mv.bis is NULL or mv.bis = '' or mv.bis >= current_date)) " \
               "order by mobj.master_name, mobj.mobj_id "
 
         l:List[XMietobjektAuswahl] = self.readAllGetObjectList( sql, XMietobjektAuswahl )
