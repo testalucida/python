@@ -337,6 +337,20 @@ class SettingsIconButton( BaseIconButton ):
         BaseIconButton.__init__( self, QIcon( BASE_IMAGES_DIR + "settings.png" ), QSize( 28, 28 ), parent )
         self.setToolTip( "Öffnet den Einstellungen-Dialog" )
 
+#################  CaseSensitiveButton  #####################
+class CaseSensitiveButton( BaseIconButton ):
+    def __init__( self, parent=None ):
+        BaseIconButton.__init__( self, QIcon( BASE_IMAGES_DIR + "casesensitive_i.png" ), QSize( 28, 28 ), parent )
+        self.setToolTip( "Schaltet um zwischen Case Sensitive ja/nein" )
+        self.setCheckable( True )
+
+#################  WholeWordButton  #####################
+class WholeWordButton( BaseIconButton ):
+    def __init__( self, parent=None ):
+        BaseIconButton.__init__( self, QIcon( BASE_IMAGES_DIR + "wholeword_i.png" ), QSize( 28, 28 ), parent )
+        self.setToolTip( "Schaltet um zwischen Vergleich nur von ganzen Wörtern ja/nein" )
+        self.setCheckable( True )
+
 #################   BaseGridLayout  #########################
 class BaseGridLayout( QGridLayout ):
     def __init__( self ):

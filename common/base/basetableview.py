@@ -8,6 +8,7 @@ from PySide2.QtWidgets import QTableView, QAbstractItemView, QAbstractScrollArea
 
 #####################  CellEvent  #################################
 from base.baseqtderivates import BaseAction
+from base.basetablefunctions import BaseTableFunctions
 from base.interfaces import XBase, TestItem
 from base.basetablemodel import BaseTableModel
 
@@ -49,7 +50,7 @@ class BaseTableView( QTableView ):
     def __init__( self, parent=None ):
         QTableView.__init__( self, parent )
         # left mouse click
-        self.clicked.connect( self.onLeftClick )
+        self.clicked.connect( self.onLeftClick ) # left click in a tableview cell (not header)
         self.doubleClicked.connect( self.onDoubleClick )
         # right mouse click
         self.setContextMenuPolicy( Qt.CustomContextMenu )
@@ -256,12 +257,7 @@ class BaseTableView( QTableView ):
         return w + 25
 
     def getSelectedRows( self ) -> List[int]:
-        sm = self.selectionModel()
-        indexes:List[QModelIndex] = sm.selectedRows()  ## Achtung missverständlicher Methodenname
-        l = list( indexes )
-        #print( indexes[0].row() )
-        rows = [i.row() for i in l]
-        return rows
+        return BaseTableFunctions.getSelectedRows( self )
 
     def getSelectedIndexes( self ) -> List[QModelIndex]:
         """
@@ -275,24 +271,7 @@ class BaseTableView( QTableView ):
         return rowlist[0] if len( rowlist ) > 0 else -1
 
     def copySelectionToClipboard( self ) -> None:
-        values: str = ""
-        indexes = self.selectedIndexes()
-        row = -1
-        for idx in indexes:
-            if row == -1: row = idx.row()
-            if row != idx.row():
-                values += "\n"
-                row = idx.row()
-            elif len( values ) > 0:
-                values += "\t"
-            val = self.model().data( idx, Qt.DisplayRole )
-            val = "" if not val else val
-            if isinstance( val, Number ):
-                values += str( val )
-            else:
-                values += val
-        clipboard = QGuiApplication.clipboard()
-        clipboard.setText( values )
+        BaseTableFunctions.copySelectionToClipboard( self )
 
 ####################################################  T  E  S  T  S  #################################################
 

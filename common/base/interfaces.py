@@ -146,7 +146,7 @@ class TestItem( XBase ):
     def __init__( self ):
         XBase.__init__( self )
         import sys
-        print( sys._getframe().f_code.co_name )
+        #print( sys._getframe().f_code.co_name )
         self.nachname = ""
         self.vorname = ""
         self.plz = ""

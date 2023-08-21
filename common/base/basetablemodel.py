@@ -401,7 +401,7 @@ class BaseTableModel( QAbstractTableModel ):
                 if not self._satisfiesCondition( value, cond ):
                     x = self.getElement( r )
                     unvisibleElements.append( x )
-        self._setElementsUnvisible( unvisibleElements )
+        self.setElementsUnvisible( unvisibleElements )
 
     @staticmethod
     def _satisfiesCondition( value:Any, cond:FilterCondition ) -> bool:
@@ -427,7 +427,7 @@ class BaseTableModel( QAbstractTableModel ):
         if op == "<=": return value <= compValue if not value_is_num else value <= compValueNum
         if op == ">=": return value >= compValue if not value_is_num else value >= compValueNum
 
-    def _setElementsUnvisible( self, elements:List[XBase] ) -> None:
+    def setElementsUnvisible( self, elements:List[XBase] ) -> None:
         if not self._rowListUnfiltered:
             self._rowListUnfiltered = copy.deepcopy( self.rowList )
         for x in elements:
@@ -438,13 +438,16 @@ class BaseTableModel( QAbstractTableModel ):
         self.layoutChanged.emit()
 
     def resetFilter( self ) -> None:
-        if self._rowListUnfiltered:
+        if self._rowListUnfiltered: # Daten sind gefiltert
             self.rowList = copy.deepcopy( self._rowListUnfiltered )
             self._rowListUnfiltered.clear()
             self._rowListUnfiltered = None
             self._filterConditionList = None
             self.layoutChanged.emit()
             self.rowsAddedSignal.emit()
+
+    def isFiltered( self ) -> bool:
+        return self._rowListUnfiltered is not None
 
     def satisfiesFilterConditions( self, x:XBase ) -> bool:
         for cond in self._filterConditionList:

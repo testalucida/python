@@ -1,18 +1,21 @@
 from numbers import Number
 from typing import List
 
-from PySide2.QtGui import QGuiApplication
+from PySide2.QtCore import QModelIndex
+from PySide2.QtGui import QGuiApplication, Qt
+from PySide2.QtWidgets import QTableView
 
 from base.baseqtderivates import SumDialog
 from base.basetablemodel import BaseTableModel
-from base.basetableview import BaseTableView
+#from base.basetableview import BaseTableView
 
 
 class BaseTableFunctions:
     def __init__(self):
         pass
 
-    def computeSumme( self, tv:BaseTableView, columnVon:int=None, columnBis:int=None ):
+    @staticmethod
+    def computeSumme( tv:QTableView, columnVon:int=None, columnBis:int=None ):
         """
         Addiert die in der TableView <tv> markierten Werte.
         Sind columnVon und column-Bis angegeben, werden nur Werte zwischen diesen beiden Columns (jeweils inklusive)
@@ -42,10 +45,10 @@ class BaseTableFunctions:
         dlg.setSum( summe )
         dlg.exec_()
 
-    def copySelectionToClipboard( self, tv:BaseTableView ):
+    @staticmethod
+    def copySelectionToClipboard( tv:QTableView ):
         values: str = ""
         indexes = tv.selectedIndexes()
-        model:BaseTableModel = tv.model()
         row = -1
         for idx in indexes:
             if row == -1: row = idx.row()
@@ -54,11 +57,39 @@ class BaseTableFunctions:
                 row = idx.row()
             elif len( values ) > 0:
                 values += "\t"
-            val = model.getValue( idx.row(), idx.column() )
-            val = " nil " if not val else val
+            val = tv.model().data( idx, Qt.DisplayRole )
+            val = "" if not val else val
             if isinstance( val, Number ):
                 values += str( val )
             else:
                 values += val
         clipboard = QGuiApplication.clipboard()
         clipboard.setText( values )
+
+    @staticmethod
+    def getSelectedRows( tv:QTableView ) -> List[int]:
+        sm = tv.selectionModel()
+        indexes:List[QModelIndex] = sm.selectedRows()  ## Achtung missverständlicher Methodenname
+        l = list( indexes )
+        rows = [i.row() for i in l]
+        return rows
+
+    @staticmethod
+    def getPreferredWidth( tv:QTableView ):
+        colcount = tv.model().columnCount()
+        w = 0
+        for col in range( 0, colcount ):
+            w += tv.columnWidth( col )
+        if not tv.verticalHeader().isHidden():
+            w += tv.verticalHeader().height()
+        return w
+
+    @staticmethod
+    def getPreferredHeight( tv: QTableView ):
+        rowcount = tv.model().rowCount()
+        h = 0
+        for row in range( 0, rowcount ):
+            h += tv.rowHeight( row )
+        if not tv.horizontalHeader().isHidden():
+            h += tv.horizontalHeader().height()
+        return h
