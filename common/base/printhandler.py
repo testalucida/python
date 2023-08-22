@@ -3,12 +3,12 @@ from PySide2.QtPrintSupport import QPrintDialog, QPrintPreviewDialog
 from PySide2.QtWidgets import QDialog, QApplication
 
 from base.basetablemodel import BaseTableModel
-from base.basetableview import BaseTableView
+#from base.basetableview import BaseTableView
 
 
 class PrintHandler:
-    def __init__( self, tv:BaseTableView ):
-        self._tv = tv
+    def __init__( self, tm:BaseTableModel ):
+        self._tm = tm
 
     def handlePrint(self):
         """
@@ -31,7 +31,7 @@ class PrintHandler:
     def _handlePaintRequest( self, printer ):
         document = QTextDocument()
         cursor = QTextCursor(document)
-        model:BaseTableModel = self._tv.model()
+        model:BaseTableModel = self._tm
         table = cursor.insertTable(
             model.rowCount()+1, model.columnCount())
         for column in range( table.columns() ):

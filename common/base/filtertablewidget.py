@@ -1,21 +1,30 @@
-from typing import List, Dict
+import numbers
+from enum import IntEnum, auto
+from typing import List, Dict, Callable, Collection
 
 from PySide2 import QtCore
-from PySide2.QtCore import QModelIndex, Qt, Signal, QSize
+from PySide2.QtCore import QModelIndex, Qt, Signal, QSize, QItemSelectionModel, QObject
 from PySide2.QtGui import QBrush
 from PySide2.QtWidgets import QTableView, QHeaderView, QHBoxLayout, QWidget, QVBoxLayout, \
-    QAbstractItemView, QGridLayout, QApplication
+    QAbstractItemView, QGridLayout, QApplication, QToolBar, QComboBox, QAction
 
+import datehelper
 from base.baseqtderivates import BaseEdit, BaseDialogWithButtons, getOkCancelButtonDefinitions, BaseButton, \
-    SearchField, NewIconButton, EditIconButton, DeleteIconButton, CaseSensitiveButton, WholeWordButton
+    SearchField, NewIconButton, EditIconButton, DeleteIconButton, CaseSensitiveButton, WholeWordButton, YearComboBox, \
+    MonthComboBox
 from base.basetablefunctions import BaseTableFunctions
 from base.basetablemodel import BaseTableModel
 from base.basetableview import BaseTableView
 from base.basetableviewframe import BaseTableViewFrame, BaseTableViewToolBar
+from base.constants import monthLongNames
+from base.directories import BASE_IMAGES_DIR
 from base.interfaces import XBase, TestItem
 
 
 #####################################################################
+from iconfactory import IconFactoryS
+
+
 class HeaderTableModel( BaseTableModel ):
     class XFilter( XBase ):
         def __init__(self ):
@@ -160,26 +169,135 @@ class Filter:
         self.header:str = header
         self.filterval:str = filterval
 
-####################################################################################
-class FilterTableWidget( QWidget ):
-    def __init__(self):
+##############################################################################
+class SearchWidget2( QWidget ):
+    doSearch = Signal( str )
+    searchtextChanged = Signal()
+
+    def __init__( self ):
         QWidget.__init__( self )
+        self._layout = QHBoxLayout()
+        self._searchfield = SearchField()
+        self._btnCaseSensitive = CaseSensitiveButton()
+        self._btnWholeWord = WholeWordButton()
+        # forward signals from searchfield:
+        self._searchfield.doSearch.connect( self.doSearch.emit )
+        self._searchfield.searchTextChanged.connect( self.searchtextChanged.emit )
+        self._createGui()
+
+    def _createGui( self ):
+        l = self._layout
+        self.setLayout( l )
+        l.setContentsMargins( 0, 0, 0, 0 )
+        l.addWidget( self._searchfield, alignment=Qt.AlignLeft )
+        self._btnCaseSensitive.setFixedSize( QSize(26, 26) )
+        self._btnCaseSensitive.setFlat( True )
+        l.addWidget( self._btnCaseSensitive, alignment=Qt.AlignLeft )
+        self._btnWholeWord.setFixedSize( QSize( 26, 26 ) )
+        self._btnWholeWord.setFlat( True )
+        l.addWidget( self._btnWholeWord, alignment=Qt.AlignLeft )
+
+    def setSearchFieldBackgroundColor( self, htmlColor:str ) -> None:
+        self._searchfield.setBackgroundColor( htmlColor )
+
+    def setFocusToSearchField( self ):
+        self._searchfield.setFocus()
+
+def testSearchWidget():
+    app = QApplication()
+    sw = SearchWidget2()
+    sw.show()
+    app.exec_()
+
+####################################################################################
+class SearchTool( QWidget ):
+    def __init__(self, tv:BaseTableView ):
+        QWidget.__init__( self )
+        self._tv = tv
+        self._searchWidget = SearchWidget2()
+        self._searchHandler = SearchHandler2( tv, self._searchWidget )
+        self._layout = QHBoxLayout()
+        self._layout.setContentsMargins( 0, 0, 0, 0)
+        self._layout.setSpacing( 1 )
+        self._layout.addWidget( self._searchWidget )
+        self.setLayout( self._layout )
+
+####################################################################################
+class TableTool( IntEnum ):
+    YEAR_CHOICE = auto()
+    MONTH_CHOICE = auto()
+    SEARCH = auto()
+    PRINT = auto()
+    EXPORT = auto()
+####################################################################################
+class TableTools( QToolBar ):
+    def __init__( self, tv:BaseTableView ):
+        QToolBar.__init__( self )
+        self._tv = tv
+        self._toolCnt = 0
+        self._yearCombo:YearComboBox = None
+        self._monthCombo:MonthComboBox = None
+        self._searchTool:SearchTool = None
+
+    def addTools( self, tools:Collection[TableTool] ):
+        for tool in tools:
+            if self._toolCnt > 0:
+                self.addSeparator()
+            if tool == TableTool.SEARCH:
+                self._createSearchTool()
+            elif tool == TableTool.YEAR_CHOICE:
+                self._createYearCombo()
+            elif tool == TableTool.MONTH_CHOICE:
+                self._createMonthCombo()
+            self._toolCnt += 1
+
+    def _createYearCombo( self ):
+        years = list()
+        year = datehelper.getCurrentYear()
+        for y in range( year, 2019, -1 ):
+            years.append( y )
+        self._yearCombo = YearComboBox( years )
+        self.addWidget( self._yearCombo )
+
+    def _createMonthCombo( self ):
+        self._monthCombo = MonthComboBox()
+        self.addWidget( self._monthCombo )
+
+    def _createSearchTool( self ):
+        if not self._searchTool:
+            self._searchTool = SearchTool( self._tv )
+            self.addWidget( self._searchTool )
+
+    def _createPrintTool( self ):
+        pass
+
+
+class FilterTableWidget( QWidget ):
+    def __init__( self ):
+        QWidget.__init__( self )
+        self._tools = None
         self.dataTv = DataTableView()
         self.headerTv = HeaderTableView()
         self.headerTv.filter_changed.connect( self.onFilterChanged )
         self.headerTv.filter_cleared.connect( self.onFilterCleared )
         self.headerTv.horizontalHeader().sectionClicked.connect( self.onColumnHeaderClicked )
-        self._filters:List[Filter] = list()
+        self._filters:List[Filter] = list() # aktuell gesetzte Spaltenfilter
         self._sortOrder: Qt.SortOrder = None
         self._vlayout = QVBoxLayout()
         self._vlayout.setContentsMargins( 0, 0, 0, 0 )
-        self._vlayout.setSpacing( 0 )
+        self._vlayout.setSpacing( 1 )
+        #self._vlayout.addWidget( self._searchWidget, stretch=0, alignment=Qt.AlignLeft )
         self._vlayout.addWidget( self.headerTv )
         self._vlayout.addWidget( self.dataTv )
         self.setLayout( self._vlayout )
+        self._headerTvLayoutPos = 0
+        self._searchHandler = None #SearchHandler2( self.dataTv, self._searchWidget )
 
-    def addBottomWidget( self, widget:QWidget ):
-        self._vlayout.addWidget( widget )
+    def addTools( self, tools:Collection[TableTool] ):
+        if not self._tools:
+            self._tools = TableTools( self.dataTv )
+            self._vlayout.insertWidget( 0, self._tools, stretch=0, alignment=Qt.AlignLeft )
+        self._tools.addTools( tools )
 
     def setModel( self, tm:BaseTableModel ):
         self.dataTv.setModel( tm )
@@ -190,6 +308,12 @@ class FilterTableWidget( QWidget ):
     #### methods of QTableView  ##############
     def model( self ) -> BaseTableModel:
         return self.dataTv.model()
+
+    def selectionModel( self ):
+        return self.dataTv.selectionModel()
+
+    def scrollTo( self, index ):
+        self.dataTv.scrollTo( index )
 
     def rowHeight( self, row:int ) -> int:
         return self.dataTv.rowHeight( row )
@@ -258,6 +382,9 @@ class FilterTableWidget( QWidget ):
     def getTableView( self ) -> BaseTableView:
         return self.dataTv
 
+    def clearSelection( self ):
+        self.dataTv.clearSelection()
+
     def onHeaderColumnResized( self, col: int, oldW: int, newW: int ):
         #print( "headerColumnResized" )
         self.dataTv.setColumnWidth( col, newW )
@@ -307,53 +434,116 @@ class FilterTableWidget( QWidget ):
                 return
 
 ###############################################################################################
-class SearchWidget( QWidget ):
-    doSearch = Signal( str )
-    searchtextChanged = Signal()
-
-    def __init__( self ):
-        QWidget.__init__( self )
-        self._layout = QHBoxLayout()
-        self._searchfield = SearchField()
-        self._btnCaseSensitive = CaseSensitiveButton()
-        self._btnWholeWord = WholeWordButton()
-        # forward signals from searchfield:
-        self._searchfield.doSearch.connect( self.doSearch.emit )
-        self._searchfield.searchTextChanged.connect( self.searchtextChanged.emit )
-        self._createGui()
-
-    def _createGui( self ):
-        l = self._layout
-        self.setLayout( l )
-        l.setContentsMargins( 0, 0, 0, 0 )
-        l.addWidget( self._searchfield, alignment=Qt.AlignLeft )
-        self._btnCaseSensitive.setFixedSize( QSize(26, 26) )
-        self._btnCaseSensitive.setFlat( True )
-        l.addWidget( self._btnCaseSensitive, alignment=Qt.AlignLeft )
-        self._btnWholeWord.setFixedSize( QSize( 26, 26 ) )
-        self._btnWholeWord.setFlat( True )
-        l.addWidget( self._btnWholeWord, alignment=Qt.AlignLeft )
-
-    def setSearchFieldBackgroundColor( self, htmlColor:str ) -> None:
-        self._searchfield.setBackgroundColor( htmlColor )
-
-    def setFocusToSearchField( self ):
-        self._searchfield.setFocus()
-
-def testSearchWidget():
-    app = QApplication()
-    sw = SearchWidget()
-    sw.show()
-    app.exec_()
 
 ##################################################################################################
-class FilterTableWidgetExt( FilterTableWidget ):
-    def __init__(self):
-        FilterTableWidget.__init__( self )
-        self._toolbar = SearchWidget()
-        self.addBottomWidget( self._toolbar)
+# class FilterTableWidgetExt( FilterTableWidget ):
+#     """
+#     Ein FilterTableWidget mit einer zusätzlichen, oberhalb des FilterTableWidget angeordneten BaseTableViewToolBar.
+#     Defaultmäßig wird an Position 0 der Toolbar ein SearchWidget angeordnet (das aus dieser filtertablewidget.py).
+#     """
+#     def __init__(self):
+#         FilterTableWidget.__init__( self )
+#         self._toolbar = BaseTableViewToolBar()
+#         self._searchWidget = SearchWidget()
+#         self._toolbar.addWidget( self._searchWidget )
+#         self.insertWidget( 0, self._toolbar)
+#
+# def testFilterTableWidgetExt():
+#     app = QApplication()
+#     ftext = FilterTableWidgetExt()
+#     ftext.show()
+#     app.exec_()
 ################################################################################################
 
+################################################################################################
+class SearchHandler2( QObject ):
+    def __init__( self, tv: BaseTableView, searchWidget:SearchWidget2 ):
+        QObject.__init__( self )
+        self._searchValueOrig = None # so wurde der Suchbegriff vom Anwender ins Suchfeld eingetragen
+        self._searchValue = None # enthält den aufbereiteten Suchbegriff (siehe _prepareSearchValue)
+        self._searchValueNum = None # der Suchbegriff in numerischer Form
+                                    # (not None nur, wenn z.B. nach "123" gesucht werden soll)
+        self._tv = tv
+        self._searchWidget = searchWidget
+        self._searchFieldBackground = None
+        self._searchWidget.doSearch.connect( self.onDoSearch )
+        self._searchWidget.searchtextChanged.connect( self.onSearchfieldChanged )
+        # self._model:BaseTableModel = tv.model() NEIN! Der Pointer auf das Model muss in _searchNextMatch()
+                                                # geholt werden, da sich das Model ändern kann (durch Filterung)
+        self._caseSensitive = False
+        self._exactMatch = False
+        self._row = 0
+        self._col = 0
+
+    def onSearchfieldChanged( self ):
+        self._searchWidget.setSearchFieldBackgroundColor( "#ffffff" )
+        self._tv.clearSelection()
+
+    def _makeComparable( self, val ):
+        valNum = None
+        if isinstance(val, numbers.Number):
+            valNum = val
+            val = str( val )
+        else:  # string (hopefully)
+            try:
+                valNum = int( val )
+            except ValueError:
+                try:
+                    valNum = float( val )
+                except ValueError:
+                    pass
+        if not self._caseSensitive:
+            val = val.lower()
+        return val, valNum
+
+    def onDoSearch( self, searchValue ):
+        self.search( searchValue, self._caseSensitive, self._exactMatch )
+
+    def search( self, searchValue, caseSensitive:bool=False, exactMatch:bool=False ):
+        if searchValue != self._searchValueOrig or \
+                self._caseSensitive != caseSensitive or \
+                self._exactMatch != exactMatch:
+            # Anwender hat die Suchkriterien geändert, neue Suche beginnen
+            self._row = self._col = 0
+            self._searchValueOrig = searchValue
+            self._caseSensitive = caseSensitive
+            self._exactMatch = exactMatch
+            self._searchValue, self._searchValueNum = self._makeComparable( searchValue )
+        self._searchNextMatch()
+
+    def _searchNextMatch( self ):
+        if self._row == 0 and self._col == 0:
+            self._searchWidget.setSearchFieldBackgroundColor( "#ffffff" )
+        tm = self._tv.model()
+        for r in range( self._row, tm.rowCount() ):
+            for c in range( self._col, tm.columnCount() ):
+                tmval = tm.getValue( r, c )
+                if not tmval: continue
+                tmval, tmvalNum = self._makeComparable( tmval )
+                match = False
+                if( self._exactMatch and self._searchValue == tmval) or \
+                        (not self._exactMatch and self._searchValue in tmval ):
+                    match = True
+                if match or (tmvalNum is not None and
+                             self._searchValueNum is not None and
+                             tmvalNum == self._searchValueNum):
+                    self._showMatch( tm.index( r, c ) )
+                    self._row, self._col = r, c+1
+                    if self._col >= tm.columnCount():
+                        self._row += 1
+                        self._col = 0
+                        if self._row >= tm.rowCount():
+                            self._row = 0
+                    return
+            self._col = 0
+        self._row = self._col = 0
+        self._searchWidget.setSearchFieldBackgroundColor( "#eb8795" )
+
+    def _showMatch( self, index: QModelIndex ):
+        self._tv.selectionModel().select( index, QItemSelectionModel.ClearAndSelect )
+        self._tv.scrollTo( index )
+
+#########################################################################################
 class FilterTableWidgetFrame( QWidget ):
     """
     Ein Widget, das ein FilterTableWidget enthält und eine erweiterbare Toolbar.
@@ -422,11 +612,30 @@ class FilterTableWidgetFrame( QWidget ):
 
     def getFilterTableWidget( self ) -> FilterTableWidget:
         return self._ftw
+####################################################################################
+
+
+def testFilterTableWidget():
+    from PySide2.QtWidgets import QApplication
+    from PySide2.QtCore import QSize
+    def onOk():
+        print( "ok" )
+    def onCancel():
+        print( "cancel" )
+    app = QApplication()
+    dlg = BaseDialogWithButtons( "Test FilterTableWidget", getOkCancelButtonDefinitions( onOk, onCancel ) )
+    tv = FilterTableWidget()
+    tv.addTools( (TableTool.YEAR_CHOICE, TableTool.MONTH_CHOICE, TableTool.SEARCH) )
+    tm = createTestModel()
+    tv.setModel( tm )
+    w = tv.getPreferredWidth()
+    dlg.setMainWidget( tv )
+    dlg.resize( QSize( w + 50, 250 ) )
+    dlg.exec_()
 
 def testFilterTableWidgetFrame():
     from PySide2.QtWidgets import QApplication
     from PySide2.QtCore import QSize
-    from PySide2.QtWidgets import QDialog
     def onOk():
         print( "ok" )
     def onCancel():
@@ -437,7 +646,7 @@ def testFilterTableWidgetFrame():
     tm = createTestModel()
     tv.setModel( tm )
     frame = FilterTableWidgetFrame( tv, withEditButtons=True )
-    sw = SearchWidget()
+    sw = SearchWidget2()
     frame.getToolBar().addWidget( sw )
     w = tv.getPreferredWidth()
     dlg.setMainWidget( frame )

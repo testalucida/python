@@ -67,7 +67,7 @@ class EinAusController( IccController ):
         # search
         searchwidget = tb.addSearchWidget( True )
         self._searchHandler = SearchHandler( tv, searchwidget )
-        self._printHandler = PrintHandler( tv )
+        self._printHandler = PrintHandler( tv.model() )
         tb.addPrintAction( "Öffne Druckvorschau für diese Tabelle...", self._printHandler.handlePreview )
         tv.setContextMenuCallbacks( self.provideActions, self.onSelected )
         ### neue Zahlung, Zahlung ändern, löschen:
