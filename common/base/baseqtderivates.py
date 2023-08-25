@@ -20,6 +20,9 @@ from base.messagebox import ErrorBox, WarningBox, QuestionBox
 
 from datehelper import isValidIsoDatestring, isValidEurDatestring, getRelativeQDate, getQDateFromIsoString
 #################  BaseAction  ########################
+from iconfactory import IconFactoryS
+
+
 class BaseAction( QAction ):
     def __init__( self, text:str="", tooltip:str="", ident:Any=None, icon:QIcon=None, parent=None, userdata:Any=None ):
         QAction.__init__( self )
@@ -99,19 +102,25 @@ class BaseComboBox( QComboBox, GetSetValue ):
 
 #####################   YearComboBox  #######################
 class YearComboBox( BaseComboBox ):
+    year_changed = Signal( int ) # arg: the new year
     def __init__( self, years:List[int] ):
         BaseComboBox.__init__( self )
         for y in years:
             self.addItem( str( y ) )
+        self.currentIndexChanged.connect(lambda: self.year_changed.emit( int(self.currentText() ) ) )
 
     def setYear( self, year:int ) -> None:
         self.setCurrentText( str(year) )
 
 #################  MonthComboBox  #########################
 class MonthComboBox( BaseComboBox ):
+    month_changed = Signal( int, str, str ) # args: month idx, month short name, month long name
     def __init__( self ):
         BaseComboBox.__init__( self )
         self.addItems( constants.monthLongNames )
+        self.currentIndexChanged.connect( lambda: self.month_changed.emit( self.currentIndex(),
+                                                                           constants.monthShortNames[self.currentIndex()],
+                                                                           self.currentText() ) )
 
     def setMonthIdx( self, monthIdx:int ):
         """
@@ -325,6 +334,18 @@ class BaseIconButton( BaseButton ):
         BaseButton.__init__( self, "", parent )
         self.setIcon( icon )
         self.setFixedSize( size )
+
+###################  PrintButton  #######################
+class PrintButton( BaseIconButton ):
+    def __init__( self, size=QSize(28, 28), parent=None ):
+        icon = IconFactoryS.inst().getIcon( BASE_IMAGES_DIR + "print.png" )
+        BaseIconButton.__init__( self, icon, size, parent )
+
+##########################################################
+class ExportButton( BaseIconButton ):
+    def __init__( self, size=QSize(28, 28), parent=None ):
+        icon = IconFactoryS.inst().getIcon( BASE_IMAGES_DIR + "export.png" )
+        BaseIconButton.__init__( self, icon, size, parent )
 
 ####################  BaseIconTextButton  ################
 class BaseIconTextButton( BaseButton ):

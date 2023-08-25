@@ -1,9 +1,9 @@
 import numbers
 from enum import IntEnum, auto
-from typing import List, Dict, Callable, Collection
+from typing import List, Dict, Callable, Collection, Any
 
 from PySide2 import QtCore
-from PySide2.QtCore import QModelIndex, Qt, Signal, QSize, QItemSelectionModel, QObject
+from PySide2.QtCore import QModelIndex, Qt, Signal, QSize, QItemSelectionModel, QObject, QRunnable, Slot, QThreadPool
 from PySide2.QtGui import QBrush
 from PySide2.QtWidgets import QTableView, QHeaderView, QHBoxLayout, QWidget, QVBoxLayout, \
     QAbstractItemView, QGridLayout, QApplication, QToolBar, QComboBox, QAction
@@ -11,17 +11,19 @@ from PySide2.QtWidgets import QTableView, QHeaderView, QHBoxLayout, QWidget, QVB
 import datehelper
 from base.baseqtderivates import BaseEdit, BaseDialogWithButtons, getOkCancelButtonDefinitions, BaseButton, \
     SearchField, NewIconButton, EditIconButton, DeleteIconButton, CaseSensitiveButton, WholeWordButton, YearComboBox, \
-    MonthComboBox
+    MonthComboBox, PrintButton, ExportButton
 from base.basetablefunctions import BaseTableFunctions
 from base.basetablemodel import BaseTableModel
 from base.basetableview import BaseTableView
 from base.basetableviewframe import BaseTableViewFrame, BaseTableViewToolBar
 from base.constants import monthLongNames
 from base.directories import BASE_IMAGES_DIR
+from base.exporthandler import ExportHandler
 from base.interfaces import XBase, TestItem
 
 
 #####################################################################
+from base.printhandler import PrintHandler
 from iconfactory import IconFactoryS
 
 
@@ -173,13 +175,18 @@ class Filter:
 class SearchWidget2( QWidget ):
     doSearch = Signal( str )
     searchtextChanged = Signal()
+    caseSensitiveToggled = Signal( bool ) # True: es wurde auf "sensitive" gestellt
+    wholeWordToggled = Signal( bool ) # True: es wurde auf "nur ganzes Wort" gestellt
 
     def __init__( self ):
         QWidget.__init__( self )
         self._layout = QHBoxLayout()
         self._searchfield = SearchField()
         self._btnCaseSensitive = CaseSensitiveButton()
+        self._btnCaseSensitive.clicked.connect( self.onCaseSensitiveToggled )
         self._btnWholeWord = WholeWordButton()
+        self._btnWholeWord.clicked.connect( self.onWholeWordToggled )
+        #self._btnWholeWord.releaseMouse.connect( self.setFocusToSearchField )
         # forward signals from searchfield:
         self._searchfield.doSearch.connect( self.doSearch.emit )
         self._searchfield.searchTextChanged.connect( self.searchtextChanged.emit )
@@ -189,6 +196,7 @@ class SearchWidget2( QWidget ):
         l = self._layout
         self.setLayout( l )
         l.setContentsMargins( 0, 0, 0, 0 )
+        l.setSpacing( 0 )
         l.addWidget( self._searchfield, alignment=Qt.AlignLeft )
         self._btnCaseSensitive.setFixedSize( QSize(26, 26) )
         self._btnCaseSensitive.setFlat( True )
@@ -203,6 +211,16 @@ class SearchWidget2( QWidget ):
     def setFocusToSearchField( self ):
         self._searchfield.setFocus()
 
+    def onCaseSensitiveToggled( self, isCaseSensitive:bool ):
+        self._searchfield.setBackgroundColor( "#ffffff" )
+        self._searchfield.setFocus()
+        self.caseSensitiveToggled.emit( isCaseSensitive )
+
+    def onWholeWordToggled( self, isWholeWord:bool ):
+        self._searchfield.setBackgroundColor( "#ffffff" )
+        self._searchfield.setFocus()
+        self.wholeWordToggled.emit( isWholeWord )
+
 def testSearchWidget():
     app = QApplication()
     sw = SearchWidget2()
@@ -210,58 +228,100 @@ def testSearchWidget():
     app.exec_()
 
 ####################################################################################
-class SearchTool( QWidget ):
-    def __init__(self, tv:BaseTableView ):
+class AbstractToolWrapper( QWidget ):
+    def __init__(self, tool:QWidget, tv:BaseTableView ):
         QWidget.__init__( self )
-        self._tv = tv
-        self._searchWidget = SearchWidget2()
-        self._searchHandler = SearchHandler2( tv, self._searchWidget )
+        self._tool = tool
+        self.tv = tv
         self._layout = QHBoxLayout()
-        self._layout.setContentsMargins( 0, 0, 0, 0)
+        self._layout.setContentsMargins( 0, 0, 0, 0 )
         self._layout.setSpacing( 1 )
-        self._layout.addWidget( self._searchWidget )
+        self._layout.addWidget( tool )
         self.setLayout( self._layout )
+
+    def getTool( self ) -> QWidget:
+        return self._tool
+
+#####################################################################################
+class SearchTool( AbstractToolWrapper ):
+    def __init__(self, tv:BaseTableView ):
+        AbstractToolWrapper.__init__( self, SearchWidget2(), tv )
+        self._searchHandler = SearchHandler2( tv, self.getTool() )
+
+####################################################################################
+class PrintTool( AbstractToolWrapper ):
+    def __init__(self, tv:BaseTableView ):
+        AbstractToolWrapper.__init__( self, PrintButton(), tv )
+        btnPrint = self.getTool()
+        btnPrint.setToolTip( "Drucken dieser Tabellenansicht" )
+        self._printHandler = PrintHandler( tv )
+        # btnPrint.clicked.connect( self._printHandler.handlePrint )
+        btnPrint.clicked.connect( self._printHandler.handlePreview )
+
+####################################################################################
+class ExportTool( AbstractToolWrapper ):
+    def __init__(self, tv:BaseTableView ):
+        btn = ExportButton()
+        AbstractToolWrapper.__init__( self, btn, tv )
+        btn.setToolTip( "Exportieren dieser Tabelle nach Calc" )
+        self._exportHandler = ExportHandler()
+        btn.clicked.connect( lambda: self._exportHandler.exportToCsv2( tv ) )
 
 ####################################################################################
 class TableTool( IntEnum ):
-    YEAR_CHOICE = auto()
-    MONTH_CHOICE = auto()
     SEARCH = auto()
     PRINT = auto()
     EXPORT = auto()
+    NONE = auto()
+
 ####################################################################################
 class TableTools( QToolBar ):
     def __init__( self, tv:BaseTableView ):
         QToolBar.__init__( self )
         self._tv = tv
         self._toolCnt = 0
-        self._yearCombo:YearComboBox = None
-        self._monthCombo:MonthComboBox = None
         self._searchTool:SearchTool = None
+        self._printTool:PrintTool = None
+        self._exportTool:ExportTool = None
+        self._toolWidgets:List[QWidget] = list()
 
-    def addTools( self, tools:Collection[TableTool] ):
+    def addStandardTableTools( self, tools:Collection[TableTool] ):
+        """
+        Fügt ein Standard-Tabellen-Tool hinzu.
+        Standard-Tools sind SearchTool, PrintTool und ExportTool. Sie beziehen sich auf die Tabellendaten selbst und
+        haben ihre eigenen Handler, sodass vom TableTools-Objekt keine Signale nach außen gegebben werden müssen.
+        Um andere Tools hinzuzufügen, verwende die Methode addToolWidget().
+        :param tools:
+        :return:
+        """
         for tool in tools:
             if self._toolCnt > 0:
                 self.addSeparator()
             if tool == TableTool.SEARCH:
                 self._createSearchTool()
-            elif tool == TableTool.YEAR_CHOICE:
-                self._createYearCombo()
-            elif tool == TableTool.MONTH_CHOICE:
-                self._createMonthCombo()
+            elif tool == TableTool.PRINT:
+                self._createPrintTool()
+            elif tool == TableTool.EXPORT:
+                self._createExportTool()
             self._toolCnt += 1
 
-    def _createYearCombo( self ):
-        years = list()
-        year = datehelper.getCurrentYear()
-        for y in range( year, 2019, -1 ):
-            years.append( y )
-        self._yearCombo = YearComboBox( years )
-        self.addWidget( self._yearCombo )
+    def addToolWidget( self, widget:QWidget ):
+        """
+        Fügt ein Tool hinzu, das nicht zu den Tabellen-Standard-Tools gehört (siehe addStandardTableTools()).
+        Damit dieses Tool ggf. abgerufen werden kann, muss ein objectName gesetzt worden sein (siehe Methode
+        getToolWidget())
+        :param widget:
+        :return:
+        """
+        self.addWidget( widget )
+        self._toolWidgets.append( widget )
+        self._toolCnt += 1
 
-    def _createMonthCombo( self ):
-        self._monthCombo = MonthComboBox()
-        self.addWidget( self._monthCombo )
+    def getToolWidget( self, objectName:str ) -> QWidget or None:
+        for widget in self._toolWidgets:
+            if widget.objectName() == objectName:
+                return widget
+        return None
 
     def _createSearchTool( self ):
         if not self._searchTool:
@@ -269,9 +329,14 @@ class TableTools( QToolBar ):
             self.addWidget( self._searchTool )
 
     def _createPrintTool( self ):
-        pass
+        self._printTool = PrintTool( self._tv )
+        self.addWidget( self._printTool )
 
+    def _createExportTool( self ):
+        self._exportTool = ExportTool( self._tv )
+        self.addWidget( self._exportTool )
 
+##############################################################################################
 class FilterTableWidget( QWidget ):
     def __init__( self ):
         QWidget.__init__( self )
@@ -286,31 +351,47 @@ class FilterTableWidget( QWidget ):
         self._vlayout = QVBoxLayout()
         self._vlayout.setContentsMargins( 0, 0, 0, 0 )
         self._vlayout.setSpacing( 1 )
-        #self._vlayout.addWidget( self._searchWidget, stretch=0, alignment=Qt.AlignLeft )
         self._vlayout.addWidget( self.headerTv )
         self._vlayout.addWidget( self.dataTv )
         self.setLayout( self._vlayout )
         self._headerTvLayoutPos = 0
         self._searchHandler = None #SearchHandler2( self.dataTv, self._searchWidget )
+        self._threadpool = QThreadPool()
 
-    def addTools( self, tools:Collection[TableTool] ):
+    def addStandardTableTools( self, tools:Collection[TableTool] ):
+        self._ensureToolsExist()
+        self._tools.addStandardTableTools( tools )
+
+    def addToolWidget( self, tool:QWidget ):
+        """
+        Diese Methode fügt die Tools hinzu, die nicht Standard-Tools sind, z.B. Year- und MonthCombo.
+        Um die StandardTools Suchen, Drucken, Exportieren hinzuzufügen, siehe Methode addStandardTableTools.
+        :param tool:
+        :return:
+        """
+        self._ensureToolsExist()
+        self._tools.addToolWidget( tool )
+
+    def _ensureToolsExist( self ):
         if not self._tools:
             self._tools = TableTools( self.dataTv )
             self._vlayout.insertWidget( 0, self._tools, stretch=0, alignment=Qt.AlignLeft )
-        self._tools.addTools( tools )
 
-    def setModel( self, tm:BaseTableModel ):
-        self.dataTv.setModel( tm )
+    def setModel( self, tm:BaseTableModel, selectRows:bool=True, singleSelection:bool=True ):
+        self.dataTv.setModel( tm, selectRows, singleSelection )
         self.headerTv.setModel( tm.getHeaders() )
-        self.setHeaderColumnWidthsAccordingDataColumns( tm )
+        self.setHeaderColumnWidthsAccordingDataColumns()
         self.headerTv.horizontalHeader().sectionResized.connect( self.onHeaderColumnResized )
 
-    #### methods of QTableView  ##############
+    #### methods of QTableView and BaseTableView - forward to dataTv or headerTv ##############
     def model( self ) -> BaseTableModel:
         return self.dataTv.model()
 
     def selectionModel( self ):
         return self.dataTv.selectionModel()
+
+    def setAlternatingRowColors( self, enabled=True ):
+        self.dataTv.setAlternatingRowColors( enabled )
 
     def scrollTo( self, index ):
         self.dataTv.scrollTo( index )
@@ -320,10 +401,29 @@ class FilterTableWidget( QWidget ):
 
     def columnWidth( self, col:int ) -> int:
         return self.headerTv.columnWidth( col )
+
+    def sortByColumn( self, column:int, order:Qt.SortOrder = Qt.SortOrder.AscendingOrder ):
+        #self.dataTv.model().sort( column, order )
+        self.dataTv.horizontalHeader().setSortIndicator( column, order )
+        self.headerTv.horizontalHeader().setSortIndicator( column, order )
+
+    def setContextMenuCallbacks( self, provider: Callable, onSelected: Callable ) -> None:
+        self.dataTv.setContextMenuCallbacks( provider, onSelected )
+
+    def resizeColumnsToContents(self):
+        self.headerTv.horizontalHeader().sectionResized.disconnect( self.onHeaderColumnResized )
+        # Spalten der Datentabelle einstellen
+        self.resizeColumnsToContents()
+        # Spalten der Headertabelle einstellen
+        self.setHeaderColumnWidthsAccordingDataColumns( )
+        # Slots wieder anmelden:
+        self.headerTv.horizontalHeader().sectionResized.connect( self.onHeaderColumnResized )
+
     #### methods of QTableView - end  ##########
 
-    def setHeaderColumnWidthsAccordingDataColumns( self, tm:BaseTableModel ):
-        for col in range( 0, len( tm.getHeaders() ) ):
+    def setHeaderColumnWidthsAccordingDataColumns( self  ):
+        cols = self.dataTv.model().columnCount()
+        for col in range( 0, cols ):
             w = self.dataTv.columnWidth( col )
             self.headerTv.setColumnWidth( col, w )
 
@@ -345,7 +445,6 @@ class FilterTableWidget( QWidget ):
         """
         # Spaltenbreiten vor Sortieren merken und hinterher wieder genauso einstellen.
         wlist = self._getDataTableColumnWidths()
-        tm:BaseTableModel = self.dataTv.model()
         col = args[0]
         if self._sortOrder is None:
             self._sortOrder = Qt.SortOrder.AscendingOrder
@@ -354,14 +453,14 @@ class FilterTableWidget( QWidget ):
                 self._sortOrder = Qt.SortOrder.AscendingOrder
             else:
                 self._sortOrder = Qt.SortOrder.DescendingOrder
-        tm.sort( col, self._sortOrder )
+        self.dataTv.model().sort( col, self._sortOrder )
         # Jetzt die Spalten wieder auf die vorherige Größe einstellen. Dazu erstmal die
         # sectionResized-Slots abklemmen
         self.headerTv.horizontalHeader().sectionResized.disconnect( self.onHeaderColumnResized )
         # Spalten der Datentabelle einstellen
         self._setDataTableColumnWidths( wlist )
         # Spalten der Headertabelle einstellen
-        self.setHeaderColumnWidthsAccordingDataColumns( tm )
+        self.setHeaderColumnWidthsAccordingDataColumns()
         # Slots wieder anmelden:
         self.headerTv.horizontalHeader().sectionResized.connect( self.onHeaderColumnResized )
 
@@ -389,12 +488,48 @@ class FilterTableWidget( QWidget ):
         #print( "headerColumnResized" )
         self.dataTv.setColumnWidth( col, newW )
 
-    def onFilterChanged( self, header:str, filterval:str ):
-        #print( "header: ", header, " filter: ", filterval )
+    def onFilterChanged__( self, header:str, filterval:str ):
+        class WorkerSignals( QObject ):
+            finished = Signal()
+
+        class Worker( QRunnable ):
+            #finished = Signal()
+            def __init__( self, fn, header, filterval, tm, wlist  ):
+                super( Worker, self ).__init__()
+                self._fn = fn
+                self._header = header
+                self._filterval = filterval
+                self._tm = tm
+                self._wlist = wlist
+                self.signals = WorkerSignals()
+
+            @Slot()  # QtCore.Slot
+            def run( self ):
+                try:
+                    self._fn( self._header, self._filterval, self._tm, self._wlist )
+                except:
+                    pass
+                finally:
+                    self.signals.finished.emit()
+
+        def terminateWork():
+            self._setDataTableColumnWidths( wlist )
+            self.dataTv.model().layoutChanged.emit()
+
         self._updateFilters( header, filterval )
         wlist = self._getDataTableColumnWidths()
         tm: BaseTableModel = self.dataTv.model()
         tm.resetFilter()
+
+        worker = Worker( self.doFilter, header, filterval, tm, wlist )
+        worker.signals.finished.connect( terminateWork() )
+        self._threadpool.start( worker )
+
+    def doFilter__( self, header, filterval, tm, wlist ):
+        # self._updateFilters( header, filterval )
+        # wlist = self._getDataTableColumnWidths()
+        # tm: BaseTableModel = self.dataTv.model()
+        # tm.resetFilter()
         rowList:List[XBase] = tm.getRowList()
         unvisibleELements = list()
         for filtr in self._filters:
@@ -405,7 +540,26 @@ class FilterTableWidget( QWidget ):
                     val = val.lower()
                 if filtr.filterval not in val:
                     unvisibleELements.append( xbase )
-        tm.setElementsUnvisible( unvisibleELements )
+        tm.setElementsUnvisible( unvisibleELements, emitLayoutChanged=False )
+        #self._setDataTableColumnWidths( wlist )
+
+    def onFilterChanged( self, header, filterval ):
+        QApplication.processEvents()
+        self._updateFilters( header, filterval )
+        wlist = self._getDataTableColumnWidths()
+        tm: BaseTableModel = self.dataTv.model()
+        tm.resetFilter( emitSignals=False)
+        rowList:List[XBase] = tm.getRowList()
+        unvisibleELements = list()
+        for filtr in self._filters:
+            key = tm.getKeyByHeader( filtr.header )
+            for xbase in rowList:
+                val = xbase.getValue( key )
+                if isinstance( val, str ):
+                    val = val.lower()
+                if filtr.filterval not in val:
+                    unvisibleELements.append( xbase )
+        tm.setElementsUnvisible( unvisibleELements, emitLayoutChanged=True )
         self._setDataTableColumnWidths( wlist )
 
     def onFilterCleared( self, header:str ):
@@ -433,28 +587,6 @@ class FilterTableWidget( QWidget ):
                 self._filters.remove( filtr )
                 return
 
-###############################################################################################
-
-##################################################################################################
-# class FilterTableWidgetExt( FilterTableWidget ):
-#     """
-#     Ein FilterTableWidget mit einer zusätzlichen, oberhalb des FilterTableWidget angeordneten BaseTableViewToolBar.
-#     Defaultmäßig wird an Position 0 der Toolbar ein SearchWidget angeordnet (das aus dieser filtertablewidget.py).
-#     """
-#     def __init__(self):
-#         FilterTableWidget.__init__( self )
-#         self._toolbar = BaseTableViewToolBar()
-#         self._searchWidget = SearchWidget()
-#         self._toolbar.addWidget( self._searchWidget )
-#         self.insertWidget( 0, self._toolbar)
-#
-# def testFilterTableWidgetExt():
-#     app = QApplication()
-#     ftext = FilterTableWidgetExt()
-#     ftext.show()
-#     app.exec_()
-################################################################################################
-
 ################################################################################################
 class SearchHandler2( QObject ):
     def __init__( self, tv: BaseTableView, searchWidget:SearchWidget2 ):
@@ -468,12 +600,20 @@ class SearchHandler2( QObject ):
         self._searchFieldBackground = None
         self._searchWidget.doSearch.connect( self.onDoSearch )
         self._searchWidget.searchtextChanged.connect( self.onSearchfieldChanged )
+        self._searchWidget.caseSensitiveToggled.connect( self.onCaseSensitiveToggled )
+        self._searchWidget.wholeWordToggled.connect( self.onWholeWordToggled )
         # self._model:BaseTableModel = tv.model() NEIN! Der Pointer auf das Model muss in _searchNextMatch()
                                                 # geholt werden, da sich das Model ändern kann (durch Filterung)
         self._caseSensitive = False
         self._exactMatch = False
         self._row = 0
         self._col = 0
+
+    def onCaseSensitiveToggled( self, isCaseSensitive:bool ):
+        self._caseSensitive = isCaseSensitive
+
+    def onWholeWordToggled( self, isWholeWord:bool ):
+        self._exactMatch = isWholeWord
 
     def onSearchfieldChanged( self ):
         self._searchWidget.setSearchFieldBackgroundColor( "#ffffff" )
@@ -622,12 +762,32 @@ def testFilterTableWidget():
         print( "ok" )
     def onCancel():
         print( "cancel" )
+    def onYearChanged( year:int ):
+        print( "Year changed to ", year )
+    def onMonthChanged( monthIdx:int, monthShortName:str, monthLongName:str ):
+        print( "Month changed to %d - %s - %s" % (monthIdx, monthShortName, monthLongName) )
+
     app = QApplication()
     dlg = BaseDialogWithButtons( "Test FilterTableWidget", getOkCancelButtonDefinitions( onOk, onCancel ) )
     tv = FilterTableWidget()
-    tv.addTools( (TableTool.YEAR_CHOICE, TableTool.MONTH_CHOICE, TableTool.SEARCH) )
+    ## Jahre, die in der Jahres-Combo angezeigt werden sollen
+    years = list()
+    year = datehelper.getCurrentYear()
+    for y in range( year, 2019, -1 ):
+        years.append( y )
+    cbo = YearComboBox( years )
+    cbo.year_changed.connect( onYearChanged )
+    cbo.setYear( year )
+    tv.addToolWidget( cbo )
+    cbo = MonthComboBox()
+    cbo.month_changed.connect( onMonthChanged )
+    cbo.setMonthIdx( 6 ) # Juli
+    tv.addToolWidget( cbo )
+    tv.addStandardTableTools( (TableTool.SEARCH, TableTool.PRINT, TableTool.EXPORT) )
     tm = createTestModel()
     tv.setModel( tm )
+    tv.setAlternatingRowColors()
+    tv.sortByColumn( 1 )
     w = tv.getPreferredWidth()
     dlg.setMainWidget( tv )
     dlg.resize( QSize( w + 50, 250 ) )

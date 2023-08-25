@@ -1,18 +1,27 @@
 import os
 import sys
 from datetime import datetime
+from os.path import isdir
 
 from PySide2.QtCore import QAbstractItemModel, Qt
+from PySide2.QtWidgets import QTableView
 
 
 class ExportHandler:
     def __init__( self ):
         pass
 
-    def exportToCsv( self, model:QAbstractItemModel, tablename:str=""  ):
+    def exportToCsv2( self, tv:QTableView, tablename:str=None ):
+        self.exportToCsv( tv.model(), tablename )
+
+    def exportToCsv( self, model:QAbstractItemModel, tablename:str="TableExport"  ):
+        folder = "./csv"
         now = str( datetime.now() )
-        csv = "./csv/" + tablename + "_" + now + ".csv"
+        if not isdir( folder ):
+            os.makedirs( folder )
+        csv = folder + "/" + tablename + "_" + now + ".csv"
         csv = csv.replace( " ", "-" )
+        csv = csv.replace( ":", "-" )
         f = open( csv, "w" )
         rows = model.rowCount()
         cols = model.columnCount()
@@ -49,7 +58,7 @@ class ExportHandler:
             os.system( "xdg-open " + csv )
 
     @staticmethod
-    def _isIntOrFloatFormat( self, val: str ) -> bool:
+    def _isIntOrFloatFormat( val: str ) -> bool:
         points = 0
         minus = 0
         for c in val:

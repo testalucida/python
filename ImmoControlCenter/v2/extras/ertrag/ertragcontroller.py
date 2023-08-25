@@ -57,7 +57,7 @@ class ErtragController( IccController ):
         tb.addYearCombo( jahre, self.onChangeYear )
         tb.setYear( self._jahr )
         tb.addExportAction( "Tabelle nach Calc exportieren", self.onExport )
-        self._printHandler = PrintHandler( v.model() )
+        self._printHandler = PrintHandler( v )
         tb.addPrintAction( "Druckvorschau für diese Tabelle öffnen...", self._printHandler.handlePreview )
         return frame
 

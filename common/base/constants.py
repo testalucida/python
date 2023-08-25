@@ -1,6 +1,7 @@
 
 monthLongNames = ("Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober",
               "November", "Dezember")
+monthShortNames = ( "jan", "feb", "mrz", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "dez" )
 
 
 monatsletzter = {

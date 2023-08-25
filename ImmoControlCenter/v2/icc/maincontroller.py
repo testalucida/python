@@ -5,6 +5,7 @@ from PySide2.QtWidgets import QMenu, QMessageBox, QInputDialog, QLineEdit
 
 import datehelper
 from base.baseqtderivates import BaseAction
+from base.filtertablewidget import FilterTableWidgetFrame
 from base.messagebox import InfoBox, ErrorBox, WarningBox
 from v2.abrechnungen.abrechnungcontroller import NKAbrechnungController, HGAbrechnungController
 from v2.einaus.einauscontroller import EinAusController
@@ -143,7 +144,8 @@ class MainController( IccController ):
         # todo
         self._win.setNKAbrechnungenTableViewFrame( tvf )
         ### Die View für "alle" Zahlungen (Rechnungen etc.)
-        tvf: IccCheckTableViewFrame = self._einausCtrl.createGui()
+        tvf: FilterTableWidgetFrame = self._einausCtrl.createGui()
+        # tvf: IccCheckTableViewFrame = self._einausCtrl.createGui()
         self._win.setAlleZahlungenTableViewFrame( tvf )
         self._provideSummen()
         self._provideLetzteBuchung()

@@ -116,7 +116,7 @@ def test():
     tb.addYearCombo( (jahr,), onChangeYear )
     tb.setYear( jahr )
     tb.addExportAction( "Tabelle nach Calc exportieren", onExport )
-    ph = PrintHandler( tv.model() )
+    ph = PrintHandler( tv )
     tb.addPrintAction( "Druckvorschau für diese Tabelle öffnen...", ph.handlePreview )
     tv.setModel( tm )
     tv.setAlternatingRowColors( True )

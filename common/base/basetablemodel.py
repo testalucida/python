@@ -427,7 +427,7 @@ class BaseTableModel( QAbstractTableModel ):
         if op == "<=": return value <= compValue if not value_is_num else value <= compValueNum
         if op == ">=": return value >= compValue if not value_is_num else value >= compValueNum
 
-    def setElementsUnvisible( self, elements:List[XBase] ) -> None:
+    def setElementsUnvisible( self, elements:List[XBase], emitLayoutChanged=True ) -> None:
         if not self._rowListUnfiltered:
             self._rowListUnfiltered = copy.deepcopy( self.rowList )
         for x in elements:
@@ -435,16 +435,18 @@ class BaseTableModel( QAbstractTableModel ):
                 self.rowList.remove( x )
             except:
                 pass
-        self.layoutChanged.emit()
+        if emitLayoutChanged:
+            self.layoutChanged.emit()
 
-    def resetFilter( self ) -> None:
+    def resetFilter( self, emitSignals=True ) -> None:
         if self._rowListUnfiltered: # Daten sind gefiltert
             self.rowList = copy.deepcopy( self._rowListUnfiltered )
             self._rowListUnfiltered.clear()
             self._rowListUnfiltered = None
             self._filterConditionList = None
-            self.layoutChanged.emit()
-            self.rowsAddedSignal.emit()
+            if emitSignals:
+                self.layoutChanged.emit()
+                self.rowsAddedSignal.emit()
 
     def isFiltered( self ) -> bool:
         return self._rowListUnfiltered is not None
