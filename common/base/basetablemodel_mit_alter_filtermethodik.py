@@ -28,17 +28,8 @@ class KeyHeaderMapping:
         self.key = key
         self.header = header
 
-#############################################################################
-class Filter:
-    def __init__(self, key:str, filterval:str):
-        self.key:str = key
-        self.filterval:str = filterval
-
 ##################  BaseTableModel  ##################
 class BaseTableModel( QAbstractTableModel ):
-    """
-    Neue Version des BaseTableModel mit neuer Filtermethodik (wird verwendet vom FilterTableWidget).
-    """
     before_sorting = Signal()
     sorting_finished = Signal()
     rowsAddedSignal = Signal() # damit die View ggf. ihre Zeilenhöhe anpassen kann
@@ -61,11 +52,9 @@ class BaseTableModel( QAbstractTableModel ):
         self.sortable = True
         self.sort_col = -1
         self.sort_descending = False
-        self._filters: List[Filter] = list()  # aktuell gesetzte Spaltenfilter
-        self._visibleRowIndexes:List[int] = list() # Indizes der Rows, die sichtbar sind. Per Default alle,
-                                                    # das kann aber durch Filterung eingeschränkt werden
         if rowList:
             self.setRowList( rowList )
+        self._filterConditionList:List[FilterCondition] = None
 
     def _setDefaultKeyHeaderMapping( self ):
         """
@@ -81,13 +70,9 @@ class BaseTableModel( QAbstractTableModel ):
         self.rowList = rowList
         if len( rowList ) > 0:
             self._setDefaultKeyHeaderMapping()
-            self._initVisiblRowIndexes()
 
-    def _initVisiblRowIndexes( self ):
-        r = 0
-        for x in self.rowList:
-            self._visibleRowIndexes.append( r )
-            r += 1
+    # def receiveSortedList( self, li:List[XBase] ) -> None:
+    #     self.rowList = li
 
     def setKeyHeaderMappings( self, mappings:List[KeyHeaderMapping] ):
         self.headers = [x.header for x in mappings]
@@ -144,14 +129,9 @@ class BaseTableModel( QAbstractTableModel ):
         zu identifizieren (x1 == x2).
         Eine Kopie von <x> wird hier nicht gefunden!
         :param x:
-        :return: the rowIndex of <x> resp. -1 if <x> cannot be found.
-                 That may be caused by a filtered TableModel where <x> doesn't meet the filter conditions
+        :return:
         """
-        idx = self.rowList.index( x )
-        try:
-            return self._visibleRowIndexes.index( idx )
-        except ValueError:
-            return -1
+        return self.rowList.index( x )
 
     def getElementByUniqueKeyValue( self, key:str, value:Any ) -> XBase or None:
         """
@@ -172,26 +152,12 @@ class BaseTableModel( QAbstractTableModel ):
         return None
 
     def getElement( self, indexrow: int ) -> XBase:
-        """
-        Liefert das Element, das an Zeile indexrow angezeigt wird.
-        !!Das entspricht der Position in der rowList *nur dann, wenn die Tabelle weder sortiert noch gefiltert ist*!!
-        Wirft einen IndexError, wenn indexrow größer oder gleich der Länge der _visibleRowIndexes ist.
-        @return XBase in Zeile indexrow
-        """
-        # todo: Änderung wegen neuer Filterlogik --> erledigt
-        try:
-            return self.rowList[self._visibleRowIndexes[indexrow]]
-        except Exception as ex:
-            print( "Exception bei indexrow ", indexrow )
-            raise ex
-        #return self.rowList[indexrow]
+        return self.rowList[indexrow]
 
     def getElements( self, indexrows:List[int] ) -> List[XBase]:
-        # todo: Änderung wegen neuer Filterlogik
         retlist = list()
         for r in indexrows:
-            retlist.append( self.rowList[self._visibleRowIndexes[r]] )
-            #retlist.append( self.rowList[r] )
+            retlist.append( self.rowList[r] )
         return retlist
 
     def getKey( self, indexcolumn:int ):
@@ -265,23 +231,42 @@ class BaseTableModel( QAbstractTableModel ):
         :return:
         """
         row = 0
-        if self.sort_col < 0:
-            # todo: Änderung wegen neuer Filterlogik --> erl.
-            # rowList nicht sortiert
-            self.rowList.append( x )
-            self._visibleRowIndexes.append( self.columnCount() - 1 )
+        if self._rowListUnfiltered:
+            # Model ist im Filter-Zustand, d.h., alle Elemente sind in der _rowListUnfiltered, nur die, die den
+            # Filterkriterien entsprechen, sind in rowList.
+            # Wir müssen x also auf jeden Fall der Liste _rowListUnfiltered hinzufügen.
+            if self.sort_col < 0:
+                # Daten sind nicht sortiert
+                self._rowListUnfiltered.append( x )
+            else:
+                # Daten sind sortiert, neues Objekt an der richtigen Stelle einfügen
+                # todo
+                row = self._insertObject( x, self._rowListUnfiltered )
+            if self.satisfiesFilterConditions( x ):
+                # das neue Objekt entspricht den Filterkriterien, deshalb muss es in die Liste der
+                # gefilterten Objekte eingefügt werden.
+                if self.sort_col < 0:
+                    self.rowList.append( x )
+                else:
+                    # todo
+                    row = self._insertObject( x, self.rowList )
         else:
-            # Daten sind sortiert, neues Objekt an der richtigen Stelle einfügen.
-            # todo: Änderung wegen neuer Filterlogik
-            self._insertObject( x, self.rowList )
-        # Einrückung aufgehoben wegen neuer Filterlogik -- Ende
-
+            # rowList ungefiltert, neues Objekt hinzufügen
+            if self.sort_col < 0:
+                # rowList nicht sortiert
+                self.rowList.append( x )
+            else:
+                # Daten sind sortiert, neues Objekt an der richtigen Stelle einfügen.
+                # todo
+                self._insertObject( x, self.rowList )
         if self.sort_col < 0:
             row = self.rowCount() - 1
         indexA = self.createIndex( row, 0 )
         indexZ = self.createIndex( row, self.columnCount()-1 )
         self.dataChanged.emit( indexA, indexZ, [Qt.DisplayRole] )
-
+        # self._applyFilter( row, row )
+        # method = sys._getframe().f_code.co_name
+        # self._changelog.addChange( self.__class__, method, Action.INSERT, x )
         self.layoutChanged.emit() # muss hier aufgerufen werden, damit in der View eine neue Row angezeigt wird.
         self.rowsAddedSignal.emit() # muss aufgerufen werden, damit die View die Zeilenhöhe anpasst. Das passiert
                                     # nämlich nach layoutChanged leider nicht.
@@ -306,7 +291,6 @@ class BaseTableModel( QAbstractTableModel ):
         return len( targetList ) - 1
 
     def removeObject( self, x:XBase ):
-        # todo: Änderung wegen neuer Filterlogik
         """
         Wird aufgerufen, um ein Objekt (eine Tabellenzeile) aus der Tabelle zu löschen.
         Löst ein dataChanged- und ein layoutChanged-Signal aus.
@@ -327,7 +311,6 @@ class BaseTableModel( QAbstractTableModel ):
             self.removeObject( x )
 
     def removeObjectsByKeyValue( self, key:str, value:Any ):
-        # todo: Änderung wegen neuer Filterlogik
         """
         Entfernt alle Objekte aus der rowlist, auf die die Bedingung x.__dict__[key] == value zutrifft.
         :param key:
@@ -339,9 +322,7 @@ class BaseTableModel( QAbstractTableModel ):
                 self.removeObject( x )
 
     def rowCount( self, parent:QModelIndex=None ) -> int:
-        # todo: Änderung wegen neuer Filterlogik
-        return len( self._visibleRowIndexes )
-        #return len( self.rowList )
+        return len( self.rowList )
 
     def columnCount( self, parent:QModelIndex=None ) -> int:
         return len( self.headers )
@@ -407,133 +388,81 @@ class BaseTableModel( QAbstractTableModel ):
             self.negNumberBrush = None
 
     #################   filtering  ##############################
-    # def applyFilter( self, condlist:List[FilterCondition] ):
-    #     self.resetFilter()
-    #     self._filterConditionList = condlist
-    #     self._applyFilter( 0, self.rowCount()-1 )
-    #
-    # def _applyFilter( self, minrow:int, maxrow:int ):
-    #     unvisibleElements = list()
-    #     for r in range( minrow, maxrow+1 ):
-    #         for cond in self._filterConditionList:
-    #             value = self.getValueByColumnName( r, cond.header )
-    #             if not self._satisfiesCondition( value, cond ):
-    #                 x = self.getElement( r )
-    #                 unvisibleElements.append( x )
-    #     self.setElementsUnvisible( unvisibleElements )
+    def applyFilter( self, condlist:List[FilterCondition] ):
+        self.resetFilter()
+        self._filterConditionList = condlist
+        self._applyFilter( 0, self.rowCount()-1 )
 
-    ## Neue Filterlogik
-    def clearFilter( self, header:str ):
-        """
-        Der Filter für Spalte <header> wurde aufgehoben
-        :param header:
-        :return:
-        """
-        key = self.getKeyByHeader( header )
-        for filtr in self._filters:
-            if filtr.key == key:
-                self._filters.remove( filtr )
-                self._buildFilterIndexList()
-                return
-
-    def applyFilter( self, header:str, filterval:str ):
-        f:Filter = self._updateFilters( header, filterval )
-        if f:
-            # neuer Filter, wir brauchen die filterIndexList nicht ganz neu aufbauen, sondern nur ergänzen,
-            # sprich: die Indices rauswerfen, die dem neuen Filter nicht genügen
-            self._updateFilterIndexList( f.key, f.filterval )
-        else:
-            # ein bereits bestehender Filter hat sich geändert. Die ganze filterIndexList neu aufbauen
-            self._buildFilterIndexList()
-        self.layoutChanged.emit()
-
-    def _updateFilterIndexList( self, key:str, filterval:str ):
-        """
-        Diese Methode wird aufgerufen, wenn ein neuer Filter (für <header> mit dem Wert <filterval> gesetzt worden ist.
-        Sie prüft, welche Objekte, die durch die _visibleRowIndexes referenziert werden, dem neuen Filterwert
-        entsprechen und entfernt diejenigen Referenzen in _visibleRowIndexes, die das nicht tun.
-        :param key:
-        :param filterval:
-        :return:
-        """
-        l = list()
-        for r in self._visibleRowIndexes:
-            x = self.rowList[r]
-            if self._meetsFilterCondition( x, key, filterval ):
-                l.append( r )
-        self._visibleRowIndexes = l
-
-    def _buildFilterIndexList( self ):
-        """
-        Baut die FilterIndexList auf unter Verwendung aller aktiven Filter (filterList)
-        :return:
-        """
-        self._visibleRowIndexes.clear()
-        row = -1
-        for x in self.rowList:
-            row += 1
-            fits = False
-            for f in self._filters:
-                if self._meetsFilterCondition( x, f.key, f.filterval ):
-                    fits = True # passt für *diesen* Filter
-                else:
-                    fits = False # passt doch nicht
-                    break
-            if fits:
-                self._visibleRowIndexes.append( row )
+    def _applyFilter( self, minrow:int, maxrow:int ):
+        unvisibleElements = list()
+        for r in range( minrow, maxrow+1 ):
+            for cond in self._filterConditionList:
+                value = self.getValueByColumnName( r, cond.header )
+                if not self._satisfiesCondition( value, cond ):
+                    x = self.getElement( r )
+                    unvisibleElements.append( x )
+        self.setElementsUnvisible( unvisibleElements )
 
     @staticmethod
-    def _meetsFilterCondition( x:XBase, key:str, filterval:str ) -> bool:
-        val = x.getValue( key )
-        if isinstance( val, str ):
-            val = val.lower()
-        return filterval in val
+    def _satisfiesCondition( value:Any, cond:FilterCondition ) -> bool:
+        if isinstance( cond.value, str ) and not cond.caseSensitive:
+            cond.value = cond.value.lower()
+        if isinstance( value, str ) and not cond.caseSensitive:
+            value = value.lower()
+        compValue = cond.value
+        compValueNum = cond.value_num
+        op = cond.op
+        if not value and not compValue: return True
+        if not value and compValue: return False
+        if value and not compValue: return False
+        # compValue ist das, was im Dialog eingestellt wurde, value ist das, was aus der Tabelle kommt
+        # und geprüft wird.
+        if op == "startsWith": return str(value).startswith( compValue )
+        if op == "contains": return compValue in str( value )
+        if op == "=": return (value == compValue or value == compValueNum)
+        if op == "<>": return (value != compValue and value != compValueNum)
+        value_is_num = isinstance( value, numbers.Number )
+        if op == "<": return value < compValue if not value_is_num else value < compValueNum
+        if op == ">": return value > compValue if not value_is_num else value > compValueNum
+        if op == "<=": return value <= compValue if not value_is_num else value <= compValueNum
+        if op == ">=": return value >= compValue if not value_is_num else value >= compValueNum
 
-    def _updateFilters( self, header: str, filterval: str ) -> Filter or None:
-        """
-        Prüft, ob für Spalte <header> schon ein Filter gesetzt ist.
-        Wenn ja, wird dessen Wert mit <filterval> aktualisiert.
-        Wenn nein, wird ein neuer Filter für <header> angelegt und der Filterliste hinzugefügt.
-        :param header:
-        :param filterval:
-        :return: das neue Filter-Objekt, wenn der Filter für <header> neu ist, sonst None
-        """
-        key = self.getKeyByHeader( header )
-        for filtr in self._filters:
-            if filtr.key == key: # Filter existiert schon, ggf. seinen Wert mit <filterval> aktualisieren
-                if not filtr.filterval == filterval:
-                    filtr.filterval = filterval.lower()
-                return None
-        f = Filter( key, filterval.lower() )
-        self._filters.append( f )
-        return f
+    def setElementsUnvisible( self, elements:List[XBase], emitLayoutChanged=True ) -> None:
+        if not self._rowListUnfiltered:
+            self._rowListUnfiltered = copy.deepcopy( self.rowList )
+        for x in elements:
+            try:
+                self.rowList.remove( x )
+            except:
+                pass
+        if emitLayoutChanged:
+            self.layoutChanged.emit()
 
     def resetFilter( self, emitSignals=True ) -> None:
-        pass
-        # Auskommentiert wegen neuer Filterlogik
-        # if self._rowListUnfiltered: # Daten sind gefiltert
-        #     self.rowList = copy.deepcopy( self._rowListUnfiltered )
-        #     self._rowListUnfiltered.clear()
-        #     self._rowListUnfiltered = None
-        #     self._filterConditionList = None
-        #     if emitSignals:
-        #         self.layoutChanged.emit()
-        #         self.rowsAddedSignal.emit()
+        if self._rowListUnfiltered: # Daten sind gefiltert
+            self.rowList = copy.deepcopy( self._rowListUnfiltered )
+            self._rowListUnfiltered.clear()
+            self._rowListUnfiltered = None
+            self._filterConditionList = None
+            if emitSignals:
+                self.layoutChanged.emit()
+                self.rowsAddedSignal.emit()
+
+    def isFiltered( self ) -> bool:
+        return self._rowListUnfiltered is not None
 
     def satisfiesFilterConditions( self, x:XBase ) -> bool:
-        # Auskommentiert wegen neuer Filterlogik
-        # for cond in self._filterConditionList:
-        #     key = self.getKeyByHeader( cond.header )
-        #     value = x.getValue( key )
-        #     if not self._satisfiesCondition( value, cond ):
-        #         return False
+        for cond in self._filterConditionList:
+            key = self.getKeyByHeader( cond.header )
+            value = x.getValue( key )
+            if not self._satisfiesCondition( value, cond ):
+                return False
         return True
 
     def setSortable( self, sortable:bool=True ):
         self.sortable = sortable
 
     def sort( self, col:int, order: Qt.SortOrder=Qt.SortOrder.DescendingOrder ) -> None:
-        # todo: Änderung wegen neuer Filterlogik
         if not self.sortable: return
         self.sort_col = col
         if col < 0: return
@@ -627,9 +556,6 @@ class SumTableModel( BaseTableModel ):
                 return None
 
 ################################################################
-
-
-
 def test():
     class X(XBase):
         def __init__(self, v1, v2 ):
@@ -662,23 +588,18 @@ def test():
     x1 = X( "Berta", 34 )
     x2 = X( "Wolfi", 57 )
     x3 = X( "Dora", 40 )
-    x4 = X( "Maik", 44 )
-    l = [x1, x2, x3, x4]
+    l = [x1, x2, x3]
     tm = BaseTableModel( l )
-    e = tm.getElement( 5 )
-    for r in range(0, 4):
-        e:X = tm.getElement( r )
-        print( e.var1 )
 
-    # from PySide2.QtWidgets import QApplication
-    # from base.basetableview import BaseTableView
-    # from base.basetableviewframe import BaseTableViewFrame
-    # app = QApplication()
-    # v = BaseTableView()
-    # v.setModel( tm )
-    # frame = BaseTableViewFrame( v, True )
-    # frame.newItem.connect( onNewItem )
-    # frame.editItem.connect( onEditItem )
-    # frame.deleteItems.connect( onDeleteItem )
-    # frame.show()
-    # app.exec_()
+    from PySide2.QtWidgets import QApplication
+    from base.basetableview import BaseTableView
+    from base.basetableviewframe import BaseTableViewFrame
+    app = QApplication()
+    v = BaseTableView()
+    v.setModel( tm )
+    frame = BaseTableViewFrame( v, True )
+    frame.newItem.connect( onNewItem )
+    frame.editItem.connect( onEditItem )
+    frame.deleteItems.connect( onDeleteItem )
+    frame.show()
+    app.exec_()

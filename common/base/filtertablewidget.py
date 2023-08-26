@@ -165,11 +165,11 @@ class DataTableView( BaseTableView ):
         hv:QHeaderView = self.horizontalHeader()
         hv.hide()
 
-#############################################################################
-class Filter:
-    def __init__(self, header:str, filterval:str):
-        self.header:str = header
-        self.filterval:str = filterval
+# #############################################################################
+# class Filter:
+#     def __init__(self, header:str, filterval:str):
+#         self.header:str = header
+#         self.filterval:str = filterval
 
 ##############################################################################
 class SearchWidget2( QWidget ):
@@ -346,7 +346,7 @@ class FilterTableWidget( QWidget ):
         self.headerTv.filter_changed.connect( self.onFilterChanged )
         self.headerTv.filter_cleared.connect( self.onFilterCleared )
         self.headerTv.horizontalHeader().sectionClicked.connect( self.onColumnHeaderClicked )
-        self._filters:List[Filter] = list() # aktuell gesetzte Spaltenfilter
+        # self._filters:List[Filter] = list() # aktuell gesetzte Spaltenfilter
         self._sortOrder: Qt.SortOrder = None
         self._vlayout = QVBoxLayout()
         self._vlayout.setContentsMargins( 0, 0, 0, 0 )
@@ -488,104 +488,111 @@ class FilterTableWidget( QWidget ):
         #print( "headerColumnResized" )
         self.dataTv.setColumnWidth( col, newW )
 
-    def onFilterChanged__( self, header:str, filterval:str ):
-        class WorkerSignals( QObject ):
-            finished = Signal()
-
-        class Worker( QRunnable ):
-            #finished = Signal()
-            def __init__( self, fn, header, filterval, tm, wlist  ):
-                super( Worker, self ).__init__()
-                self._fn = fn
-                self._header = header
-                self._filterval = filterval
-                self._tm = tm
-                self._wlist = wlist
-                self.signals = WorkerSignals()
-
-            @Slot()  # QtCore.Slot
-            def run( self ):
-                try:
-                    self._fn( self._header, self._filterval, self._tm, self._wlist )
-                except:
-                    pass
-                finally:
-                    self.signals.finished.emit()
-
-        def terminateWork():
-            self._setDataTableColumnWidths( wlist )
-            self.dataTv.model().layoutChanged.emit()
-
-        self._updateFilters( header, filterval )
-        wlist = self._getDataTableColumnWidths()
-        tm: BaseTableModel = self.dataTv.model()
-        tm.resetFilter()
-
-        worker = Worker( self.doFilter, header, filterval, tm, wlist )
-        worker.signals.finished.connect( terminateWork() )
-        self._threadpool.start( worker )
-
-    def doFilter__( self, header, filterval, tm, wlist ):
-        # self._updateFilters( header, filterval )
-        # wlist = self._getDataTableColumnWidths()
-        # tm: BaseTableModel = self.dataTv.model()
-        # tm.resetFilter()
-        rowList:List[XBase] = tm.getRowList()
-        unvisibleELements = list()
-        for filtr in self._filters:
-            key = tm.getKeyByHeader( filtr.header )
-            for xbase in rowList:
-                val = xbase.getValue( key )
-                if isinstance( val, str ):
-                    val = val.lower()
-                if filtr.filterval not in val:
-                    unvisibleELements.append( xbase )
-        tm.setElementsUnvisible( unvisibleELements, emitLayoutChanged=False )
-        #self._setDataTableColumnWidths( wlist )
+    # def onFilterChanged__( self, header:str, filterval:str ):
+    #     class WorkerSignals( QObject ):
+    #         finished = Signal()
+    #
+    #     class Worker( QRunnable ):
+    #         #finished = Signal()
+    #         def __init__( self, fn, header, filterval, tm, wlist  ):
+    #             super( Worker, self ).__init__()
+    #             self._fn = fn
+    #             self._header = header
+    #             self._filterval = filterval
+    #             self._tm = tm
+    #             self._wlist = wlist
+    #             self.signals = WorkerSignals()
+    #
+    #         @Slot()  # QtCore.Slot
+    #         def run( self ):
+    #             try:
+    #                 self._fn( self._header, self._filterval, self._tm, self._wlist )
+    #             except:
+    #                 pass
+    #             finally:
+    #                 self.signals.finished.emit()
+    #
+    #     def terminateWork():
+    #         self._setDataTableColumnWidths( wlist )
+    #         self.dataTv.model().layoutChanged.emit()
+    #
+    #     self._updateFilters( header, filterval )
+    #     wlist = self._getDataTableColumnWidths()
+    #     tm: BaseTableModel = self.dataTv.model()
+    #     tm.resetFilter()
+    #
+    #     worker = Worker( self.doFilter, header, filterval, tm, wlist )
+    #     worker.signals.finished.connect( terminateWork() )
+    #     self._threadpool.start( worker )
+    #
+    # def doFilter__( self, header, filterval, tm, wlist ):
+    #     # self._updateFilters( header, filterval )
+    #     # wlist = self._getDataTableColumnWidths()
+    #     # tm: BaseTableModel = self.dataTv.model()
+    #     # tm.resetFilter()
+    #     rowList:List[XBase] = tm.getRowList()
+    #     unvisibleELements = list()
+    #     for filtr in self._filters:
+    #         key = tm.getKeyByHeader( filtr.header )
+    #         for xbase in rowList:
+    #             val = xbase.getValue( key )
+    #             if isinstance( val, str ):
+    #                 val = val.lower()
+    #             if filtr.filterval not in val:
+    #                 unvisibleELements.append( xbase )
+    #     tm.setElementsUnvisible( unvisibleELements, emitLayoutChanged=False )
+    #     #self._setDataTableColumnWidths( wlist )
 
     def onFilterChanged( self, header, filterval ):
         QApplication.processEvents()
-        self._updateFilters( header, filterval )
         wlist = self._getDataTableColumnWidths()
-        tm: BaseTableModel = self.dataTv.model()
-        tm.resetFilter( emitSignals=False)
-        rowList:List[XBase] = tm.getRowList()
-        unvisibleELements = list()
-        for filtr in self._filters:
-            key = tm.getKeyByHeader( filtr.header )
-            for xbase in rowList:
-                val = xbase.getValue( key )
-                if isinstance( val, str ):
-                    val = val.lower()
-                if filtr.filterval not in val:
-                    unvisibleELements.append( xbase )
-        tm.setElementsUnvisible( unvisibleELements, emitLayoutChanged=True )
+        self.dataTv.model().applyFilter( header, filterval)
         self._setDataTableColumnWidths( wlist )
 
+        # self._updateFilters( header, filterval )
+        # tm: BaseTableModel = self.dataTv.model()
+        # tm.resetFilter( emitSignals=False)
+        # rowList:List[XBase] = tm.getRowList()
+        # unvisibleELements = list()
+        # for filtr in self._filters:
+        #     key = tm.getKeyByHeader( filtr.header )
+        #     for xbase in rowList:
+        #         val = xbase.getValue( key )
+        #         if isinstance( val, str ):
+        #             val = val.lower()
+        #         if filtr.filterval not in val:
+        #             unvisibleELements.append( xbase )
+        # tm.setElementsUnvisible( unvisibleELements, emitLayoutChanged=True )
+        # self._setDataTableColumnWidths( wlist )
+
     def onFilterCleared( self, header:str ):
-        self._clearFilter( header )
-        if len( self._filters ) == 0: # keine weiteren Filter gesetzt
-            wlist = self._getDataTableColumnWidths()
-            self.dataTv.model().resetFilter()
-            self._setDataTableColumnWidths( wlist )
-        else:
-            for filtr in self._filters:
-                self.onFilterChanged( filtr.header, filtr.filterval )
+        wlist = self._getDataTableColumnWidths()
+        self.dataTv.model().clearFilter( header )
+        self._setDataTableColumnWidths( wlist )
 
-    def _updateFilters( self, header:str, filterval:str ):
-        for filtr in self._filters:
-            if filtr.header == header:
-                if not filtr.filterval == filterval:
-                    filtr.filterval = filterval.lower()
-                return
-        f = Filter( header, filterval.lower() )
-        self._filters.append( f )
+        # self._clearFilter( header )
+        # if len( self._filters ) == 0: # keine weiteren Filter gesetzt
+        #     wlist = self._getDataTableColumnWidths()
+        #     self.dataTv.model().resetFilter()
+        #     self._setDataTableColumnWidths( wlist )
+        # else:
+        #     for filtr in self._filters:
+        #         self.onFilterChanged( filtr.header, filtr.filterval )
 
-    def _clearFilter( self, header:str ):
-        for filtr in self._filters:
-            if filtr.header == header:
-                self._filters.remove( filtr )
-                return
+    # def _updateFilters( self, header:str, filterval:str ):
+    #     for filtr in self._filters:
+    #         if filtr.header == header:
+    #             if not filtr.filterval == filterval:
+    #                 filtr.filterval = filterval.lower()
+    #             return
+    #     f = Filter( header, filterval.lower() )
+    #     self._filters.append( f )
+
+    # def _clearFilter( self, header:str ):
+    #     for filtr in self._filters:
+    #         if filtr.header == header:
+    #             self._filters.remove( filtr )
+    #             return
 
 ################################################################################################
 class SearchHandler2( QObject ):
