@@ -407,21 +407,6 @@ class BaseTableModel( QAbstractTableModel ):
             self.negNumberBrush = None
 
     #################   filtering  ##############################
-    # def applyFilter( self, condlist:List[FilterCondition] ):
-    #     self.resetFilter()
-    #     self._filterConditionList = condlist
-    #     self._applyFilter( 0, self.rowCount()-1 )
-    #
-    # def _applyFilter( self, minrow:int, maxrow:int ):
-    #     unvisibleElements = list()
-    #     for r in range( minrow, maxrow+1 ):
-    #         for cond in self._filterConditionList:
-    #             value = self.getValueByColumnName( r, cond.header )
-    #             if not self._satisfiesCondition( value, cond ):
-    #                 x = self.getElement( r )
-    #                 unvisibleElements.append( x )
-    #     self.setElementsUnvisible( unvisibleElements )
-
     ## Neue Filterlogik
     def clearFilter( self, header:str ):
         """
@@ -433,8 +418,12 @@ class BaseTableModel( QAbstractTableModel ):
         for filtr in self._filters:
             if filtr.key == key:
                 self._filters.remove( filtr )
-                self._buildFilterIndexList()
-                return
+                break
+        if len( self._filters ) == 0:
+            self._initVisiblRowIndexes()
+        else:
+            self._buildFilterIndexList()
+        self.layoutChanged.emit()
 
     def applyFilter( self, header:str, filterval:str ):
         f:Filter = self._updateFilters( header, filterval )
@@ -508,27 +497,6 @@ class BaseTableModel( QAbstractTableModel ):
         self._filters.append( f )
         return f
 
-    def resetFilter( self, emitSignals=True ) -> None:
-        pass
-        # Auskommentiert wegen neuer Filterlogik
-        # if self._rowListUnfiltered: # Daten sind gefiltert
-        #     self.rowList = copy.deepcopy( self._rowListUnfiltered )
-        #     self._rowListUnfiltered.clear()
-        #     self._rowListUnfiltered = None
-        #     self._filterConditionList = None
-        #     if emitSignals:
-        #         self.layoutChanged.emit()
-        #         self.rowsAddedSignal.emit()
-
-    def satisfiesFilterConditions( self, x:XBase ) -> bool:
-        # Auskommentiert wegen neuer Filterlogik
-        # for cond in self._filterConditionList:
-        #     key = self.getKeyByHeader( cond.header )
-        #     value = x.getValue( key )
-        #     if not self._satisfiesCondition( value, cond ):
-        #         return False
-        return True
-
     def setSortable( self, sortable:bool=True ):
         self.sortable = sortable
 
@@ -541,9 +509,17 @@ class BaseTableModel( QAbstractTableModel ):
         self.layoutAboutToBeChanged.emit()
         self.before_sorting.emit()
         self.sort_descending = True if order == Qt.SortOrder.DescendingOrder else False
-        self.rowList = sorted( self.rowList, key=cmp_to_key( self.compare ) )
+        # todo: nicht die rowList sortieren, sondern die _visibleIndexesList entsprechend der theoretischen
+        #  Sortierreihenfolge der Elemente in rowList neu aufbauen
+        self._visibleRowIndexes = sorted( self._visibleRowIndexes, key=cmp_to_key( self.compare2 ) )
+        #self.rowList = sorted( self.rowList, key=cmp_to_key( self.compare ) )
         self.sorting_finished.emit()
         self.layoutChanged.emit()
+
+    def compare2( self, row1:int, row2:int ) -> int:
+        x1 = self.rowList[row1]
+        x2 = self.rowList[row2]
+        return self.compare( x1, x2 )
 
     def compare( self, x1:XBase, x2:XBase ) -> int:
         """

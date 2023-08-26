@@ -11,8 +11,8 @@ class ExportHandler:
     def __init__( self ):
         pass
 
-    def exportToCsv2( self, tv:QTableView, tablename:str=None ):
-        self.exportToCsv( tv.model(), tablename )
+    # def exportToCsv2( self, tv:QTableView ):
+    #     self.exportToCsv( tv.model() )
 
     def exportToCsv( self, model:QAbstractItemModel, tablename:str="TableExport"  ):
         folder = "./csv"

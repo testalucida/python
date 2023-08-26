@@ -4,7 +4,7 @@ from typing import List, Dict, Callable, Collection, Any
 
 from PySide2 import QtCore
 from PySide2.QtCore import QModelIndex, Qt, Signal, QSize, QItemSelectionModel, QObject, QRunnable, Slot, QThreadPool
-from PySide2.QtGui import QBrush
+from PySide2.QtGui import QBrush, QFocusEvent
 from PySide2.QtWidgets import QTableView, QHeaderView, QHBoxLayout, QWidget, QVBoxLayout, \
     QAbstractItemView, QGridLayout, QApplication, QToolBar, QComboBox, QAction
 
@@ -69,6 +69,7 @@ class HeaderTableModel( BaseTableModel ):
 class FilterEdit( QWidget ):
     filter_changed = Signal( str, str ) # args = header, filtervalue
     filter_cleared = Signal( str ) # arg = header
+    tab_pressed = Signal()
     def __init__( self, header:str ):
         QWidget.__init__( self )
         self._header = header
@@ -77,6 +78,7 @@ class FilterEdit( QWidget ):
         self._layout.setContentsMargins( 0, 0, 0, 0 );
         self._layout.setSpacing( 0 );
         self._input = BaseEdit()
+        self._input.tab_pressed.connect( self.tab_pressed.emit )
         self._layout.addWidget( self._input )
         self._btnReset = BaseButton( "x" )
         self._btnReset.setMaximumWidth( 22 )
@@ -98,9 +100,8 @@ class FilterEdit( QWidget ):
         self._input.setStyleSheet( "background-color: white;" )
 
     def onReset( self ):
-        # self._input.clear()
-        # self._input.setStyleSheet( "background-color: white;" )
         self.filter_cleared.emit( self._header )
+
 
 ###########################################################################
 class HeaderTableView(BaseTableView):
@@ -115,6 +116,15 @@ class HeaderTableView(BaseTableView):
         self.setHorizontalScrollBarPolicy( Qt.ScrollBarAlwaysOff )
         self.btvLeftClicked.connect( self.onCellClicked )
 
+    def focusInEvent(self, event:QFocusEvent):
+        super().focusInEvent( event )
+        sel = self.selectedIndexes()
+        print( "Header: focusIn: ", sel )
+
+    def focusOutEvent(self, event:QFocusEvent):
+        super().focusOutEvent( event )
+        print( "Header: focusOut" )
+
     def onCellClicked( self, index:QModelIndex ):
         # in eine Filter-Zelle geklickt. In diese Zelle ein FilterEdit-Objekt platzieren.
         tm:HeaderTableModel = self.model()
@@ -122,6 +132,7 @@ class HeaderTableView(BaseTableView):
         tm:HeaderTableModel = self.model()
         header = tm.getHeader( col )
         filter = FilterEdit( header )
+        filter.tab_pressed.connect( self.onFilterEditTabPressed )
         filter.filter_changed.connect( self.filter_changed.emit )
         filter.filter_cleared.connect( self.onFilterReset )
         self.setIndexWidget( index, filter )
@@ -142,6 +153,9 @@ class HeaderTableView(BaseTableView):
         self.clearSelection()
         self.filter_cleared.emit( header )
         return
+
+    def onFilterEditTabPressed( self ):
+        print( "Header: onFilterEditTabPressed" )
 
     def setModel( self, headers:List[str] ):
         htm = HeaderTableModel( headers )
@@ -265,7 +279,7 @@ class ExportTool( AbstractToolWrapper ):
         AbstractToolWrapper.__init__( self, btn, tv )
         btn.setToolTip( "Exportieren dieser Tabelle nach Calc" )
         self._exportHandler = ExportHandler()
-        btn.clicked.connect( lambda: self._exportHandler.exportToCsv2( tv ) )
+        btn.clicked.connect( lambda: self._exportHandler.exportToCsv( tv.model() ) )
 
 ####################################################################################
 class TableTool( IntEnum ):
@@ -390,6 +404,9 @@ class FilterTableWidget( QWidget ):
     def selectionModel( self ):
         return self.dataTv.selectionModel()
 
+    def selectedIndexes( self ) -> List[int]:
+        return self.dataTv.selectedIndexes()
+
     def setAlternatingRowColors( self, enabled=True ):
         self.dataTv.setAlternatingRowColors( enabled )
 
@@ -488,111 +505,17 @@ class FilterTableWidget( QWidget ):
         #print( "headerColumnResized" )
         self.dataTv.setColumnWidth( col, newW )
 
-    # def onFilterChanged__( self, header:str, filterval:str ):
-    #     class WorkerSignals( QObject ):
-    #         finished = Signal()
-    #
-    #     class Worker( QRunnable ):
-    #         #finished = Signal()
-    #         def __init__( self, fn, header, filterval, tm, wlist  ):
-    #             super( Worker, self ).__init__()
-    #             self._fn = fn
-    #             self._header = header
-    #             self._filterval = filterval
-    #             self._tm = tm
-    #             self._wlist = wlist
-    #             self.signals = WorkerSignals()
-    #
-    #         @Slot()  # QtCore.Slot
-    #         def run( self ):
-    #             try:
-    #                 self._fn( self._header, self._filterval, self._tm, self._wlist )
-    #             except:
-    #                 pass
-    #             finally:
-    #                 self.signals.finished.emit()
-    #
-    #     def terminateWork():
-    #         self._setDataTableColumnWidths( wlist )
-    #         self.dataTv.model().layoutChanged.emit()
-    #
-    #     self._updateFilters( header, filterval )
-    #     wlist = self._getDataTableColumnWidths()
-    #     tm: BaseTableModel = self.dataTv.model()
-    #     tm.resetFilter()
-    #
-    #     worker = Worker( self.doFilter, header, filterval, tm, wlist )
-    #     worker.signals.finished.connect( terminateWork() )
-    #     self._threadpool.start( worker )
-    #
-    # def doFilter__( self, header, filterval, tm, wlist ):
-    #     # self._updateFilters( header, filterval )
-    #     # wlist = self._getDataTableColumnWidths()
-    #     # tm: BaseTableModel = self.dataTv.model()
-    #     # tm.resetFilter()
-    #     rowList:List[XBase] = tm.getRowList()
-    #     unvisibleELements = list()
-    #     for filtr in self._filters:
-    #         key = tm.getKeyByHeader( filtr.header )
-    #         for xbase in rowList:
-    #             val = xbase.getValue( key )
-    #             if isinstance( val, str ):
-    #                 val = val.lower()
-    #             if filtr.filterval not in val:
-    #                 unvisibleELements.append( xbase )
-    #     tm.setElementsUnvisible( unvisibleELements, emitLayoutChanged=False )
-    #     #self._setDataTableColumnWidths( wlist )
-
     def onFilterChanged( self, header, filterval ):
         QApplication.processEvents()
         wlist = self._getDataTableColumnWidths()
         self.dataTv.model().applyFilter( header, filterval)
         self._setDataTableColumnWidths( wlist )
 
-        # self._updateFilters( header, filterval )
-        # tm: BaseTableModel = self.dataTv.model()
-        # tm.resetFilter( emitSignals=False)
-        # rowList:List[XBase] = tm.getRowList()
-        # unvisibleELements = list()
-        # for filtr in self._filters:
-        #     key = tm.getKeyByHeader( filtr.header )
-        #     for xbase in rowList:
-        #         val = xbase.getValue( key )
-        #         if isinstance( val, str ):
-        #             val = val.lower()
-        #         if filtr.filterval not in val:
-        #             unvisibleELements.append( xbase )
-        # tm.setElementsUnvisible( unvisibleELements, emitLayoutChanged=True )
-        # self._setDataTableColumnWidths( wlist )
-
     def onFilterCleared( self, header:str ):
         wlist = self._getDataTableColumnWidths()
         self.dataTv.model().clearFilter( header )
         self._setDataTableColumnWidths( wlist )
 
-        # self._clearFilter( header )
-        # if len( self._filters ) == 0: # keine weiteren Filter gesetzt
-        #     wlist = self._getDataTableColumnWidths()
-        #     self.dataTv.model().resetFilter()
-        #     self._setDataTableColumnWidths( wlist )
-        # else:
-        #     for filtr in self._filters:
-        #         self.onFilterChanged( filtr.header, filtr.filterval )
-
-    # def _updateFilters( self, header:str, filterval:str ):
-    #     for filtr in self._filters:
-    #         if filtr.header == header:
-    #             if not filtr.filterval == filterval:
-    #                 filtr.filterval = filterval.lower()
-    #             return
-    #     f = Filter( header, filterval.lower() )
-    #     self._filters.append( f )
-
-    # def _clearFilter( self, header:str ):
-    #     for filtr in self._filters:
-    #         if filtr.header == header:
-    #             self._filters.remove( filtr )
-    #             return
 
 ################################################################################################
 class SearchHandler2( QObject ):

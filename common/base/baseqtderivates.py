@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Any, List, Tuple, Callable, Iterable
 
 from PySide2 import QtWidgets, QtCore
-from PySide2.QtCore import QDate, Qt, QAbstractTableModel, QRect, Signal, QSize, QMargins
+from PySide2.QtCore import QDate, Qt, QAbstractTableModel, QRect, Signal, QSize, QMargins, QEvent, QObject
 from PySide2.QtGui import QDoubleValidator, QIntValidator, QFont, QGuiApplication, QStandardItemModel, QStandardItem, \
     QMouseEvent, QTextDocument, QIcon, QFontMetrics, QValidator
 from PySide2.QtWidgets import QDialog, QCalendarWidget, QVBoxLayout, QBoxLayout, QLineEdit, QGridLayout, QPushButton, \
@@ -630,11 +630,13 @@ class BoolSwitch(QComboBox, AutoWidth):
 
 #######################  BaseEdit  ###################################
 class BaseEdit( QLineEdit, AutoWidth, GetSetValue ):
-    key_pressed = Signal( int )
+    # key_pressed = Signal( int )
+    tab_pressed = Signal()
     def __init__( self, parent=None, isReadOnly=False ):
         QLineEdit.__init__( self, parent )
         #self.textChanged.connect( self.on_change )
         self.setReadOnly( isReadOnly )
+        self.installEventFilter( self )
 
     def getValue( self ) -> str:
         return self.text()
@@ -649,9 +651,22 @@ class BaseEdit( QLineEdit, AutoWidth, GetSetValue ):
         super().focusInEvent( evt )
         self.setSelection( 0, len( self.text() ) )
 
+    # def focusOutEvent( self, evt ):
+    #     super().focusOutEvent( evt )
+    #     #print( "BaseEdit: focusOut" )
+
+    def eventFilter( self, obj: QObject, event:QEvent ):
+        #print( "BaseEdit: eventFilte - obj=", obj )
+        if event.type() == QEvent.KeyPress:
+            if event.key() == Qt.Key_Tab:
+                #print( "%s: TAB pressed" % obj )
+                self.tab_pressed.emit()
+                return True
+        return super().eventFilter( obj, event )
+
     # def keyPressEvent( self, event ):
     #     super().keyPressEvent( event )
-    #     self.key_pressed.emit( event.key() )
+    #     print( "BaseEdit: keyPressEvent" )
 
     # def on_change( self, s:str ):
     #     print( s )
