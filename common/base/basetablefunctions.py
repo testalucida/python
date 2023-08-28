@@ -67,6 +67,33 @@ class BaseTableFunctions:
         clipboard.setText( values )
 
     @staticmethod
+    def copyColumnCellsToClipboard( tv:QTableView, col:int, convertPointToComma=False ):
+        """
+        Kopiert die Werte der Spalte, die durch <key> referenziert wird, ins Clipboard.
+        Berücksichtigt werden nur die Zellen, die markiert sind.
+        :param tv:
+        :param col: Index der Spalte
+        :param convertPointToComma: Wenn True, werden Punkte, die in den Spaltenwerten gefunden werden,
+        in Kommas umgewandelt. "True" sollte also nur für Spalten gesetzt werden, die ausschließlich numerische
+        Werte enthalten.
+        :return: None
+        """
+        rows = BaseTableFunctions.getSelectedRows( tv )
+        values = ""
+        tm = tv.model()
+        for row in rows:
+            idx = tm.index( row, col )
+            val = tm.data( idx, Qt.DisplayRole )
+            val = "" if not val else val
+            if isinstance( val, Number ):
+                val = str( val )
+            if convertPointToComma:
+                val = val.replace( ".", "," )
+            values += ( val + "\n" )
+        clipboard = QGuiApplication.clipboard()
+        clipboard.setText( values )
+
+    @staticmethod
     def getSelectedRows( tv:QTableView ) -> List[int]:
         sm = tv.selectionModel()
         indexes:List[QModelIndex] = sm.selectedRows()  ## Achtung missverständlicher Methodenname

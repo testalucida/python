@@ -99,7 +99,7 @@ class AbrechnungDialogController:
         # die Arbeiten an den Teilzahlungen im Teilzahlungsdialog oder ValueDialog sind beendet.
         # Wir übernehmen die aktualisierten Zahlungen in das Abrechnungsobjekt self._xabr (welches nur eine
         # Kopie des bei der Instanzierung übergebenen Originals ist).
-        teilzahlungen = tm.getRowList()
+        teilzahlungen = tm.getAllElements()
         self._xabr.teilzahlungen = teilzahlungen
         self._updateZahlung( teilzahlungen )
 

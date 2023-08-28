@@ -3,10 +3,10 @@ from enum import IntEnum, auto
 from typing import List, Dict, Callable, Collection, Any
 
 from PySide2 import QtCore
-from PySide2.QtCore import QModelIndex, Qt, Signal, QSize, QItemSelectionModel, QObject, QRunnable, Slot, QThreadPool
+from PySide2.QtCore import QModelIndex, Qt, Signal, QSize, QItemSelectionModel, QObject, QThreadPool
 from PySide2.QtGui import QBrush, QFocusEvent
 from PySide2.QtWidgets import QTableView, QHeaderView, QHBoxLayout, QWidget, QVBoxLayout, \
-    QAbstractItemView, QGridLayout, QApplication, QToolBar, QComboBox, QAction
+    QAbstractItemView, QGridLayout, QApplication, QToolBar
 
 import datehelper
 from base.baseqtderivates import BaseEdit, BaseDialogWithButtons, getOkCancelButtonDefinitions, BaseButton, \
@@ -15,17 +15,13 @@ from base.baseqtderivates import BaseEdit, BaseDialogWithButtons, getOkCancelBut
 from base.basetablefunctions import BaseTableFunctions
 from base.basetablemodel import BaseTableModel
 from base.basetableview import BaseTableView
-from base.basetableviewframe import BaseTableViewFrame, BaseTableViewToolBar
-from base.constants import monthLongNames
-from base.directories import BASE_IMAGES_DIR
+from base.basetableviewframe import BaseTableViewToolBar
 from base.exporthandler import ExportHandler
 from base.interfaces import XBase, TestItem
 
 
 #####################################################################
 from base.printhandler import PrintHandler
-from iconfactory import IconFactoryS
-
 
 class HeaderTableModel( BaseTableModel ):
     class XFilter( XBase ):
@@ -116,23 +112,21 @@ class HeaderTableView(BaseTableView):
         self.setHorizontalScrollBarPolicy( Qt.ScrollBarAlwaysOff )
         self.btvLeftClicked.connect( self.onCellClicked )
 
-    def focusInEvent(self, event:QFocusEvent):
-        super().focusInEvent( event )
-        sel = self.selectedIndexes()
-        print( "Header: focusIn: ", sel )
-
-    def focusOutEvent(self, event:QFocusEvent):
-        super().focusOutEvent( event )
-        print( "Header: focusOut" )
+    # def focusInEvent(self, event:QFocusEvent):
+    #     super().focusInEvent( event )
+    #     # sel = self.selectedIndexes()
+    #     # print( "Header: focusIn: ", sel )
+    #
+    # def focusOutEvent(self, event:QFocusEvent):
+    #     super().focusOutEvent( event )
+    #     # print( "Header: focusOut" )
 
     def onCellClicked( self, index:QModelIndex ):
         # in eine Filter-Zelle geklickt. In diese Zelle ein FilterEdit-Objekt platzieren.
         tm:HeaderTableModel = self.model()
         col = index.column()
-        tm:HeaderTableModel = self.model()
         header = tm.getHeader( col )
         filter = FilterEdit( header )
-        filter.tab_pressed.connect( self.onFilterEditTabPressed )
         filter.filter_changed.connect( self.filter_changed.emit )
         filter.filter_cleared.connect( self.onFilterReset )
         self.setIndexWidget( index, filter )
@@ -153,9 +147,6 @@ class HeaderTableView(BaseTableView):
         self.clearSelection()
         self.filter_cleared.emit( header )
         return
-
-    def onFilterEditTabPressed( self ):
-        print( "Header: onFilterEditTabPressed" )
 
     def setModel( self, headers:List[str] ):
         htm = HeaderTableModel( headers )
@@ -327,6 +318,8 @@ class TableTools( QToolBar ):
         :param widget:
         :return:
         """
+        if self._toolCnt > 0:
+            self.addSeparator()
         self.addWidget( widget )
         self._toolWidgets.append( widget )
         self._toolCnt += 1
@@ -371,6 +364,7 @@ class FilterTableWidget( QWidget ):
         self._headerTvLayoutPos = 0
         self._searchHandler = None #SearchHandler2( self.dataTv, self._searchWidget )
         self._threadpool = QThreadPool()
+        self._wlist:List[int] = list() # Liste der zwischen-gemerkten Spaltenbreiten
 
     def addStandardTableTools( self, tools:Collection[TableTool] ):
         self._ensureToolsExist()
@@ -396,8 +390,13 @@ class FilterTableWidget( QWidget ):
         self.headerTv.setModel( tm.getHeaders() )
         self.setHeaderColumnWidthsAccordingDataColumns()
         self.headerTv.horizontalHeader().sectionResized.connect( self.onHeaderColumnResized )
+        tm.before_multi_sorting.connect( self.onBeforeMultiSorting )
+        tm.multi_sorting_finished.connect( self.onMultiSortingFinished )
 
     #### methods of QTableView and BaseTableView - forward to dataTv or headerTv ##############
+    def horizontalHeader( self ) -> QHeaderView:
+        return self.headerTv.horizontalHeader()
+
     def model( self ) -> BaseTableModel:
         return self.dataTv.model()
 
@@ -420,7 +419,6 @@ class FilterTableWidget( QWidget ):
         return self.headerTv.columnWidth( col )
 
     def sortByColumn( self, column:int, order:Qt.SortOrder = Qt.SortOrder.AscendingOrder ):
-        #self.dataTv.model().sort( column, order )
         self.dataTv.horizontalHeader().setSortIndicator( column, order )
         self.headerTv.horizontalHeader().setSortIndicator( column, order )
 
@@ -461,7 +459,8 @@ class FilterTableWidget( QWidget ):
         :return:
         """
         # Spaltenbreiten vor Sortieren merken und hinterher wieder genauso einstellen.
-        wlist = self._getDataTableColumnWidths()
+        self._storeDataTableColumnWidths()
+        self.horizontalHeader().setSortIndicatorShown( True )
         col = args[0]
         if self._sortOrder is None:
             self._sortOrder = Qt.SortOrder.AscendingOrder
@@ -475,22 +474,21 @@ class FilterTableWidget( QWidget ):
         # sectionResized-Slots abklemmen
         self.headerTv.horizontalHeader().sectionResized.disconnect( self.onHeaderColumnResized )
         # Spalten der Datentabelle einstellen
-        self._setDataTableColumnWidths( wlist )
+        self._restoreDataTableColumnWidths()
         # Spalten der Headertabelle einstellen
         self.setHeaderColumnWidthsAccordingDataColumns()
         # Slots wieder anmelden:
         self.headerTv.horizontalHeader().sectionResized.connect( self.onHeaderColumnResized )
 
-    def _getDataTableColumnWidths( self ) -> List[int]:
-        wlist = list()
+    def _storeDataTableColumnWidths( self ):
+        self._wlist.clear()
         for c in range( 0, self.dataTv.model().columnCount() ):
             w = self.dataTv.columnWidth( c )
-            wlist.append( w )
-        return wlist
+            self._wlist.append( w )
 
-    def _setDataTableColumnWidths( self, wlist:List[int] ):
-        for c in range( 0, len( wlist ) ):
-            self.dataTv.setColumnWidth( c, wlist[c] )
+    def _restoreDataTableColumnWidths( self ):
+        for c in range( 0, len( self._wlist ) ):
+            self.dataTv.setColumnWidth( c, self._wlist[c] )
 
     def getSelectedRows( self ) -> List[int]:
         return BaseTableFunctions.getSelectedRows( self.dataTv)
@@ -507,14 +505,23 @@ class FilterTableWidget( QWidget ):
 
     def onFilterChanged( self, header, filterval ):
         QApplication.processEvents()
-        wlist = self._getDataTableColumnWidths()
+        self._storeDataTableColumnWidths()
         self.dataTv.model().applyFilter( header, filterval)
-        self._setDataTableColumnWidths( wlist )
+        self._restoreDataTableColumnWidths()
 
     def onFilterCleared( self, header:str ):
-        wlist = self._getDataTableColumnWidths()
+        self._storeDataTableColumnWidths()
         self.dataTv.model().clearFilter( header )
-        self._setDataTableColumnWidths( wlist )
+        self._restoreDataTableColumnWidths()
+
+    def onBeforeMultiSorting( self ):
+        self._storeDataTableColumnWidths()
+        # print( "onBeforeMultiSorting ", self._wlist )
+
+    def onMultiSortingFinished( self ):
+        # print( "onMultiSortingFinished ", self._wlist )
+        self._restoreDataTableColumnWidths()
+        self.horizontalHeader().setSortIndicatorShown( False )
 
 
 ################################################################################################
@@ -696,6 +703,9 @@ def testFilterTableWidget():
         print( "Year changed to ", year )
     def onMonthChanged( monthIdx:int, monthShortName:str, monthLongName:str ):
         print( "Month changed to %d - %s - %s" % (monthIdx, monthShortName, monthLongName) )
+    def onMultipleSort():
+        tm.sortMultipleColumns( ("nachname", "ort", "groesse") )
+        tv.horizontalHeader().setSortIndicatorShown( False )
 
     app = QApplication()
     dlg = BaseDialogWithButtons( "Test FilterTableWidget", getOkCancelButtonDefinitions( onOk, onCancel ) )
@@ -713,11 +723,14 @@ def testFilterTableWidget():
     cbo.month_changed.connect( onMonthChanged )
     cbo.setMonthIdx( 6 ) # Juli
     tv.addToolWidget( cbo )
+    btn = BaseButton( "Sort" )
+    btn.clicked.connect( onMultipleSort )
+    tv.addToolWidget( btn )
     tv.addStandardTableTools( (TableTool.SEARCH, TableTool.PRINT, TableTool.EXPORT) )
     tm = createTestModel()
     tv.setModel( tm )
     tv.setAlternatingRowColors()
-    tv.sortByColumn( 1 )
+    #tv.sortByColumn( 1 )
     w = tv.getPreferredWidth()
     dlg.setMainWidget( tv )
     dlg.resize( QSize( w + 50, 250 ) )
@@ -746,7 +759,7 @@ def testFilterTableWidgetFrame():
 #########################################################################################
 #           TEST  TEST  TEST   #
 def createTestModel() -> BaseTableModel:
-    nachnamen = ("Kendel", "Knabe", "Verhoeven", "Adler", "Strack-Zimmermann", "Kendel")
+    nachnamen = ("Kendel", "Kendel", "Verhoeven", "Adler", "Strack-Zimmermann", "Kendel")
     vornamen = ("Martin", "Gudrun", "Paul", "Henriette", "Marie-Agnes", "Friedi")
     plzn = ("91077", "91077", "77654", "88954", "66538", "91077")
     orte = ("Kleinsendelbach", "Kleinsendelbach", "Niederstetten", "Oberhimpflhausen", "Neunkirchen", "Steinbach")

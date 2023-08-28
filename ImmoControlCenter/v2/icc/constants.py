@@ -41,6 +41,7 @@ class Action( IntEnum ):
     COMPUTE_SUMME = auto()
     COPY = auto() # Kopiere ganze Selektion
     COPY_CELL = auto() # Kopiere nur den Wert der geklickten Zelle
+    COPY_BETRAEGE = auto() # Kopiere die Beträge der markierten Zeilen
 
 class ValueMapper:
     def __init__( self, display, dbvalue ):

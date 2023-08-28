@@ -1,5 +1,5 @@
 from functools import cmp_to_key
-from typing import List
+from typing import List, Iterable
 
 from PySide2.QtCore import QObject, Qt, SIGNAL
 from PySide2.QtWidgets import QGridLayout, QDialog, QApplication
@@ -71,6 +71,46 @@ class MultiSortDialog( BaseDialog ):
 
     def getSortOrder( self ) -> str:
         return self._cbSortOrder.currentText()
+
+#######################   MultiSortHandler2   ################
+# class Tmp:
+#     def __init__( self, row:int, x:XBase ):
+#         self.row = row
+#         self.x = x
+# ###############################################################
+# class MultiSortHandler2( QObject ):
+#     """
+#     Behandelt die Sortierung mehrerer vorgegebener Spalten OHNE den Dialog, den der MultiSortHandler verwendet.
+#     """
+#     def __init__( self ):
+#         QObject.__init__( self )
+#         self._sort_reverse = False
+#         self._keys:List[str] = None
+#
+#     def sort( self, tm:BaseTableModel, keys:Iterable[str] ) -> List[int]:
+#         self._keys = keys
+#         rowIndexList = tm.getVisibleRowIndexes()
+#         xlist = tm.getElements( rowIndexList )
+#         tmplist:List[Tmp] = list() # Hilfsliste, die sowohl den RowIndex wie auch das zugehörige XBase-Objekt enthält
+#         for i in range(0, len(rowIndexList) ):
+#             t = Tmp( rowIndexList[i], xlist[i])
+#             tmplist.append( t )
+#         tm.emit( SIGNAL( "layoutAboutToBeChanged()" ) )
+#         self._sort_reverse = not self._sort_reverse
+#         tmplistSorted = sorted( tmplist, key=cmp_to_key( self._compareMultiple ) )
+#         rowIdxListSorted = [t.row for t in tmplistSorted]
+#         return rowIdxListSorted
+#
+#     def _compareMultiple( self, t1:Tmp, t2:Tmp ):
+#         for key in self._keys:
+#             v1 = t1.x.__dict__[key]
+#             v2 = t2.x.__dict__[key]
+#             if isinstance( v1, str ):
+#                 v1 = v1.lower()
+#                 v2 = v2.lower()
+#             if v1 < v2: return -1 if self._sort_reverse else 1
+#             if v1 > v2: return 1 if self._sort_reverse else -1
+#         return 0
 
 #######################   MultiSortHandler   ################
 class MultiSortHandler( QObject ):
@@ -149,6 +189,13 @@ def makeTestModel2() -> BaseTableModel:
     tm = BaseTableModel( itemlist )
     tm.headers = ("Nachname", "Vorname", "PLZ", "Ort", "Straße", "Alter", "Größe" )
     return tm
+
+def testMultiSortHandler2():
+    app = QApplication()
+    msh = MultiSortHandler2()
+    tm = makeTestModel2()
+    #msh.sort( tm)
+    msh.onMultiSort()
 
 def test():
     app = QApplication()

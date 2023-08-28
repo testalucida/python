@@ -1,34 +1,24 @@
-from enum import Enum, auto
-from typing import List, Callable, Iterable
+from typing import List
 
 from PySide2.QtCore import Qt, QSize, Slot
 from PySide2.QtWidgets import QAction, QDialog, QMenu, QMessageBox
 
-import datehelper
-from base.baseqtderivates import BaseComboBox, BaseEdit, FloatEdit, IntEdit, BaseCheckBox, SmartDateEdit, MultiLineEdit, \
-    EditableComboBox, BaseAction, Separator, YearComboBox, MonthComboBox
+from base.baseqtderivates import BaseAction, Separator, YearComboBox, BaseIconButton
 from base.basetablefunctions import BaseTableFunctions
 from base.basetablemodel import BaseTableModel
-from base.filterhandler import FilterHandler
+from base.directories import BASE_IMAGES_DIR
 from base.filtertablewidget import FilterTableWidget, FilterTableWidgetFrame, TableTool
-from base.interfaces import VisibleAttribute
 from base.messagebox import InfoBox, QuestionBox, ErrorBox
-from base.multisorthandler import MultiSortHandler
-from base.printhandler import PrintHandler
-from base.searchhandler import SearchHandler
+from iconfactory import IconFactoryS
 from v2.einaus.einausdialogcontroller import EinAusDialogController
 from v2.einaus.einauslogic import EinAusLogic, EinAusTableModel
-from v2.einaus.einausview import EinAusTableView, EinAusTableViewFrame, XEinAusUI, EinAusDialog
 from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
 from v2.icc.constants import EinAusArt, Action
 from v2.icc.icccontroller import IccController
-from v2.icc.iccwidgets import IccCheckTableViewFrame
-
-# ##############  EinAusController  ####################
 from v2.icc.interfaces import XEinAus, XMasterobjekt, XMietobjekt, XKreditorLeistung, XLeistung
 from v2.sammelabgabe.sammelabgabecontroller import SammelabgabeController
 
-
+# ##############  EinAusController  ####################
 class EinAusController( IccController ):
     # def __init__( self ):
     #     IccController.__init__( self )
@@ -80,13 +70,10 @@ class EinAusController( IccController ):
     def __init__( self ):
         IccController.__init__( self )
         self._tv: FilterTableWidget = FilterTableWidget()
-        # self._sortHandler:MultiSortHandler = None
-        # self._filterHandler:FilterHandler = None
-        # self._searchHandler:SearchHandler = None
-        # self._printHandler:PrintHandler = None
         self._tvframe: FilterTableWidgetFrame = FilterTableWidgetFrame( self._tv, withEditButtons=True )
         self._logic = EinAusLogic()
         self._jahr:int = self.getYearToStartWith()
+        self._btnSortHausObjektEinAusArt:BaseIconButton = None
         EinAusWriteDispatcher.inst().ea_inserted.connect( self.onEinAusInserted )
         EinAusWriteDispatcher.inst().ea_updated.connect( self.onEinAusUpdated )
         EinAusWriteDispatcher.inst().ea_deleted.connect( self.onEinAusDeleted )
@@ -105,6 +92,9 @@ class EinAusController( IccController ):
         ycbo.setYear( jahr )
         ycbo.year_changed.connect( self.onYearChanged )
         tv.addToolWidget( ycbo )
+        self._btnSortHausObjektEinAusArt = self._createHausObjektEinAusArtSortButton()
+        # todo: create and connect with MultiSortHandler2
+        tv.addToolWidget( self._btnSortHausObjektEinAusArt )
         tv.addStandardTableTools( (TableTool.SEARCH, TableTool.PRINT, TableTool.EXPORT) )
         tv.setContextMenuCallbacks( self.provideActions, self.onSelected )
         ### neue Zahlung, Zahlung ändern, löschen:
@@ -112,6 +102,17 @@ class EinAusController( IccController ):
         self._tvframe.editItem.connect( self.onEditEinAus )
         self._tvframe.deleteItems.connect( self.onDeleteEinAus )
         return self._tvframe
+
+    def _createHausObjektEinAusArtSortButton( self ) -> BaseIconButton:
+        icon = IconFactoryS.inst().getIcon( BASE_IMAGES_DIR + "sort2.png" )
+        btn = BaseIconButton( icon )
+        btn.setToolTip( "Sortieren nach den Kriterien Haus-Whg-Art-Debitor-eingetragen am" )
+        btn.clicked.connect( self.onSortHausWhgArtDebitorClicked )
+        return btn
+
+    def onSortHausWhgArtDebitorClicked( self ):
+        tm = self._tv.model()
+        tm.sortMultipleColumns( ("master_name", "mobj_id", "ea_art", "debi_kredi", "write_time") )
 
     def getMenu( self ) -> QMenu:
         menu = QMenu( "Sammelabgabe" )
@@ -271,12 +272,13 @@ class EinAusController( IccController ):
                 l.append( BaseAction( "Mietverhältnis...", ident=Action.SHOW_MIETVERHAELTNIS, userdata=x ) )
                 l.append( Separator() )
         l.append( BaseAction( "Markierte Zeile(n) kopieren", ident=Action.COPY ) )
-        l.append( BaseAction( "Wert der geklickten Zelle kopieren", ident=Action.COPY_CELL ) )
-        l.append( Separator() )
-        l.append( BaseAction( "Zahlung duplizieren und mit aktuellem Datum speichern", ident=Action.DUPLICATE_AND_SAVE ) )
-        l.append( BaseAction( "Zahlung duplizieren und im Editor öffnen...", ident=Action.DUPLICATE_AND_EDIT ) )
-        l.append( Separator() )
+        l.append( BaseAction( "Beträge der markierten Zeile(n) kopieren", ident=Action.COPY_BETRAEGE ) )
+        # l.append( Separator() )
+        # l.append( BaseAction( "Zahlung duplizieren und mit aktuellem Datum speichern", ident=Action.DUPLICATE_AND_SAVE ) )
+        # l.append( BaseAction( "Zahlung duplizieren und im Editor öffnen...", ident=Action.DUPLICATE_AND_EDIT ) )
+        #
         if cnt_sel_rows > 1:
+            l.append( Separator() )
             l.append( BaseAction( "Summe der markierten Beträge berechnen...", ident=Action.COMPUTE_SUMME ) )
         return l
 
@@ -289,7 +291,14 @@ class EinAusController( IccController ):
             col = model.getColumnIndexByKey( "betrag" )
             btf = BaseTableFunctions()
             btf.computeSumme( self._tv, col, col )
-
+        elif ident == Action.COPY:
+            btf = BaseTableFunctions()
+            btf.copySelectionToClipboard( tv=self._tv )
+        elif ident == Action.COPY_BETRAEGE:
+            btf = BaseTableFunctions()
+            tm:BaseTableModel = self._tv.model()
+            colIdx = tm.getColumnIndexByKey( "betrag" )
+            btf.copyColumnCellsToClipboard( tv=self._tv, col=colIdx, convertPointToComma=True )
 
 
 

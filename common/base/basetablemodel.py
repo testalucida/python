@@ -41,14 +41,17 @@ class BaseTableModel( QAbstractTableModel ):
     """
     before_sorting = Signal()
     sorting_finished = Signal()
+    before_multi_sorting = Signal()
+    multi_sorting_finished = Signal()
     rowsAddedSignal = Signal() # damit die View ggf. ihre Zeilenhöhe anpassen kann
     def __init__( self, rowList:List[XBase]=None, jahr:int=None ):
         QAbstractTableModel.__init__( self )
         self.rowList:List[XBase] = rowList
+        self._visibleElements: List[XBase] = list() # per Default alle (==self.rowList). Kann durch Filterung eingeschränkt werden.
         self._rowListUnfiltered:List[XBase] = None
         self._jahr:int = jahr # das Jahr ist bei manchen Models interessant, bei manchen nicht - kann also auf None stehen.
         self.headers:List = list()
-        self.keys:List = list()
+        self.keys:List = list() # brauchen wir fürs Key-Header-Mapping
         self.headerColor = QColor( "#FDBC6A" )
         self.headerBrush = QBrush( self.headerColor )
         self.negNumberBrush = QBrush( Qt.red )
@@ -60,6 +63,8 @@ class BaseTableModel( QAbstractTableModel ):
         self.yellowBrush = QBrush( self.yellow )
         self.sortable = True
         self.sort_col = -1
+        self._sortkey = ""
+        self._sortkeys:List[str] = None
         self.sort_descending = False
         self._filters: List[Filter] = list()  # aktuell gesetzte Spaltenfilter
         self._visibleRowIndexes:List[int] = list() # Indizes der Rows, die sichtbar sind. Per Default alle,
@@ -81,13 +86,11 @@ class BaseTableModel( QAbstractTableModel ):
         self.rowList = rowList
         if len( rowList ) > 0:
             self._setDefaultKeyHeaderMapping()
-            self._initVisiblRowIndexes()
+            self._initVisibleElements()
 
-    def _initVisiblRowIndexes( self ):
-        r = 0
+    def _initVisibleElements( self ):
         for x in self.rowList:
-            self._visibleRowIndexes.append( r )
-            r += 1
+            self._visibleElements.append( x )
 
     def setKeyHeaderMappings( self, mappings:List[KeyHeaderMapping] ):
         self.headers = [x.header for x in mappings]
@@ -128,11 +131,23 @@ class BaseTableModel( QAbstractTableModel ):
         headerIndex = self.headers.index( header )
         return self.keys[headerIndex]
 
-    def getRowList( self ) -> List[XBase]:
+    def getAllElements( self ) -> List[XBase]:
         """
+        Liefert die Elemente der originalen rowList dieses Models.
+        Achtung: auch Elemente, die möglicherweise aufgrund einer Filterung nicht zu sehen sind, werden geliefert!
+        Siehe auch getVisibleRows()
         :return: die rohe Liste der XBase-Elemente
         """
         return self.rowList
+
+    def getVisibleElements( self ) -> List[XBase]:
+        """
+        Liefert nur die gerade sichtbaren Elemente.
+        Wenn das Model nicht gefiltert ist, werden alle Elemente geliefert.
+        Siehe auch getRowList()
+        :return:
+        """
+        return self._visibleElements
 
     def getJahr( self ) -> int:
         return self._jahr
@@ -147,9 +162,10 @@ class BaseTableModel( QAbstractTableModel ):
         :return: the rowIndex of <x> resp. -1 if <x> cannot be found.
                  That may be caused by a filtered TableModel where <x> doesn't meet the filter conditions
         """
-        idx = self.rowList.index( x )
+        #idx = self.rowList.index( x )
         try:
-            return self._visibleRowIndexes.index( idx )
+            return self._visibleElements.index( x )
+            #return self._visibleRowIndexes.index( idx )
         except ValueError:
             return -1
 
@@ -180,17 +196,26 @@ class BaseTableModel( QAbstractTableModel ):
         """
         # todo: Änderung wegen neuer Filterlogik --> erledigt
         try:
-            return self.rowList[self._visibleRowIndexes[indexrow]]
+            #return self.rowList[self._visibleRowIndexes[indexrow]]
+            return self._visibleElements[indexrow]
         except Exception as ex:
             print( "Exception bei indexrow ", indexrow )
             raise ex
         #return self.rowList[indexrow]
 
     def getElements( self, indexrows:List[int] ) -> List[XBase]:
-        # todo: Änderung wegen neuer Filterlogik
+        """
+        Liefert die Elemente der Zeilen <indexrows>.
+        Geliefert werden nur sichtbare (nicht weg-gefilterte) Objekte.
+        Ist eine indexrow größer als der größte Index eines angezeigten Objekts, wird ein ValueEroor geworfen.
+        :param indexrows:
+        :return:
+        """
+        # todo: Änderung wegen neuer Filterlogik --> erl.
         retlist = list()
         for r in indexrows:
-            retlist.append( self.rowList[self._visibleRowIndexes[r]] )
+            retlist.append( self.getElement( r ) )
+            #retlist.append( self.rowList[self._visibleRowIndexes[r]] )
             #retlist.append( self.rowList[r] )
         return retlist
 
@@ -244,7 +269,7 @@ class BaseTableModel( QAbstractTableModel ):
         Diese Methode behandelt ein XBase-Objekt, das außerhalb dieses Models geändert wurde.
         Sie löst ein dataChanged-Signal aus, damit die Anzeige aktualisiert wird.
         """
-        row = self.getRow( x )
+        row = self.getRow( x ) # hier kann es eine Exception geben, wenn x nicht unter den sichtbaren Elementen ist
         indexA = self.createIndex( row, 0 )
         indexZ = self.createIndex( row, self.columnCount() - 1 )
         self.dataChanged.emit( indexA, indexZ, [Qt.DisplayRole] )
@@ -266,16 +291,15 @@ class BaseTableModel( QAbstractTableModel ):
         """
         row = 0
         if self.sort_col < 0:
-            # todo: Änderung wegen neuer Filterlogik --> erl.
             # rowList nicht sortiert
+            # todo: Änderung wegen neuer Filterlogik --> erl.
             self.rowList.append( x )
-            self._visibleRowIndexes.append( self.columnCount() - 1 )
+            self._visibleElments.append( x )
         else:
             # Daten sind sortiert, neues Objekt an der richtigen Stelle einfügen.
-            # todo: Änderung wegen neuer Filterlogik
             self._insertObject( x, self.rowList )
-        # Einrückung aufgehoben wegen neuer Filterlogik -- Ende
-
+            # todo: Änderung wegen neuer Filterlogik: Prüfen, ob neues Element auch in die _visibleElements
+            #  aufgenommen werden muss
         if self.sort_col < 0:
             row = self.rowCount() - 1
         indexA = self.createIndex( row, 0 )
@@ -306,15 +330,17 @@ class BaseTableModel( QAbstractTableModel ):
         return len( targetList ) - 1
 
     def removeObject( self, x:XBase ):
-        # todo: Änderung wegen neuer Filterlogik
         """
         Wird aufgerufen, um ein Objekt (eine Tabellenzeile) aus der Tabelle zu löschen.
+        Beachte: es muss sich um ein in der Tabelle sichtbares Objekt handeln, sonst wird ein ValueError geworfen.
         Löst ein dataChanged- und ein layoutChanged-Signal aus.
         :param x: das zu löschende Objekt
         :return:
         """
-        row = self.getRow( x )
+        row = self.getRow( x ) # Wenn x nicht zu den _visibleElements gehört, gibt's eine Exception
         self.rowList.remove( x )
+        # aus der Liste der _visibleElements löschen. Da muss es drin sein, sonst hätten wir die row gar nicht gefunden.
+        self._visibleElements.remove( x )
         indexA = self.createIndex( row, 0 )
         indexZ = self.createIndex( row, self.columnCount()-1 )
         self.dataChanged.emit( indexA, indexZ, [Qt.DisplayRole] )
@@ -339,8 +365,9 @@ class BaseTableModel( QAbstractTableModel ):
                 self.removeObject( x )
 
     def rowCount( self, parent:QModelIndex=None ) -> int:
-        # todo: Änderung wegen neuer Filterlogik
-        return len( self._visibleRowIndexes )
+        # todo: Änderung wegen neuer Filterlogik --> erl.
+        return len( self._visibleElements )
+        #return len( self._visibleRowIndexes )
         #return len( self.rowList )
 
     def columnCount( self, parent:QModelIndex=None ) -> int:
@@ -420,7 +447,7 @@ class BaseTableModel( QAbstractTableModel ):
                 self._filters.remove( filtr )
                 break
         if len( self._filters ) == 0:
-            self._initVisiblRowIndexes()
+            self._initVisibleElements()
         else:
             self._buildFilterIndexList()
         self.layoutChanged.emit()
@@ -429,7 +456,7 @@ class BaseTableModel( QAbstractTableModel ):
         f:Filter = self._updateFilters( header, filterval )
         if f:
             # neuer Filter, wir brauchen die filterIndexList nicht ganz neu aufbauen, sondern nur ergänzen,
-            # sprich: die Indices rauswerfen, die dem neuen Filter nicht genügen
+            # sprich: die Objekte rauswerfen, die dem neuen Filter nicht genügen
             self._updateFilterIndexList( f.key, f.filterval )
         else:
             # ein bereits bestehender Filter hat sich geändert. Die ganze filterIndexList neu aufbauen
@@ -439,37 +466,29 @@ class BaseTableModel( QAbstractTableModel ):
     def _updateFilterIndexList( self, key:str, filterval:str ):
         """
         Diese Methode wird aufgerufen, wenn ein neuer Filter (für <header> mit dem Wert <filterval> gesetzt worden ist.
-        Sie prüft, welche Objekte, die durch die _visibleRowIndexes referenziert werden, dem neuen Filterwert
-        entsprechen und entfernt diejenigen Referenzen in _visibleRowIndexes, die das nicht tun.
+        Sie prüft, welche Objekte in der _visibleElements-List dem neuen Filterwert
+        entsprechen und entfernt diejenigen Objektreferenzen, die das nicht tun.
         :param key:
         :param filterval:
         :return:
         """
-        l = list()
-        for r in self._visibleRowIndexes:
-            x = self.rowList[r]
-            if self._meetsFilterCondition( x, key, filterval ):
-                l.append( r )
-        self._visibleRowIndexes = l
+        self._visibleElements = [x for x in self._visibleElements if self._meetsFilterCondition( x, key, filterval)]
 
     def _buildFilterIndexList( self ):
         """
-        Baut die FilterIndexList auf unter Verwendung aller aktiven Filter (filterList)
+        Baut die _visibleElements-Liste auf unter Verwendung aller aktiven Filter (filterList)
         :return:
         """
-        self._visibleRowIndexes.clear()
-        row = -1
+        self._visibleElements.clear()
         for x in self.rowList:
-            row += 1
-            fits = False
-            for f in self._filters:
-                if self._meetsFilterCondition( x, f.key, f.filterval ):
-                    fits = True # passt für *diesen* Filter
-                else:
-                    fits = False # passt doch nicht
-                    break
-            if fits:
-                self._visibleRowIndexes.append( row )
+            if self._meetsFilterConditions( x ):
+                self._visibleElements.append( x )
+
+    def _meetsFilterConditions( self, x:XBase ) -> bool:
+        for f in self._filters:
+            if not self._meetsFilterCondition( x, f.key, f.filterval ):
+                return False
+        return True
 
     @staticmethod
     def _meetsFilterCondition( x:XBase, key:str, filterval:str ) -> bool:
@@ -500,26 +519,54 @@ class BaseTableModel( QAbstractTableModel ):
     def setSortable( self, sortable:bool=True ):
         self.sortable = sortable
 
+    class Tmp:
+        def __init__( self, row: int, x: XBase ):
+            self.row = row
+            self.x = x
+
+    def sortMultipleColumns( self, keys:Iterable[str], order:Qt.SortOrder=None ) -> List[int]:
+        """
+        Sortiert die Elemente in der _visibleElements-List.
+        :param keys:
+        :param order:
+        :return:
+        """
+        self._sortkeys = keys
+        self.layoutAboutToBeChanged.emit()
+        self.before_multi_sorting.emit()
+        if order:
+            self.sort_descending = (order == Qt.SortOrder.DescendingOrder)
+        else:
+            self.sort_descending = not self.sort_descending
+        self._visibleElements = sorted( self._visibleElements, key=cmp_to_key( self._compareMultiple ) )
+        self.layoutChanged.emit()
+        self.multi_sorting_finished.emit()
+
+    def _compareMultiple( self, x1:XBase, x2:XBase ):
+        for key in self._sortkeys:
+            self._sortkey = key
+            rc = self.compare( x1, x2 )
+            if rc != 0: return rc
+        return 0
+
     def sort( self, col:int, order: Qt.SortOrder=Qt.SortOrder.DescendingOrder ) -> None:
-        # todo: Änderung wegen neuer Filterlogik
+        # todo: Änderung wegen neuer Filterlogik --> erl.
         if not self.sortable: return
         self.sort_col = col
         if col < 0: return
+        self._sortkey = self.getKey( self.sort_col )
         """sort table by given column number col"""
         self.layoutAboutToBeChanged.emit()
         self.before_sorting.emit()
         self.sort_descending = True if order == Qt.SortOrder.DescendingOrder else False
-        # todo: nicht die rowList sortieren, sondern die _visibleIndexesList entsprechend der theoretischen
-        #  Sortierreihenfolge der Elemente in rowList neu aufbauen
-        self._visibleRowIndexes = sorted( self._visibleRowIndexes, key=cmp_to_key( self.compare2 ) )
-        #self.rowList = sorted( self.rowList, key=cmp_to_key( self.compare ) )
+        self._visibleElements = sorted( self._visibleElements, key=cmp_to_key( self.compare ) )
         self.sorting_finished.emit()
         self.layoutChanged.emit()
 
-    def compare2( self, row1:int, row2:int ) -> int:
-        x1 = self.rowList[row1]
-        x2 = self.rowList[row2]
-        return self.compare( x1, x2 )
+    # def compare2( self, row1:int, row2:int ) -> int:
+    #     x1 = self.rowList[row1]
+    #     x2 = self.rowList[row2]
+    #     return self.compare( x1, x2 )
 
     def compare( self, x1:XBase, x2:XBase ) -> int:
         """
@@ -535,9 +582,8 @@ class BaseTableModel( QAbstractTableModel ):
                     wenn value x1 > value x2: 1
                  Bei Gleichheit der beiden Werte: 0
         """
-        key = self.getKey( self.sort_col )
-        v1 = x1.getValue( key )
-        v2 = x2.getValue( key )
+        v1 = x1.getValue( self._sortkey )
+        v2 = x2.getValue( self._sortkey )
         if v1 is None: return -1 if self.sort_descending else 1
         if v2 is None: return 1 if self.sort_descending else -1
         if isinstance( v1, str ):

@@ -238,7 +238,7 @@ class MtlEinAusController( IccController ):
                 try:
                     # aus dem MtlZahlungenEditDialog die Liste der Einzelzahlungen holen,
                     # die in Summe die Monatszahlung ergeben:
-                    xlist:List[XEinAus] = eatm.getRowList()
+                    xlist:List[XEinAus] = eatm.getAllElements()
                     self._updateZahlung( x, xlist, row )
                 except Exception as ex:
                     box = ErrorBox( "Fehler beim Ändern einer Monatszahlung", str( ex ), x.toString( True ) )
