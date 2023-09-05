@@ -31,7 +31,11 @@ class MietverhaeltnisLogic( IccLogic ):
     def getAktuellesMietverhaeltnisByMietobjekt( self, mobj_id:str ) -> XMietverhaeltnis:
         mv_id = self._db.getAktuelleMV_IDzuMietobjekt( mobj_id )
         xmv = self._db.getAktuellesMietverhaeltnis( mv_id )
-        xmv.name_vorname = self.getNachnameVornameFromMv_id( xmv.mv_id )
+        if xmv:
+            xmv.name_vorname = self.getNachnameVornameFromMv_id( xmv.mv_id )
+        else:
+            xmv = XMietverhaeltnis()
+            xmv.name_vorname = "derzeit nicht vermietet"
         return xmv
 
     def getMietverhaeltnisListe( self, mobj_id:str ) -> List[XMietverhaeltnis]:

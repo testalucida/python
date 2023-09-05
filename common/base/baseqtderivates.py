@@ -805,9 +805,14 @@ class SignedNumEdit( QWidget ):
 
     def setPlus( self ):
         self._sign.setPlus()
+        self._setStyleSheet( isPlus=True )
 
     def setMinus( self ):
         self._sign.setMinus()
+        self._setStyleSheet( isPlus=False)
+
+    def getValueAsString( self ):
+        return str( self.getValue() )
 
     def getValue( self ) -> int or float:
         if self._type == int:

@@ -99,6 +99,12 @@ class ValueDialog( QDialog ):
         layout.addLayout( self._hboxLayout, row, 0 )
         self.setLayout( layout )
 
+    def setSignPlus( self ):
+        self._numEntry.setPlus()
+
+    def setSignMinus( self ):
+        self._numEntry.setMinus()
+
     def setCallback( self, fnc ):
         """
         Callback nach Button-Click "+", "-", "-"
@@ -127,9 +133,9 @@ class ValueDialog( QDialog ):
     def _doCallback( self ):
         msg = ""
         if self._callback:
-            num = self._numEntry.text()
-            if num is None or num == '': num = "0"
-            num = num.replace( ",", "." )
+            #num = self._numEntry.text()
+            #
+            num = self._numEntry.getValue()
             if not self._sdBuchungsdatum:
                 msg = self._callback( float( num ), self._txtEntry.text() )
             else:
@@ -149,7 +155,11 @@ class ValueDialog( QDialog ):
         self.close()
 
     def _ok( self ):
-        self._doCallback()
+        if self._numEntry.getValue() != 0:
+            self._doCallback()
+        else:
+            box = ErrorBox( "Ungültiger Wert", "Es muss ein Wert ungleich 0 eingegeben werden." )
+            box.exec_()
 
 ######################   ValueDialog2  #################################
 class ValueDialog2__probably_not_used( QDialog ):

@@ -294,7 +294,7 @@ class BaseTableModel( QAbstractTableModel ):
             # rowList nicht sortiert
             # todo: Änderung wegen neuer Filterlogik --> erl.
             self.rowList.append( x )
-            self._visibleElments.append( x )
+            self._visibleElements.append( x )
         else:
             # Daten sind sortiert, neues Objekt an der richtigen Stelle einfügen.
             self._insertObject( x, self.rowList )
@@ -337,15 +337,19 @@ class BaseTableModel( QAbstractTableModel ):
         :param x: das zu löschende Objekt
         :return:
         """
-        row = self.getRow( x ) # Wenn x nicht zu den _visibleElements gehört, gibt's eine Exception
-        self.rowList.remove( x )
-        # aus der Liste der _visibleElements löschen. Da muss es drin sein, sonst hätten wir die row gar nicht gefunden.
-        self._visibleElements.remove( x )
+
+        try:
+            row = self.getRow( x )  # Wenn x nicht zu den _visibleElements gehört, gibt's eine Exception
+            self.rowList.remove( x )
+            # aus der Liste der _visibleElements löschen. Da muss es drin sein, sonst hätten wir die row gar nicht gefunden.
+            self._visibleElements.remove( x )
+        except:
+            # kann passieren wegen des EinAusWriteDispatcher.ea_deleted Signals.
+            return
         indexA = self.createIndex( row, 0 )
         indexZ = self.createIndex( row, self.columnCount()-1 )
         self.dataChanged.emit( indexA, indexZ, [Qt.DisplayRole] )
         # method = sys._getframe().f_code.co_name
-        # self._changelog.addChange( self.__class__, method, Action.DELETE, x )
         self.layoutChanged.emit() # muss hier aufgerufen werden, damit in der View eine Zeile weniger angezeigt wird.
 
     def removeObjects( self, xlist:List[XBase] ):
@@ -353,7 +357,8 @@ class BaseTableModel( QAbstractTableModel ):
             self.removeObject( x )
 
     def removeObjectsByKeyValue( self, key:str, value:Any ):
-        # todo: Änderung wegen neuer Filterlogik
+        # todo: Änderung wegen neuer Filterlogik --> nicht notwendig, denn self.removeObject()
+        #  berücksichtigt sowohl die rowList wie auch die _visibleElements
         """
         Entfernt alle Objekte aus der rowlist, auf die die Bedingung x.__dict__[key] == value zutrifft.
         :param key:

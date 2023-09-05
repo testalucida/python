@@ -109,6 +109,10 @@ class MtlEinAusController( IccController ):
         model: MtlEinAusTableModel = self.getModel()
         # todo
 
+    @abstractmethod
+    def getDefaultSign( self ) -> str:
+        return "minus"
+
     def onMonthChanged( self, newMonthIdx:int, newMonthLongName:str = "" ) :
         model: MtlEinAusTableModel = self.getModel()
         model.setEditableMonth( newMonthIdx )
@@ -190,10 +194,16 @@ class MtlEinAusController( IccController ):
     def onBetragEdit( self, index: QModelIndex ):
         def showValueDialog():
             vdlg = ValueDialog()
+            defaultSign = self.getDefaultSign()
+            if defaultSign == "plus":
+                vdlg.setSignPlus()
+            else:
+                vdlg.setSignMinus()
             crsr = QCursor.pos()
             vdlg.setCallback( editing_done )
             vdlg.move( crsr.x(), crsr.y() )
-            vdlg.exec_()
+            rc = vdlg.exec_()
+            return rc
 
         def editing_done( val:float, bemerkung:str ):
             # callback für den ValueDialog, der dann zum Einsatz kommt, wenn es für einen Monat keine oder nur eine
@@ -386,6 +396,9 @@ class MieteController( MtlEinAusController ):
     def getTableView( self ) -> MieteTableView:
         return self._tv
 
+    def getDefaultSign( self ) -> str:
+        return "plus"
+
     def createTableViewFrame( self, jahr:int, monat:int ) -> IccCheckTableViewFrame:
         self._tv = MieteTableView()
         tm = self.createModel( jahr, monat )
@@ -486,6 +499,9 @@ class HausgeldController( MtlEinAusController ):
     def getTableView( self ) -> HausgeldTableView:
         return self._tv
 
+    def getDefaultSign( self ) -> str:
+        return "minus"
+
     def createTableViewFrame( self, jahr:int, monat:int ) -> IccCheckTableViewFrame:
         self._tv = HausgeldTableView()
         tm = self.createModel( jahr, monat )
@@ -569,6 +585,9 @@ class AbschlagController( MtlEinAusController ):
 
     def getTableView( self ) -> AbschlagTableView:
         return self._tv
+
+    def getDefaultSign( self ) -> str:
+        return "minus"
 
     def createTableViewFrame( self, jahr:int, monat:int ) -> IccCheckTableViewFrame:
         self._tv = AbschlagTableView()

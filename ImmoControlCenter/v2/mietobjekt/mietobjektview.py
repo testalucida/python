@@ -1,20 +1,16 @@
 import copy
 
-from PySide2.QtCore import Signal, QSize
-from PySide2.QtGui import QIcon, Qt
+from PySide2.QtCore import Signal
+from PySide2.QtGui import Qt
 from PySide2.QtWidgets import QWidget, QGridLayout, QHBoxLayout, QApplication
 
 from base.baseqtderivates import FatLabel, BaseBoldEdit, LabelTimesBold12, SmartDateEdit, MultiLineEdit, HLine, \
     LabelTimes12, BaseLabel, EditIconButton, LabelArial12
 from generictable_stuff.okcanceldialog import OkDialog
-from v2.icc.definitions import ICON_DIR
 from v2.icc.iccwidgets import IccTableView
-
-
-######################   MietobjektAuswahlView   #############################
 from v2.icc.interfaces import XMietobjektExt
 
-
+######################   MietobjektAuswahlView   #############################
 class MietobjektAuswahlTableView( IccTableView ):
     """
     Wird im MietobjektAuswahlDialog verwendet

@@ -65,10 +65,11 @@ class MietobjektLogic( IccLogic ):
             xmo.kaution = xmv.kaution
         xsh: XSollHausgeld = SollHausgeldLogic().getCurrentSollHausgeld( xmo.mobj_id )
         #xmo.verwalter = xsh.vw_id
-        xmo.weg_name = xsh.weg_name
-        xmo.hgv_netto = xsh.netto
-        xmo.ruezufue = xsh.ruezufue
-        xmo.hgv_brutto = xsh.brutto
+        #xmo.weg_name = xsh.weg_name
+        if xsh: # Wohnung könnte derzeit nicht vermietet sein, dann ist xsh None
+            xmo.hgv_netto = xsh.netto
+            xmo.ruezufue = xsh.ruezufue
+            xmo.hgv_brutto = xsh.brutto
         return xmo
 
 def test():

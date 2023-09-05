@@ -78,7 +78,6 @@ class EinAusController( IccController ):
         EinAusWriteDispatcher.inst().ea_updated.connect( self.onEinAusUpdated )
         EinAusWriteDispatcher.inst().ea_deleted.connect( self.onEinAusDeleted )
 
-
     def createGui( self ) -> FilterTableWidgetFrame:
         jahr = self._jahr
         tv = self._tv
