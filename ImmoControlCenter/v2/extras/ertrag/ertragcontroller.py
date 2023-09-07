@@ -1,10 +1,10 @@
-from typing import Any, List
+from typing import List
 
 from PySide2.QtCore import QModelIndex, QPoint
 from PySide2.QtWidgets import QWidget, QApplication
 
 from base.baseqtderivates import BaseAction, BaseDialogWithButtons, getCloseButtonDefinition
-from base.basetablemodel import SumTableModel
+from base.basetablemodel import SumTableModel, BaseTableModel
 from base.basetableview import BaseTableView
 from base.basetableviewframe import BaseTableViewFrame
 from base.printhandler import PrintHandler
@@ -56,7 +56,7 @@ class ErtragController( IccController ):
         tb = frame.getToolBar()
         tb.addYearCombo( jahre, self.onChangeYear )
         tb.setYear( self._jahr )
-        tb.addExportAction( "Tabelle nach Calc exportieren", self.onExport )
+        tb.addExportAction( "Tabelle nach Calc exportieren", lambda: self.onExport(model) )
         self._printHandler = PrintHandler( v )
         tb.addPrintAction( "Druckvorschau für diese Tabelle öffnen...", self._printHandler.handlePreview )
         return frame
@@ -66,8 +66,10 @@ class ErtragController( IccController ):
         self._view.setModel( tm )
         self._jahr = newYear
 
-    def onExport( self ):
-        print( "onExport")
+    def onExport( self, tm:BaseTableModel ):
+        from base.exporthandler import ExportHandler
+        handler = ExportHandler()
+        handler.exportToCsv( tm )
 
     def onProvideContext( self, index:QModelIndex, point:QPoint, selectedIndexes:List[QModelIndex] ) -> List[BaseAction]:
         tm = self._view.model()
@@ -89,12 +91,16 @@ class ErtragController( IccController ):
         return l
 
     def onSelectedAction( self, action:BaseAction ):
+
         def onClose():
             dlg.accept()
 
         x:XMasterEinAus = action.data()
         title = ""
         detail_tv = BaseTableView()
+        tvframe = BaseTableViewFrame( detail_tv )
+        tb = tvframe.getToolBar()
+        tb.addExportAction(  "Tabelle nach Calc exportieren", lambda: self.onExport(tm) )
         tm:SumTableModel = None
         if action.ident == "rep":
             tm = self._logic.getReparaturenEinzeln( x.master_name, self._jahr )
@@ -107,7 +113,8 @@ class ErtragController( IccController ):
             title = "Sonstige Kosten '%s' " % x.master_name + "im Detail"
         detail_tv.setModel( tm )
         dlg = BaseDialogWithButtons( title, getCloseButtonDefinition( onClose ) )
-        dlg.setMainWidget( detail_tv )
+        #dlg.setMainWidget( detail_tv )
+        dlg.setMainWidget( tvframe )
         dlg.resize( detail_tv.getPreferredWidth()+25, detail_tv.getPreferredHeight() + 50 )
         dlg.exec_()
 

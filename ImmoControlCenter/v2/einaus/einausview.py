@@ -115,7 +115,8 @@ class ValueDialog( QDialog ):
         self._callback = fnc
 
     def setValue( self, numval:float or int ):
-        self._numEntry.setText( str(numval ) )
+        #self._numEntry.setText( str(numval ) )
+        self._numEntry.setValue( numval )
 
     def setLabelText( self, text: str ) -> None:
         self.label.setText( text )

@@ -15,3 +15,11 @@ class IccTableViewFrame( BaseTableViewFrame ):
 class IccCheckTableViewFrame( IccTableViewFrame ):
     def __init__( self, tableView:BaseTableView ):
         IccTableViewFrame.__init__( self, tableView )
+
+def test():
+    from PySide2.QtWidgets import QApplication
+    app = QApplication()
+    v = IccTableView()
+    f = IccTableViewFrame( v )
+    f.show()
+    app.exec_()

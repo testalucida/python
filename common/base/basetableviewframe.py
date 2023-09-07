@@ -259,8 +259,10 @@ def testScreenSize():
     app = QApplication()
     tv = BaseTableView()
     tvf = BaseTableViewFrame( tv )
-    rect = tvf.getScreenSize()
-    print( rect )
+    tvf.show()
+    #rect = tvf.getScreenSize()
+    #print( rect )
+    app.exec_()
 
 ########################### TEST  TEST  TEST  ############################
 ### Test siehe auch basetableview.py Funktion testBaseTableViewFrame()

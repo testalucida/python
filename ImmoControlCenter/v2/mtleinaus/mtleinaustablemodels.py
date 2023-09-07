@@ -192,6 +192,16 @@ class MieteTableModel( MtlEinAusTableModel ):
     def __init__( self, rowList:List[XMtlMiete], jahr:int, editableMonthIdx:int ):
         MtlEinAusTableModel.__init__( self, rowList, jahr, editableMonthIdx, ( "soll", "summe" ) )
 
+    def getForegroundBrush( self, indexrow: int, indexcolumn: int ) -> QBrush or None:
+        brush = super().getForegroundBrush( indexrow, indexcolumn )
+        if not brush:
+            col_mobj_id = self.getColumnIndexByKey( "mobj_id" )
+            col_soll = self.getColumnIndexByKey( "soll" )
+            if indexcolumn in ( col_mobj_id, col_soll ):
+                if not self.getValue( indexrow, indexcolumn ) == "SUMME":
+                    return self.darkGreyBrush
+        return brush
+
     def getDebiKrediKey( self ) -> str:
         return "mv_id"
 
@@ -207,6 +217,15 @@ class HausgeldTableModel( MtlEinAusTableModel ):
          "aug", "sep", "okt", "nov", "dez", "summe"),
         ("Objekt", self.getDebiKrediHeader(), "Soll", "ok", "nok", "Jan", "Feb", "Mrz", "Apr", "Mai", "Jun", "Jul",
          "Aug", "Sep", "Okt", "Nov", "Dez", "Summe") )
+
+    def getForegroundBrush( self, indexrow: int, indexcolumn: int ) -> QBrush or None:
+        brush = super().getForegroundBrush( indexrow, indexcolumn )
+        if indexcolumn == self.getColumnIndexByKey( "mobj_id" ):
+            if not self.getValue( indexrow, indexcolumn ) == "SUMME":
+                return self.darkGreyBrush
+        # if indexcolumn == self.getColumnIndexByKey( "soll" ):
+        #     return self.darkRedBrush
+        return brush
 
     def getDebiKrediKey( self ) -> str:
         return "weg_name"
