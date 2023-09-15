@@ -2,10 +2,20 @@ import copy
 from typing import Iterable, List
 
 import datehelper
+from base.basetablemodel import BaseTableModel
 from v2.icc.interfaces import XSollMiete, XMietverhaeltnis
 from v2.sollmiete.sollmietedata import SollmieteData
 
 
+class SollMieteTableModel( BaseTableModel ):
+    def __init__( self, sollHausgeldList:List[XSollMiete] ):
+        BaseTableModel.__init__( self, sollHausgeldList )
+        self.setKeyHeaderMappings2(
+            ("mv_id", "mobj_id", "von", "bis", "netto", "nkv", "brutto", "bemerkung" ),
+            ("Mieter", "Wohnung", "von", "bis", "Netto", "NKV", "Brutto", "Bemerkung" )
+        )
+
+#############################################################################
 class SollmieteLogic:
     """
     Stellt die Funktionen zur Selektion, Neuanlage, Änderung und Beendigung von Sollmiete-Intervallen bereit.
@@ -17,6 +27,11 @@ class SollmieteLogic:
     """
     def __init__( self ):
         self._db:SollmieteData = SollmieteData()
+
+    def getAlleSollMieten( self ) -> List[XSollMiete]:
+        sollmieten:List[XSollMiete] = self._db.getAlleSollMieten()
+        tm = SollMieteTableModel( sollmieten )
+        return tm
 
     def getFolgeSollmiete( self, currentX:XSollMiete ) -> XSollMiete:
         """

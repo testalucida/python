@@ -58,11 +58,12 @@ class MainController( IccController ):
         self._mieteCtrl.show_NettomieteAndNkv.connect( self.onShowNettomieteAndNkv )
         self._hausgeldCtrl.show_verwaltung.connect( self.onShowVerwaltung )
         self._hausgeldCtrl.show_hgaAndRueZuFue.connect( self.onShowHgaAndRueZuFue )
+        self._sollHausgeldCtrl = SollHausgeldController()
+        self._sollMieteCtrl = SollMieteController()
 
     @Slot( str, int, int )
     def onShowNettomieteAndNkv( self, mv_id:str, year:int, monthNumber:int ):
-        ctrl = SollMieteController()
-        ctrl.showSollMieteAndNkv( mv_id, year, monthNumber )
+        self._sollMieteCtrl.showSollMieteAndNkv( mv_id, year, monthNumber )
 
     @Slot( str, int, int )
     def onShowVerwaltung( self, weg_name:str, year:int, monthNumber:int ):
@@ -70,8 +71,7 @@ class MainController( IccController ):
 
     @Slot( str, int, int )
     def onShowHgaAndRueZuFue( self, mobj_id:str, year:int, monthNumber:int ):
-        ctrl = SollHausgeldController()
-        ctrl.showHgvAndRueZuFue( mobj_id, year, monthNumber )
+        self._sollHausgeldCtrl.showHgvAndRueZuFue( mobj_id, year, monthNumber )
 
     @Slot( str )
     def onEditMieter( self, mv_id:str ):
@@ -92,6 +92,14 @@ class MainController( IccController ):
         self._win.addMenu( self.getMenu() )
 
         menu = self._mietObjektCtrl.getMenu()
+        if menu:
+            self._win.addMenu( menu )
+
+        menu = self._sollMieteCtrl.getMenu()
+        if menu:
+            self._win.addMenu( menu )
+
+        menu = self._sollHausgeldCtrl.getMenu()
         if menu:
             self._win.addMenu( menu )
 

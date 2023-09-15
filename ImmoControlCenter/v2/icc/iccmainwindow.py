@@ -252,155 +252,168 @@ class IccMainWindow( QMainWindow ):
         # for child in menu.children():
         #     print( str(child) )
 
-    def _createMietobjektMenu( self ):
-        menu = QtWidgets.QMenu( self._menubar, title="Mietobjekt" )
-        self._menubar.addMenu( menu )
+    # def _createMietobjektMenu( self ):
+    #     menu = QtWidgets.QMenu( self._menubar, title="Mietobjekt" )
+    #     self._menubar.addMenu( menu )
+    #
+    #     # Menüpunkt "Wohnungsstammdaten..."
+    #     action = QAction( self, text="Objektstammdaten..." )
+    #     action.triggered.connect( self.onViewObjektStammdaten )
+    #     menu.addAction( action )
+    #
+    #     # # Menüpunkt "Mietverhältnis..."
+    #     # action = QAction( self, text="Mietverhältnis..." )
+    #     # action.triggered.connect( self.onViewMietverhaeltnis )
+    #     # menu.addAction( action )
+    #
+    #     menu.addSeparator()
+    #
+    #     # action = QAction( self, text="Mieterwechsel..." )
+    #     # action.triggered.connect( self.onMieterwechsel )
+    #     # menu.addAction( action )
+    #
+    #     action = QAction( self, text="Verwalterwechsel..." )
+    #     action.triggered.connect( self.onVerwalterwechsel )
+    #     menu.addAction( action )
 
-        # Menüpunkt "Wohnungsstammdaten..."
-        action = QAction( self, text="Objektstammdaten..." )
-        action.triggered.connect( self.onViewObjektStammdaten )
-        menu.addAction( action )
+    # def _createSollzahlungenMenu( self ):
+    #     menu = QtWidgets.QMenu( self._menubar, title="Sollzahlungen" )
+    #     self._menubar.addMenu( menu )
+    #     action = QAction( self, text="Sollmieten anschauen und ändern..." )
+    #     action.triggered.connect( self.onSollmieten )
+    #     menu.addAction( action )
+    #
+    #     menu.addSeparator()
+    #
+    #     action = QAction( self, text="Sollhausgelder anschauen und ändern..." )
+    #     action.triggered.connect( self.onSollHausgeld )
+    #     menu.addAction( action )
 
-        # # Menüpunkt "Mietverhältnis..."
-        # action = QAction( self, text="Mietverhältnis..." )
-        # action.triggered.connect( self.onViewMietverhaeltnis )
-        # menu.addAction( action )
+    # def _createMietverhaeltnisMenu( self ):
+    #     menu = QtWidgets.QMenu( self._menubar, title="Mietverhältnis" )
+    #     self._menubar.addMenu( menu )
+    #
+    #     # Menüpunkt "Mietverhältnis..."
+    #     action = QAction( self, text="Mietverhältnis anschauen und ändern..." )
+    #     action.triggered.connect( self.onViewMietverhaeltnis )
+    #     menu.addAction( action )
+    #
+    #     menu.addSeparator()
+    #
+    #     action = QAction( self, text="Mieterwechsel..." )
+    #     action.triggered.connect( self.onMieterwechsel )
+    #     menu.addAction( action )
 
-        menu.addSeparator()
+    # def _createZahlungenMenu( self ):
+    #     menu = QtWidgets.QMenu( self._menubar, title="Ist- und Sollzahlungen" )
+    #     self._menubar.addMenu( menu )
+    #
+    #     # Menüpunkt "Mietzahlungen..."
+    #     action = QAction( self, text="Mietzahlungen..." )
+    #     action.triggered.connect( self.onViewMietzahlungen )
+    #     menu.addAction( action )
+    #
+    #     # Menüpunkt "HG-Vorauszahlungen..."
+    #     action = QAction( self, text="HG-Vorauszahlungen..." )
+    #     action.triggered.connect( self.onViewHGVorauszahlungen )
+    #     menu.addAction( action )
+    #
+    #     # Menüpunkt "Rechnungen, Abgaben, Gebühren..."
+    #     action = QAction( self, text="Rechnungen, Abgaben, Gebühren..." )
+    #     action.triggered.connect( self.onViewRechnungen )
+    #     menu.addAction( action )
+    #
+    #     menu.addSeparator()
+    #
+    #     # Menüpunkt "Offene Posten"
+    #     action = QAction( self, text="Offene Posten" )
+    #     action.triggered.connect( self.onViewOffenePosten )
+    #     menu.addAction( action )
+    #
+    #     menu.addSeparator()
+    #
+    #     # Menüpunkt "Soll-Miete..."
+    #     action = QAction( self, text="Soll-Miete..." )
+    #     action.triggered.connect( self.onViewSollMiete )
+    #     menu.addAction( action )
+    #
+    #     # Menüpunkt "Soll-Hausgeld..."
+    #     action = QAction( self, text="Soll-Hausgeld..." )
+    #     action.triggered.connect( self.onViewSollHausgeld )
+    #     menu.addAction( action )
+    #
+    #     menu.addSeparator()
 
-        # action = QAction( self, text="Mieterwechsel..." )
-        # action.triggered.connect( self.onMieterwechsel )
-        # menu.addAction( action )
-
-        action = QAction( self, text="Verwalterwechsel..." )
-        action.triggered.connect( self.onVerwalterwechsel )
-        menu.addAction( action )
-
-    def _createMietverhaeltnisMenu( self ):
-        menu = QtWidgets.QMenu( self._menubar, title="Mietverhältnis" )
-        self._menubar.addMenu( menu )
-
-        # Menüpunkt "Mietverhältnis..."
-        action = QAction( self, text="Mietverhältnis anschauen und ändern..." )
-        action.triggered.connect( self.onViewMietverhaeltnis )
-        menu.addAction( action )
-
-        menu.addSeparator()
-
-        action = QAction( self, text="Mieterwechsel..." )
-        action.triggered.connect( self.onMieterwechsel )
-        menu.addAction( action )
-
-    def _createZahlungenMenu( self ):
-        menu = QtWidgets.QMenu( self._menubar, title="Ist- und Sollzahlungen" )
-        self._menubar.addMenu( menu )
-
-        # Menüpunkt "Mietzahlungen..."
-        action = QAction( self, text="Mietzahlungen..." )
-        action.triggered.connect( self.onViewMietzahlungen )
-        menu.addAction( action )
-
-        # Menüpunkt "HG-Vorauszahlungen..."
-        action = QAction( self, text="HG-Vorauszahlungen..." )
-        action.triggered.connect( self.onViewHGVorauszahlungen )
-        menu.addAction( action )
-
-        # Menüpunkt "Rechnungen, Abgaben, Gebühren..."
-        action = QAction( self, text="Rechnungen, Abgaben, Gebühren..." )
-        action.triggered.connect( self.onViewRechnungen )
-        menu.addAction( action )
-
-        menu.addSeparator()
-
-        # Menüpunkt "Offene Posten"
-        action = QAction( self, text="Offene Posten" )
-        action.triggered.connect( self.onViewOffenePosten )
-        menu.addAction( action )
-
-        menu.addSeparator()
-
-        # Menüpunkt "Soll-Miete..."
-        action = QAction( self, text="Soll-Miete..." )
-        action.triggered.connect( self.onViewSollMiete )
-        menu.addAction( action )
-
-        # Menüpunkt "Soll-Hausgeld..."
-        action = QAction( self, text="Soll-Hausgeld..." )
-        action.triggered.connect( self.onViewSollHausgeld )
-        menu.addAction( action )
-
-        menu.addSeparator()
-
-    def _createAbrechnungenMenu( self ):
-        menu = QtWidgets.QMenu( self._menubar, title="Abrechnungen" )
-        self._menubar.addMenu( menu )
-        action = QAction( self, text="Nebenkostenabrechnung..." )
-        action.triggered.connect( self.onViewNebenkostenabrechnung )
-        menu.addAction( action )
-
-        action = QAction( self, text="Hausgeldabrechnung..." )
-        action.triggered.connect( self.onViewHausgeldabrechnung )
-        menu.addAction( action )
-
-    def _createAnlageVMenu( self ):
-        menu = QtWidgets.QMenu( self._menubar, title="AnlageV" )
-        self._menubar.addMenu( menu )
-        action = QAction( self, text="Anlagen V: Objektauswahl, Vorschau, Druck..." )
-        action.triggered.connect( self.onViewAnlageV )
-        menu.addAction( action )
-
-        # action = QAction( self, text="Anlagen V drucken..." )
-        # action.triggered.connect( self.onViewHausgeldabrechnung )
-        # menu.addAction( action )
-
-    def _createExtrasMenu( self ):
-        menu = QtWidgets.QMenu( self._menubar, title="Extras" )
-        self._menubar.addMenu( menu )
-        action = QAction( self, text="Geschäftsreise..." )
-        action.triggered.connect( self.onGeschaeftsreise )
-        menu.addAction( action )
-        action = QAction( self, text="Notizen..." )
-        action.triggered.connect( self.onNotizen )
-        menu.addAction( action )
-        menu.addSeparator()
-        action = QAction( self, text="Sammelabgabenbescheid aufsplitten..." )
-        action.triggered.connect( self.onSammelabgabe )
-        menu.addAction( action )
-        menu.addSeparator()
-        # action = QAction( self, text="Renditevergleich..." )
-        # action.triggered.connect( self.onRenditeVergleich )
-        # menu.addAction( action )
-        action = QAction( self, text="Ertragsübersicht..." )
-        action.triggered.connect( self.onErtragUebersicht )
-        menu.addAction( action )
-        menu.addSeparator()
-        action = QAction( self, text="Exportiere aktive Tabelle in Calc" )
-        action.triggered.connect( self.onExportActiveTableView )
-        menu.addAction( action )
+    # def _createAbrechnungenMenu( self ):
+    #     menu = QtWidgets.QMenu( self._menubar, title="Abrechnungen" )
+    #     self._menubar.addMenu( menu )
+    #     action = QAction( self, text="Nebenkostenabrechnung..." )
+    #     action.triggered.connect( self.onViewNebenkostenabrechnung )
+    #     menu.addAction( action )
+    #
+    #     action = QAction( self, text="Hausgeldabrechnung..." )
+    #     action.triggered.connect( self.onViewHausgeldabrechnung )
+    #     menu.addAction( action )
+    #
+    # def _createAnlageVMenu( self ):
+    #     menu = QtWidgets.QMenu( self._menubar, title="AnlageV" )
+    #     self._menubar.addMenu( menu )
+    #     action = QAction( self, text="Anlagen V: Objektauswahl, Vorschau, Druck..." )
+    #     action.triggered.connect( self.onViewAnlageV )
+    #     menu.addAction( action )
+    #
+    #     # action = QAction( self, text="Anlagen V drucken..." )
+    #     # action.triggered.connect( self.onViewHausgeldabrechnung )
+    #     # menu.addAction( action )
+    #
+    # def _createExtrasMenu( self ):
+    #     menu = QtWidgets.QMenu( self._menubar, title="Extras" )
+    #     self._menubar.addMenu( menu )
+    #     action = QAction( self, text="Geschäftsreise..." )
+    #     action.triggered.connect( self.onGeschaeftsreise )
+    #     menu.addAction( action )
+    #     action = QAction( self, text="Notizen..." )
+    #     action.triggered.connect( self.onNotizen )
+    #     menu.addAction( action )
+    #     menu.addSeparator()
+    #     action = QAction( self, text="Sammelabgabenbescheid aufsplitten..." )
+    #     action.triggered.connect( self.onSammelabgabe )
+    #     menu.addAction( action )
+    #     menu.addSeparator()
+    #     # action = QAction( self, text="Renditevergleich..." )
+    #     # action.triggered.connect( self.onRenditeVergleich )
+    #     # menu.addAction( action )
+    #     action = QAction( self, text="Ertragsübersicht..." )
+    #     action.triggered.connect( self.onErtragUebersicht )
+    #     menu.addAction( action )
+    #     menu.addSeparator()
+    #     action = QAction( self, text="Exportiere aktive Tabelle in Calc" )
+    #     action.triggered.connect( self.onExportActiveTableView )
+    #     menu.addAction( action )
 
 
-    def _createSqlMenu( self ):
-        # Menü "ImmoCenter"
-        menu = QtWidgets.QMenu( self._menubar, title="SQL" )
-        self._menubar.addMenu( menu )
+    # def _createSqlMenu( self ):
+    #     # Menü "ImmoCenter"
+    #     menu = QtWidgets.QMenu( self._menubar, title="SQL" )
+    #     self._menubar.addMenu( menu )
+    #
+    #     # Menüpunkt "Neue Abfrage
+    #     action = QAction( self, text="Neue Datenbankabfrage" )
+    #     action.setShortcut( QKeySequence( "Ctrl+n" ) )
+    #     icon = QtGui.QIcon( "images/sql.xpm" )
+    #     action.setIcon( icon )
+    #     action.triggered.connect( self.onNewSql )
+    #     menu.addAction( action )
+    #     #self._toolBar.addAction( action )
+    #
+    #     #Menüpunkt "Ganze Tabelle anzeigen"
+    #     self._submenuShowTableContent = QtWidgets.QMenu( menu, title="Ganze Tabelle anzeigen" )
+    #     menu.addMenu( self._submenuShowTableContent )
 
-        # Menüpunkt "Neue Abfrage
-        action = QAction( self, text="Neue Datenbankabfrage" )
-        action.setShortcut( QKeySequence( "Ctrl+n" ) )
-        icon = QtGui.QIcon( "images/sql.xpm" )
-        action.setIcon( icon )
-        action.triggered.connect( self.onNewSql )
-        menu.addAction( action )
-        #self._toolBar.addAction( action )
-
-        #Menüpunkt "Ganze Tabelle anzeigen"
-        self._submenuShowTableContent = QtWidgets.QMenu( menu, title="Ganze Tabelle anzeigen" )
-        menu.addMenu( self._submenuShowTableContent )
-
-    def _createShowViewsMenu( self ):
-        menu = QtWidgets.QMenu( self._menubar, title="Views" )
-        self._menubar.addMenu( menu )
-        self._viewsMenu = menu
+    # def _createShowViewsMenu( self ):
+    #     menu = QtWidgets.QMenu( self._menubar, title="Views" )
+    #     self._menubar.addMenu( menu )
+    #     self._viewsMenu = menu
 
     def _addSumFields( self ):
         self._toolBar.addWidget( self._createSumLabel() )

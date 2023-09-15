@@ -60,9 +60,8 @@ class MtlEinAusController( IccController ):
         self._tv = tv
         return tvf
 
-    @abstractmethod
     def getMenu( self ) -> QMenu:
-        pass
+       return None
 
     @abstractmethod
     def getSollActions( self ) -> List[BaseAction]:
@@ -106,8 +105,7 @@ class MtlEinAusController( IccController ):
 
     @abstractmethod
     def onYearChanged( self, newYear: int ):
-        model: MtlEinAusTableModel = self.getModel()
-        # todo
+        pass
 
     @abstractmethod
     def getDefaultSign( self ) -> str:
@@ -415,8 +413,8 @@ class MieteController( MtlEinAusController ):
     def getLogic( self ) -> MieteLogic:
         return self._logic
 
-    def getMenu( self ) -> QMenu:
-        return None
+    # def getMenu( self ) -> QMenu:
+    #     return None
 
     def getEinzelzahlungenModelMonat( self, debikredi: str, sab_id:int, jahr: int, monthIdx: int ) -> EinAusTableModel:
         """
@@ -453,6 +451,7 @@ class MieteController( MtlEinAusController ):
         return mv_id, year, monthIdx
 
     def onYearChanged( self, newYear:int ):
+        self._year = newYear
         tm = self._logic.createMietzahlungenModel( newYear, self.getModel().getEditableMonthIdx() )
         self._tv.setModel( tm )
 
@@ -518,8 +517,8 @@ class HausgeldController( MtlEinAusController ):
     def getLogic( self ) -> HausgeldLogic:
         return self._logic
 
-    def getMenu( self ) -> QMenu:
-        return None
+    # def getMenu( self ) -> QMenu:
+    #     return None
 
     def getEinzelzahlungenModelMonat( self, debikredi: str, sab_id:int, jahr: int, monthIdx: int ) -> EinAusTableModel:
         eatm = self._logic.getZahlungenModelDebiKrediMonat( debikredi, jahr, monthIdx )
@@ -529,6 +528,7 @@ class HausgeldController( MtlEinAusController ):
         return eatm
 
     def onYearChanged( self, newYear:int ):
+        self._year = newYear
         tm = self._logic.createHausgeldzahlungenModel( newYear, self.getModel().getEditableMonthIdx() )
         self._tv.setModel( tm )
 
@@ -693,6 +693,7 @@ class AbschlagController( MtlEinAusController ):
         self._cboMietobjekte.addItems( mietobjektnamen )
 
     def onYearChanged( self, newYear:int ):
+        self._year = newYear
         tm = self.createModel( newYear, self.getModel().getEditableMonthIdx() )
         self._tv.setModel( tm )
 

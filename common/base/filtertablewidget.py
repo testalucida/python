@@ -108,6 +108,10 @@ class HeaderTableView(BaseTableView):
     filter_cleared = Signal( str ) # arg = header
     def __init__(self ):
         BaseTableView.__init__( self )
+        # Notlösung, weil sonst beim horiz. Scrollen die Spalten von HeaderView und DataView gegeneinander verrutschen:
+        self.setVerticalScrollBarPolicy( Qt.ScrollBarAlwaysOn )
+        self.verticalScrollBar().hide()
+        # Notlösung Ende
         self._filterList:List[Dict] = list() # List of FilterEdit objects
         self.setHorizontalScrollBarPolicy( Qt.ScrollBarAlwaysOff )
         self.btvLeftClicked.connect( self.onCellClicked )
@@ -169,12 +173,8 @@ class DataTableView( BaseTableView ):
         BaseTableView.__init__( self )
         hv:QHeaderView = self.horizontalHeader()
         hv.hide()
-
-# #############################################################################
-# class Filter:
-#     def __init__(self, header:str, filterval:str):
-#         self.header:str = header
-#         self.filterval:str = filterval
+        # Notlösung, weil sonst beim horiz. Scrollen die Spalten von HeaderView und DataView gegeneinander verrutschen:
+        self.setVerticalScrollBarPolicy( Qt.ScrollBarAlwaysOn )
 
 ##############################################################################
 class SearchWidget2( QWidget ):
@@ -349,6 +349,8 @@ class FilterTableWidget( QWidget ):
         QWidget.__init__( self )
         self._tools = None
         self.dataTv = DataTableView()
+        self.dataTv.horizontalScrollBar().valueChanged.connect( self.onScrollDataViewHorizontally )
+        #self.dataTv.verticalScrollBar().installEventFilter( self )
         self.headerTv = HeaderTableView()
         self.headerTv.filter_changed.connect( self.onFilterChanged )
         self.headerTv.filter_cleared.connect( self.onFilterCleared )
@@ -365,6 +367,33 @@ class FilterTableWidget( QWidget ):
         self._searchHandler = None #SearchHandler2( self.dataTv, self._searchWidget )
         self._threadpool = QThreadPool()
         self._wlist:List[int] = list() # Liste der zwischen-gemerkten Spaltenbreiten
+
+    def onScrollDataViewHorizontally( self, val ):
+        htv = self.headerTv
+        # htv.viewport().scroll( dx, 0 )
+        # htv.repaint()
+        #htv.scrollContentsBy( dx, 0 )
+        #self.headerTv.horizontalScrollBar().scroll( dx, 0 )
+        # val = htv.horizontalScrollBar().value()
+        #print( "scrolled from ", val, " to ", val+dx )
+        htv.horizontalScrollBar().setValue( val )
+
+    # def eventFilter( self, o, e ):
+    #     if o is self.dataTv.verticalScrollBar():
+    #         # cols = self.headerTv.model().columnCount()
+    #         # w = self.headerTv.columnWidth( cols - 1 )
+    #         if e.type() == QtCore.QEvent.Show:
+    #             print( "show dataView vertical scrollbar")
+    #             viewport = self.headerTv.viewport()
+    #             vpsize = viewport.size()
+    #             viewport.resize( QSize(vpsize.width()-25, vpsize.height() ) )
+    #             # print( "Verkleiner3e4")
+    #             # self.headerTv.setColumnWidth( cols-1, w-25 )
+    #         elif e.type() == QtCore.QEvent.Hide:
+    #             pass
+    #             #print( "Vergößere")
+    #             #self.headerTv.setColumnWidth( cols - 1, w + 25 )
+    #     return False
 
     def addStandardTableTools( self, tools:Collection[TableTool] ):
         self._ensureToolsExist()
@@ -386,10 +415,15 @@ class FilterTableWidget( QWidget ):
             self._vlayout.insertWidget( 0, self._tools, stretch=0, alignment=Qt.AlignLeft )
 
     def setModel( self, tm:BaseTableModel, selectRows:bool=True, singleSelection:bool=True ):
-        self.dataTv.setModel( tm, selectRows, singleSelection )
+        model = self.dataTv.model()
+        if model:
+            model.before_multi_sorting.disconnect( self.onBeforeMultiSorting )
+            model.multi_sorting_finished.disconnect( self.onMultiSortingFinished )
         self.headerTv.setModel( tm.getHeaders() )
+        self.dataTv.setModel( tm, selectRows, singleSelection )
         self.setHeaderColumnWidthsAccordingDataColumns()
-        self.headerTv.horizontalHeader().sectionResized.connect( self.onHeaderColumnResized )
+        if not model:
+            self.headerTv.horizontalHeader().sectionResized.connect( self.onHeaderColumnResized )
         tm.before_multi_sorting.connect( self.onBeforeMultiSorting )
         tm.multi_sorting_finished.connect( self.onMultiSortingFinished )
 
@@ -433,6 +467,10 @@ class FilterTableWidget( QWidget ):
         self.setHeaderColumnWidthsAccordingDataColumns( )
         # Slots wieder anmelden:
         self.headerTv.horizontalHeader().sectionResized.connect( self.onHeaderColumnResized )
+
+    # def resizeRowsAndColumns( self ):
+    #     #self.dataTv.resizeRowsToContents()
+    #     self.resizeColumnsToContents()
 
     #### methods of QTableView - end  ##########
 
@@ -758,9 +796,33 @@ def testFilterTableWidgetFrame():
 
 #########################################################################################
 #           TEST  TEST  TEST   #
+def createTestModel2() -> BaseTableModel:
+    nachnamen = ("Hinterhuberhapfinger", "Wollemerseroilasse", "alter Adel\nVerdi", "Nemo", "Willibaldessen", "Sagamol")
+    vornamen = ("Sepp", "Georg-Hubert-Franz", "Paul", "Werner-Sigismumnd", "Kalle", "Willi", "Ansgaroid" )
+    plzn = ("91077", "91077", "77654", "88954", "66538", "91077")
+    orte = ("Kleinsteinhausen", "Kleinmain", "Au", "Hausen", "Saarbrücken", "Steinbach")
+    strn = ("Apfelweg 2", "Birnenweg 2", "Rebenweg 3", "Hubertusweg 22", "Wellesweilerstr. 56", "Ahornweg 2")
+    alter = (67, 65, 54, 49, 60, 41)
+    groessen = (180, 170, 179, 185, 161.5, 161.5)
+    itemlist = list()
+    for n in range( 0, len( nachnamen ) ):
+        i = TestItem()
+        i.nachname = nachnamen[n]
+        i.vorname = vornamen[n]
+        i.plz = plzn[n]
+        i.ort = orte[n]
+        i.str = strn[n]
+        i.alter = alter[n]
+        i.groesse = groessen[n]
+        itemlist.append( i )
+    tm = BaseTableModel( itemlist )
+    tm.headers = ("Nachname", "Vorname", "PLZ", "Ort", "Straße", "Alter", "Größe")
+    return tm
+
+
 def createTestModel() -> BaseTableModel:
-    nachnamen = ("Kendel", "Kendel", "Verhoeven", "Adler", "Strack-Zimmermann", "Kendel")
-    vornamen = ("Martin", "Gudrun", "Paul", "Henriette", "Marie-Agnes", "Friedi")
+    nachnamen = ("Kendel", "Kendel", "Verhoeven", "von Adler", "Strack-Zimmermann", "Kendel")
+    vornamen = ("Martin", "Gudrun", "Paul", "Henriette\nalterAdel", "Marie-Agnes", "Friedi")
     plzn = ("91077", "91077", "77654", "88954", "66538", "91077")
     orte = ("Kleinsendelbach", "Kleinsendelbach", "Niederstetten", "Oberhimpflhausen", "Neunkirchen", "Steinbach")
     strn = ("Birnenweg 2", "Birnenweg 2", "Rebenweg 3", "Hubertusweg 22", "Wellesweilerstr. 56", "Ahornweg 2")
@@ -788,7 +850,8 @@ def testMyTableView():
     def onOk():
         print( "ok" )
     def onCancel():
-        print( "cancel" )
+        tm = createTestModel2()
+        tv.setModel( tm )
     app = QApplication()
     dlg = BaseDialogWithButtons( "Test MyTableView", getOkCancelButtonDefinitions( onOk, onCancel ) )
     tv = FilterTableWidget()

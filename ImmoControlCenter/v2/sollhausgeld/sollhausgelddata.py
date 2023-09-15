@@ -9,6 +9,17 @@ class SollHausgeldData( IccData ):
     def __init__(self):
         IccData.__init__( self )
 
+    def getAllSollHausgelder( self ) -> List[XSollHausgeld]:
+        sql = "select shg.shg_id, shg.vwg_id, shg.mobj_id, vwg.vw_id, vwg.weg_name, shg.von, shg.bis, " \
+              "shg.netto, shg.ruezufue, shg.bemerkung " \
+              "from sollhausgeld shg " \
+              "inner join verwaltung vwg on vwg.vwg_id = shg.vwg_id " \
+              "order by shg.mobj_id asc, shg.von desc"
+        l: List[XSollHausgeld] = self.readAllGetObjectList( sql, XSollHausgeld )
+        for x in l:
+            x.brutto = x.netto + x.ruezufue
+        return l
+
     def getSollHausgelder( self, jahr: int ) -> List[XSollHausgeld]:
         minbis = "%d-%02d-%02d" % (jahr, 1, 1)
         maxvon = "%d-%02d-%02d" % (jahr, 12, 31)

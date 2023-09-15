@@ -24,7 +24,7 @@ class AbrechnungController( IccController ):
 
     def createGui( self ) -> HGAbrechnungTableViewFrame:
         tm: AbrechnungTableModel = self.logic.getAbrechnungTableModel( self.abrechJahr )
-        self.tv.setModel( tm )
+        self.tv.setModel( tm, selectRows=True, singleSelection=False )
         self.tv.setAlternatingRowColors( True )
         tb = self.tvframe.getToolBar()
         jahre = [self.abrechJahr, self.abrechJahr - 1, self.abrechJahr - 2]

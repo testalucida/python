@@ -1,22 +1,70 @@
-from PySide2.QtCore import Slot
-from PySide2.QtWidgets import QApplication, QDialog
+from abc import abstractmethod
 
+from PySide2.QtCore import Slot, QSize
+from PySide2.QtWidgets import QApplication, QDialog, QMenu
+
+from base.baseqtderivates import BaseAction
+from base.basetablemodel import BaseTableModel
+from base.basetableview import BaseTableView
+from generictable_stuff.okcanceldialog import OkCancelDialog, OkDialog
 from v2.icc.icccontroller import IccController
 from v2.icc.iccwidgets import IccCheckTableViewFrame
 from v2.icc.interfaces import XSollHausgeld
 from v2.sollhausgeld.sollhausgeldeditcontroller import SollHausgeldEditController
-from v2.sollhausgeld.sollhausgeldlogic import SollHausgeldLogic
+from v2.sollhausgeld.sollhausgeldlogic import SollHausgeldLogic, SollHausgeldTableModel
 from v2.sollhausgeld.sollhausgeldview import SollHausgeldView, SollHausgeldDialog
 
-#############  SollMieteController  #####################
-class SollHausgeldController( IccController ):
+class SollzahlungenController( IccController ):
+    _menu = ""
+    _menu_returned = False
     def __init__( self ):
         IccController.__init__( self )
-        self._logic = SollHausgeldLogic()
+        #self._menu: QMenu = None
+
+    def getMenu( self ) -> QMenu or None:
+        if not SollzahlungenController._menu_returned:
+            SollzahlungenController._menu = QMenu( "Sollzahlungen")
+        action = self.getAction( SollzahlungenController._menu )
+        SollzahlungenController._menu.addAction( action )
+        SollzahlungenController._menu.addSeparator()
+        if not SollzahlungenController._menu_returned:
+            SollzahlungenController._menu_returned = True
+            return SollzahlungenController._menu
+        return None
 
     def createGui( self ) -> IccCheckTableViewFrame:
         pass
 
+    def showSollzahlungenDialog( self, tm:BaseTableModel, title:str ):
+        v = BaseTableView()
+        v.setModel( tm, selectRows=True, singleSelection=False )
+        v.setAlternatingRowColors( True )
+        dlg = OkDialog( title )
+        dlg.addWidget( v, 0 )
+        w = v.getPreferredWidth()
+        h = v.getPreferredHeight()
+        dlg.resize( QSize( w, h + 25 ) )
+        dlg.move( self.getMainWindow().cursor().pos() )
+        dlg.exec_()
+
+    @abstractmethod
+    def getAction( self, menu:QMenu ) -> BaseAction:
+        pass
+
+#############  SollMieteController  #####################
+class SollHausgeldController( SollzahlungenController ):
+    def __init__( self ):
+        SollzahlungenController.__init__( self )
+        self._logic = SollHausgeldLogic()
+
+    def onAlleSollHausgelder( self ):
+        tm:SollHausgeldTableModel = self._logic.getAllSollHausgelder()
+        self.showSollzahlungenDialog( tm, "Alle Soll-Hausgelder" )
+
+    def getAction( self, menu:QMenu ) -> BaseAction:
+        action = BaseAction( "Sollhausgelder anzeigen...", parent=menu )
+        action.triggered.connect( self.onAlleSollHausgelder )
+        return action
 
     def showHgvAndRueZuFue( self, mobj_id:str, jahr:int, monthNumber:int ):
         """

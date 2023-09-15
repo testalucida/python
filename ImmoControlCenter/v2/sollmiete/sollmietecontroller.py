@@ -1,22 +1,29 @@
 from PySide2.QtCore import Slot
-from PySide2.QtWidgets import QApplication, QDialog
+from PySide2.QtWidgets import QApplication, QDialog, QMenu
 
+from base.baseqtderivates import BaseAction
 from v2.icc.icccontroller import IccController
 from v2.icc.iccwidgets import IccCheckTableViewFrame, IccTableView
 from v2.icc.interfaces import XMtlZahlung, XEinAus, XSollMiete
+from v2.sollhausgeld.sollhausgeldcontroller import SollzahlungenController
 from v2.sollmiete.sollmieteeditcontroller import SollMieteEditController
 from v2.sollmiete.sollmietelogic import SollmieteLogic
 from v2.sollmiete.sollmieteview import SollMieteView, SollMieteDialog
 
 #############  SollMieteController  #####################
-class SollMieteController( IccController ):
+class SollMieteController( SollzahlungenController ):
     def __init__( self ):
-        IccController.__init__( self )
+        SollzahlungenController.__init__( self )
         self._logic = SollmieteLogic()
 
-    def createGui( self ) -> IccCheckTableViewFrame:
-        pass
+    def getAction( self, menu:QMenu ) -> BaseAction:
+        action = BaseAction( "Sollmieten anzeigen...", parent=menu )
+        action.triggered.connect( self.onAlleSollmieten )
+        return action
 
+    def onAlleSollmieten( self ):
+        tm = self._logic.getAlleSollMieten()
+        self.showSollzahlungenDialog( tm, "Alle Soll-Mieten" )
 
     def showSollMieteAndNkv( self, mv_id:str, jahr:int, monthNumber:int ):
         """

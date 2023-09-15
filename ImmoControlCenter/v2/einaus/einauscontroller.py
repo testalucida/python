@@ -242,7 +242,8 @@ class EinAusController( IccController ):
         self._jahr = newYear
         tm = self._logic.getZahlungenModel( self._jahr )
         tv = self._tv
-        tv.setModel( tm )
+        tv.setModel( tm, selectRows=True, singleSelection=False )
+        #tv.resizeRowsAndColumns()
 
     def provideActions( self, index, point, selectedIndexes ) -> List[QAction]:
         #print( "context menu for column ", index.column(), ", row ", index.row() )

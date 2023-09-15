@@ -2,16 +2,31 @@ import copy
 from typing import List
 
 import datehelper
+from base.basetablemodel import BaseTableModel
 from v2.icc.constants import iccMonthShortNames
 from v2.icc.icclogic import IccLogic
 from v2.icc.interfaces import XSollHausgeld
 from v2.sollhausgeld.sollhausgelddata import SollHausgeldData
 
 
+class SollHausgeldTableModel( BaseTableModel ):
+    def __init__( self, sollHausgeldList:List[XSollHausgeld] ):
+        BaseTableModel.__init__( self, sollHausgeldList )
+        self.setKeyHeaderMappings2(
+            ("mobj_id", "vw_id", "weg_name", "von", "bis", "netto", "ruezufue", "brutto", "bemerkung" ),
+            ("Wohnung", "Verwalter", "WEG", "von", "bis", "Netto", "RüZuFü", "Brutto", "Bemerkung" )
+        )
+
+##################################################################################
 class SollHausgeldLogic( IccLogic ):
     def __init__( self ):
         IccLogic.__init__( self )
         self._data = SollHausgeldData()
+
+    def getAllSollHausgelder( self ) -> SollHausgeldTableModel:
+        sollhglist = self._data.getAllSollHausgelder()
+        tm = SollHausgeldTableModel( sollhglist )
+        return tm
 
     def getCurrentSollHausgeld( self, mobj_id:str ) -> XSollHausgeld:
         x:XSollHausgeld = self._data.getCurrentSollHausgeld( mobj_id )
