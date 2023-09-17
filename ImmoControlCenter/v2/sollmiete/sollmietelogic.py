@@ -28,7 +28,7 @@ class SollmieteLogic:
     def __init__( self ):
         self._db:SollmieteData = SollmieteData()
 
-    def getAlleSollMieten( self ) -> List[XSollMiete]:
+    def getAlleSollMieten( self ) -> SollMieteTableModel:
         sollmieten:List[XSollMiete] = self._db.getAlleSollMieten()
         tm = SollMieteTableModel( sollmieten )
         return tm

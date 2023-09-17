@@ -22,7 +22,7 @@ from v2.icc.mainlogic import MainLogic
 from v2.mietobjekt.mietobjektcontroller import MietobjektController
 from v2.mietverhaeltnis.mietverhaeltniscontroller import MietverhaeltnisController
 from v2.mtleinaus.mtleinauscontroller import MieteController, HausgeldController, AbschlagController
-from v2.sollhausgeld.sollhausgeldcontroller import SollHausgeldController
+from v2.sollhausgeld.sollhausgeldcontroller import SollHausgeldController, SollzahlungenController
 from v2.sollmiete.sollmietecontroller import SollMieteController
 
 
@@ -38,6 +38,7 @@ class MainController( IccController ):
         self._einausCtrl = EinAusController()
         self._nkaCtrl = NKAbrechnungController()
         self._hgaCtrl = HGAbrechnungController()
+        self._sollZahlungenCtrl = SollzahlungenController()
         self._reiseCtrl = GeschaeftsreiseController()
         self._mietObjektCtrl = MietobjektController()
         self._mietObjektCtrl.edit_miete.connect( self.onEditMiete )
@@ -58,12 +59,13 @@ class MainController( IccController ):
         self._mieteCtrl.show_NettomieteAndNkv.connect( self.onShowNettomieteAndNkv )
         self._hausgeldCtrl.show_verwaltung.connect( self.onShowVerwaltung )
         self._hausgeldCtrl.show_hgaAndRueZuFue.connect( self.onShowHgaAndRueZuFue )
-        self._sollHausgeldCtrl = SollHausgeldController()
-        self._sollMieteCtrl = SollMieteController()
+        # self._sollHausgeldCtrl = SollHausgeldController()
+        # self._sollMieteCtrl = SollMieteController()
 
     @Slot( str, int, int )
     def onShowNettomieteAndNkv( self, mv_id:str, year:int, monthNumber:int ):
-        self._sollMieteCtrl.showSollMieteAndNkv( mv_id, year, monthNumber )
+        #self._sollMieteCtrl.showSollMieteAndNkv( mv_id, year, monthNumber )
+        SollMieteController().showSollMieteAndNkv( mv_id, year, monthNumber )
 
     @Slot( str, int, int )
     def onShowVerwaltung( self, weg_name:str, year:int, monthNumber:int ):
@@ -71,7 +73,8 @@ class MainController( IccController ):
 
     @Slot( str, int, int )
     def onShowHgaAndRueZuFue( self, mobj_id:str, year:int, monthNumber:int ):
-        self._sollHausgeldCtrl.showHgvAndRueZuFue( mobj_id, year, monthNumber )
+        #self._sollHausgeldCtrl.showHgvAndRueZuFue( mobj_id, year, monthNumber )
+        SollHausgeldController().showHgvAndRueZuFue( mobj_id, year, monthNumber )
 
     @Slot( str )
     def onEditMieter( self, mv_id:str ):
@@ -95,13 +98,13 @@ class MainController( IccController ):
         if menu:
             self._win.addMenu( menu )
 
-        menu = self._sollMieteCtrl.getMenu()
+        menu = self._sollZahlungenCtrl.getMenu()
         if menu:
             self._win.addMenu( menu )
 
-        menu = self._sollHausgeldCtrl.getMenu()
-        if menu:
-            self._win.addMenu( menu )
+        # menu = self._sollHausgeldCtrl.getMenu()
+        # if menu:
+        #     self._win.addMenu( menu )
 
         menu = self._mvCtrl.getMenu()
         if menu:
