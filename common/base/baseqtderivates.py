@@ -894,33 +894,42 @@ class IntEdit( BaseEdit ):
             self.setText( "" )
 
 ######################## Int Display  #############################
-class IntDisplay( BaseEdit ):
-    def __init__( self, parent=None ):
-        BaseEdit.__init__( self, parent )
+class IntDisplay( IntEdit ):
+    def __init__( self, parent=None, showNegativNumbersRed:bool=True ):
+        IntEdit.__init__( self, parent, showNegativNumbersRed, isReadOnly=True )
         intval = QIntValidator()
         self.setValidator( intval )
         font = QFont( "Times New Roman", 12, QFont.Bold )
         self.setFont( font )
         # self.setStyleSheet( "color: red;" )
         self.setAlignment( Qt.AlignRight )
-
-    def setIntValue( self, val:int ):
-        if val is None:
-            raise ValueError( "IntDisplay.setIntValue(): val is None" )
-        if not isinstance( val, int ):
-            if isinstance( val, float ):
-                val = round( val )
-            else:
-                raise ValueError( "IntDisplay.setIntValue(): val '%s' is not an int" % str(val) )
-        self.setText( str( val ) )
-        if val < 0:
-            self.setStyleSheet( "color: red;" )
-        else:
-            self.setStyleSheet( "color: green;" )
-
-    def getIntValue( self ) -> int:
-        val = self.text()
-        return int( val )
+# class IntDisplay( BaseEdit ):
+#     def __init__( self, parent=None ):
+#         BaseEdit.__init__( self, parent )
+#         intval = QIntValidator()
+#         self.setValidator( intval )
+#         font = QFont( "Times New Roman", 12, QFont.Bold )
+#         self.setFont( font )
+#         # self.setStyleSheet( "color: red;" )
+#         self.setAlignment( Qt.AlignRight )
+#
+#     def setIntValue( self, val:int ):
+#         if val is None:
+#             raise ValueError( "IntDisplay.setIntValue(): val is None" )
+#         if not isinstance( val, int ):
+#             if isinstance( val, float ):
+#                 val = round( val )
+#             else:
+#                 raise ValueError( "IntDisplay.setIntValue(): val '%s' is not an int" % str(val) )
+#         self.setText( str( val ) )
+#         if val < 0:
+#             self.setStyleSheet( "color: red;" )
+#         else:
+#             self.setStyleSheet( "color: green;" )
+#
+#     def getIntValue( self ) -> int:
+#         val = self.text()
+#         return int( val )
 
 
 ################ TextDocument #####################
@@ -959,10 +968,10 @@ class MultiLineEdit( QTextEdit, GetSetValue ):
 
 ################ SumDialog ########################
 class SumDialog( QDialog ):
-    def __init__( self, parent=None ):
+    def __init__( self, parent=None, title="Summe der selektierten Zahlen" ):
         QDialog.__init__( self, parent )
         self.setModal( True )
-        self.setWindowTitle( "Summe der selektierten Zahlen" )
+        self.setWindowTitle( title )
         layout = QGridLayout( self )
         self.label = QtWidgets.QLabel( self )
         self.label.setText( "Summe:" )

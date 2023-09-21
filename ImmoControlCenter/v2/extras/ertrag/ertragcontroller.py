@@ -21,6 +21,7 @@ class ErtragController( IccController ):
         self._printHandler:PrintHandler = None
         self._logic = ErtragLogic()
         self._jahr = 0
+        self._dlg = None
 
     def createGui( self ) -> QWidget:
         """
@@ -35,7 +36,9 @@ class ErtragController( IccController ):
         dlg.addWidget( v, 0 )
         dlg.setOkButtonText( "Schließen" )
         dlg.resize( v.getPreferredWidth()+25, 800 )
-        dlg.exec_()
+        self._dlg = dlg
+        # Dialog non-modal öffnen
+        self._dlg.show()
 
     def createView( self ) -> QWidget:
         jahre = self.getJahre() # das neueste (größte) Jahr hat Index 0

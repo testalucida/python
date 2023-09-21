@@ -15,7 +15,7 @@ class BaseTableFunctions:
         pass
 
     @staticmethod
-    def computeSumme( tv:QTableView, columnVon:int=None, columnBis:int=None ):
+    def computeSumme( tv:QTableView, columnVon:int=None, columnBis:int=None, dlg_title="" ):
         """
         Addiert die in der TableView <tv> markierten Werte.
         Sind columnVon und column-Bis angegeben, werden nur Werte zwischen diesen beiden Columns (jeweils inklusive)
@@ -41,7 +41,8 @@ class BaseTableFunctions:
                 val = model.getValue( idx.row(), idx.column() )
                 if type( val ) in (int, float):
                     summe += val
-        dlg = SumDialog()
+        summe = "%.2f" % summe
+        dlg = SumDialog( title=dlg_title )
         dlg.setSum( summe )
         dlg.exec_()
 

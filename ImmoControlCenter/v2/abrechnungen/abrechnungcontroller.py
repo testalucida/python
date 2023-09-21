@@ -1,7 +1,11 @@
+from typing import List
+
 from PySide2.QtCore import QSize
 from PySide2.QtWidgets import QMenu
 
 import datehelper
+from base.baseqtderivates import BaseAction, Separator
+from base.basetablefunctions import BaseTableFunctions
 from base.dynamicattributeui import DynamicAttributeDialog
 from base.messagebox import WarningBox, ErrorBox, InfoBox
 from v2.abrechnungen.abrechnungdialogcontroller import AbrechnungDialogController
@@ -9,6 +13,7 @@ from v2.abrechnungen.abrechnungenview import HGAbrechnungTableView, NKAbrechnung
     NKAbrechnungTableViewFrame, AbrechnungTableViewFrame, AbrechnungTableView
 from v2.abrechnungen.abrechnunglogic import HGAbrechnungLogic, HGAbrechnungTableModel, AbrechnungTableModel, \
     AbrechnungLogic, NKAbrechnungLogic
+from v2.icc.constants import Action
 from v2.icc.icccontroller import IccController
 from v2.icc.interfaces import XAbrechnung
 
@@ -92,8 +97,26 @@ class NKAbrechnungController( AbrechnungController ):
     def __init__(self):
         AbrechnungController.__init__( self, NKAbrechnungLogic() )
         self.tv = NKAbrechnungTableView()
+        self.tv.setContextMenuCallbacks( self.provideActions, self.onSelected )
         self.tvframe = NKAbrechnungTableViewFrame( self.tv )
 
+    def provideActions( self, index, point, selectedIndexes ) -> List[BaseAction] or None:
+        cnt_sel_rows = len( self.tv.getSelectedRows() )
+        if cnt_sel_rows > 1:
+            l = list()
+            l.append( BaseAction( "Summe der Forderungen der markierten Zeilen berechnen...", ident="forderungen" ) )
+            l.append( Separator() )
+            l.append( BaseAction( "Summe der Zahlungen der markierten Zeilen berechnen...", ident="zahlungen" ) )
+            return l
+
+    def onSelected( self, action: BaseAction ):
+        if action.ident == "forderungen":
+            col = self.tv.model().getColumnIndexByKey( "forderung" )
+            title = "Summe der Forderungen"
+        else:
+            col = self.tv.model().getColumnIndexByKey( "zahlung" )
+            title = "Summe der Zahlungen"
+        BaseTableFunctions().computeSumme( self.tv, col, col, title )
 
 ########################   TEST  TEST  TEST  TEST  TEST  ######################
 

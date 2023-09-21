@@ -390,8 +390,9 @@ class BaseTableModel( QAbstractTableModel ):
                 #return '{:.2f}'.format( round( val, 2 ) )
             return val
         elif role == Qt.TextAlignmentRole:
-            v = self.getValue( index.row(), index.column() )
-            if isinstance( v, numbers.Number ): return int( Qt.AlignRight | Qt.AlignVCenter )
+            return self.getAlignment( index.row(), index.column() )
+            # v = self.getValue( index.row(), index.column() )
+            # if isinstance( v, numbers.Number ): return int( Qt.AlignRight | Qt.AlignVCenter )
         elif role == Qt.BackgroundRole:
             return self.getBackgroundBrush( index.row(), index.column() )
         elif role == Qt.ForegroundRole:
@@ -412,6 +413,10 @@ class BaseTableModel( QAbstractTableModel ):
                 if self.headerBrush:
                     return self.headerBrush
         return None
+
+    def getAlignment( self, indexrow:int, indexcolumn:int ) -> Qt.Alignment or None:
+        v = self.getValue( indexrow, indexcolumn )
+        if isinstance( v, numbers.Number ): return int( Qt.AlignRight | Qt.AlignVCenter )
 
     def getBackgroundBrush( self, indexrow: int, indexcolumn: int ) -> QBrush or None:
         return None

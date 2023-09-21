@@ -243,8 +243,8 @@ class BaseTableView( QTableView ):
 
     def getPreferredHeight( self ) -> int:
         rowcount = self.model().rowCount()
-        #h = self._vheaderView.height()
-        h = 0
+        h = self.horizontalHeader().height()
+        #h = 0
         for row in range( 0, rowcount ):
             h += self.rowHeight( row )
         return h + 25
