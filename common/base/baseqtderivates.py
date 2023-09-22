@@ -12,6 +12,7 @@ from PySide2.QtWidgets import QDialog, QCalendarWidget, QVBoxLayout, QBoxLayout,
     QHBoxLayout, QApplication, QListView, QComboBox, QLabel, QTextEdit, QCheckBox, QFrame, QWidget, QAction, QTabWidget, \
     QToolBar, QMenuBar, QStatusBar, QMessageBox
 
+import datehelper
 from base import constants
 from base.directories import BASE_IMAGES_DIR
 from base.interfaces import XAttribute
@@ -103,14 +104,22 @@ class BaseComboBox( QComboBox, GetSetValue ):
 #####################   YearComboBox  #######################
 class YearComboBox( BaseComboBox ):
     year_changed = Signal( int ) # arg: the new year
-    def __init__( self, years:List[int] ):
+    def __init__( self, years:List[int]=() ):
         BaseComboBox.__init__( self )
         for y in years:
             self.addItem( str( y ) )
         self.currentIndexChanged.connect(lambda: self.year_changed.emit( int(self.currentText() ) ) )
+        self.setMaximumWidth( 100 )
+
+    def addYears( self, years:List[int] ):
+        syears = [str(y) for y in years]
+        self.addItems( syears )
 
     def setYear( self, year:int ) -> None:
         self.setCurrentText( str(year) )
+
+    def setCurrentYear( self, year:int ) -> None:
+        self.setYear( year )
 
 #################  MonthComboBox  #########################
 class MonthComboBox( BaseComboBox ):

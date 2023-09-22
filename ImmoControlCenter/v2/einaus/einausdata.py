@@ -207,6 +207,15 @@ class EinAusData( IccData ):
         self._mapDbValueToDisplay( xlist )
         return xlist
 
+    # def getAnzahlEinAus( self, ea_art_display:str, jahr: int, additionalWhereClause="" ) -> int:
+    #     ea_art_db = EinAusArt.getDbValue( ea_art_display )
+    #     sql = "select count(*) " \
+    #           "from einaus " \
+    #           "where jahr = %d " \
+    #           "and ea_art = '%s' " % (jahr, ea_art_db)
+    #     if additionalWhereClause:
+    #         sql += additionalWhereClause
+
     def getEinAuszahlungen2( self, ea_art_display:str, jahr:int, monat:str, mobj_id:str ) -> List[XEinAus]:
         """
         Liefert eine Liste von XEinAus-Objekten, die den gegebenen Kriterien genügen

@@ -20,53 +20,6 @@ from v2.sammelabgabe.sammelabgabecontroller import SammelabgabeController
 
 # ##############  EinAusController  ####################
 class EinAusController( IccController ):
-    # def __init__( self ):
-    #     IccController.__init__( self )
-    #     self._tv: EinAusTableView = EinAusTableView()
-    #     self._sortHandler:MultiSortHandler = None
-    #     self._filterHandler:FilterHandler = None
-    #     self._searchHandler:SearchHandler = None
-    #     self._printHandler:PrintHandler = None
-    #     self._tvframe: EinAusTableViewFrame = EinAusTableViewFrame( self._tv, withEditButtons=True )
-    #     self._logic = EinAusLogic()
-    #     self._jahr:int = self.getYearToStartWith()
-    #     EinAusWriteDispatcher.inst().ea_inserted.connect( self.onEinAusInserted )
-    #     EinAusWriteDispatcher.inst().ea_updated.connect( self.onEinAusUpdated )
-    #     EinAusWriteDispatcher.inst().ea_deleted.connect( self.onEinAusDeleted )
-
-    # def createGui( self ) -> EinAusTableViewFrame:
-    #     jahr = self._jahr
-    #     tv = self._tv
-    #     tm = self._logic.getZahlungenModel( jahr )
-    #     tv.setModel( tm, selectRows=True, singleSelection=False )
-    #     tv.sortByColumn( tm.getWriteTimeColumnIdx(), Qt.SortOrder.AscendingOrder )
-    #     tb = self._tvframe.getToolBar()
-    #     jahre = self.getJahre()
-    #     if len(jahre) == 0:
-    #         jahre.append( jahr )
-    #     tb.addYearCombo( jahre , self.onYearChanged )
-    #     tb.setYear( jahr )
-    #     tb.addSeparator()
-    #     # sort
-    #     self._sortHandler = MultiSortHandler( tv )
-    #     tb.addSortAction( "Öffnet den Dialog zur Definition mehrfacher Sortierkriterien",
-    #                       self._sortHandler.onMultiSort )
-    #     # filter
-    #     self._filterHandler = FilterHandler( tv )
-    #     tb.addFilterAction( "Öffnet den Filterdialog zur Eingabe der Filterkriterien",
-    #                         self._filterHandler.onFilter, self._filterHandler.onResetFilter )
-    #     # search
-    #     searchwidget = tb.addSearchWidget( True )
-    #     self._searchHandler = SearchHandler( tv, searchwidget )
-    #     self._printHandler = PrintHandler( tv )
-    #     tb.addPrintAction( "Öffne Druckvorschau für diese Tabelle...", self._printHandler.handlePreview )
-    #     tv.setContextMenuCallbacks( self.provideActions, self.onSelected )
-    #     ### neue Zahlung, Zahlung ändern, löschen:
-    #     self._tvframe.newItem.connect( self.onNewEinAus )
-    #     self._tvframe.editItem.connect( self.onEditEinAus )
-    #     self._tvframe.deleteItems.connect( self.onDeleteEinAus )
-    #     return self._tvframe
-
     def __init__( self ):
         IccController.__init__( self )
         self._tv: FilterTableWidget = FilterTableWidget()

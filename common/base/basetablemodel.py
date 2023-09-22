@@ -426,6 +426,7 @@ class BaseTableModel( QAbstractTableModel ):
             val = self.getValue( indexrow, indexcolumn )
             if isinstance( val, numbers.Number ) and val < 0:
                 return QBrush( Qt.red )
+        return None
 
     def getFont( self, indexrow: int, indexcolumn: int ) -> QFont or None:
         return None

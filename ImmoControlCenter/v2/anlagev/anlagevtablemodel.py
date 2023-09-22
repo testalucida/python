@@ -72,9 +72,9 @@ class AnlageVTableModel( BaseTableModel ):
     darkGray = QBrush( Qt.darkGray )
     green = QBrush( QColor( "#76CB4C" ) )
     abschnittNameFont = QFont( "Arial", 12, QFont.Bold )
-    abschnittNameCells = ((0, 0), (8, 0), (33,0))
+    abschnittNameCells = ((0, 0), (8, 0), (34,0))
     summeFont = QFont( "Arial", 10, -1, True)
-    summenCells = ((6, 0), (31,0), (5, 1),  (13, 1), (25, 1), (29, 1))
+    summenCells = ((6, 0), (32,0), (5, 1),  (13, 1), (26, 1), (30, 1))
     colFormZeile = 4
     colFormEintrag = 5
 
@@ -106,6 +106,7 @@ class AnlageVTableModel( BaseTableModel ):
             ("",),
             ("", "Allg. Hauskosten", "Grundsteuer", x.grundsteuer),
             ("", "", "Versicherungen", x.versicherungen),
+            ("", "", "Strom, Gas, Wasser, Öl etc.", x.divAllgHk),
             ("", "", "HGV ohne RüZuFü", x.hgv_netto),
             ("", "", "HGA %d" % (x.vj - 1), x.hga),
             ("", "Summe Allg. Hauskosten", "", "", 47, x.getSummeAllgHauskosten()),
@@ -149,6 +150,12 @@ class AnlageVTableModel( BaseTableModel ):
                 return self.yellow
             else:
                 return self.lightGray
+
+    def getForegroundBrush( self, indexrow: int, indexcolumn: int ) -> QBrush or None:
+        brush = super().getForegroundBrush( indexrow, indexcolumn )
+        if not brush and indexcolumn == self.colFormZeile:
+            return self.darkGreyBrush
+        return brush
 
     def getFont( self, indexrow: int, indexcolumn: int ) -> QFont or None:
         if indexcolumn == self.colFormZeile:

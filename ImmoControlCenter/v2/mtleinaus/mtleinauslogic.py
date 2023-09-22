@@ -309,7 +309,7 @@ class MieteLogic( MtlEinAusLogic ):
         """
         check = "%d-%02d-%02d" % (jahr, monatIdx+1, 1)
         sollmietedata = SollmieteData()
-        l:List[XSollMiete] = sollmietedata.getSollmieten( jahr )
+        l:List[XSollMiete] = sollmietedata.getSollMieten( jahr )
         retlist:List[XSollMiete] = list()
         for x in l:
             if datehelper.isWithin( check, x.von, x.bis ):
