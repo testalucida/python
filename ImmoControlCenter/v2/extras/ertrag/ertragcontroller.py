@@ -31,12 +31,13 @@ class ErtragController( IccController ):
         pass
 
     def showErtraege( self ):
-        v:BaseTableView = self.createView()
-        dlg = OkDialog( "Ertragsübersicht" )
-        dlg.addWidget( v, 0 )
-        dlg.setOkButtonText( "Schließen" )
-        dlg.resize( v.getPreferredWidth()+25, 800 )
-        self._dlg = dlg
+        if not self._dlg:
+            v:BaseTableView = self.createView()
+            dlg = OkDialog( "Ertragsübersicht" )
+            dlg.addWidget( v, 0 )
+            dlg.setOkButtonText( "Schließen" )
+            dlg.resize( v.getPreferredWidth()+25, 800 )
+            self._dlg = dlg
         # Dialog non-modal öffnen
         self._dlg.show()
 

@@ -10,9 +10,10 @@ class AnlageVController( IccController ):
     def __init__( self ):
         IccController.__init__( self )
         self._avTabs: AnlageVTabs = None
+        self._avDlg: AnlageVDialog = None
         self._vj = 0
 
-    def createGui( self ) -> AnlageVTabs:
+    def createGui( self ) -> AnlageVDialog:
         jahre = AnlageVLogic.getAvailableVeranlagungsjahre()
         vj = AnlageVLogic.getDefaultVeranlagungsjahr()
         self._avTabs = AnlageVTabs( vj )
@@ -25,11 +26,14 @@ class AnlageVController( IccController ):
             v.setModel( tm )
             v.year_changed.connect( self.onYearChanged )
             self._avTabs.addAnlageV( v )
-        self._avTabs.setPreferredSize()
-        return self._avTabs
+        self._avDlg = AnlageVDialog( self._avTabs )
+        self._avDlg.setPreferredSize()
+        return self._avDlg
 
     def showAnlagenV( self ):
-        self.createGui().show()
+        if not self._avDlg:
+            self.createGui()
+        self._avDlg.show()
 
     def onYearChanged( self, master_name:str, newYear:int ):
         print( master_name, newYear )
@@ -43,11 +47,8 @@ def test2():
     from PySide2.QtWidgets import QApplication
     app = QApplication()
     ctrl = AnlageVController()
-    avtabs = ctrl.createGui()
-    #avtabs.show()
-    dlg = AnlageVDialog( avtabs )
-    dlg.setPreferredSize()
-    dlg.show()
+    avdlg = ctrl.createGui()
+    avdlg.show()
     app.exec_()
 
 def test():

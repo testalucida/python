@@ -28,10 +28,11 @@ class ExtrasController( IccController ):
         return menu
 
     def onErtragsuebersicht( self ):
-        self._ertragCtrl = ErtragController()
+        if not self._ertragCtrl:
+            self._ertragCtrl = ErtragController()
         self._ertragCtrl.showErtraege()
 
     def onAnlagenV( self ):
         if not self._anlageVCtrl:
             self._anlageVCtrl = AnlageVController()
-            self._anlageVCtrl.showAnlagenV()
+        self._anlageVCtrl.showAnlagenV()
