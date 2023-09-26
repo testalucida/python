@@ -2,19 +2,20 @@ import datehelper
 from base.baseqtderivates import YearComboBox
 from v2.anlagev.anlagevlogic import AnlageVLogic
 from v2.anlagev.anlagevtablemodel import AnlageVTableModel, XAnlageV
-from v2.anlagev.anlagevview import AnlageVView, AnlageVTabs
+from v2.anlagev.anlagevview import AnlageVView, AnlageVTabs, AnlageVDialog
 from v2.icc.icccontroller import IccController
 
 
 class AnlageVController( IccController ):
     def __init__( self ):
         IccController.__init__( self )
-        self._avTabs = AnlageVTabs()
+        self._avTabs: AnlageVTabs = None
         self._vj = 0
 
     def createGui( self ) -> AnlageVTabs:
         jahre = AnlageVLogic.getAvailableVeranlagungsjahre()
         vj = AnlageVLogic.getDefaultVeranlagungsjahr()
+        self._avTabs = AnlageVTabs( vj )
         logic = AnlageVLogic( vj )
         self._vj = vj
         tmlist = logic.getAnlageVTableModels()
@@ -27,20 +28,26 @@ class AnlageVController( IccController ):
         self._avTabs.setPreferredSize()
         return self._avTabs
 
+    def showAnlagenV( self ):
+        self.createGui().show()
+
     def onYearChanged( self, master_name:str, newYear:int ):
         print( master_name, newYear )
         avview = self._avTabs.getAnlageVView( master_name )
         logic = AnlageVLogic( newYear )
         tm = logic.getAnlageVTableModel( master_name )
         avview.setModel( tm )
-        
+
 ##################################################
 def test2():
     from PySide2.QtWidgets import QApplication
     app = QApplication()
     ctrl = AnlageVController()
     avtabs = ctrl.createGui()
-    avtabs.show()
+    #avtabs.show()
+    dlg = AnlageVDialog( avtabs )
+    dlg.setPreferredSize()
+    dlg.show()
     app.exec_()
 
 def test():

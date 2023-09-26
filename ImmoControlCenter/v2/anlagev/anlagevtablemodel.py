@@ -126,6 +126,9 @@ class AnlageVTableModel( BaseTableModel ):
     def getMasterName( self ) -> str:
         return self._x.master_name
 
+    def getUeberschuss( self ) -> int:
+        return self._x.getUeberschuss()
+
     def rowCount( self, parent:QModelIndex=None ) -> int:
         return len( self._cells )
 

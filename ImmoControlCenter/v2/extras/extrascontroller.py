@@ -1,6 +1,7 @@
 from PySide2.QtWidgets import QMenu
 
 from base.baseqtderivates import BaseAction
+from v2.anlagev.anlagevcontroller import AnlageVController
 from v2.extras.ertrag.ertragcontroller import ErtragController
 from v2.icc.icccontroller import IccController
 
@@ -8,6 +9,8 @@ from v2.icc.icccontroller import IccController
 class ExtrasController( IccController ):
     def __init__( self ):
         IccController.__init__( self )
+        self._ertragCtrl = None
+        self._anlageVCtrl = None
 
     def getMenu( self ) -> QMenu or None:
         """
@@ -18,8 +21,17 @@ class ExtrasController( IccController ):
         action = BaseAction( "Ertragsübersicht...", parent=menu )
         action.triggered.connect( self.onErtragsuebersicht )
         menu.addAction( action )
+        menu.addSeparator()
+        action = BaseAction( "Anlagen V...", parent=menu )
+        action.triggered.connect( self.onAnlagenV )
+        menu.addAction( action )
         return menu
 
     def onErtragsuebersicht( self ):
-        ertrCtrl = ErtragController()
-        v = ertrCtrl.showErtraege()
+        self._ertragCtrl = ErtragController()
+        self._ertragCtrl.showErtraege()
+
+    def onAnlagenV( self ):
+        if not self._anlageVCtrl:
+            self._anlageVCtrl = AnlageVController()
+            self._anlageVCtrl.showAnlagenV()
