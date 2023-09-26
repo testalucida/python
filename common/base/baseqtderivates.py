@@ -111,7 +111,7 @@ class YearComboBox( BaseComboBox ):
         self.currentIndexChanged.connect(lambda: self.year_changed.emit( int(self.currentText() ) ) )
         self.setMaximumWidth( 100 )
 
-    def addYears( self, years:List[int] ):
+    def addYears( self, years:Iterable[int] ):
         syears = [str(y) for y in years]
         self.addItems( syears )
 

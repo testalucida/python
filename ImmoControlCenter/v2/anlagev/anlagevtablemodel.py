@@ -12,6 +12,7 @@ class XAnlageV( XBase ):
         XBase.__init__( self, valuedict )
         # Einnahmen
         self.vj = 0
+        self.master_name = ""
         self.anzahlMonate = 12
         self.bruttoMiete = 0 # nur Info
         self.nettoMiete = 0
@@ -33,7 +34,7 @@ class XAnlageV( XBase ):
         self.hgv_netto = 0  # nur bei ET-Wohnungen
         self.hga = 0 # Jahr vor Vj -- nur bei ET-Wohnungen
         self.divAllgHk = 0 # bei eig. Häusern: Str.reinigg., Niederschlagswasser, Wasser, Strom Gas, Schlotfeger...
-        self.reisen = 0
+        self.reisekosten = 0
         self.sonstige = 0
         if valuedict:
             self.setFromDict( valuedict )
@@ -57,7 +58,7 @@ class XAnlageV( XBase ):
         return self.grundsteuer + self.versicherungen + self.divAllgHk + self.hgv_netto + self.hga
 
     def getSummeSonstige( self ):
-        return self.reisen + self.sonstige
+        return self.reisekosten + self.sonstige
 
     def getSummeWerbungskosten( self ):
         return self.afa + self.getSummeErhaltungsaufwendungen() + self.getSummeAllgHauskosten() + self.getSummeSonstige()
@@ -72,9 +73,9 @@ class AnlageVTableModel( BaseTableModel ):
     darkGray = QBrush( Qt.darkGray )
     green = QBrush( QColor( "#76CB4C" ) )
     abschnittNameFont = QFont( "Arial", 12, QFont.Bold )
-    abschnittNameCells = ((0, 0), (8, 0), (34,0))
+    abschnittNameCells = ((0, 0), (9, 0), (35,0))
     summeFont = QFont( "Arial", 10, -1, True)
-    summenCells = ((6, 0), (32,0), (5, 1),  (13, 1), (26, 1), (30, 1))
+    summenCells = ((7, 0), (33,0), (6, 1),  (14, 1), (27, 1), (31, 1))
     colFormZeile = 4
     colFormEintrag = 5
 
@@ -83,7 +84,9 @@ class AnlageVTableModel( BaseTableModel ):
         self._x = x
         self._boldFont13 = QFont( "Arial", 13, QFont.Bold )
         self._cells = (
-            ("Einnahmen\n(%d Monate - brutto: %d)" % (x.anzahlMonate, x.bruttoMiete), ),
+            #("Einnahmen\n(%d Monate - brutto: %d)" % (x.anzahlMonate, x.bruttoMiete), ),
+            ("Einnahmen",),
+            ("", "Brutto-ME (%d Monate)" % x.anzahlMonate, "", x.bruttoMiete ),
             ("", "Netto-ME", "", "", 9, x.nettoMiete, "", "", ""),
             ( "", "Nebenkosten" ),
             ("", "", "NKV", x.nkv ),
@@ -111,7 +114,7 @@ class AnlageVTableModel( BaseTableModel ):
             ("", "", "HGA %d" % (x.vj - 1), x.hga),
             ("", "Summe Allg. Hauskosten", "", "", 47, x.getSummeAllgHauskosten()),
             ("",),
-            ("", "Sonstige Kosten", "Reisen", x.reisen),
+            ("", "Sonstige Kosten", "Reisen", x.reisekosten),
             ("", "", "Sonstige", x.sonstige),
             ("", "Summe Sonstige Kosten", "", "", 50, x.getSummeSonstige()),
             ("",),
@@ -119,6 +122,9 @@ class AnlageVTableModel( BaseTableModel ):
             ("",),
             ("Überschuss", "", "", "", 23, x.getUeberschuss()),
         )
+
+    def getMasterName( self ) -> str:
+        return self._x.master_name
 
     def rowCount( self, parent:QModelIndex=None ) -> int:
         return len( self._cells )

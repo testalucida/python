@@ -1,6 +1,6 @@
 from typing import List, Iterable
 
-from PySide2.QtCore import QSize
+from PySide2.QtCore import QSize, Signal
 from PySide2.QtWidgets import QWidget, QHBoxLayout, QTabWidget
 
 from base.baseqtderivates import BaseGridLayout, BaseLabel, YearComboBox
@@ -20,6 +20,7 @@ class AnlageVTableView( BaseTableView ):
 
 ################################################
 class AnlageVView( QWidget ):
+    year_changed = Signal(str, int)
     def __init__( self ):
         QWidget.__init__( self )
         self._layout = BaseGridLayout()
@@ -32,63 +33,65 @@ class AnlageVView( QWidget ):
 
     def _createGui( self ):
         self._layout.addWidget( self._yearCombo, 0, 0 )
-        self._layout.addWidget( self._tv, 1, 0 )
+        self._layout.addWidget( self._lblAdresse, 0, 1 )
+        self._layout.addWidget( self._tv, 1, 0, 1, 2 )
 
     def addAndSetVeranlagungsjahre( self, vjList:Iterable[int], currentVj:int ):
         self._yearCombo.addYears( vjList )
         self._yearCombo.setYear( currentVj )
 
-    def setModel( self, tm:AnlageVTableModel, title:str ):
+    def setModel( self, tm:AnlageVTableModel ):
+        try:
+            self._yearCombo.year_changed.disconnect( self.onYearChanged )
+        except:
+            pass
         self._tv.setModel( tm )
-        self.setWindowTitle( title )
+        self._lblAdresse.setValue( tm.getMasterName() )
+        self._yearCombo.year_changed.connect( self.onYearChanged )
+
+    def getMasterName( self ):
+        tm = self._tv.model()
+        if not tm:
+            return "model not set"
+        return tm.getMasterName()
 
     def setPreferredSize( self ):
-        w = self._tv.getPreferredWidth()
-        h = self._tv.getPreferredHeight() + 25
+        w = self.getPreferredWidth()
+        h = self.getPreferredHeight()
         self.resize( QSize(w,h) )
 
+    def getPreferredWidth( self ) -> int:
+        return self._tv.getPreferredWidth() + 25
+
+    def getPreferredHeight( self ) -> int:
+        return self._tv.getPreferredHeight() + 25
+
+    def onYearChanged( self, newYear:int ):
+        self.year_changed.emit( self._tv.model().getMasterName(), newYear )
+
 #################################################
-class AnlagenVTabs( QTabWidget ):
+class AnlageVTabs( QTabWidget ):
     def __init__( self ):
         QTabWidget.__init__( self )
+        self.setWindowTitle( "Anlagen V" )
 
     def addAnlageV( self, view:AnlageVView ):
-        self.addTab( view, view.windowTitle() )
+        self.addTab( view, view.getMasterName() )
 
-##################################################
-def test():
-    from PySide2.QtWidgets import QApplication
-    from v2.anlagev.anlagevlogic import AnlageVLogic
-    def createModel() -> AnlageVTableModel:
-        x = XAnlageV()
-        x.vj = 2022
-        x.bruttoMiete = 4904
-        x.nettoMiete = 3100
-        x.nkv = 1804
-        x.nka = -104
-        x.afa = -786
-        x.erhaltg_voll = -1234
-        x.verteil_aufwand_im_vj_angefallen = -6000
-        x.erhaltg_anteil_vj = -2000
-        x.erhaltg_anteil_vjminus1 = -3344
-        x.entnahme_rue = -5000
-        x.grundsteuer = -234
-        # x.divAllgHk = 1000
-        # x.versicherungen = 1000
-        x.hgv_netto = -2000
-        x.hga = 297
-        x.reisen = -260
-        x.sonstige = -111
-        tm = AnlageVTableModel( x )
-        return tm
-    app = QApplication()
-    v = AnlageVView()
-    v.addAndSetVeranlagungsjahre( (2023, 2022, 2021), 2022 )
-    log = AnlageVLogic( 2022 )
-    # tm = createModel()
-    master_name = "RI_Lampennester"
-    tm = log.getAnlageVTableModel( master_name )
-    v.setModel( tm, master_name )
-    v.setPreferredSize()
-    v.show()
-    app.exec_()
+    def setPreferredSize( self ):
+        w, h = 0, 0
+        for i in range( 0, self.count() ):
+            tab:AnlageVView = self.widget( i )
+            pw = tab.getPreferredWidth()
+            w = pw if pw > w else w
+            ph = tab.getPreferredHeight()
+            h = ph if ph > h else h
+        self.resize( QSize(w, h+50) )
+
+    def getAnlageVView( self, master_name:str ) -> AnlageVView:
+        for i in range( 0, self.count() ):
+            anlageV:AnlageVView = self.widget( i )
+            if anlageV.getMasterName() == master_name:
+                return anlageV
+        raise Exception( "AnlageVTabs.getAnlageVView():\nKeine Anlage für '%s' gefunden." % master_name )
+
