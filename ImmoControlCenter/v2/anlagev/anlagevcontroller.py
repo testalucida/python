@@ -47,8 +47,7 @@ def test2():
     from PySide2.QtWidgets import QApplication
     app = QApplication()
     ctrl = AnlageVController()
-    avdlg = ctrl.createGui()
-    avdlg.show()
+    ctrl.showAnlagenV()
     app.exec_()
 
 def test():

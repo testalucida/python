@@ -13,7 +13,7 @@ class XAnlageV( XBase ):
         # Einnahmen
         self.vj = 0
         self.master_name = ""
-        self.anzahlMonate = 12
+        self.anzahlMonate = 0
         self.bruttoMiete = 0 # nur Info
         self.nettoMiete = 0
         self.nkv = 0

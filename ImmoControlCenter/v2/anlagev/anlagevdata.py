@@ -57,7 +57,7 @@ class AnlageVData( IccData ):
         tpllist = self.read( sql )
         dic = {}
         for tpl in tpllist:
-            dic[tpl[0]] = tpl[1]
+            dic[tpl[0]] = int( round( tpl[1], 0 ) )
         return dic
 
     def getReisekosten( self, master_name:str, year:int ) -> int:

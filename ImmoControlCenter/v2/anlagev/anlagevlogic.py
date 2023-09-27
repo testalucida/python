@@ -70,6 +70,7 @@ class AnlageVLogic:
         x.entnahme_rue = self._avdata.getEntnahmeRuecklagen( master_name, self._vj )
         # zu verteilende Erhaltungsaufwände:
         self.provideVerteilteAufwaende( master_name, x )
+        self.provideAllgemeineHauskosten( master_name, x )
         x.reisekosten = self._avdata.getReisekosten( master_name, self._vj )
         x.sonstige = self._avdata.getSonstigeKostenOhneReisekosten( master_name, self._vj )
 
@@ -80,7 +81,9 @@ class AnlageVLogic:
             bruttoMiete, anzahlMonate = self.getJahresBruttomiete( mobj.mobj_id ) # tatsächlich eingegangene Bruttomiete
             x.bruttoMiete += bruttoMiete
             x.anzahlMonate += anzahlMonate
-            nettoMiete, nkv = self.getJahresSollNettoMieteUndNkv( mobj.mobj_id ) # wird aus den Soll-Mieten errechnet
+            nkv = self.getJahresSollNkv( mobj.mobj_id )
+            nettoMiete = x.bruttoMiete - nkv
+            #nettoMiete, nkv = self.getJahresSollNettoMieteUndNkv( mobj.mobj_id ) # wird aus den Soll-Mieten errechnet
             x.nettoMiete += nettoMiete
             x.nkv += nkv
             nka = self.getNka( mobj.mobj_id )
@@ -129,7 +132,6 @@ class AnlageVLogic:
                 xav.erhaltg_anteil_vjminus3 += aufwAnteilig
             elif diff == 4:
                 xav.erhaltg_anteil_vjminus4 += aufwAnteilig
-            self.provideAllgemeineHauskosten( master_name, xav )
 
     def provideAllgemeineHauskosten( self, master_name:str, xav:XAnlageV ):
         dic = self._avdata.getGrundsteuerVersicherungenDivAllg( master_name, self._vj )
@@ -145,7 +147,15 @@ class AnlageVLogic:
         summe = 0
         for xea in xealist:
             summe += xea.betrag
-        return summe, monate
+        return int( round( summe, 0) ), monate
+
+    def getJahresSollNkv( self, mobj_id:str ) -> int:
+        smlist:List[XSollMiete] = [sm for sm in self._sollmieten if sm.mobj_id == mobj_id]
+        summeNkv = 0
+        for sm in smlist:
+            months = datehelper.getNumberOfMonths( sm.von, sm.bis, self._vj )
+            summeNkv += months * sm.nkv
+        return int( round( summeNkv, 0 ) )
 
     def getJahresSollNettoMieteUndNkv( self, mobj_id:str ) -> (int, int):
         smlist:List[XSollMiete] = [sm for sm in self._sollmieten if sm.mobj_id == mobj_id]
@@ -155,7 +165,7 @@ class AnlageVLogic:
             months = datehelper.getNumberOfMonths( sm.von, sm.bis, self._vj )
             summeNetto += months * sm.netto
             summeNkv += months * sm.nkv
-        return summeNetto, summeNkv
+        return int( round( summeNetto, 0 ) ), int( round( summeNkv, 0 ) )
 
     def getNka( self, mobj_id:str ) -> int:
         """
@@ -164,12 +174,18 @@ class AnlageVLogic:
         :param mobj_id:
         :return:
         """
-        year = self._vj - 1
+        ##year = self._vj - 1
         nkaList:List[XEinAus] = \
-            self._eadata.getEinAusZahlungen( EinAusArt.NEBENKOSTEN_ABRECHNG.display, year, "and mobj_id = '%s' "
+            self._eadata.getEinAusZahlungen( EinAusArt.NEBENKOSTEN_ABRECHNG.display, self._vj, "and mobj_id = '%s' "
             % mobj_id )
-        nka = sum([xea.betrag for xea in nkaList])
+        nka = int( round( sum([xea.betrag for xea in nkaList]), 0 ) )
         return nka
+
+    def getBruttoHausgeld( self, mobj_id:str ) -> int:
+        ealist:List[XEinAus] = self._eadata.getEinAusZahlungen( EinAusArt.HAUSGELD_VORAUS.display, self._vj, "and mobj_id = '%s' "
+                                                  % mobj_id)
+        brutto = int( round( sum( [x.betrag for x in ealist] ) ) )
+        return brutto
 
     def getJahresSollNettoHausgeld( self, mobj_id: str ) -> int:
         """
@@ -178,12 +194,14 @@ class AnlageVLogic:
         :param mobj_id:
         :return:
         """
+        brutto = self.getBruttoHausgeld( mobj_id )
         shgvlist:List[XSollHausgeld] = [shgv for shgv in self._sollhausgelder if shgv.mobj_id == mobj_id]
-        summeNetto = 0
+        summeRueZuFue = 0
         for shgv in shgvlist:
             months = datehelper.getNumberOfMonths( shgv.von, shgv.bis, self._vj )
-            summeNetto += months * shgv.netto
-        return summeNetto
+            summeRueZuFue += months * shgv.ruezufue
+        netto = brutto - int( round(summeRueZuFue, 0 ) )
+        return netto
 
     def getHga( self, mobj_id:str ) -> int:
         """
@@ -192,15 +210,15 @@ class AnlageVLogic:
         :param mobj_id:
         :return:
         """
-        year = self._vj - 1
+        #year = self._vj - 1
         hgaList:List[XEinAus] = \
-            self._eadata.getEinAusZahlungen( EinAusArt.HAUSGELD_ABRECHNG.display, year, "and mobj_id = '%s' "
+            self._eadata.getEinAusZahlungen( EinAusArt.HAUSGELD_ABRECHNG.display, self._vj, "and mobj_id = '%s' "
             % mobj_id )
-        hga = sum([xea.betrag for xea in hgaList])
+        hga = int( round( sum([xea.betrag for xea in hgaList]), 0 ) )
         return hga
 
 ################################################################################
 def test():
     log = AnlageVLogic( 2022 )
-    tm:AnlageVTableModel = log.getAnlageVTableModel( "RI_Lampennest" )
+    tm:AnlageVTableModel = log.getAnlageVTableModel( "HOM_Remigius" )
     print( tm )
