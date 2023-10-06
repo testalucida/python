@@ -112,8 +112,8 @@ def main():
     if not runningInDev():
         if not login(): exit( 4 )
         # release version running
-        terminate_if_running()  # one instance only
-        createControlFile()  # flag file showing application is running
+        #terminate_if_running()  # one instance only
+        #createControlFile()  # flag file showing application is running
         env = "RELEASE"
     # Die one-and-only-Instanz des EinAusWriteDispatchers erzeugen:
     EinAusWriteDispatcher()

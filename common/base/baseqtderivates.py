@@ -25,7 +25,8 @@ from iconfactory import IconFactoryS
 
 
 class BaseAction( QAction ):
-    def __init__( self, text:str="", tooltip:str="", ident:Any=None, icon:QIcon=None, parent=None, userdata:Any=None ):
+    def __init__( self, text:str="", tooltip:str="", ident:Any=None, icon:QIcon=None, parent=None, userdata:Any=None,
+                  callback:Callable=None):
         QAction.__init__( self )
         if icon: self.setIcon( icon )
         self.setText( text )
@@ -33,7 +34,7 @@ class BaseAction( QAction ):
         self.setParent( parent )
         self.ident = ident
         self.userdata = userdata
-        #self.callback = callback
+        self.callback = callback
 
 class Separator( QAction ):
     def __init__( self ):

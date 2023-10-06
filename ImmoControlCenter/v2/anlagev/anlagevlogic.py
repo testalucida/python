@@ -1,9 +1,11 @@
 from typing import List, Dict
 
 import datehelper
+from base.basetablemodel import SumTableModel
 from v2.anlagev.anlagevdata import AnlageVData
 from v2.anlagev.anlagevtablemodel import AnlageVTableModel, XAnlageV
 from v2.einaus.einausdata import EinAusData
+from v2.extras.ertrag.ertraglogic import ErtragLogic
 from v2.icc.constants import EinAusArt
 from v2.icc.interfaces import XMasterobjekt, XMietobjekt, XEinAus, XSollMiete, XNKAbrechnung, XSollHausgeld
 from v2.sollhausgeld.sollhausgelddata import SollHausgeldData
@@ -82,7 +84,7 @@ class AnlageVLogic:
             x.bruttoMiete += bruttoMiete
             x.anzahlMonate += anzahlMonate
             nkv = self.getJahresSollNkv( mobj.mobj_id )
-            nettoMiete = x.bruttoMiete - nkv
+            nettoMiete = bruttoMiete - nkv
             #nettoMiete, nkv = self.getJahresSollNettoMieteUndNkv( mobj.mobj_id ) # wird aus den Soll-Mieten errechnet
             x.nettoMiete += nettoMiete
             x.nkv += nkv
@@ -98,7 +100,7 @@ class AnlageVLogic:
 
     def provideVerteilteAufwaende( self, master_name:str, xav:XAnlageV ):
         """
-        # Versorgt xav mit *allen* zu verteilenden Aufwände.
+        # Versorgt xav mit *allen* zu verteilenden Aufwänden.
         # Das sind sowohl die, die aus Vj stammen, als auch die, die aus den Vj-Vorjahren kommen.
         :param master_name:
         :param xav:
@@ -157,15 +159,15 @@ class AnlageVLogic:
             summeNkv += months * sm.nkv
         return int( round( summeNkv, 0 ) )
 
-    def getJahresSollNettoMieteUndNkv( self, mobj_id:str ) -> (int, int):
-        smlist:List[XSollMiete] = [sm for sm in self._sollmieten if sm.mobj_id == mobj_id]
-        summeNetto = 0
-        summeNkv = 0
-        for sm in smlist:
-            months = datehelper.getNumberOfMonths( sm.von, sm.bis, self._vj )
-            summeNetto += months * sm.netto
-            summeNkv += months * sm.nkv
-        return int( round( summeNetto, 0 ) ), int( round( summeNkv, 0 ) )
+    # def getJahresSollNettoMieteUndNkv( self, mobj_id:str ) -> (int, int):
+    #     smlist:List[XSollMiete] = [sm for sm in self._sollmieten if sm.mobj_id == mobj_id]
+    #     summeNetto = 0
+    #     summeNkv = 0
+    #     for sm in smlist:
+    #         months = datehelper.getNumberOfMonths( sm.von, sm.bis, self._vj )
+    #         summeNetto += months * sm.netto
+    #         summeNkv += months * sm.nkv
+    #     return int( round( summeNetto, 0 ) ), int( round( summeNkv, 0 ) )
 
     def getNka( self, mobj_id:str ) -> int:
         """
@@ -217,8 +219,65 @@ class AnlageVLogic:
         hga = int( round( sum([xea.betrag for xea in hgaList]), 0 ) )
         return hga
 
+    def getReparaturenEinzeln( self, master_name:str ) -> SumTableModel or None:
+        ealist:List[XEinAus] = self._eadata.getEinAusZahlungen( EinAusArt.REPARATUR.display, self._vj,
+                                                                "and master_name = '%s' " % master_name )
+        ealist = [ea for ea in ealist if ea.verteilt_auf == 1]
+        if len( ealist ) == 0:
+            return None
+        tm = SumTableModel(ealist, self._vj, ("betrag",))
+        tm.setKeyHeaderMappings2( ("mobj_id", "debi_kredi", "leistung", "buchungsdatum", "buchungstext", "betrag"),
+                                  ("Objekt", "Kreditor", "Leistung", "Datum", "Reparatur", "Betrag") )
+        return tm
+
+    def getAllgemeineHauskostenEinzeln( self, master_name:str ) -> SumTableModel or None:
+        """
+        Liefert
+            - Grundsteuerzahlungen
+            - Versicherungszahlungen
+            - Strom, Wasser, Öl, etc. (EinAusArt "allg")
+            - HGV-Zahlungen
+            - HGA-Zahlung von Vj - 1, entrichtet in Vj
+        :param master_name:
+        :return:  SumTableModel
+        """
+        gslist: List[XEinAus] = self._eadata.getEinAusZahlungen( EinAusArt.GRUNDSTEUER.display, self._vj,
+                                                                 "and master_name = '%s' " % master_name )
+        verslist: List[XEinAus] = self._eadata.getEinAusZahlungen( EinAusArt.VERSICHERUNG.display, self._vj,
+                                                                 "and master_name = '%s' " % master_name )
+        allglist: List[XEinAus] = self._eadata.getEinAusZahlungen( EinAusArt.ALLGEMEINE_KOSTEN.display, self._vj,
+                                                                   "and master_name = '%s' " % master_name )
+        hgvlist = self._getHgvListOhneRueZuFue( master_name )
+        hgalist: List[XEinAus] = self._eadata.getEinAusZahlungen( EinAusArt.HAUSGELD_ABRECHNG.display, self._vj,
+                                                                      "and master_name = '%s' " % master_name )
+        geslist = gslist + verslist + allglist + hgvlist + hgalist
+        tm = SumTableModel( geslist, self._vj, ("betrag",) )
+        tm.setKeyHeaderMappings2( ("master_name", "debi_kredi", "leistung", "ea_art", "buchungsdatum", "buchungstext", "betrag"),
+                                  ("Haus",  "Kreditor",   "Leistung", "Art",    "Datum",         "Buchungstext", "Betrag") )
+        return tm
+
+    def _getHgvListOhneRueZuFue( self, master_name:str ) -> List[XEinAus]:
+        # Bruttozahlungen ermitteln:
+        hgvlist: List[XEinAus] = self._eadata.getEinAusZahlungen( EinAusArt.HAUSGELD_VORAUS.display, self._vj,
+                                                                  "and master_name = '%s' " % master_name )
+        # Anhand der Soll-Zahlungen die Netto-Zahlungen ohne RüZuFü ermitteln:
+        mobj_list: List[XMietobjekt] = self._avdata.getMietobjekte( master_name )
+        nettoHg = 0
+        for mobj in mobj_list:
+            nettoHg += self.getJahresSollNettoHausgeld( mobj.mobj_id )
+        bruttoHg = sum( [hga.betrag for hga in hgvlist] )
+        ruezufue = bruttoHg - nettoHg
+        # künstlichen Satz für die Rücklagenzuführung erzeugen
+        xea = XEinAus()
+        xea.master_name = master_name
+        xea.ea_art = "Summe RüZuFü über alle Monate"
+        xea.betrag = ruezufue * -1
+        # ...und der HGV-Liste hinzufügen
+        hgvlist.append( xea )
+        return hgvlist
+
 ################################################################################
 def test():
     log = AnlageVLogic( 2022 )
-    tm:AnlageVTableModel = log.getAnlageVTableModel( "HOM_Remigius" )
+    tm:AnlageVTableModel = log.getAnlageVTableModel( "NK_Kleist" )
     print( tm )

@@ -613,6 +613,8 @@ class SumTableModel( BaseTableModel ):
     """
     def __init__( self, objectList:List[XBase], jahr:int, colsToSum:Iterable[str] ):
         BaseTableModel.__init__( self, objectList, jahr )
+        if not objectList or len(objectList) == 0:
+            raise Exception( "SumTableModel: Construction needs an objectList with at least one element." )
         self._colsToSum = colsToSum # Liste mit den keys (Attributnamen des XBase-Objekts) der Spalten,
                                     # die summiert werden sollen
         self._summen:List[Dict] = list() # enthält die Summen,
@@ -663,7 +665,8 @@ class SumTableModel( BaseTableModel ):
 
 ################################################################
 
-
+def test2():
+    tm = SumTableModel
 
 def test():
     class X(XBase):

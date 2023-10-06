@@ -28,10 +28,11 @@ class AnlageVData( IccData ):
         """
         Ermittelt aus Tabelle <einaus> alle Sätze für master_name, wo ea_art == "rep" und verteilt_auf > 1
         :param master_name:
-        :return: eine Liste von Dictionaries mit den keys jahr, betrag, verteilt_auf
+        :return: eine Liste von Dictionaries mit den keys
+                        jahr, betrag, verteilt_auf, mobj_id, debi_kredi, leistung, buchungsdatum, buchungstext
         """
         ea_art = EinAusArt.REPARATUR.dbvalue
-        sql = "select jahr, betrag, verteilt_auf " \
+        sql = "select jahr, betrag, verteilt_auf, mobj_id, debi_kredi, leistung, buchungsdatum, buchungstext " \
               "from einaus " \
               "where master_name = '%s' " \
               "and ea_art = '%s' " \

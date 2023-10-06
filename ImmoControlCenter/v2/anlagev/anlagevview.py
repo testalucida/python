@@ -1,9 +1,9 @@
 from typing import List, Iterable
 
-from PySide2.QtCore import QSize, Signal
-from PySide2.QtWidgets import QWidget, QHBoxLayout, QTabWidget
+from PySide2.QtCore import QSize, Signal, QModelIndex, QPoint
+from PySide2.QtWidgets import QWidget, QHBoxLayout, QTabWidget, QMenu
 
-from base.baseqtderivates import BaseGridLayout, BaseLabel, YearComboBox, BaseToolBar, BaseButton
+from base.baseqtderivates import BaseGridLayout, BaseLabel, YearComboBox, BaseToolBar, BaseButton, BaseAction
 from base.basetableview import BaseTableView
 from generictable_stuff.okcanceldialog import OkDialog
 from v2.anlagev.anlagevtablemodel import AnlageVTableModel, XAnlageV
@@ -12,7 +12,6 @@ from v2.anlagev.anlagevtablemodel import AnlageVTableModel, XAnlageV
 class AnlageVTableView( BaseTableView ):
     def __init__( self ):
         BaseTableView.__init__( self )
-        #self.horizontalHeader().hide()
 
     def setModel( self, tm:AnlageVTableModel ):
         super().setModel( tm, selectRows=True, singleSelection=False )
@@ -40,6 +39,12 @@ class AnlageVView( QWidget ):
     def addAndSetVeranlagungsjahre( self, vjList:Iterable[int], currentVj:int ):
         self._yearCombo.addYears( vjList )
         self._yearCombo.setYear( currentVj )
+
+    def getAnlageVTableView( self ) -> AnlageVTableView:
+        return self._tv
+
+    def getAnlageVTableModel( self ) -> AnlageVTableModel:
+        return self.getAnlageVTableView().model()
 
     def setModel( self, tm:AnlageVTableModel ):
         try:
@@ -77,7 +82,8 @@ class AnlageVView( QWidget ):
 class AnlageVTabs( QTabWidget ):
     def __init__( self, vj:int ):
         QTabWidget.__init__( self )
-        self._vj = vj
+        self._vj = vj  # wird nur benötigt für die Überschrift "Summe der Überschüsse im Vj 2022".
+                        # Dieses Jahr hat nichts zu tun mit den aktuell eingestellten Jahren der einzelnen Tabs
         self._summeUeberschuesse = 0
         self.setWindowTitle( "Anlagen V" )
 
@@ -107,6 +113,9 @@ class AnlageVTabs( QTabWidget ):
 
     def getVj( self ) -> int:
         return self._vj
+
+    def getCurrentAnlageVView( self ) -> AnlageVView:
+        return self.currentWidget()
 
     def getSummeUeberschuesse( self ):
         return self._summeUeberschuesse
