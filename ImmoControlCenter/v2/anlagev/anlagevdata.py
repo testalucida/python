@@ -2,6 +2,7 @@ from typing import List, Dict
 
 from v2.icc.constants import EinAusArt
 from v2.icc.iccdata import IccData
+from v2.icc.interfaces import XEinAus
 
 
 class AnlageVData( IccData ):
@@ -24,12 +25,14 @@ class AnlageVData( IccData ):
             return int( round( tuplelist[0][0], 0 ) )
         return 0
 
-    def getVerteilteAufwaende( self, master_name ) -> List[Dict]:
+    # def getVerteilteAufwaende( self, master_name ) -> List[Dict]:
+    def getVerteilteAufwaende( self, master_name ) -> List[XEinAus]:
         """
         Ermittelt aus Tabelle <einaus> alle Sätze für master_name, wo ea_art == "rep" und verteilt_auf > 1
         :param master_name:
-        :return: eine Liste von Dictionaries mit den keys
-                        jahr, betrag, verteilt_auf, mobj_id, debi_kredi, leistung, buchungsdatum, buchungstext
+        # :return: eine Liste von Dictionaries mit den keys
+        #                 jahr, betrag, verteilt_auf, mobj_id, debi_kredi, leistung, buchungsdatum, buchungstext
+        :return: eine Liste von XEinAus-Objekten
         """
         ea_art = EinAusArt.REPARATUR.dbvalue
         sql = "select jahr, betrag, verteilt_auf, mobj_id, debi_kredi, leistung, buchungsdatum, buchungstext " \
@@ -38,8 +41,9 @@ class AnlageVData( IccData ):
               "and ea_art = '%s' " \
               "and verteilt_auf > 1 " \
               "order by jahr desc" % (master_name, ea_art)
-        dictlist = self.readAllGetDict( sql )
-        return dictlist
+        # dictlist = self.readAllGetDict( sql )
+        objlist = self.readAllGetObjectList( sql, XEinAus )
+        return objlist
 
     def getGrundsteuerVersicherungenDivAllg( self, master_name, year:int ) -> Dict:
         """

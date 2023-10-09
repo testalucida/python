@@ -6,8 +6,10 @@ from v2.anlagev.anlagevdata import AnlageVData
 from v2.anlagev.anlagevtablemodel import AnlageVTableModel, XAnlageV
 from v2.einaus.einausdata import EinAusData
 from v2.extras.ertrag.ertraglogic import ErtragLogic
+from v2.geschaeftsreise.geschaeftsreiselogic import GeschaeftsreiseLogic
 from v2.icc.constants import EinAusArt
-from v2.icc.interfaces import XMasterobjekt, XMietobjekt, XEinAus, XSollMiete, XNKAbrechnung, XSollHausgeld
+from v2.icc.interfaces import XMasterobjekt, XMietobjekt, XEinAus, XSollMiete, XNKAbrechnung, XSollHausgeld, \
+    XGeschaeftsreise
 from v2.sollhausgeld.sollhausgelddata import SollHausgeldData
 from v2.sollmiete.sollmietedata import SollmieteData
 
@@ -106,16 +108,19 @@ class AnlageVLogic:
         :param xav:
         :return:
         """
-        vertAufwDictList: List[Dict] = self._avdata.getVerteilteAufwaende( master_name )
+        #vertAufwDictList: List[Dict] = self._avdata.getVerteilteAufwaende( master_name )
+        vertAufwaende: List[XEinAus] = self._avdata.getVerteilteAufwaende( master_name )
         # Achtung:
         # da sind auch Aufwände dabei,
         #    - die aus einem Jahr > Vj stammen, die erst nächstes Vj berücksichtigt werden dürfen
         #    - die aus einem ganz alten Jahr stammen, die nicht mehr berücksichtigt werden dürfen
+        if not vertAufwaende or len( vertAufwaende ) < 1:
+            return
         gesamtaufwand_in_vj = 0
-        for aufw in vertAufwDictList:
-            aufwJahr = aufw["jahr"]
-            aufwBetrag = aufw["betrag"]
-            aufwVerteiltAuf = aufw["verteilt_auf"]
+        for aufw in vertAufwaende:
+            aufwJahr = aufw.jahr
+            aufwBetrag = aufw.betrag
+            aufwVerteiltAuf = aufw.verteilt_auf
             aufwAnteilig = int(round(aufwBetrag/aufwVerteiltAuf, 0))
             diff = self._vj - aufwJahr
             if diff < 0:
@@ -275,6 +280,74 @@ class AnlageVLogic:
         # ...und der HGV-Liste hinzufügen
         hgvlist.append( xea )
         return hgvlist
+
+    def getSonstigeEinzeln( self, master_name:str ) -> SumTableModel or None:
+        """
+        Liefert für <master_name> die Sonstigen Kosten, getrennt nach Dienstreisen und
+        übrigen Sonstigen Kosten.
+        :param master_name:
+        :return:
+        """
+        # first Reisekosten
+        reise_ealist = self._getReisekostenEinzeln( master_name )
+        # second Übrige
+        sonst_ealist = self._eadata.getEinAusZahlungen( EinAusArt.SONSTIGE_KOSTEN.display, self._vj,
+                                                        "and master_name = '%s' and (reise_id is NULL or reise_id = 0)"
+                                                        % master_name )
+        ealist = list()
+        if reise_ealist:
+            ealist += reise_ealist
+        if sonst_ealist:
+            ealist += sonst_ealist
+        if len( ealist ) > 0:
+            stm = SumTableModel( ealist, self._vj, ["betrag",] )
+            stm.setKeyHeaderMappings2(
+                ("debi_kredi", "leistung", "reise_id", "buchungsdatum", "buchungstext", "betrag"),
+                ("Kreditor", "Leistung", "Reise-ID", "gebucht", "Buchungstext", "Betrag") )
+            return stm
+        return None
+
+    def _getReisekostenEinzeln( self, master_name:str ) -> List[XEinAus]:
+        reiselogic = GeschaeftsreiseLogic()
+        reisen:List[XGeschaeftsreise] = reiselogic.getGeschaeftsreisen( master_name, self._vj )
+        ea_reisen:List[XEinAus] = self._eadata.getEinAusZahlungen( EinAusArt.SONSTIGE_KOSTEN.display,
+                                                                   self._vj,
+                                                                   "and master_name = '%s' and reise_id > 0 " % master_name )
+        ealist:List[XEinAus] = list()
+        for reise in reisen:
+            for ea in ea_reisen:
+                if reise.reise_id == ea.reise_id:
+                    ea.buchungstext = reise.zweck + "\nÜbernachtung: " + reise.uebernachtung + \
+                                      "\nvon: " + reise.von + " bis: " + reise.bis
+                    ealist.append( ea )
+                    break
+        return ealist
+
+    def getVerteilteAufwaendeEinzeln( self, master_name: str ) -> SumTableModel or None:
+        """
+        # Liefert die einzelnen verteilten Aufwände.
+        # Das sind sowohl die, die aus Vj stammen, als auch die, die aus den Vj-Vorjahren kommen.
+        :param master_name:
+        :return:
+        """
+        vertAufwaende: List[XEinAus] = self._avdata.getVerteilteAufwaende( master_name )
+        # Achtung:
+        # da sind auch Aufwände dabei,
+        #    - die aus einem Jahr > Vj stammen, die erst nächstes Vj berücksichtigt werden dürfen
+        #    - die aus einem ganz alten Jahr stammen, die nicht mehr berücksichtigt werden dürfen
+        if vertAufwaende and len( vertAufwaende ) > 0:
+            ealist = [ea for ea in vertAufwaende if ea.jahr < self._vj <= ea.jahr + 4]
+            if ealist and len( ealist ) > 0:
+                # den anteiligen Jahresbetrag ausrechnen und XEinAus-Objekte vergewaltigen:
+                for ea in ealist:
+                    ea.__dict__["anteilig"] = int( round( ea.betrag / ea.verteilt_auf, 0 ) )
+                stm = SumTableModel( ealist, self._vj, ["betrag", "anteilig"] )
+                stm.setKeyHeaderMappings2(
+                    ("mobj_id", "debi_kredi", "leistung", "jahr", "verteilt_auf", "buchungsdatum", "buchungstext", "betrag", "anteilig"),
+                    ("Wohnung", "Kreditor", "Leistung", "Jahr", "vert.\nauf", "Datum", "Buchungstext", "Betrag", "anteilig") )
+                return stm
+        return None
+
 
 ################################################################################
 def test():

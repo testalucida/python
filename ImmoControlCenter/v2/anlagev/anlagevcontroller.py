@@ -3,7 +3,7 @@ from typing import List
 from PySide2.QtCore import QModelIndex, QPoint
 
 import datehelper
-from base.baseqtderivates import YearComboBox, BaseAction, BaseDialogWithButtons, getCloseButtonDefinition
+from base.baseqtderivates import YearComboBox, BaseAction, BaseDialogWithButtons, getCloseButtonDefinition, Separator
 from base.basetablemodel import SumTableModel
 from base.basetableview import BaseTableView
 from base.basetableviewframe import BaseTableViewFrame
@@ -60,8 +60,10 @@ class AnlageVController( IccController ):
         actionlist.append( action )
         action = BaseAction( "Erhaltungsaufwendungen, zu verteilen...", callback=self.onVerteilteAufwaende )
         actionlist.append( action )
+        actionlist.append( Separator() )
         action = BaseAction( "Allgemeine Hauskosten...", callback=self.onAllgemeineAufwaende )
         actionlist.append( action )
+        actionlist.append( Separator() )
         action = BaseAction( "Sonstige Kosten...", callback=self.onSonstigeDetail )
         actionlist.append( action )
         return actionlist
@@ -81,7 +83,12 @@ class AnlageVController( IccController ):
         self._showDetailsView( tm, "Voll abziehbare Kosten im Jahr %d für Masterobjekt '%s'" % (self._vj, master_name) )
 
     def onVerteilteAufwaende( self, tm:AnlageVTableModel, master_name:str  ):
-        print( "onVerteilte" )
+        tm:SumTableModel = self._avlogic.getVerteilteAufwaendeEinzeln( master_name )
+        if not tm:
+            self._showNoData( master_name, "Erhaltungsaufwand, zu verteilen" )
+            return
+        self._showDetailsView( tm, "Verteilte Erhaltungsaufwände im Jahr %d für Masterobjekt '%s'"
+                               % (self._vj, master_name) )
 
     def onAllgemeineAufwaende( self, tm:AnlageVTableModel, master_name:str  ):
         tm:SumTableModel = self._avlogic.getAllgemeineHauskostenEinzeln( master_name )
@@ -91,7 +98,11 @@ class AnlageVController( IccController ):
         self._showDetailsView( tm, "Allgemeine Hauskosten im Jahr %d für Masterobjekt '%s'" % (self._vj, master_name) )
 
     def onSonstigeDetail( self, tm:AnlageVTableModel, master_name:str  ):
-        print( "onSonstigeDetail")
+        tm:SumTableModel = self._avlogic.getSonstigeEinzeln( master_name )
+        if not tm:
+            self._showNoData( master_name, "Sonstige Kosten" )
+            return
+        self._showDetailsView( tm, "Sonstige Kosten im Jahr %d für Masterobjekt '%s'" % (self._vj, master_name) )
 
     def getCurrentAnlageVTableModel( self ) -> AnlageVTableModel:
         avView = self._avTabs.getCurrentAnlageVView()
@@ -103,10 +114,11 @@ class AnlageVController( IccController ):
                        % (unterabschnitt, self._vj) )
         box.exec_()
 
-    def _showDetailsView( self, tm:SumTableModel, title:str ):
+    @staticmethod
+    def _showDetailsView( tm:SumTableModel, title:str ):
         def onClose():
             dlg.accept()
-        def onExport( self, tm: SumTableModel ):
+        def onExport( tm: SumTableModel ):
             from base.exporthandler import ExportHandler
             handler = ExportHandler()
             handler.exportToCsv( tm )
@@ -117,7 +129,7 @@ class AnlageVController( IccController ):
         tb.addExportAction( "Tabelle nach Calc exportieren", lambda: onExport( tm ) )
         dlg = BaseDialogWithButtons( title, getCloseButtonDefinition( onClose ) )
         dlg.setMainWidget( tvframe )
-        dlg.resize( detail_tv.getPreferredWidth() + 25, detail_tv.getPreferredHeight() + 50 )
+        dlg.resize( detail_tv.getPreferredWidth() + 25, detail_tv.getPreferredHeight() + 90 )
         dlg.show()
 
 ##################################################
