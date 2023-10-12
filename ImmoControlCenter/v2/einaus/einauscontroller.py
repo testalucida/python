@@ -1,7 +1,7 @@
 from typing import List
 
-from PySide2.QtCore import Qt, QSize, Slot
-from PySide2.QtWidgets import QAction, QDialog, QMenu, QMessageBox
+from PySide2.QtCore import Qt, QSize, Slot, Signal
+from PySide2.QtWidgets import QAction, QMenu, QMessageBox
 
 from base.baseqtderivates import BaseAction, Separator, YearComboBox, BaseIconButton
 from base.basetablefunctions import BaseTableFunctions
@@ -15,11 +15,12 @@ from v2.einaus.einauslogic import EinAusLogic, EinAusTableModel
 from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
 from v2.icc.constants import EinAusArt, Action
 from v2.icc.icccontroller import IccController
-from v2.icc.interfaces import XEinAus, XMasterobjekt, XMietobjekt, XKreditorLeistung, XLeistung
+from v2.icc.interfaces import XEinAus
 from v2.sammelabgabe.sammelabgabecontroller import SammelabgabeController
 
 # ##############  EinAusController  ####################
 class EinAusController( IccController ):
+    year_changed = Signal( int ) # arg = new year
     def __init__( self ):
         IccController.__init__( self )
         self._tv: FilterTableWidget = FilterTableWidget()
@@ -196,6 +197,7 @@ class EinAusController( IccController ):
         tm = self._logic.getZahlungenModel( self._jahr )
         tv = self._tv
         tv.setModel( tm, selectRows=True, singleSelection=False )
+        self.year_changed.emit( newYear )
         #tv.resizeRowsAndColumns()
 
     def provideActions( self, index, point, selectedIndexes ) -> List[QAction]:

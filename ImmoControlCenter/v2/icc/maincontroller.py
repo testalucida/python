@@ -53,6 +53,7 @@ class MainController( IccController ):
         EinAusWriteDispatcher.inst().ea_updated.connect( self.onEinAusUpdated )
         EinAusWriteDispatcher.inst().ea_deleted.connect( self.onEinAusDeleted )
 
+        self._einausCtrl.year_changed.connect( self.onYearChanged )
         self._mieteCtrl.show_objekt.connect( self._mietObjektCtrl.onShowObjekt )
         self._mieteCtrl.show_mietverhaeltnis.connect( self._mvCtrl.onMietverhaeltnisShow )
         self._mieteCtrl.kuendige_mietverhaeltnis.connect( self._mvCtrl.onMietverhaeltnisKuendigen )
@@ -61,6 +62,10 @@ class MainController( IccController ):
         self._hausgeldCtrl.show_hgaAndRueZuFue.connect( self.onShowHgaAndRueZuFue )
         # self._sollHausgeldCtrl = SollHausgeldController()
         # self._sollMieteCtrl = SollMieteController()
+
+    @Slot( int )
+    def onYearChanged( self, newyear:int ):
+        self._provideSummen( newyear )
 
     @Slot( str, int, int )
     def onShowNettomieteAndNkv( self, mv_id:str, year:int, monthNumber:int ):
@@ -102,10 +107,6 @@ class MainController( IccController ):
         if menu:
             self._win.addMenu( menu )
 
-        # menu = self._sollHausgeldCtrl.getMenu()
-        # if menu:
-        #     self._win.addMenu( menu )
-
         menu = self._mvCtrl.getMenu()
         if menu:
             self._win.addMenu( menu )
@@ -145,20 +146,16 @@ class MainController( IccController ):
         tvf: IccCheckTableViewFrame = self._abschlagCtrl.createGui()
         self._win.setAbschlagTableViewFrame( tvf )
         # Übrige regelmäßige (z.B. jährliche) Zahlungen (Versicherungen, Grundsteuer etc.)
-        # todo
         # HGAbrechnungen
         tvf: IccCheckTableViewFrame = self._hgaCtrl.createGui()
-        # todo
         self._win.setHGAbrechnungenTableViewFrame( tvf )
         # NKAbrechnungen
         tvf: IccCheckTableViewFrame = self._nkaCtrl.createGui()
-        # todo
         self._win.setNKAbrechnungenTableViewFrame( tvf )
         ### Die View für "alle" Zahlungen (Rechnungen etc.)
         tvf: FilterTableWidgetFrame = self._einausCtrl.createGui()
-        # tvf: IccCheckTableViewFrame = self._einausCtrl.createGui()
         self._win.setAlleZahlungenTableViewFrame( tvf )
-        self._provideSummen()
+        self._provideSummen( self.getYearToStartWith() )
         self._provideLetzteBuchung()
         return self._win
 
@@ -183,8 +180,8 @@ class MainController( IccController ):
         menu.addAction( action )
         return menu
 
-    def _provideSummen( self ):
-        summen:XSummen = self._logic.getSummen( self.getYearToStartWith() )
+    def _provideSummen( self, year:int ):
+        summen:XSummen = self._logic.getSummen( year )
         self._win.setSummenValues( summen )
 
     def _provideLetzteBuchung( self ):

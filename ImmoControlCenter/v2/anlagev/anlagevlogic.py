@@ -43,19 +43,31 @@ class AnlageVLogic:
         return currYear - 1
 
     def getAnlageVTableModels( self ) -> List[AnlageVTableModel]:
+        xavlist = self.getAnlageVDataAlle()
+        tmlist = list()
+        for av in xavlist:
+            tmlist.append( AnlageVTableModel( av ) )
+        return tmlist
+
+    def getAnlageVTableModel( self, master_name:str ) -> AnlageVTableModel:
+        x = self.getAnlageVData( master_name )
+        tm = AnlageVTableModel( x )
+        return tm
+
+    def getAnlageVDataAlle( self ) -> List[XAnlageV]:
         """
-        Liefert eine Liste von AnlageVTableModels.
-        Für jedes Masterobjekt ist ein AnlageVTableModel in der Liste enthalten.
+        Liefert eine Liste von XAnlageV-Interfaces.
+        Für jedes Masterobjekt ist ein XAnlageV-Objekt in der Liste enthalten.
         :return:
         """
         masterobjects = self._avdata.getMasterobjekte()
         l = list()
         for master in masterobjects:
-            tm = self.getAnlageVTableModel( master.master_name )
-            l.append( tm )
+            xav = self.getAnlageVData( master.master_name )
+            l.append( xav )
         return l
 
-    def getAnlageVTableModel( self, master_name:str ) -> AnlageVTableModel:
+    def getAnlageVData( self, master_name:str ) -> XAnlageV:
         """
         Liefert das AnlageVTableModel für alle Mietobjekte eines MasterObjekts
         :param master_name:
@@ -97,8 +109,7 @@ class AnlageVLogic:
             x.hgv_netto += hgv_netto
             hga = self.getHga( mobj.mobj_id )
             x.hga += hga
-        tm = AnlageVTableModel( x )
-        return tm
+        return x
 
     def provideVerteilteAufwaende( self, master_name:str, xav:XAnlageV ):
         """
