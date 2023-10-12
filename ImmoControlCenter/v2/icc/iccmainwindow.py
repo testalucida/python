@@ -116,7 +116,10 @@ class IccMainWindow( QMainWindow ):
         self._idSumEin:IntDisplay = self._createSumDisplay( "Summe aller Einnahmen" )
         self._idSummeSonstAus:IntDisplay = self._createSumDisplay( "Summe aller sonstigen Ausgaben" )
         self._idSummeHGV:IntDisplay = self._createSumDisplay( "Summe aller Hausgeld-Vorauszahlungen" )
-        self._idSaldo:IntDisplay = self._createSumDisplay( "Einnahmen minus Ausgaben minus HG-Vorauszahlungen" )
+        self._idSaldo:IntDisplay = self._createSumDisplay( "Einnahmen minus Ausgaben minus HG-Vorauszahlungen.\n"
+                                                           "Ohne Berücksichtigung von Sonderumlagen.\n"
+                                                           "Verteilte Aufwendungen werden nur für das Jahr der Bezahlung berücksichtigt.\n"
+                                                           "AfA wird nicht berücksichtigt." )
         self._summenfont = QFont( "Times New Roman", 16, weight=QFont.Bold )
         self._summenartfont = QFont( "Times New Roman", 9 )
 
