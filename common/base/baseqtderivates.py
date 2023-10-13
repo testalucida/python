@@ -7,7 +7,7 @@ from typing import Any, List, Tuple, Callable, Iterable
 from PySide2 import QtWidgets, QtCore
 from PySide2.QtCore import QDate, Qt, QAbstractTableModel, QRect, Signal, QSize, QMargins, QEvent, QObject
 from PySide2.QtGui import QDoubleValidator, QIntValidator, QFont, QGuiApplication, QStandardItemModel, QStandardItem, \
-    QMouseEvent, QTextDocument, QIcon, QFontMetrics, QValidator
+    QMouseEvent, QTextDocument, QIcon, QFontMetrics, QValidator, QCursor
 from PySide2.QtWidgets import QDialog, QCalendarWidget, QVBoxLayout, QBoxLayout, QLineEdit, QGridLayout, QPushButton, \
     QHBoxLayout, QApplication, QListView, QComboBox, QLabel, QTextEdit, QCheckBox, QFrame, QWidget, QAction, QTabWidget, \
     QToolBar, QMenuBar, QStatusBar, QMessageBox
@@ -433,8 +433,6 @@ class CalendarDialog( QDialog ):
         self.setModal( True )
         self.setTitle( "Datum auswählen" )
         self._calendar:QCalendarWidget = None
-        self._buchungsjahrChangedCallback = None
-
         self._buttonBox:QtWidgets.QDialogButtonBox = None
         self._callback = None
         self.createCalendar()
@@ -501,9 +499,11 @@ class CalendarDialog( QDialog ):
 
 #########################  SmartDateEdit  #####################################
 class SmartDateEdit( QLineEdit, GetSetValue ):
+    before_show_calendar = Signal()
     def __init__( self, parent=None, isReadOnly:bool=False ):
         QLineEdit.__init__( self, parent )
         self.setReadOnly( isReadOnly )
+        self._defaultDate = ""
 
     def mouseDoubleClickEvent( self, event ):
         #print( "Double Click SmartDateEdit at pos: ", event.pos() )
@@ -517,6 +517,24 @@ class SmartDateEdit( QLineEdit, GetSetValue ):
 
     def setDateFromIsoString( self, isostring:str ):
         self.setText( isostring )
+
+    def setDefaultDateFromIsoString( self, isostring:str ):
+        """
+        Setzt ein Datum, das beim nächsten Öffnen des Kalenders voreingestellt wird.
+        Dieses Datum wird nicht in das SmartDateEdit-Feld übernommen.
+        :param isostring:
+        :return:
+        """
+        self._defaultDate = isostring
+
+    def clearDefaultDate( self ):
+        """
+        Löscht das durch setDefaultDateFromIsoString( isostring ) gesetzte Datum.
+        Beim nächsten Öffnen des Kalenders wird das Datum eingestellt, das in diesem SmartDateEdit-Feld
+        eingetragen wird, bzw. current date, wenn nichts eingetragen ist.
+        :return:
+        """
+        self._defaultDate = ""
 
     def getDate( self ) -> str:
         """
@@ -550,19 +568,20 @@ class SmartDateEdit( QLineEdit, GetSetValue ):
         return ( isValidIsoDatestring( ds ) or isValidEurDatestring( ds ) )
 
     def showCalendar( self ):
+        self.before_show_calendar.emit()
         cal = CalendarDialog( self )
-        text = self.text()
-        d:QDate = None
+        text = self.text() if not self._defaultDate else self._defaultDate
         if text == "":
             d = getRelativeQDate( 0, 0 )
         else:
             if isValidIsoDatestring( text ):
                 d = getQDateFromIsoString( text )
-
             else:
                 d =getRelativeQDate( 0, 0 )
         cal.setSelectedDate( d )
         cal.setCallback( self.onDatumSelected )
+        crsr = QCursor.pos()
+        cal.move( crsr.x()-25, crsr.y()+50 )
         cal.show()
 
     def onDatumSelected( self, date:QDate ):

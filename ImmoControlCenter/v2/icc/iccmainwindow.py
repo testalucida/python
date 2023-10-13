@@ -9,6 +9,7 @@ from PySide2.QtWidgets import QApplication, QMainWindow, QWidget, QMenuBar, QToo
 from PySide2.QtGui import QKeySequence, QFont
 from enum import Enum
 
+import datehelper
 from base.baseqtderivates import SmartDateEdit, IntDisplay, BaseTabWidget
 from base.messagebox import InfoBox
 from datehelper import getDateParts
@@ -218,6 +219,7 @@ class IccMainWindow( QMainWindow ):
         self._sdLetzteBuchung.setToolTip( "Freier Eintrag der Kenndaten der letzten Buchung,\n "
                                           "um beim nächsten Anwendungsstart gezielt weiterarbeiten zu können." )
         self._sdLetzteBuchung.setMaximumWidth( 90 )
+        self._sdLetzteBuchung.before_show_calendar.connect( self.onBeforeShowCalendar )
         self._toolBar.addWidget( self._sdLetzteBuchung )
         dummy = QWidget()
         dummy.setFixedWidth( 5 )
@@ -236,6 +238,9 @@ class IccMainWindow( QMainWindow ):
 
         self.setMenuBar( self._menubar )
         self.addToolBar( QtCore.Qt.TopToolBarArea, self._toolBar )
+
+    def onBeforeShowCalendar( self ):
+        self._sdLetzteBuchung.setDefaultDateFromIsoString( datehelper.getCurrentDateIso() )
 
     def addMenu( self, menu:QMenu ):
         self._menubar.addMenu( menu )
@@ -373,102 +378,6 @@ class IccMainWindow( QMainWindow ):
             else:
                 self._actionCallbackFnc( action )
 
-    # def onNewWindow( self ):
-    #     self.doCallback( MainWindowAction.NEW_WINDOW )
-    #
-    # def onMieterwechsel( self ):
-    #     self.doCallback( MainWindowAction.MIETERWECHSEL )
-    #
-    # def onVerwalterwechsel( self ):
-    #     pass
-
-    # def onChangeSollmiete( self ):
-    #     pass
-    #
-    # def onChangeSollhausgeld( self ):
-    #     pass
-
-    # def onSaveActiveView( self ):
-    #     self.doCallback( MainWindowAction.SAVE_ACTIVE_VIEW )
-    #
-    # def onSaveAll( self ):
-    #     self.doCallback( MainWindowAction.SAVE_ALL )
-    #
-    # def onExportDatabaseToServer( self ):
-    #     self.doCallback( MainWindowAction.EXPORT_DB_TO_SERVER )
-    #
-    # def onImportDatabaseFromServer( self ):
-    #     self.doCallback( MainWindowAction.IMPORT_DB_FROM_SERVER )
-    #
-    # def onFolgejahrEinrichten( self ):
-    #     self.doCallback( MainWindowAction.FOLGEJAHR )
-    #
-    # def onPrintActiveView( self ):
-    #     self.doCallback( MainWindowAction.PRINT_ACTIVE_VIEW )
-    #
-    # def onExit( self ):
-    #     self.doCallback( MainWindowAction.EXIT )
-    #
-    # def onViewMietzahlungen( self ):
-    #     self.doCallback( MainWindowAction.OPEN_MIETE_VIEW )
-    #
-    # def onViewHGVorauszahlungen( self ):
-    #     self.doCallback( MainWindowAction.OPEN_HGV_VIEW )
-    #
-    # def onViewSollMiete( self ):
-    #     self.doCallback( MainWindowAction.OPEN_SOLL_MIETE_VIEW )
-    #
-    # def onViewSollHausgeld( self ):
-    #     self.doCallback( MainWindowAction.OPEN_SOLL_HG_VIEW )
-    #
-    # def onViewNebenkostenabrechnung( self ):
-    #     self.doCallback( MainWindowAction.OPEN_NKA_VIEW )
-    #
-    # def onViewHausgeldabrechnung( self ):
-    #     self.doCallback( MainWindowAction.OPEN_HGA_VIEW )
-    #
-    # def onViewAnlageV( self ):
-    #     self.doCallback( MainWindowAction.OPEN_ANLAGEV_VIEW )
-    #
-    # def onExportActiveTableView( self ):
-    #     self.doCallback( MainWindowAction.EXPORT_CSV )
-    #
-    # def onNotizen( self ):
-    #     self.doCallback( MainWindowAction.NOTIZEN )
-    #
-    # def onSammelabgabe( self ):
-    #     self.doCallback( MainWindowAction.SAMMELABGABE_DETAIL )
-    #
-    # def onGeschaeftsreise( self ):
-    #     self.doCallback( MainWindowAction.OPEN_GESCHAEFTSREISE_VIEW )
-    #
-    # def onRenditeVergleich( self ):
-    #     self.doCallback( MainWindowAction.RENDITE_VIEW )
-    #
-    # def onErtragUebersicht( self ):
-    #     self.doCallback( MainWindowAction.OPEN_ERTRAG_VIEW )
-    #
-    # def onViewRechnungen( self ):
-    #     self.doCallback( MainWindowAction.OPEN_SONST_EIN_AUS_VIEW )
-    #
-    # def onViewOffenePosten( self ):
-    #     self.doCallback( MainWindowAction.OPEN_OFFENE_POSTEN_VIEW )
-    #
-    # def onViewObjektStammdaten( self ):
-    #     self.doCallback( MainWindowAction.OPEN_OBJEKT_STAMMDATEN_VIEW )
-    #
-    # def onViewMietverhaeltnis( self ):
-    #     self.doCallback( MainWindowAction.OPEN_MIETVERH_VIEW )
-    #
-    # def onNewSql( self ):
-    #     pass
-    #
-    # def onShowTableContent( self, action ):
-    #     self.doCallback( MainWindowAction.SHOW_TABLE_CONTENT, action.text() )
-    #
-    # def onShowDialog( self, action ):
-    #     self.doCallback( MainWindowAction.BRING_DIALOG_TO_FRONT, action.data() )
-
     def showException( self, exception: str, moretext: str = None ):
         print( exception )
         msg = QtWidgets.QMessageBox()
@@ -483,17 +392,8 @@ class IccMainWindow( QMainWindow ):
         box = InfoBox( title, msg, "", "OK" )
         box.exec_()
 
-    # def addMdiChild( self, subwin:QMdiSubWindow ) -> None:
-    #     self.mdiArea.addSubWindow( subwin )
-    #     subwin.widget().setAttribute( Qt.WA_DeleteOnClose )
-
-    # def _addMdiChild( self ):
-    #     te = QTextEdit( self )
-    #     subwin = self.mdiArea.addSubWindow( te )
-    #     subwin.setWindowTitle( "Mein Subwin" )
-    #     te.setAttribute( Qt.WA_DeleteOnClose )
-
-
+################################################################################
+################################################################################
 
 
 def testMainTabWidget():

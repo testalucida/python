@@ -48,7 +48,7 @@ class BaseTableModel( QAbstractTableModel ):
         QAbstractTableModel.__init__( self )
         self.rowList:List[XBase] = rowList
         self._visibleElements: List[XBase] = list() # per Default alle (==self.rowList). Kann durch Filterung eingeschränkt werden.
-        self._rowListUnfiltered:List[XBase] = None
+        #self._rowListUnfiltered:List[XBase] = None
         self._jahr:int = jahr # das Jahr ist bei manchen Models interessant, bei manchen nicht - kann also auf None stehen.
         self.headers:List = list()
         self.keys:List = list() # brauchen wir fürs Key-Header-Mapping
@@ -69,7 +69,7 @@ class BaseTableModel( QAbstractTableModel ):
         self._sortkeys:List[str] = None
         self.sort_descending = False
         self._filters: List[Filter] = list()  # aktuell gesetzte Spaltenfilter
-        self._visibleRowIndexes:List[int] = list() # Indizes der Rows, die sichtbar sind. Per Default alle,
+        #self._visibleRowIndexes:List[int] = list() # Indizes der Rows, die sichtbar sind. Per Default alle,
                                                     # das kann aber durch Filterung eingeschränkt werden
         if rowList:
             self.setRowList( rowList )
@@ -296,12 +296,18 @@ class BaseTableModel( QAbstractTableModel ):
             # rowList nicht sortiert
             # todo: Änderung wegen neuer Filterlogik --> erl.
             self.rowList.append( x )
-            self._visibleElements.append( x )
+            if self._meetsFilterConditions( x ):
+                # an die visible Elements nur anhängen, wenn x den FilterConditions entspricht.
+                # _meetsFilterConditions returns True, wenn keine Filter gesetzt sind.
+                self._visibleElements.append( x )
         else:
             # Daten sind sortiert, neues Objekt an der richtigen Stelle einfügen.
             self._insertObject( x, self.rowList )
-            # todo: Änderung wegen neuer Filterlogik: Prüfen, ob neues Element auch in die _visibleElements
-            #  aufgenommen werden muss
+            #  todo: Änderung wegen neuer Filterlogik: Prüfen, ob neues Element auch in die _visibleElements
+            #  aufgenommen werden muss --> erl.
+            if self._meetsFilterConditions( x ):
+                # _meetsFilterConditions returns True, wenn keine Filter gesetzt sind.
+                self._insertObject( x, self._visibleElements )
         if self.sort_col < 0:
             row = self.rowCount() - 1
         indexA = self.createIndex( row, 0 )
