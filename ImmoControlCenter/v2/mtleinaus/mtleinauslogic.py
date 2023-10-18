@@ -487,7 +487,11 @@ class AbschlagLogic( MtlEinAusLogic ):
             xab.master_name = sollabschlag.master_name
             xab.mobj_id = sollabschlag.mobj_id
             xab.kreditor = sollabschlag.kreditor
-            self._completeData( xab, xab.sab_id, jahr, checkmonatIdx+1, sollAbschlagList )
+            xab.soll = sollabschlag.betrag
+            xab.vnr = sollabschlag.vnr
+            xab.leistung = sollabschlag.leistung
+            xab.vonMonat, xab.bisMonat = self.getMonthIntervallForCurrentYear( jahr, sollabschlag.von, sollabschlag.bis )
+            #self._completeData( xab, xab.sab_id, jahr, checkmonatIdx+1, sollAbschlagList )
             # dem XMtlAbschlag-Objekt die einzelnen Zahlungen zuordnen
             for xea in zlist:
                 if xea.sab_id == xab.sab_id:
@@ -497,7 +501,8 @@ class AbschlagLogic( MtlEinAusLogic ):
         tm = AbschlagTableModel( xablist, jahr, checkmonatIdx )
         return tm
 
-    def _getCondensedEinAusList( self, einausList: List[XEinAus] ) -> List[XEinAus]:
+    @staticmethod
+    def _getCondensedEinAusList( einausList: List[XEinAus] ) -> List[XEinAus]:
         """
         Verdichtet die übergebene <einausList> auf sab_id, d.h., alle Beträge in den in <einausList> enthaltenen
         XEinAus-Objekten, die sich auf die gleichen sab_id beziehen, werden auf *ein* XeinAus-Objekt addiert;
@@ -517,7 +522,7 @@ class AbschlagLogic( MtlEinAusLogic ):
         return einausList
 
 
-    def _completeData( self, xab:XMtlAbschlag, sab_id:int,
+    def _completeData___( self, xab:XMtlAbschlag, sab_id:int,
                        jahr:int, monat:int, sollAbschlagList:List[XSollAbschlag] ) -> None:
         """
         Ergänzt die Daten Sollbetrag, Leistung und Vertragsnummer im Objekt <xab>, indem es das für <jahr> und <monat>
