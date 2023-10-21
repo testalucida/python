@@ -1,13 +1,22 @@
 import sys
 
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt  !!!ERST NACH QtWidgets IMPORTIEREN!!!
 import yfinance, json
-import matplotlib
+import matplotlib as mpl
 #matplotlib.use( 'Agg' )
-from pandas import Series
+from matplotlib.axis import Axis
+from pandas import Series, DataFrame
 
+
+def getOneYearHistory( ticker:str ) -> Series:
+    goog = yfinance.Ticker( 'goog' )
+    df = goog.history( period="1y", interval="1d", start="2022-09-07" )
+    series:Series = df["Close"]
+    #series.plot()
+    return series
 
 def test6():
+    import matplotlib.pyplot as plt
     goog = yfinance.Ticker( 'goog' )
     df = goog.history( period="1y", interval="1d", start="2022-09-07" )
     """
@@ -54,12 +63,14 @@ def test6():
     """
     series:Series = df["Close"]
     series.plot()
+    #import matplotlib.pyplot as plt
     plt.grid()
     plt.gcf().autofmt_xdate()
     plt.tick_params( axis='x', which='major', labelsize=8 )
     plt.show()
 
 def test5():
+    import matplotlib.pyplot as plt
     goog = yfinance.Ticker( 'goog' )
     df = goog.history()
     series = df["High"]
@@ -67,13 +78,6 @@ def test5():
     headdf = df.head()
     headdf.plot()
     plt.show()
-
-def test4():
-    goog = yfinance.Ticker( 'goog' )
-    df = goog.history()
-    df.plot()
-    plt.show()
-
 
 def test3():
     #ticker = yfinance.Ticker( "SPYY.DE" )
@@ -103,3 +107,73 @@ def test1():
     print( hist )
     #print( json.dumps( t.history, indent=4 ) )
     #print( json.dumps( t.info, indent=4 ) )
+
+
+def test8():
+    # so geht's mit Qt
+    import sys
+    from PySide2 import QtWidgets
+    #from PySide2.QtWidgets import QMainWindow, QApplication
+    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+    from matplotlib.figure import Figure
+
+    # class MplCanvas( FigureCanvas ):
+    #     def __init__( self, parent=None, width=5, height=4, dpi=100 ):
+    #         fig = Figure( figsize=(width, height), dpi=dpi )
+    #         self.axes = fig.add_subplot( 111 )
+    #         super( MplCanvas, self ).__init__( fig )
+
+    class MainWindow( QtWidgets.QMainWindow ):
+        def __init__( self, *args, **kwargs ):
+            super( MainWindow, self ).__init__( *args, **kwargs )
+
+            # Create the maptlotlib FigureCanvas object,
+            # which defines a single set of axes as self.axes.
+            #sc = MplCanvas( self, width=5, height=4, dpi=100 )
+            fig = Figure( figsize=(7, 5), dpi=65 )
+            canvas = FigureCanvas( fig )
+            canvas.axes = fig.add_subplot( 111 )
+            canvas.axes.plot( [0, 1, 2, 3, 4], [10, 1, 20, 3, 40] )
+            #print( type( sc ) )
+            self.setCentralWidget( canvas )
+
+    app = QtWidgets.QApplication( sys.argv )
+    w = MainWindow()
+    w.show()
+    app.exec_()
+
+def test9():
+    import sys
+    import matplotlib
+
+    matplotlib.use( 'Qt5Agg' )
+
+    from PySide2.QtWidgets import QMainWindow, QApplication
+
+    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+    from matplotlib.figure import Figure
+
+    class MplCanvas( FigureCanvasQTAgg ):
+
+        def __init__( self, parent=None, width=5, height=4, dpi=100 ):
+            fig = Figure( figsize=(width, height), dpi=dpi )
+            self.axes = fig.add_subplot( 111 )
+            super( MplCanvas, self ).__init__( fig )
+
+    class MainWindow( QMainWindow ):
+
+        def __init__( self, *args, **kwargs ):
+            super( MainWindow, self ).__init__( *args, **kwargs )
+
+            # Create the maptlotlib FigureCanvas object,
+            # which defines a single set of axes as self.axes.
+            sc = MplCanvas( self, width=5, height=4, dpi=100 )
+            sc.axes.plot( [0, 1, 2, 3, 4], [10, 1, 20, 3, 40] )
+            self.setCentralWidget( sc )
+
+            self.show()
+
+    app = QApplication( sys.argv )
+    w = MainWindow()
+    app.exec_()
+

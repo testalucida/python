@@ -4,6 +4,7 @@ from PySide2.QtCore import QDate
 from dateutil.relativedelta import relativedelta
 from typing import Tuple, Dict
 
+import datehelper
 from base.constants import monthLongNames, monatsletzter
 
 def getNumberOfDays( monthNumber:int ) -> int:
@@ -37,6 +38,13 @@ def getCurrentYearAndMonth() -> Dict:
     d = { }
     d["month"] = datetime.now().month
     d["year"] = datetime.now().year
+    return d
+
+def getCurrentYearMonthDay() -> Dict:
+    d = { }
+    d["month"] = datetime.now().month
+    d["year"] = datetime.now().year
+    d["day"] = datetime.now().day
     return d
 
 def getCurrentTimestampIso() -> str:
@@ -348,6 +356,14 @@ def addDaysToIsoString( isostring:str, cntDays:int ) -> str:
     d = addDays( d, cntDays )
     return getIsoStringFromDate( d )
 
+def getCurrentDate() -> date:
+    now = date.today()
+    return now
+
+def test4():
+    today = datehelper.getCurrentDate()
+    oneyearago = datehelper.addYears( today, -1 )
+    print( oneyearago )
 
 def test2():
     days = getNumberOfDays2( "2020-12-01", "2022-01-31", 2021 )
