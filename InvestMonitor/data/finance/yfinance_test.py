@@ -17,8 +17,8 @@ def getOneYearHistory( ticker:str ) -> Series:
 
 def test6():
     import matplotlib.pyplot as plt
-    goog = yfinance.Ticker( 'goog' )
-    df = goog.history( period="1y", interval="1d", start="2022-09-07" )
+    ticker = yfinance.Ticker( 'GGRG.L' )
+    df = ticker.history( period="1y", interval="1d", start="2022-09-07" )
     """
     def history( self, period="1mo", interval="1d",
                  start=None, end=None, prepost=False, actions=True,

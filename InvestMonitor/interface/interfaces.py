@@ -19,6 +19,12 @@ class XDepotPosition( XBase ):
         self.flag_acc = False
         self.beschreibung = ""
         self.history:DataFrame = None
+        self.stueck = 0
+        self.gesamtkaufpreis = 0 #Kaufpreis des gesamten Bestands
+        self.preisprostueck = 0.0 # Gesamtkaufpreis / Stück
+        self.gesamtwert_aktuell = 0.0 # Stück * kurs_aktuell
+        self.kurs_aktuell = 0.0
+        self.delta_proz = 0.0 #prozentualer Unterschied zwischen preisprostueck und kurs_aktuell
         self.depot_id = ""
         self.bank = ""
         self.depot_nr = ""
