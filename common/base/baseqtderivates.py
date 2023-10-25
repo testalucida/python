@@ -626,6 +626,10 @@ class BaseLabel( QLabel, AutoWidth, GetSetValue ):
     def setTextAndBackgroundColor( self, textcolor, backgroundcolor ):
         self.setStyleSheet( "QLabel { background-color : red; color : blue; }" )
 
+    def setFixedWidthAuto( self ):
+        w = self.getTextWidth( self.text() )
+        self.setFixedWidth( w )
+
 
 ###################   BaseLink   ########################
 class BaseLink( BaseLabel ):
@@ -672,6 +676,10 @@ class BaseEdit( QLineEdit, AutoWidth, GetSetValue ):
 
     def setValue( self, value: str ):
         self.setText( value )
+
+    def setFixedWidthAuto( self ):
+        w = self.getTextWidth( self.text() )
+        self.setFixedWidth( w )
 
     def mousePressEvent(self, evt:QMouseEvent):
         self.setSelection( 0, len( self.text() ) )

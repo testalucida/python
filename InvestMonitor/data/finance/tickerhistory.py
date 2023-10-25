@@ -6,47 +6,13 @@ from typing import List
 import yfinance
 from pandas import DataFrame, Series
 import datehelper
+from main.enums import Period, Interval, SeriesName
+
 
 def getOneYearAgo() -> str:
     currentDate: date = datehelper.getCurrentDate()
     oneyearago = datehelper.addYears( currentDate, -1 )
     return datehelper.getIsoStringFromDate( oneyearago )
-
-class SeriesName( Enum ):
-    Close = enum.auto()
-    Dividends = enum.auto()
-    High = enum.auto()
-    Low = enum.auto()
-    Open = enum.auto()
-
-class Period( Enum ):
-    # 1d,5d,1mo,3mo,6mo,1y,2y,5y,10y,ytd,max
-    oneDay = "1d"
-    fiveDays = "5d"
-    oneMonth = "1mo"
-    threeMonths = "3mo"
-    sixMonths = "6mo"
-    oneYear = "1y"
-    twoYears = "2y"
-    fiveYears = "5y"
-    tenYears = "10y"
-    max = "max"
-
-class Interval( Enum ):
-    # 1m,2m,5m,15m,30m,60m,90m,1h,1d,5d,1wk,1mo,3mo
-    oneMin = "1m"
-    twoMins = "2m"
-    fiveMins = "5m"
-    fifteenMins = "15m"
-    thirtyMins = "30m"
-    sixtyMins = "60m"
-    ninetyMins = "90m"
-    oneHour = "1h"
-    oneDay = "1d"
-    fiveDays = "5d"
-    oneWeek = "1wk"
-    oneMonth = "1mo"
-    threeMonths = "3mo"
 
 ######################################################################
 class TickerHistory:
