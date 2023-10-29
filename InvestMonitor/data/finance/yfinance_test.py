@@ -6,7 +6,20 @@ import matplotlib as mpl
 #matplotlib.use( 'Agg' )
 from matplotlib.axis import Axis
 from pandas import Series, DataFrame
+# from fixerio import Fixerio
+# fixer_api_access_key = "55582428e945eafd3ff8efbc1cb12706"
+from currency_converter import CurrencyConverter
 
+def testCurrencyConverter():
+    c = CurrencyConverter()
+    usd = c.convert( 633.98999, "GBP", "EUR" )
+    print( usd )
+
+# def testFixerio():
+#     url = "http://data.fixer.io/api/latest?access_key=55582428e945eafd3ff8efbc1cb12706"
+#     fxrio = Fixerio()
+#     latest = fxrio.latest()
+#     print( latest )
 
 def getOneYearHistory( ticker:str ) -> Series:
     goog = yfinance.Ticker( 'goog' )
@@ -17,7 +30,8 @@ def getOneYearHistory( ticker:str ) -> Series:
 
 def test6():
     import matplotlib.pyplot as plt
-    ticker = yfinance.Ticker( "QDVX.DE" )
+    ticker = yfinance.Ticker( "PRIJ.L" )
+    fi = ticker.fast_info
     df = ticker.history( period="1y", interval="1wk" )
     """
     def history( self, period="1mo", interval="1d",
@@ -68,6 +82,25 @@ def test6():
     plt.gcf().autofmt_xdate()
     plt.tick_params( axis='x', which='major', labelsize=8 )
     plt.show()
+
+def testTranslateSeries():
+    c = CurrencyConverter()
+    ticker = yfinance.Ticker( "PRIJ.L" )
+    fi = ticker.fast_info
+    df = ticker.history( period="1y", interval="1wk" )
+    series: Series = df["Close"]
+    values = series.values
+    vlist = list()
+    curr = fi.currency
+    curr_upper = curr.upper()
+    for value in values:
+        if curr == "GBp": # pence
+            value = value / 100 # pound
+        value = c.convert( value, curr_upper, "EUR" )
+        vlist.append( value )
+    index = series.index
+    serNew = Series(vlist, index)
+    print( serNew )
 
 def test5():
     import matplotlib.pyplot as plt

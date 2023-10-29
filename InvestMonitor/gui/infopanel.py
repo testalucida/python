@@ -2,11 +2,11 @@ from enum import Enum
 from typing import List, Tuple
 
 import matplotlib
-from PySide2.QtCore import QSize, Signal
-from pandas import DataFrame
+from PySide2.QtCore import QSize, Signal, Qt
+#from pandas import DataFrame
 
 from base.baseqtderivates import BaseGridLayout, BaseLabel, BaseEdit, SignedNumEdit, IntEdit, FloatEdit, HLine, \
-    BaseButton, BaseComboBox
+    BaseButton, BaseComboBox, BaseLink, HistoryButton
 from base.enumhelper import getEnumFromValue
 from data.finance.tickerhistory import TickerHistory, Period, Interval
 from interface.interfaces import XDepotPosition
@@ -16,7 +16,7 @@ from PySide2.QtWidgets import QWidget, QApplication, QHBoxLayout
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT #as NavigationToolbar
 from matplotlib.figure import Figure
-import pandas as pd
+#import pandas as pd
 
 class NavigationToolbar(NavigationToolbar2QT):
     # only display the buttons we need
@@ -38,13 +38,12 @@ class InfoPanel( QWidget ):
     Ein InfoPanel enthält alle Informationen zu einem Wertpapier (Aktie, Fonds- oder ETF-Anteil)
     und einen Graph, der die Kursentwicklung eines Zeitraums anzeigt.
     """
-    # def makeToolButton( self, txt:str ) -> BaseButton:
-    #     btn = BaseButton( text=txt, callback=None )
-    #     btn.setFixedSize( QSize(23, 23) )
-    #     return btn
-
     period_changed = Signal( Period )   # arg: neues Periodenkürzel
     interval_changed = Signal( Interval ) # arg: neues Intervall-Kürzel
+    enter_bestand_delta = Signal()
+    show_kauf_historie = Signal()
+    update_kurs = Signal()
+    show_details = Signal()
 
     @staticmethod
     def createCombo( items: List[str], signal_to_emit: Signal, enu:Enum ) -> BaseComboBox:
@@ -55,68 +54,95 @@ class InfoPanel( QWidget ):
 
     def __init__(self):
         QWidget.__init__( self )
-        maxw = 70
+        maxwnumlabels = 70
+        maxwtextlabels = 120
         self._layout = BaseGridLayout()
         self.setLayout( self._layout )
         self._mplCanvas = MplCanvas()
         self._x:XDepotPosition = None
         self._lblName = BaseEdit( isReadOnly=True)
-
+        self._btnDetails = BaseButton( "ⓘ" )
+        self._btnDetails.clicked.connect( self.show_details.emit )
+        self._btnDetails.setMaximumSize( QSize(23, 23) )
         self._layCombos = QHBoxLayout()
         self._cboPeriod = self.createCombo( Period.getPeriods(), self.period_changed, Period )
         self._cboInterval = self.createCombo( Interval.getIntervals(), self.interval_changed, Interval )
 
-        self._lblWkn = BaseEdit( isReadOnly=True)
-        self._lblIsin = BaseEdit( isReadOnly=True)
+        self._lblWkn = BaseEdit( isReadOnly=True )
+        #self._lblWkn.setMaximumWidth( maxwtextlabels )
+        self._lblTicker = BaseEdit( isReadOnly=True )
+        self._lblTicker.setFixedWidth( 90 )
+        self._lblIsin = BaseEdit( isReadOnly=True )
+        #self._lblIsin.setMaximumWidth( maxwtextlabels )
         self._lblWaehrung = BaseEdit( isReadOnly=True )
+        self._lblWaehrung.setFixedWidth( 90 )
         self._lblAcc = BaseEdit( isReadOnly=True )
+        #self._lblAcc.setMaximumWidth( maxwtextlabels )
         self._lblStueck = IntEdit( isReadOnly=True )
-        self._lblStueck.setMaximumWidth( maxw )
+        self._lblStueck.setMaximumWidth( maxwnumlabels )
+        self._btnStueckDelta = BaseButton( "Δ" )
+        self._btnStueckDelta.clicked.connect( self.enter_bestand_delta.emit )
+        self._btnStueckDelta.setFixedSize( QSize(23, 23) )
         self._lblGesamtPreis = IntEdit( isReadOnly=True )
-        self._lblGesamtPreis.setMaximumWidth( maxw )
+        self._lblGesamtPreis.setMaximumWidth( maxwnumlabels )
+        self._btnKaufHistorie = HistoryButton( "Zeigt die Historie der Käufe an" )
+        self._btnKaufHistorie.clicked.connect( self.show_kauf_historie.emit )
+        self._btnKaufHistorie.setFixedSize( QSize(23, 23) )
         self._lblPreisProStueck = FloatEdit( isReadOnly=True )
-        self._lblPreisProStueck.setMaximumWidth( maxw )
+        self._lblPreisProStueck.setMaximumWidth( maxwnumlabels )
         self._lblMaxKaufpreis = FloatEdit( isReadOnly=True )
-        self._lblMaxKaufpreis.setMaximumWidth( maxw )
+        self._lblMaxKaufpreis.setMaximumWidth( maxwnumlabels )
         self._lblMinKaufpreis = FloatEdit( isReadOnly=True )
-        self._lblMinKaufpreis.setMaximumWidth( maxw )
+        self._lblMinKaufpreis.setMaximumWidth( maxwnumlabels )
         self._lblGesamtWertAktuell = IntEdit( isReadOnly=True )
-        self._lblGesamtWertAktuell.setMaximumWidth( maxw )
+        self._lblGesamtWertAktuell.setMaximumWidth( maxwnumlabels )
         self._lblKursAktuell = FloatEdit( isReadOnly=True )
-        self._lblKursAktuell.setMaximumWidth( maxw )
+        self._lblKursAktuell.setMaximumWidth( maxwnumlabels )
+        self._btnKursAktualisieren = BaseButton( "⟳" )
+        self._btnKursAktualisieren.clicked.connect( self.update_kurs.emit )
+        self._btnKursAktualisieren.setFixedSize( QSize(23, 23) )
         self._lblDeltaProz = FloatEdit( isReadOnly=True )
-        self._lblDeltaProz.setMaximumWidth( maxw )
+        self._lblDeltaProz.setMaximumWidth( maxwnumlabels )
         self._createGui()
 
     def _createGui( self ):
         l = self._layout
-        cols = 5
+        cols = 6
         r, c = 0, 0
-        l.addWidget( self._lblName, r, c, 1, 4 )
+        l.addWidget( self._lblName, r, c, 1, 5 )
+        c = 5
+        self._btnDetails.setToolTip( "Details anzeigen" )
+        l.addWidget( self._btnDetails, r, c )
 
         r += 1
         self._layCombos.addWidget( BaseLabel( "Period" ) )
         self._layCombos.addWidget( self._cboPeriod )
         self._layCombos.addWidget( BaseLabel( " Interval" ) )
         self._layCombos.addWidget( self._cboInterval )
-        c = 3
+        c = 4
         l.addLayout( self._layCombos, r, c )
         r += 1
         c = 0
-        l.addWidget( self._lblWkn, r, c, 1, 3 )
-        r = 2
-        l.addWidget( self._lblIsin, r, c, 1, 3 )
+        l.addWidget( self._lblWkn, r, c, 1, 2 )
         r += 1
-        l.addWidget( self._lblWaehrung, r, c, 1, 3 )
+        c = 0
+        l.addWidget( self._lblIsin, r, c, 1, 2 )
         r += 1
-        l.addWidget( self._lblAcc, r, c, 1, 3 )
+        l.addWidget( self._lblTicker, r, c, 1, 2 )
+        r += 1
+        l.addWidget( self._lblWaehrung, r, c, 1, 2 )
+        r += 1
+        l.addWidget( self._lblAcc, r, c, 1, 2 )
         r += 1
         c = 0
         l.addWidget( BaseLabel( "Bestand" ), r, c )
         c = 1
         l.addWidget( self._lblStueck, r, c )
         c = 2
-        l.addWidget( BaseLabel("Stck"), r, c )
+        l.addWidget( BaseLabel("St"), r, c )
+        c = 3
+        self._btnStueckDelta.setToolTip( "Bestandsveränderung eintragen (Kauf/Verkauf)" )
+        l.addWidget( self._btnStueckDelta, r, c, 1, 1, Qt.AlignLeft )
         r += 1
         c = 0
         l.addWidget( BaseLabel( "Kauf" ), r, c )
@@ -125,6 +151,8 @@ class InfoPanel( QWidget ):
         l.addWidget( self._lblGesamtPreis, r, c )
         c = 2
         l.addWidget( BaseLabel( "€" ), r, c )
+        c = 3
+        l.addWidget( self._btnKaufHistorie, r, c, 1, 1, Qt.AlignLeft )
         r += 1
         c = 0
         l.addWidget( BaseLabel( "Ø je Stck" ), r, c )
@@ -167,6 +195,9 @@ class InfoPanel( QWidget ):
         l.addWidget( self._lblKursAktuell, r, c )
         c = 2
         l.addWidget( BaseLabel( "€" ), r, c )
+        c = 3
+        self._btnKursAktualisieren.setToolTip( "Kurs aktualisieren")
+        l.addWidget( self._btnKursAktualisieren, r, c, 1, 1, Qt.AlignLeft )
 
         r += 1
         c = 0
@@ -174,21 +205,27 @@ class InfoPanel( QWidget ):
 
         r += 1
         c = 0
-        l.addWidget( BaseLabel( "Δ Kurs" ), r, c )
+        l.addWidget( BaseLabel( "Δ Wert" ), r, c )
+        #l.addWidget( BaseLabel( "Entwicklg." ), r, c )
         c = 1
         self._lblDeltaProz.setToolTip( "Verh. durchschn. Kaufpreis zu akt. Kurs" )
         l.addWidget( self._lblDeltaProz, r, c )
         c = 2
         l.addWidget( BaseLabel( "%" ), r, c )
 
-        r, c = 2, 3
-        l.addWidget( self._mplCanvas, r, c, l.rowCount()-1, 2 )
+        # der Graph:
+        r, c = 2, 4
+        l.addWidget( self._mplCanvas, r, c, l.rowCount()-1, 3 )
 
     def setModel( self, x:XDepotPosition ):
         self._x = x
+        self._cboPeriod.setCurrentText( x.history_period.value )
+        self._cboInterval.setCurrentText( x.history_interval.value )
         self._lblName.setValue(x.name)
-        self._lblWkn.setValue( x.wkn )
+        #self._lblWkn.setValue( x.wkn )
         self._lblIsin.setValue( x.isin )
+        self._lblWkn.setValue( x.wkn )
+        self._lblTicker.setValue( x.ticker )
         self._lblWaehrung.setValue( x.waehrung )
         self._lblAcc.setValue( "Thesaurierend" if x.flag_acc else "Ausschüttend" )
         self._lblStueck.setValue( x.stueck )
@@ -202,6 +239,14 @@ class InfoPanel( QWidget ):
         self._lblDeltaProz.setValue( x.delta_proz )
 
         self._plot()
+
+    def getModel( self ) -> XDepotPosition:
+        return self._x
+
+    def setSelected( self, selected:bool=True ):
+        self._lblName.setBold( selected )
+        color = "red" if selected else "black"
+        self._lblName.setTextColor( color )
 
     def _plot( self ):
         self._x.history.plot( ax=self._mplCanvas.axes, grid=True )

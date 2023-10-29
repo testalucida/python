@@ -3,7 +3,7 @@ from typing import Dict
 from pandas import DataFrame, Series
 
 from base.interfaces import XBase
-from main.enums import Period, Interval
+from imon.enums import Period, Interval
 
 
 class XDepotPosition( XBase ):
@@ -27,7 +27,7 @@ class XDepotPosition( XBase ):
         self.preisprostueck = 0.0 # Gesamtkaufpreis / Stück
         self.maxKaufpreis = 0.0 # Max. Kaufpreis / Stück
         self.minKaufpreis = 0.0 # Min. Kaufpreis / Stück
-        self.gesamtwert_aktuell = 0.0 # Stück * kurs_aktuell
+        self.gesamtwert_aktuell = 0 # Stück * kurs_aktuell
         self.kurs_aktuell = 0.0
         self.delta_proz = 0.0 #prozentualer Unterschied zwischen preisprostueck und kurs_aktuell
         self.depot_id = ""
@@ -40,7 +40,7 @@ class XDepotPosition( XBase ):
 class XDelta( XBase ):
     def __init__( self, valuedict:Dict=None ):
         XBase.__init__( self )
-        self.ticker = ""
+        self.wkn = ""
         self.delta_stck = 0
         self.delta_datum = ""
         self.preis_stck = ""

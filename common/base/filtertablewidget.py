@@ -71,8 +71,8 @@ class FilterEdit( QWidget ):
         self._header = header
         self._layout = QHBoxLayout()
         self.setLayout( self._layout )
-        self._layout.setContentsMargins( 0, 0, 0, 0 );
-        self._layout.setSpacing( 0 );
+        self._layout.setContentsMargins( 0, 0, 0, 0 )
+        self._layout.setSpacing( 0 )
         self._input = BaseEdit()
         self._input.tab_pressed.connect( self.tab_pressed.emit )
         self._layout.addWidget( self._input )

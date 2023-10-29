@@ -2,7 +2,7 @@ from typing import List
 
 from base.databasecommon2 import DatabaseCommon
 from interface.interfaces import XDepotPosition, XDelta
-from main.definitions import DATABASE
+from imon.definitions import DATABASE
 
 
 class InvestMonitorData( DatabaseCommon ):
@@ -26,10 +26,10 @@ class InvestMonitorData( DatabaseCommon ):
         tickerlist = [tpl[0] for tpl in tupleList]
         return tickerlist
 
-    def getDeltas( self, ticker:str ) -> List[XDelta]:
-        sql = "select id, ticker, delta_stck, delta_datum, preis_stck, bemerkung " \
+    def getDeltas( self, wkn:str ) -> List[XDelta]:
+        sql = "select id, wkn, delta_stck, delta_datum, preis_stck, bemerkung " \
               "from delta " \
-              "where ticker = '%s' " % ticker
+              "where wkn = '%s' " % wkn
         xlist = self.readAllGetObjectList( sql, XDelta )
         return xlist
 

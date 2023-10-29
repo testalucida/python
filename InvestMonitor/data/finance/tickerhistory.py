@@ -4,9 +4,12 @@ from enum import Enum
 from typing import List
 
 import yfinance
+from currency_converter import CurrencyConverter
 from pandas import DataFrame, Series
+from yfinance.scrapers.quote import FastInfo
+
 import datehelper
-from main.enums import Period, Interval, SeriesName
+from imon.enums import Period, Interval, SeriesName
 
 
 def getOneYearAgo() -> str:
@@ -20,6 +23,21 @@ class TickerHistory:
     oneYearAgo = getOneYearAgo()
     default_period:Period = Period.oneYear
     default_interval:Interval = Interval.oneWeek
+    currConverter = CurrencyConverter()
+
+    @staticmethod
+    def getFastInfo( ticker:str ) -> FastInfo:
+        yf_ticker = yfinance.Ticker( ticker )
+        return yf_ticker.fast_info
+
+    @staticmethod
+    def convertToEuro( value, fromCurr="USD" ):
+        conv_val = TickerHistory.currConverter.convert( value, fromCurr, "EUR" )
+        return conv_val
+
+    # def getFastInfos( self, tickerlist:List[str] ) :
+    #     yf_tickers = yfinance.Tickers( tickerlist )
+    #     fastInfos = yf_tickers.??
 
     @staticmethod
     def getTickerHistoryByPeriod( ticker: str,

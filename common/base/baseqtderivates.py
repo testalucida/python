@@ -406,6 +406,12 @@ class WholeWordButton( BaseIconButton ):
         self.setToolTip( "Schaltet um zwischen Vergleich nur von ganzen Wörtern ja/nein" )
         self.setCheckable( True )
 
+#################  HistoryButton  #####################
+class HistoryButton( BaseIconButton ):
+    def __init__( self, tooltip="Zeigt die Historie an", parent=None ):
+        BaseIconButton.__init__( self, QIcon( BASE_IMAGES_DIR + "history.png" ), QSize( 28, 28 ), parent )
+        self.setToolTip( tooltip )
+
 #################   BaseGridLayout  #########################
 class BaseGridLayout( QGridLayout ):
     def __init__( self ):
@@ -676,6 +682,19 @@ class BaseEdit( QLineEdit, AutoWidth, GetSetValue ):
 
     def setValue( self, value: str ):
         self.setText( value )
+
+    def setBold( self, bold=True ):
+        font = self.font()
+        font.setBold( bold )
+        self.setFont( font )
+
+    def setTextColor( self, color:str ):
+        """
+        changes the color of the displayed text
+        :param color: like "red", "green", "black",...
+        :return:
+        """
+        self.setStyleSheet( "color: %s;" % color )
 
     def setFixedWidthAuto( self ):
         w = self.getTextWidth( self.text() )
@@ -1370,26 +1389,28 @@ class SearchWidget( BaseWidget ):
     searchtextChanged = Signal()
     openSettings = Signal()
 
-    def __init__( self ):
+    def __init__( self, withSettings=True ):
         BaseWidget.__init__( self )
         self._layout = QHBoxLayout()
         self._searchfield = SearchField()
         # forward signals from searchfield:
         self._searchfield.doSearch.connect( self.doSearch.emit )
         self._searchfield.searchTextChanged.connect( self.searchtextChanged.emit )
-        self._btnSettings = SettingsIconButton()
-        self._btnSettings.clicked.connect( self.openSettings.emit )
-        self._createGui()
+        if withSettings:
+            self._btnSettings = SettingsIconButton()
+            self._btnSettings.clicked.connect( self.openSettings.emit )
+        self._createGui( withSettings )
 
-    def _createGui( self ):
+    def _createGui( self, withSettings:bool ):
         l = self._layout
         self.setLayout( l )
         l.setContentsMargins( 0, 0, 0, 0 )
         l.addWidget( self._searchfield, alignment=Qt.AlignLeft )
-        self._btnSettings.setFixedSize( QSize(25, 25) )
-        self._btnSettings.setFlat( True )
-        self._btnSettings.setToolTip( "Öffnet den Dialog zum Einstellen der Suchmethodik")
-        l.addWidget( self._btnSettings, alignment=Qt.AlignLeft )
+        if withSettings:
+            self._btnSettings.setFixedSize( QSize(25, 25) )
+            self._btnSettings.setFlat( True )
+            self._btnSettings.setToolTip( "Öffnet den Dialog zum Einstellen der Suchmethodik")
+            l.addWidget( self._btnSettings, alignment=Qt.AlignLeft )
 
     def setSearchFieldBackgroundColor( self, htmlColor:str ) -> None:
         self._searchfield.setBackgroundColor( htmlColor )
@@ -1561,6 +1582,16 @@ def testLabelColor():
     # lbl.setBackground( "red" )
     # lbl.setTextColor( "white" )
     lbl.show()
+    app.exec_()
+
+def testEditColor():
+    app = QApplication()
+    ed = BaseEdit( isReadOnly=True )
+    ed.setValue( "ABVCLSDKI" )
+    ed.setBold()
+    ed.setTextColor( "red" )
+    ed.show()
+    ed.setFocusPolicy( Qt.NoFocus )
     app.exec_()
 
 if __name__ == "__main__":
