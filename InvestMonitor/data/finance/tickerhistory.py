@@ -106,12 +106,14 @@ class TickerHistory:
         return df[seriesName.name]
 
 
+
+
 ################  TEST TEST TEST   ###########################
 def test3():
     tick_hist = TickerHistory()
     df = tick_hist.getTickerHistories( ["GGRG.L", "QDVX.DE"] )
     series = df["Close"]
-    series.plot()
+    series._plot()
     print( "fertig" )
 
 def test2():
@@ -120,6 +122,6 @@ def test2():
 
 def test():
     tick_hist = TickerHistory()
-    df = tick_hist.getTickerHistory( "VJPN.SW" )
+    df = tick_hist.getTickerHistoryByPeriod( "VJPN.SW" )
     series:Series = df["Close"]
     series.plot()

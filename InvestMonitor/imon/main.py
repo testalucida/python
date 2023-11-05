@@ -2,10 +2,13 @@ import sys
 
 from PySide2.QtGui import QPixmap
 from PySide2.QtWidgets import QApplication, QSplashScreen
+sys.path.append( "../" )
+sys.path.append( "../common" )
+print( "sys.path: ", sys.path )
 from controller.maincontroller import MainController
 from imon.definitions import ICON_DIR
 
-sys.path.append( "../../common" )
+
 
 def main():
     app = QApplication( sys.argv )

@@ -166,7 +166,7 @@ def test8():
             fig = Figure( figsize=(7, 5), dpi=65 )
             canvas = FigureCanvas( fig )
             canvas.axes = fig.add_subplot( 111 )
-            canvas.axes.plot( [0, 1, 2, 3, 4], [10, 1, 20, 3, 40] )
+            canvas.axes._plot( [0, 1, 2, 3, 4], [10, 1, 20, 3, 40] )
             #print( type( sc ) )
             self.setCentralWidget( canvas )
 
@@ -201,7 +201,7 @@ def test9():
             # Create the maptlotlib FigureCanvas object,
             # which defines a single set of axes as self.axes.
             sc = MplCanvas( self, width=5, height=4, dpi=100 )
-            sc.axes.plot( [0, 1, 2, 3, 4], [10, 1, 20, 3, 40] )
+            sc.axes._plot( [0, 1, 2, 3, 4], [10, 1, 20, 3, 40] )
             self.setCentralWidget( sc )
 
             self.show()

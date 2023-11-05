@@ -4,7 +4,7 @@ from abc import abstractmethod
 from enum import Enum
 from typing import Any, List, Tuple, Callable, Iterable
 
-from PySide2 import QtWidgets, QtCore
+from PySide2 import QtWidgets, QtCore, QtGui
 from PySide2.QtCore import QDate, Qt, QAbstractTableModel, QRect, Signal, QSize, QMargins, QEvent, QObject
 from PySide2.QtGui import QDoubleValidator, QIntValidator, QFont, QGuiApplication, QStandardItemModel, QStandardItem, \
     QMouseEvent, QTextDocument, QIcon, QFontMetrics, QValidator, QCursor
@@ -89,6 +89,16 @@ class BaseComboBox( QComboBox, GetSetValue ):
     def __init__(self, parent=None ):
         QComboBox.__init__( self )
         self._userData:Any = None
+        self._changeCurrentByMouseWheel = False
+
+    def setChangeCurrentByMouseWheel( self, change=True ):
+        self._changeCurrentByMouseWheel = True
+
+    def wheelEvent(self, e:QtGui.QWheelEvent):
+        if self._changeCurrentByMouseWheel:
+            super().wheelEvent( e )
+        else:
+            pass
 
     def getValue( self ) -> str:
         return self.currentText()

@@ -19,8 +19,7 @@ class InfoPanelController:
         infopanel = InfoPanel()
         infopanel.setModel( xdepotpos )
         infopanel.show_details.connect( self.onShowDetails )
-        infopanel.period_changed.connect( self.onPeriodChanged )
-        infopanel.interval_changed.connect( self.onIntervalChanged )
+        infopanel.update_graph.connect( self.onUpdateGraph )
         infopanel.enter_bestand_delta.connect( self.onEnterBestandDelta )
         infopanel.show_kauf_historie.connect( self.onShowKaufHistorie )
         infopanel.update_kurs.connect( self.onUpdateKurs )
@@ -33,11 +32,10 @@ class InfoPanelController:
     def onShowDetails( self ):
         print( "onShowDetails" )
 
-    def onPeriodChanged( self, period:Period ):
-        print( "onPeriodChanged: ", period.value )
-
-    def onIntervalChanged( self, interval:Interval ):
-        print( "onIntervalChanged: ", interval.value )
+    def onUpdateGraph( self, period:Period, interval:Interval ):
+        #print( "onUpdateGraph: ", period.value, " / ", interval.value )
+        self._logic.updateDepotPositionData( self._x, period, interval )
+        self._infoPanel.changeModel( self._x )
 
     def onEnterBestandDelta( self ):
         print( "onEnterBedrstandElta" )
@@ -49,13 +47,15 @@ class InfoPanelController:
         print( "onUpdateKurs" )
 
 
-# def test2():
-#     from PySide2.QtWidgets import QApplication
-#     app = QApplication()
-#     ipc = InfoPanelController()
-#     ipanel = ipc.createInfoPanel( XDepotPosition() )
-#     ipanel.show()
-#     app.exec_()
+def test2():
+    from PySide2.QtWidgets import QApplication
+    app = QApplication()
+    ipc = InfoPanelController()
+    logic = InvestMonitorLogic( isTest=False )
+    deppos = logic.getDepotPosition( "QDVX.DE", Period.oneYear, Interval.oneWeek )
+    ipanel = ipc.createInfoPanel( deppos )
+    ipanel.show()
+    app.exec_()
 
 def test():
     from PySide2.QtWidgets import QApplication

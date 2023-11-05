@@ -13,6 +13,7 @@ from imon.definitions import DATABASE_DIR
 class InvestMonitorLogic:
     def __init__( self, isTest=False ):
         self.TEST = isTest
+        print( "running in '%s' environment" % ("TEST" if isTest else "RELEASE") )
         self._db = InvestMonitorData()
         self._tickerHist = TickerHistory()
         self._defaultPeriod = Period.oneYear
@@ -59,8 +60,24 @@ class InvestMonitorLogic:
                                                                                   interval=interval )
         return tickerHistories
 
-    def getDepotPositions( self ) -> (List[XDepotPosition], Period, Interval):
-        """Scanned Document
+    def getDepotPosition( self, ticker:str, period=Period.oneYear, interval=Interval.oneWeek ) -> XDepotPosition:
+        """
+        Liefert alle Daten für die Depotposition <ticker>.
+
+        :param ticker:
+        :param period:
+        :param interval:
+        :return:
+        """
+        deppos:XDepotPosition = self._db.getDepotPosition( ticker )
+        tickerHistory:DataFrame = self._tickerHist.getTickerHistoryByPeriod( ticker, period, interval )
+        closeHist:Series = tickerHistory[SeriesName.Close.value]
+        self._provideOrderData( deppos )
+        self._provideDepotPositionData( deppos, closeHist )
+        return deppos
+
+    def getDepotPositions( self ) -> List[XDepotPosition]: #(List[XDepotPosition], Period, Interval):
+        """
         Liefert die Depot-Positionen inkl. der Bestände und der Kursentwicklung in der Default-Periode und
         im Default-Zeitintervall
         :return:
@@ -82,25 +99,39 @@ class InvestMonitorLogic:
 
         closeDf:DataFrame = tickerHistories[SeriesName.Close.value]
         for deppos in poslist:
-            self._provideDeltaData( deppos )
+            self._provideOrderData( deppos )
             try:
                 closeHist:Series = closeDf[deppos.ticker]
-                deppos.history = closeHist
-                deppos.history_period = self._defaultPeriod
-                deppos.history_interval = self._defaultInterval
+                self._provideDepotPositionData( deppos, closeHist )
             except Exception as ex:
                 print( deppos.ticker, " not found in DataFrame closeDf" )
-
-            try:
-                #deppos.kurs_aktuell = self.getLastEuroPrice( deppos.ticker, deppos.wkn )
-                self._ensureEuro( deppos )
-                deppos.gesamtwert_aktuell = int( round( deppos.stueck * deppos.kurs_aktuell, 2 ) )
-                if deppos.gesamtkaufpreis > 0:
-                    deppos.delta_proz = round( (deppos.gesamtwert_aktuell / deppos.gesamtkaufpreis - 1) * 100, 2 )
-            except Exception as ex:
-                print( deppos.wkn, "/", deppos.ticker, ": no fast info available " )
-
         return poslist
+
+    def _provideDepotPositionData( self, deppos:XDepotPosition, closeHist:Series ) -> None:
+        deppos.history = closeHist
+        deppos.history_period = self._defaultPeriod
+        deppos.history_interval = self._defaultInterval
+        try:
+            self._ensureEuro( deppos )
+            deppos.gesamtwert_aktuell = int( round( deppos.stueck * deppos.kurs_aktuell, 2 ) )
+            if deppos.gesamtkaufpreis > 0:
+                deppos.delta_proz = round( (deppos.gesamtwert_aktuell / deppos.gesamtkaufpreis - 1) * 100, 2 )
+        except Exception as ex:
+            print( deppos.wkn, "/", deppos.ticker, ": no fast info available " )
+
+    def updateDepotPositionData( self, x:XDepotPosition, period:Period, interval:Interval ) -> None:
+        """
+        Ermittelt für das übergebene Wertpapier die Historie gem. <period> und <interval>
+        und schreibt diese Werte in <x> (x.history, x.history_period, x.history_interval.
+        :param x: die zu aktualisierende Depot-Position
+        :param period:
+        :param interval:
+        :return:
+        """
+        df:DataFrame = self._tickerHist.getTickerHistoryByPeriod( x.ticker, period, interval )
+        self._provideDepotPositionData( x, df[SeriesName.Close.value] )
+        x.history_period = period
+        x.history_interval = interval
 
     def _ensureEuro( self, deppos:XDepotPosition ):
         """
@@ -111,7 +142,7 @@ class InvestMonitorLogic:
         :param deppos: XDepotPosition
         """
         ticker = deppos.ticker
-        wkn = deppos.wkn
+        #wkn = deppos.wkn
         fastInfo: FastInfo = self._tickerHist.getFastInfo( ticker )
         last_price = fastInfo.last_price
         currency = str(fastInfo.currency)
@@ -160,7 +191,7 @@ class InvestMonitorLogic:
     #         last_price = fastInfo.last_price
     #     return round( last_price, 3 )
 
-    def _provideDeltaData( self, deppos:XDepotPosition ):
+    def _provideOrderData( self, deppos:XDepotPosition ):
         """
         Holt zur übergebenen Depotposition die delta-Daten aus der DB und trägt sie ein
         :param deppos:

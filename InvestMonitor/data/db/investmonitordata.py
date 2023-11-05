@@ -18,6 +18,15 @@ class InvestMonitorData( DatabaseCommon ):
         xlist = self.readAllGetObjectList( sql, XDepotPosition )
         return xlist
 
+    def getDepotPosition( self, ticker:str ) -> XDepotPosition:
+        sql = "select pos.id, isin, ticker, wkn, basic_index, name, gattung, waehrung, flag_acc, beschreibung, " \
+              "dep.id as depot_id, dep.bank, dep.nr as depot_nr, dep.vrrkto " \
+              "from depotposition pos " \
+              "inner join depot dep on dep.id = pos.depot_id " \
+              "where ticker = '%s' " % ticker
+        x = self.readOneGetObject( sql, XDepotPosition )
+        return x
+
     def getAllMyTickers( self ) -> List[str]:
         sql = "select ticker " \
               "from depotposition pos " \

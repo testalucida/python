@@ -2,7 +2,7 @@ from enum import Enum
 from typing import List, Tuple
 
 import matplotlib
-from PySide2.QtCore import QSize, Signal, Qt
+from PySide2.QtCore import QSize, Signal, Qt, Slot
 #from pandas import DataFrame
 
 from base.baseqtderivates import BaseGridLayout, BaseLabel, BaseEdit, SignedNumEdit, IntEdit, FloatEdit, HLine, \
@@ -26,11 +26,22 @@ class NavigationToolbar(NavigationToolbar2QT):
 ##############################################################
 class MplCanvas(FigureCanvasQTAgg):
     def __init__(self, width=5, height=4, dpi=100):
-        fig = Figure(figsize=(width, height), dpi=dpi)
-        self.axes = fig.add_subplot(111)
-        super(MplCanvas, self).__init__(fig)
+        self._width = width
+        self._height = height
+        self._dpi = dpi
+        self._figure = Figure(figsize=(width, height), dpi=dpi)
+        self.axes = self._figure.add_subplot(111)
+        super(MplCanvas, self).__init__( self._figure )
 
         self.toolbar = NavigationToolbar( self, self )
+
+    def clear( self ):
+        self._figure.clear()
+        self._figure = Figure( figsize=(self._width, self._height), dpi=self._dpi )
+        self.figure = self._figure
+        self.axes = self._figure.add_subplot( 111 )
+
+
 
 #############################################################
 class InfoPanel( QWidget ):
@@ -38,18 +49,19 @@ class InfoPanel( QWidget ):
     Ein InfoPanel enthält alle Informationen zu einem Wertpapier (Aktie, Fonds- oder ETF-Anteil)
     und einen Graph, der die Kursentwicklung eines Zeitraums anzeigt.
     """
-    period_changed = Signal( Period )   # arg: neues Periodenkürzel
-    interval_changed = Signal( Interval ) # arg: neues Intervall-Kürzel
+    # period_changed = Signal( Period )   # arg: neues Periodenkürzel
+    # interval_changed = Signal( Interval ) # arg: neues Intervall-Kürzel
+    update_graph = Signal( Period, Interval )
     enter_bestand_delta = Signal()
     show_kauf_historie = Signal()
     update_kurs = Signal()
     show_details = Signal()
 
     @staticmethod
-    def createCombo( items: List[str], signal_to_emit: Signal, enu:Enum ) -> BaseComboBox:
+    def createCombo( items: List[str], slot:Slot ) -> BaseComboBox:
         cbo = BaseComboBox()
         cbo.addItems( items )
-        cbo.currentIndexChanged.connect( lambda x: signal_to_emit.emit( getEnumFromValue( enu, cbo.currentText() ) ) )
+        cbo.currentIndexChanged.connect( slot )
         return cbo
 
     def __init__(self):
@@ -65,9 +77,10 @@ class InfoPanel( QWidget ):
         self._btnDetails.clicked.connect( self.show_details.emit )
         self._btnDetails.setMaximumSize( QSize(23, 23) )
         self._layCombos = QHBoxLayout()
-        self._cboPeriod = self.createCombo( Period.getPeriods(), self.period_changed, Period )
-        self._cboInterval = self.createCombo( Interval.getIntervals(), self.interval_changed, Interval )
-
+        self._cboPeriod = self.createCombo( Period.getPeriods(), self.onPeriodIntervalChanged )
+        self._cboInterval = self.createCombo( Interval.getIntervals(), self.onPeriodIntervalChanged )
+        self._btnUpdateGraph = BaseButton( "⟳", callback=self.onUpdateGraphClicked )
+        self._btnUpdateGraph.setFixedSize( QSize( 23, 23 ) )
         self._lblWkn = BaseEdit( isReadOnly=True )
         #self._lblWkn.setMaximumWidth( maxwtextlabels )
         self._lblTicker = BaseEdit( isReadOnly=True )
@@ -119,6 +132,7 @@ class InfoPanel( QWidget ):
         self._layCombos.addWidget( self._cboPeriod )
         self._layCombos.addWidget( BaseLabel( " Interval" ) )
         self._layCombos.addWidget( self._cboInterval )
+        self._layCombos.addWidget( self._btnUpdateGraph )
         c = 4
         l.addLayout( self._layCombos, r, c )
         r += 1
@@ -219,10 +233,29 @@ class InfoPanel( QWidget ):
 
     def setModel( self, x:XDepotPosition ):
         self._x = x
+        self._dataToGui()
+        self._btnUpdateGraph.setEnabled( False )
+        self._plot()
+
+    def changeModel( self, x:XDepotPosition ):
+        """
+        Versieht dieses InfoPanel mit einer geänderten Depot-Position, was zur Änderung es Graphen führt.
+        (x- und ggf. y-Achse - nach Änderung von Period oder Interval)
+        :return:
+        """
+        self._x = x
+        self._dataToGui()
+        self._btnUpdateGraph.setEnabled( False )
+        self._mplCanvas.clear()
+        self._plot()
+        self._mplCanvas.draw()
+
+    def _dataToGui( self ):
+        x = self._x
         self._cboPeriod.setCurrentText( x.history_period.value )
         self._cboInterval.setCurrentText( x.history_interval.value )
-        self._lblName.setValue(x.name)
-        #self._lblWkn.setValue( x.wkn )
+        self._lblName.setValue( x.name )
+        # self._lblWkn.setValue( x.wkn )
         self._lblIsin.setValue( x.isin )
         self._lblWkn.setValue( x.wkn )
         self._lblTicker.setValue( x.ticker )
@@ -233,12 +266,9 @@ class InfoPanel( QWidget ):
         self._lblPreisProStueck.setValue( x.preisprostueck )
         self._lblMaxKaufpreis.setValue( x.maxKaufpreis )
         self._lblMinKaufpreis.setValue( x.minKaufpreis )
-
         self._lblGesamtWertAktuell.setValue( x.gesamtwert_aktuell )
         self._lblKursAktuell.setValue( x.kurs_aktuell )
         self._lblDeltaProz.setValue( x.delta_proz )
-
-        self._plot()
 
     def getModel( self ) -> XDepotPosition:
         return self._x
@@ -250,6 +280,17 @@ class InfoPanel( QWidget ):
 
     def _plot( self ):
         self._x.history.plot( ax=self._mplCanvas.axes, grid=True )
+
+    def onPeriodIntervalChanged( self ):
+        self._btnUpdateGraph.setEnabled( True )
+
+    def onUpdateGraphClicked( self ):
+        period = getEnumFromValue( Period, self._cboPeriod.currentText() )
+        interval = getEnumFromValue( Interval, self._cboInterval.currentText() )
+        self._btnUpdateGraph.setEnabled( False )
+        self.update_graph.emit( period, interval )
+        # self._cboPeriod.setValue( period.value )
+        # self._cboInterval.setValue( interval.value )
 
 
 ##########  TEST ###  TEST  ###################################################

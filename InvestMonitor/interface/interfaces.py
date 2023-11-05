@@ -22,6 +22,8 @@ class XDepotPosition( XBase ):
         self.history:Series = None
         self.history_period = Period.unknown
         self.history_interval = Interval.unknown
+        self.low_price = 0.0 # todo: der niedrigste Preis in der Periode
+        self.high_price = 0.0 # todo: der höchste Preis in der Periode
         self.stueck = 0
         self.gesamtkaufpreis = 0 #Kaufpreis des gesamten Bestands
         self.preisprostueck = 0.0 # Gesamtkaufpreis / Stück
