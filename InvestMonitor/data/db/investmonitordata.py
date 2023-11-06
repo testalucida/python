@@ -27,6 +27,14 @@ class InvestMonitorData( DatabaseCommon ):
         x = self.readOneGetObject( sql, XDepotPosition )
         return x
 
+    def getDeltas( self, wkn:str ) -> List[XDelta]:
+        sql = "select id, wkn, delta_stck, delta_datum, preis_stck, bemerkung, delta_stck*preis_stck as order_summe " \
+              "from delta " \
+              "where wkn = '%s' " \
+              "order by delta_datum desc " % wkn
+        deltalist = self.readAllGetObjectList( sql, XDelta )
+        return deltalist
+
     def getAllMyTickers( self ) -> List[str]:
         sql = "select ticker " \
               "from depotposition pos " \
@@ -34,15 +42,6 @@ class InvestMonitorData( DatabaseCommon ):
         tupleList = self.read( sql )
         tickerlist = [tpl[0] for tpl in tupleList]
         return tickerlist
-
-    def getDeltas( self, wkn:str ) -> List[XDelta]:
-        sql = "select id, wkn, delta_stck, delta_datum, preis_stck, bemerkung " \
-              "from delta " \
-              "where wkn = '%s' " % wkn
-        xlist = self.readAllGetObjectList( sql, XDelta )
-        return xlist
-
-
 
 
 def test():

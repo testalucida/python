@@ -270,6 +270,9 @@ class InfoPanel( QWidget ):
         self._lblKursAktuell.setValue( x.kurs_aktuell )
         self._lblDeltaProz.setValue( x.delta_proz )
 
+    def updateKursAktuell( self, kurs:float ):
+        self._lblKursAktuell.setValue( kurs )
+
     def getModel( self ) -> XDepotPosition:
         return self._x
 
@@ -289,8 +292,6 @@ class InfoPanel( QWidget ):
         interval = getEnumFromValue( Interval, self._cboInterval.currentText() )
         self._btnUpdateGraph.setEnabled( False )
         self.update_graph.emit( period, interval )
-        # self._cboPeriod.setValue( period.value )
-        # self._cboInterval.setValue( interval.value )
 
 
 ##########  TEST ###  TEST  ###################################################

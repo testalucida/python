@@ -4,6 +4,7 @@ from pandas import DataFrame, Series
 import pandas as pd
 from yfinance.scrapers.quote import FastInfo
 
+from base.basetablemodel import BaseTableModel, SumTableModel
 from data.db.investmonitordata import InvestMonitorData
 from data.finance.tickerhistory import Period, Interval, TickerHistory, SeriesName
 from interface.interfaces import XDepotPosition, XDelta
@@ -112,7 +113,10 @@ class InvestMonitorLogic:
         deppos.history_period = self._defaultPeriod
         deppos.history_interval = self._defaultInterval
         try:
-            self._ensureEuro( deppos )
+            #self._ensureEuro( deppos )
+            deppos.kurs_aktuell, orig_currency = self.getKursAktuellInEuro( deppos.ticker )
+            if orig_currency != "EUR":
+                deppos.history = self._translateSeries( deppos.history, orig_currency )
             deppos.gesamtwert_aktuell = int( round( deppos.stueck * deppos.kurs_aktuell, 2 ) )
             if deppos.gesamtkaufpreis > 0:
                 deppos.delta_proz = round( (deppos.gesamtwert_aktuell / deppos.gesamtkaufpreis - 1) * 100, 2 )
@@ -133,7 +137,23 @@ class InvestMonitorLogic:
         x.history_period = period
         x.history_interval = interval
 
-    def _ensureEuro( self, deppos:XDepotPosition ):
+    def getKursAktuellInEuro( self, ticker:str ) -> (float, str):
+        """
+        Ermittelt den letzten Kurs des Wertpapiers.
+        Transformiert ihn in EUR, wenn erforderlich.
+        umgewandelt in eine Serie mit EUR-Werten.
+        :param ticker:
+        :return: den letzten Kurs in Euro, gerundet auf 3 Stellen hinter dem Komma
+                 UND die ursprüngliche Währung (EUR oder Fremdwährung, die konvertiert wurde)
+        """
+        fastInfo: FastInfo = self._tickerHist.getFastInfo( ticker )
+        last_price = fastInfo.last_price
+        currency = str( fastInfo.currency )
+        if currency != "EUR":
+            last_price = self._toEuro( last_price, currency )
+        return round( last_price, 3 ), currency
+
+    def _ensureEuro____( self, deppos:XDepotPosition ):
         """
         Ermittelt den letzten Kurs des Wertpapiers.
         Transformiert ihn in EUR, wenn erforderlich.
@@ -147,13 +167,21 @@ class InvestMonitorLogic:
         last_price = fastInfo.last_price
         currency = str(fastInfo.currency)
         if currency != "EUR":
-            #print( ticker, " / ", wkn, ": ", currency, ": ", fastInfo.last_price )
-            if currency == "GBp":
-                last_price = last_price / 100
-            last_price = TickerHistory.convertToEuro( last_price, fromCurr=currency.upper() )
+            last_price = self._toEuro( last_price, currency )
+            # if currency == "GBp":
+            #     last_price = last_price / 100
+            # last_price = TickerHistory.convertToEuro( last_price, fromCurr=currency.upper() )
             deppos.history = self._translateSeries( deppos.history, currency )
             #print( ticker, " / ", wkn, " nach Korrektur: ", currency.upper(), ": ", deppos.kurs_aktuell )
         deppos.kurs_aktuell = round( last_price, 3 )
+
+    @staticmethod
+    def _toEuro( betrag:int or float, currency:str ) -> float:
+        if "EUR" in currency:
+            return betrag
+        if currency == "GBp": # p -> pence, nicht Pound
+            betrag = betrag / 100
+        return TickerHistory.convertToEuro( betrag, fromCurr=currency.upper() )
 
     @staticmethod
     def _translateSeries( series:Series, currency:str ):
@@ -176,20 +204,6 @@ class InvestMonitorLogic:
         index = series.index
         serNew = Series(vlist, index)
         return serNew
-
-    # def getLastEuroPrice( self, ticker:str, wkn:str ) -> float:
-    #     fastInfo: FastInfo = self._tickerHist.getFastInfo( ticker )
-    #     if fastInfo.currency != "EUR":
-    #         print( ticker, " / ", wkn, ": ", fastInfo.currency, ": ", fastInfo.last_price )
-    #         last_price = fastInfo.last_price
-    #         if fastInfo.currency == "GBp":
-    #             last_price = last_price / 100
-    #         currency = str(fastInfo.currency).upper()
-    #         last_price = TickerHistory.convertCurrency( last_price, fromCurr=currency )
-    #         print( ticker, " / ", wkn, " nach Korrektur: ", currency, ": ", last_price )
-    #     else:
-    #         last_price = fastInfo.last_price
-    #     return round( last_price, 3 )
 
     def _provideOrderData( self, deppos:XDepotPosition ):
         """
@@ -218,10 +232,16 @@ class InvestMonitorLogic:
         df:DataFrame = self.getHistoryByPeriod( ticker, period, interval )
         return df[seriesName.value]
 
+    def getOrders( self, wkn:str ) -> SumTableModel:
+        deltalist = self._db.getDeltas( wkn )
+        tm = SumTableModel( deltalist, 0, ("delta_stck", "order_summe") )
+        tm.setKeyHeaderMappings2( ("delta_datum", "delta_stck", "preis_stck",    "order_summe",   "bemerkung"),
+                                  ("Datum",        "Stück",     "Stück-\npreis (€)", "Order-\nsumme (€)", "Bemerkung") )
+        return tm
 
 def test():
     logic = InvestMonitorLogic()
-    lastPrice = logic.getLastEuroPrice( "PRIJ.L" )
+    lastPrice = logic.getKursAktuellInEuro( "PRIJ.L" )
     #poslist = logic.getDepotPositions()
     #print( poslist )
 

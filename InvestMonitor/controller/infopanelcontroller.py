@@ -1,10 +1,14 @@
 from typing import List
 
+from PySide2.QtCore import QSize
 from pandas import Series
 
+from base.basetablemodel import BaseTableModel
+from base.basetableview import BaseTableView
 from data.finance.tickerhistory import Period, Interval, SeriesName
+from generictable_stuff.okcanceldialog import OkDialog
 from gui.infopanel import InfoPanel
-from interface.interfaces import XDepotPosition
+from interface.interfaces import XDepotPosition, XDelta
 from logic.investmonitorlogic import InvestMonitorLogic
 
 
@@ -42,17 +46,27 @@ class InfoPanelController:
 
     def onShowKaufHistorie( self ):
         print( "onShowKaufHistorie" )
+        tm:BaseTableModel = self._logic.getOrders( self._x.wkn )
+        tv = BaseTableView()
+        tv.setModel( tm )
+        w = tv.getPreferredWidth()
+        h = tv.getPreferredHeight()
+        dlg = OkDialog( title="Orderhistorie für WKN '%s', '%s' " % (self._x.wkn, self._x.name) )
+        dlg.addWidget( tv, 0 )
+        dlg.resize( QSize(w+25, h+25) )
+        dlg.exec_()
 
     def onUpdateKurs( self ):
         print( "onUpdateKurs" )
-
+        self._x.kurs_aktuell, dummy = self._logic.getKursAktuellInEuro( self._x.ticker )
+        self._infoPanel.updateKursAktuell( self._x.kurs_aktuell )
 
 def test2():
     from PySide2.QtWidgets import QApplication
     app = QApplication()
     ipc = InfoPanelController()
     logic = InvestMonitorLogic( isTest=False )
-    deppos = logic.getDepotPosition( "QDVX.DE", Period.oneYear, Interval.oneWeek )
+    deppos = logic.getDepotPosition( "IBCG.DE", Period.oneYear, Interval.oneWeek )
     ipanel = ipc.createInfoPanel( deppos )
     ipanel.show()
     app.exec_()
@@ -61,7 +75,7 @@ def test():
     from PySide2.QtWidgets import QApplication
     app = QApplication()
     ipc = InfoPanelController()
-    ticker = "IEFV.L" #"HMWD.L"
+    ticker = "IBCG.DE"  #IEFV.L" #"HMWD.L"
     hist: Series = InvestMonitorLogic.getHistory( ticker, SeriesName.Close )
     log = InvestMonitorLogic( isTest=True )
     poslist = log.getDepotPositions()
