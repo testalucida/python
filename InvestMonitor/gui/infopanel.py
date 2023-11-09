@@ -41,6 +41,10 @@ class MplCanvas(FigureCanvasQTAgg):
         self.figure = self._figure
         self.axes = self._figure.add_subplot( 111 )
 
+    def draw( self ):
+        super().draw()
+        rend = self.get_renderer()
+        self._figure.draw( rend )
 
 
 #############################################################
@@ -114,6 +118,10 @@ class InfoPanel( QWidget ):
         self._btnKursAktualisieren = BaseButton( "⟳" )
         self._btnKursAktualisieren.clicked.connect( self.update_kurs.emit )
         self._btnKursAktualisieren.setFixedSize( QSize(23, 23) )
+        self._lblDivJeStck = FloatEdit( isReadOnly=True )
+        self._lblDivJeStck.setMaximumWidth( maxwnumlabels )
+        self._lblDivYield = FloatEdit( isReadOnly=True )
+        self._lblDivYield.setMaximumWidth( maxwnumlabels )
         self._lblDeltaProz = FloatEdit( isReadOnly=True )
         self._lblDeltaProz.setMaximumWidth( maxwnumlabels )
         self._createGui()
@@ -133,8 +141,10 @@ class InfoPanel( QWidget ):
         self._layCombos.addWidget( BaseLabel( " Interval" ) )
         self._layCombos.addWidget( self._cboInterval )
         self._layCombos.addWidget( self._btnUpdateGraph )
+        self._layCombos.addStretch()
         c = 4
         l.addLayout( self._layCombos, r, c )
+
         r += 1
         c = 0
         l.addWidget( self._lblWkn, r, c, 1, 2 )
@@ -205,13 +215,30 @@ class InfoPanel( QWidget ):
         c = 0
         l.addWidget( BaseLabel( "Kurs" ), r, c )
         c = 1
-        self._lblKursAktuell.setToolTip( "aktueller Kurs" )
+        self._lblKursAktuell.setToolTip( "aktueller Kurs in Euro" )
         l.addWidget( self._lblKursAktuell, r, c )
         c = 2
         l.addWidget( BaseLabel( "€" ), r, c )
         c = 3
         self._btnKursAktualisieren.setToolTip( "Kurs aktualisieren")
         l.addWidget( self._btnKursAktualisieren, r, c, 1, 1, Qt.AlignLeft )
+        r += 1
+        c = 0
+        l.addWidget( BaseLabel( "Div./Stck" ), r, c )
+        c = 1
+        self._lblDivJeStck.setToolTip( "Dividende in Euro im gewählten Zeitraum pro Stück" )
+        l.addWidget( self._lblDivJeStck, r, c )
+        c = 2
+        l.addWidget( BaseLabel( "€" ) )
+
+        r += 1
+        c = 0
+        l.addWidget( BaseLabel( "Div.Rend." ), r, c )
+        c = 1
+        self._lblDivYield.setToolTip( "Dividendenrendite: Dividende/akt.Kurs" )
+        l.addWidget( self._lblDivYield, r, c )
+        c = 2
+        l.addWidget( BaseLabel( "%" ) )
 
         r += 1
         c = 0
@@ -230,6 +257,12 @@ class InfoPanel( QWidget ):
         # der Graph:
         r, c = 2, 4
         l.addWidget( self._mplCanvas, r, c, l.rowCount()-1, 3 )
+
+        l.setColumnStretch( 0, 0 )
+        l.setColumnStretch( 1, 0 )
+        l.setColumnStretch( 2, 0 )
+        l.setColumnStretch( 3, 0 )
+        l.setColumnStretch( 4, 1 )
 
     def setModel( self, x:XDepotPosition ):
         self._x = x
@@ -268,10 +301,13 @@ class InfoPanel( QWidget ):
         self._lblMinKaufpreis.setValue( x.minKaufpreis )
         self._lblGesamtWertAktuell.setValue( x.gesamtwert_aktuell )
         self._lblKursAktuell.setValue( x.kurs_aktuell )
+        self._lblDivJeStck.setValue( x.dividend_period )
+        self._lblDivYield.setValue( x.dividend_yield )
         self._lblDeltaProz.setValue( x.delta_proz )
 
-    def updateKursAktuell( self, kurs:float ):
+    def updateKursAktuell( self, kurs:float, divYield:float ):
         self._lblKursAktuell.setValue( kurs )
+        self._lblDivYield.setValue( divYield )
 
     def getModel( self ) -> XDepotPosition:
         return self._x

@@ -22,6 +22,9 @@ class XDepotPosition( XBase ):
         self.history:Series = None
         self.history_period = Period.unknown
         self.history_interval = Interval.unknown
+        #self.dividends:Series = None # Dividenden, die im Lauf von history_period ausgeschüttet wurden.
+        self.dividend_period = 0.0 # Summe der Dividenden PRO STÜCK, die während history_period ausgeschüttet wurden
+        self.dividend_yield = 0.0 # Dividenden-Rendite
         self.low_price = 0.0 # todo: der niedrigste Preis in der Periode
         self.high_price = 0.0 # todo: der höchste Preis in der Periode
         self.stueck = 0
@@ -46,7 +49,20 @@ class XDelta( XBase ):
         self.delta_stck = 0
         self.delta_datum = ""
         self.preis_stck = ""
-        self.order_summe = 0.0
+        self.order_summe = 0.0 # delta_stck * preis_stck
         self.bemerkung = ""
         if valuedict:
             self.setFromDict( valuedict )
+
+class XDetail(XBase):
+    """
+    Wird für die Detail-Anzeige im InfoPanel benötigt (nach Drücken des Detail-Buttons).
+    Enthält den Ausschnitt der Daten von XDepotPosition, die nicht im InfoPanel angezeigt werden.
+    """
+    def __init__(self):
+        XBase.__init__( self )
+        self.basic_index = ""
+        self.beschreibung = ""
+        self.bank = ""
+        self.depot_nr = ""
+        self.depot_vrrkto = ""

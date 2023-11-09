@@ -31,13 +31,13 @@ class TickerHistory:
         return yf_ticker.fast_info
 
     @staticmethod
-    def convertToEuro( value, fromCurr="USD" ):
-        conv_val = TickerHistory.currConverter.convert( value, fromCurr, "EUR" )
+    def convertToEuro( value, fromCurr:str ) -> float:
+        curr = fromCurr
+        if curr == "GBp":
+            value /= 100
+            curr = "GBP"
+        conv_val = TickerHistory.currConverter.convert( value, curr, "EUR" )
         return conv_val
-
-    # def getFastInfos( self, tickerlist:List[str] ) :
-    #     yf_tickers = yfinance.Tickers( tickerlist )
-    #     fastInfos = yf_tickers.??
 
     @staticmethod
     def getTickerHistoryByPeriod( ticker: str,

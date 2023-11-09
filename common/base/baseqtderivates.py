@@ -260,9 +260,10 @@ class BaseDialogWithButtons( BaseDialog ):
 
 #################  OkApplyCancelDialog  #############################
 class OkApplyCancelDialog( BaseDialogWithButtons ):
-    def __init__( self, title:str, parent=None, flags=Qt.WindowFlags() ):
+    def __init__( self, title:str, parent=None, flags=Qt.WindowFlags(), okButton=True, applyButton=True, cancelButton=True ):
         BaseDialogWithButtons.__init__( self, title,
-                                        getOkApplyCancelButtonDefinitions( self.onOk, self.onApply, self.onCancel ),
+                                        getButtonDefs( self, okButton, applyButton, cancelButton ),
+                                        #getOkApplyCancelButtonDefinitions( self.onOk, self.onApply, self.onCancel ),
                                         parent, flags )
         self.setWindowTitle( title )
         self._beforeAcceptCallback:Callable = None
@@ -320,6 +321,13 @@ class OkApplyCancelDialog( BaseDialogWithButtons ):
         else:
             self.reject()
 
+###########################################################################
+def getButtonDefs( inst: OkApplyCancelDialog, okButton: bool, applyButton: bool, cancelButton: bool ):
+    if okButton and applyButton and cancelButton:
+        return getOkApplyCancelButtonDefinitions( inst.onOk, inst.onApply, inst.onCancel )
+    if okButton and cancelButton:
+        return getOkCancelButtonDefinitions( inst.onOk, inst.onCancel )
+    return getCloseButtonDefinition( inst.onCancel )
 
 ################  BaseButton  ##########################
 class BaseButton( QPushButton ):

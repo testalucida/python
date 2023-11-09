@@ -59,7 +59,16 @@ class DynamicAttributeView( BaseWidget ):
     def _createWidget( self, key:str, type_:Type, editable:bool, widgetWidth:int=-1, widgetHeight=-1 ) -> QWidget:
         w:QWidget = type_()
         w.setObjectName( key )
-        w.setEnabled( editable )
+        try:
+            # Pfui: mit setEditable( False ) erscheinen die Widgets grau in grau und es funktioniert kein Copy.
+            # Deshalb rufen wir nicht setEditable, sondern versuchen, setReadOnly auf True oder False zu setzen.
+            # Nicht jedes Widget verfügt über diese Methode, deshalb via try
+            w.setReadOnly( not editable )
+        except:
+            try:
+                w.setEnabled( editable )
+            except:
+                pass
         if editable and self._firstEditableWidget is None:
             self._firstEditableWidget = w
         if widgetWidth > 0:
@@ -148,10 +157,8 @@ class DynamicAttributeView( BaseWidget ):
 
 #################   DynamicAttributeDialog   #######################
 class DynamicAttributeDialog( OkApplyCancelDialog ):
-    def __init__(self,  xbaseui:XBaseUI, title="Ändern eines Datensatzes" ):
-        OkApplyCancelDialog.__init__( self, title )
-        # BaseDialogWithButtons.__init__( self, title=title,
-        #                                 buttonDefinitions=getOkCancelButtonDefinitions( self.accept, self.reject ) )
+    def __init__(self,  xbaseui:XBaseUI, title="Ändern eines Datensatzes", okButton=True, applyButton=True, cancelButton=True ):
+        OkApplyCancelDialog.__init__( self, title, okButton=okButton, applyButton=applyButton, cancelButton=cancelButton )
         self._view = DynamicAttributeView( xbaseui )
         self.setMainWidget( self._view )
         self._view.setFocusToFirstEditableWidget()
