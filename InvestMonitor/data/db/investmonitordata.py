@@ -14,7 +14,8 @@ class InvestMonitorData( DatabaseCommon ):
               "dep.id as depot_id, dep.bank, dep.nr as depot_nr, dep.vrrkto " \
               "from depotposition pos " \
               "inner join depot dep on dep.id = pos.depot_id " \
-              "where flag_displ = 1 "
+              "where flag_displ = 1 " \
+              "order by wkn "
         xlist = self.readAllGetObjectList( sql, XDepotPosition )
         return xlist
 
@@ -42,6 +43,15 @@ class InvestMonitorData( DatabaseCommon ):
         tupleList = self.read( sql )
         tickerlist = [tpl[0] for tpl in tupleList]
         return tickerlist
+
+    def insertDelta( self, delta:XDelta ):
+        if not delta.bemerkung: bemerkung = "NULL"
+        else: bemerkung = "'%s'" % delta.bemerkung
+        sql = "insert into delta " \
+              "(wkn, delta_stck, delta_datum, preis_stck, bemerkung) " \
+              "values " \
+              "( '%s', %d, '%s', %.3f, %s )" % ( delta.wkn, delta.delta_stck, delta.delta_datum, delta.preis_stck, bemerkung )
+        self.write( sql )
 
 
 def test():

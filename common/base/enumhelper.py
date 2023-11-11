@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any
+from typing import Any, List
 
 
 class TestEnu( Enum ):
@@ -12,6 +12,10 @@ def getEnumFromValue( enu:Enum, value: Any ):
         if m.value == value:
             return m
 
+def getEnumValues( enu:Enum ) -> List[str]:
+    return [ m.value for m in enu]
+
 def test():
+    print( getEnumValues( TestEnu ) )
     e = getEnumFromValue( TestEnu, "mem2" )
     print( e )

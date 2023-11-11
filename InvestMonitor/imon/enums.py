@@ -1,6 +1,16 @@
 from enum import Enum
 from typing import List
 
+class InfoPanelOrder( Enum ):
+    Wkn = "WKN"
+    Name = "Alphabetisch nach Name"
+    Index = "Alphabetisch nach Index"
+    Depot = "Depot"
+    Gesamtwert = "Gesamtwert"
+    AccFirst = "Thesaurierende zuerst"
+    AccLast = "Ausschüttende zuerst"
+    TopsAndFlops = "Wertentwicklung"
+    DividendYield = "Dividendenrendite"
 
 class SeriesName( Enum ):
     Close = "Close"

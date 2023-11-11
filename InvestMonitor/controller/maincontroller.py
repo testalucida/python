@@ -7,6 +7,7 @@ from PySide2.QtWidgets import QDesktopWidget
 from controller.infopanelcontroller import InfoPanelController
 from gui.infopanel import InfoPanel
 from gui.mainwindow import MainWindow
+from imon.enums import InfoPanelOrder
 from interface.interfaces import XDepotPosition
 from logic.investmonitorlogic import InvestMonitorLogic
 
@@ -23,6 +24,7 @@ class MainController:
         self._mainWin = MainWindow()
         self._mainWin.getSearchField().doSearch.connect( self.onSearchInfoPanel )
         self._mainWin.getSearchField().searchTextChanged.connect( self.onSearchInfoPanelTextChanged )
+        self._mainWin.change_infopanel_order.connect( self.onChangeSortOrder )
         poslist: List[XDepotPosition] = self._logic.getDepotPositions()
         for xdepotpos in poslist:
             infopanelctrl = InfoPanelController()
@@ -62,6 +64,8 @@ class MainController:
             self._selectedInfoPanel.setSelected( False )
             self._selectedInfoPanel = None
 
+    def onChangeSortOrder( self, order:InfoPanelOrder ):
+        print( "order by ", order.value )
 
 def test():
     from PySide2.QtWidgets import QApplication

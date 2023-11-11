@@ -1,4 +1,5 @@
 import enum
+import math
 from datetime import date
 from enum import Enum
 from typing import List
@@ -111,7 +112,7 @@ class TickerHistory:
 ################  TEST TEST TEST   ###########################
 def test3():
     tick_hist = TickerHistory()
-    df = tick_hist.getTickerHistories( ["GGRG.L", "QDVX.DE"] )
+    df = tick_hist.getTickerHistoriesByPeriod( ["EZTQ.F", "IEFV.L"] )
     series = df["Close"]
     series._plot()
     print( "fertig" )
@@ -122,6 +123,19 @@ def test2():
 
 def test():
     tick_hist = TickerHistory()
-    df = tick_hist.getTickerHistoryByPeriod( "VJPN.SW" )
+    df = tick_hist.getTickerHistoryByPeriod( "EZTQ.F" )
     series:Series = df["Close"]
     series.plot()
+
+def testDf():
+    tick_hist = TickerHistory()
+    df = tick_hist.getTickerHistoriesByPeriod( ["EZTQ.F", "IEFV.L"] )
+    close:Series = df["Close"]
+    row = close.tail(1)
+    for name, series in row.items():
+        print( row )
+        print( name, "\t", series, "\t", series[0] )
+        if math.isnan( series[0] ):
+            df = df[:-1]
+            break
+    print( len(df) )

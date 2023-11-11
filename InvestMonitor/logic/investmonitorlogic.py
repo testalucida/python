@@ -1,3 +1,4 @@
+import math
 from typing import List
 
 from pandas import DataFrame, Series
@@ -20,44 +21,44 @@ class InvestMonitorLogic:
         self._minPeriod = Period.oneDay
         self._minInterval = Interval.oneMin
 
-    def saveMyHistories( self ):
-        histDf:DataFrame = self.getMyTickerHistories( self._defaultPeriod, self._defaultInterval )
-        histDf.to_pickle( DATABASE_DIR + "/histories.df" ) # + datehelper.getCurrentDateIso() )
-        actDf:DataFrame = self.getMyTickerHistories( Period.oneDay, Interval.oneMin )
-        actDf.to_pickle( DATABASE_DIR + "/todayhistories.df" )
+    # def saveMyHistories( self ):
+    #     histDf:DataFrame = self.getMyTickerHistories( self._defaultPeriod, self._defaultInterval )
+    #     histDf.to_pickle( DATABASE_DIR + "/histories.df" ) # + datehelper.getCurrentDateIso() )
+    #     actDf:DataFrame = self.getMyTickerHistories( Period.oneDay, Interval.oneMin )
+    #     actDf.to_pickle( DATABASE_DIR + "/todayhistories.df" )
+    #
+    # @staticmethod
+    # def loadMyHistories( todayHistory:bool = False) -> DataFrame:
+    #     if todayHistory:
+    #         df = pd.read_pickle( DATABASE_DIR + "/todayhistories.df" )
+    #     else:
+    #         df = pd.read_pickle( DATABASE_DIR + "/histories.df" )
+    #     return df
+    #
+    # @staticmethod
+    # def getHistory( ticker:str, series:SeriesName, dfAllHistories:DataFrame=None ) -> Series:
+    #     """
+    #     Ermittelt aus dem DataFrame, der alle Historien aller Ticker enthält, die gewünschte Serie.
+    #     !!! Ist dfAllHistories nicht angegeben, wird der DataFrame ***DER AUF PLATTE GESPEICHERT IST*** geladen. !!!
+    #     :param ticker:
+    #     :param series:
+    #     :param dfAllHistories:
+    #     :return:
+    #     """
+    #     if not dfAllHistories:
+    #         dfAllHistories = InvestMonitorLogic.loadMyHistories()
+    #     allSeries:DataFrame = dfAllHistories[series.value]
+    #     tickerhist:Series = allSeries[ticker]
+    #     return tickerhist
 
-    @staticmethod
-    def loadMyHistories( todayHistory:bool = False) -> DataFrame:
-        if todayHistory:
-            df = pd.read_pickle( DATABASE_DIR + "/todayhistories.df" )
-        else:
-            df = pd.read_pickle( DATABASE_DIR + "/histories.df" )
-        return df
-
-    @staticmethod
-    def getHistory( ticker:str, series:SeriesName, dfAllHistories:DataFrame=None ) -> Series:
-        """
-        Ermittelt aus dem DataFrame, der alle Historien aller Ticker enthält, die gewünschte Serie.
-        !!! Ist dfAllHistories nicht angegeben, wird der DataFrame ***DER AUF PLATTE GESPEICHERT IST*** geladen. !!!
-        :param ticker:
-        :param series:
-        :param dfAllHistories:
-        :return:
-        """
-        if not dfAllHistories:
-            dfAllHistories = InvestMonitorLogic.loadMyHistories()
-        allSeries:DataFrame = dfAllHistories[series.value]
-        tickerhist:Series = allSeries[ticker]
-        return tickerhist
-
-    def getMyTickerHistories( self, period=Period.oneYear, interval=Interval.oneWeek ):
-        # Alle Ticker aus dem Depot holen:
-        tickerlist = self._db.getAllMyTickers()
-        # Mit der TickerList die Historien holen:
-        tickerHistories: DataFrame = self._tickerHist.getTickerHistoriesByPeriod( tickerlist,
-                                                                                  period=period,
-                                                                                  interval=interval )
-        return tickerHistories
+    # def getMyTickerHistories( self, period=Period.oneYear, interval=Interval.oneWeek ):
+    #     # Alle Ticker aus dem Depot holen:
+    #     tickerlist = self._db.getAllMyTickers()
+    #     # Mit der TickerList die Historien holen:
+    #     tickerHistories: DataFrame = self._tickerHist.getTickerHistoriesByPeriod( tickerlist,
+    #                                                                               period=period,
+    #                                                                               interval=interval )
+    #     return tickerHistories
 
     def getDepotPosition( self, ticker:str, period=Period.oneYear, interval=Interval.oneWeek ) -> XDepotPosition:
         """
@@ -88,6 +89,7 @@ class InvestMonitorLogic:
         tickerHistories:DataFrame = self._tickerHist.getTickerHistoriesByPeriod( tickerlist,
                                                                                  period=self._defaultPeriod,
                                                                                  interval=self._defaultInterval )
+        tickerHistories = self._checkForNaN( tickerHistories )
         closeDf:DataFrame = tickerHistories[SeriesName.Close.value]
         dividendsDf:DataFrame = tickerHistories[SeriesName.Dividends.value]
         for deppos in poslist:
@@ -100,26 +102,46 @@ class InvestMonitorLogic:
                 print( deppos.ticker, " not found in DataFrame closeDf" )
         return poslist
 
+    @staticmethod
+    def _checkForNaN( df:DataFrame ) -> None:
+        row = df.tail(1) # damit haben wir die letzte Zeile des DataFrame, also die letzten Values aller Series (columns)
+        for name, cellValues in row.items():
+            # name: Spaltenkopf, z.B. EZTQ.F
+            # cellValues: die Values von row
+            if math.isnan( cellValues[0] ):
+                df = df[:-1]
+                break
+        return df
+
     def _provideWertpapierData( self, deppos:XDepotPosition, closeHist:Series, dividends:Series ) -> None:
         deppos.history = closeHist
         deppos.history_period = self._defaultPeriod
         deppos.history_interval = self._defaultInterval
-        try:
-            deppos.kurs_aktuell, orig_currency = self.getKursAktuellInEuro( deppos.ticker )
-            deppos.dividend_period = self._getSumDividends( dividends )
-            if orig_currency != "EUR":
-                deppos.history = self._convertSeries( deppos.history, orig_currency )
-                deppos.dividend_period = round( TickerHistory.convertToEuro( deppos.dividend_period, orig_currency ), 3 )
+
+        deppos.kurs_aktuell, orig_currency = self.getKursAktuellInEuro( deppos.ticker )
+        if deppos.kurs_aktuell == 0:
+            print( deppos.wkn, "/", deppos.ticker,
+                   ": _provideWertpapierData(): call to getKursAktuellInEuro() failed.\nNo last_price availabel.")
+
+        deppos.dividend_period = self._getSumDividends( dividends )
+        if orig_currency != "EUR":
+            deppos.history = self._convertSeries( deppos.history, orig_currency )
+            if deppos.dividend_period > 0:
+                deppos.dividend_period = \
+                    round( TickerHistory.convertToEuro( deppos.dividend_period, orig_currency ), 3 )
+        if deppos.dividend_period > 0:
             deppos.dividend_yield = self._computeDividendYield( deppos.kurs_aktuell, deppos.dividend_period )
-            deppos.gesamtwert_aktuell = int( round( deppos.stueck * deppos.kurs_aktuell, 2 ) )
-            if deppos.gesamtkaufpreis > 0:
-                deppos.delta_proz = round( (deppos.gesamtwert_aktuell / deppos.gesamtkaufpreis - 1) * 100, 2 )
-        except Exception as ex:
-            print( deppos.wkn, "/", deppos.ticker, ": no fast info available " )
+        self._provideGesamtwertAndDelta( deppos )
+
+    @staticmethod
+    def _provideGesamtwertAndDelta( deppos:XDepotPosition ):
+        deppos.gesamtwert_aktuell = int( round( deppos.stueck * deppos.kurs_aktuell, 2 ) )
+        if deppos.gesamtkaufpreis > 0:
+            deppos.delta_proz = round( (deppos.gesamtwert_aktuell / deppos.gesamtkaufpreis - 1) * 100, 2 )
 
     @staticmethod
     def _getSumDividends( dividends: Series ) -> float:
-        div: float = sum( [v for v in dividends.values] )
+        div: float = sum( [v for v in dividends.values if not math.isnan( v )] )
         return round( div, 3 )
 
     def updateWertpapierData( self, x:XDepotPosition, period:Period, interval:Interval ) -> None:
@@ -138,7 +160,8 @@ class InvestMonitorLogic:
 
     def updateKursAndDivYield( self, deppos:XDepotPosition ):
         deppos.kurs_aktuell, dummy = self.getKursAktuellInEuro( deppos.ticker )
-        deppos.dividend_yield = self._computeDividendYield( deppos.kurs_aktuell, deppos.dividend_period )
+        if deppos.kurs_aktuell > 0 and deppos.dividend_period > 0:
+            deppos.dividend_yield = self._computeDividendYield( deppos.kurs_aktuell, deppos.dividend_period )
 
     @staticmethod
     def _computeDividendYield( kurs_aktuell:float, dividend:float ) -> float:
@@ -155,11 +178,15 @@ class InvestMonitorLogic:
                  UND die ursprüngliche Währung (EUR oder Fremdwährung, die konvertiert wurde)
         """
         fastInfo: FastInfo = self._tickerHist.getFastInfo( ticker )
-        last_price = fastInfo.last_price
-        currency = str( fastInfo.currency )
-        if currency != "EUR":
-            last_price = TickerHistory.convertToEuro( last_price, currency )
-        return round( last_price, 3 ), currency
+        if fastInfo:
+            last_price = fastInfo.last_price
+            currency = str( fastInfo.currency )
+            if currency != "EUR":
+                last_price = TickerHistory.convertToEuro( last_price, currency )
+            return round( last_price, 3 ), currency
+        else:
+            print( "Ticker '%s':\nNo FastInfo available" % ticker )
+            return 0, ""
 
     @staticmethod
     def _convertSeries( series:Series, currency:str ):
@@ -174,7 +201,10 @@ class InvestMonitorLogic:
         values = series.values
         vlist = list()
         for value in values:
-            value = TickerHistory.convertToEuro( value, currency )
+            if not math.isnan( value ):
+                value = TickerHistory.convertToEuro( value, currency )
+            else:
+                value = 0
             vlist.append( value )
         index = series.index
         serNew = Series(vlist, index)
@@ -228,6 +258,21 @@ class InvestMonitorLogic:
         x.depot_nr = deppos.depot_nr
         x.depot_vrrkto = deppos.depot_vrrkto
         return x
+
+    def insertOrderAndUpdateDepotData( self, delta:XDelta, deppos:XDepotPosition ):
+        """
+        Fügt eine Order (Kauf oder Verkauf) in Tabelle delta ein.
+        Danach werden die deppos-Attribute stueck, gesamtkaufpreis, preisprostueck und ggf. maxKaufpreis oder minKaufpreis
+        geändert. Außerdem werden gesamtwert_aktuell und elta_prod neu berechnet.
+        :param delta: die Daten der neuen Order
+        :param deppos: die Depotposition, die sich durch die Order verändert
+        :return:
+        """
+        delta.preis_stck = round( delta.order_summe / delta.delta_stck, 3 )
+        self._db.insertDelta( delta )
+        self._db.commit()
+        self._provideOrderData( deppos )
+        self._provideGesamtwertAndDelta( deppos )
 
 def test():
     logic = InvestMonitorLogic()

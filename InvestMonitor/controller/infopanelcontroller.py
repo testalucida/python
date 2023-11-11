@@ -1,13 +1,17 @@
 from typing import List
 
 from PySide2.QtCore import QSize
+from PySide2.QtWidgets import QDialog
 from pandas import Series
 
-from base.baseqtderivates import BaseEdit, MultiLineEdit
+import datehelper
+from base.baseqtderivates import BaseEdit, MultiLineEdit, SmartDateEdit, IntEdit, FloatEdit, SignedNumEdit, \
+    PositiveSignedFloatEdit
 from base.basetablemodel import BaseTableModel
 from base.basetableview import BaseTableView
 from base.dynamicattributeui import DynamicAttributeView, DynamicAttributeDialog
 from base.interfaces import XBaseUI, VisibleAttribute
+from base.messagebox import ErrorBox
 from data.finance.tickerhistory import Period, Interval, SeriesName
 from generictable_stuff.okcanceldialog import OkDialog
 from gui.infopanel import InfoPanel
@@ -58,10 +62,49 @@ class InfoPanelController:
         self._infoPanel.changeModel( self._x )
 
     def onEnterBestandDelta( self ):
-        print( "onEnterBedrstandElta" )
+        def validateDeltaData() -> str or None:
+            view:DynamicAttributeView = deltaDlg.getDynamicAttributeView()
+            w:SmartDateEdit = view.getWidget( "delta_datum" )
+            if not datehelper.isValidIsoDatestring( w.getDate() ):
+                return "Orderdatum muss mit gültigem ISO-Datum versorgt sein. "
+            w:PositiveSignedFloatEdit = view.getWidget( "delta_stck" )
+            if w.getValue() ==0:
+                return "Stückzahl darf nicht 0 sein."
+            if view.getWidget( "order_summe" ).getValue() <= 0:
+                return "Die Ordersumme muss immer positiv sein.\nDie Erkennung Kauf/Verkauf erfolgt über das " \
+                       "Vorzeichen der Stückzahl (+ -> Kauf, - -> Verkauf)."
+
+        delta = XDelta()
+        delta.wkn = self._x.wkn
+        delta.delta_datum = datehelper.getCurrentDateIso()
+        deltaUI = XBaseUI( delta )
+        vislist = (
+            VisibleAttribute( "wkn", BaseEdit, "WKN: ", widgetWidth=100, editable=False, nextRow=True ),
+            VisibleAttribute( "delta_datum", SmartDateEdit, "Order ausgeführt am: ", widgetWidth=100, editable=True,
+                              nextRow=True ),
+            VisibleAttribute( "delta_stck", PositiveSignedFloatEdit, "Anzahl Stück: ", widgetWidth=100,
+                              tooltip="Bei Kauf Vorzeichen '+' verwenden, bei Verkauf '-'",
+                              editable=True, nextRow=True ),
+            VisibleAttribute( "order_summe", FloatEdit, "Kauf-/Verkaufspreis (€): ", widgetWidth=100,
+                              tooltip="Ordersumme inkl. Nebenkosten.\nVorzeichen muss immer '+' sein,\n"
+                                      "die Erkennung ob Kauf oder Verkauf erfolgt über das Vorzeichen der Stückzahl",
+                              editable=True, nextRow=True ),
+            VisibleAttribute( "bemerkung", MultiLineEdit, "Bemerkung: ", editable=True, widgetHeight=50, nextRow=True ),
+        )
+        deltaUI.addVisibleAttributes( vislist )
+        deltaDlg = DynamicAttributeDialog( deltaUI, title="Orderdaten '%s'" % self._x.name,
+                                                  okButton=True, applyButton=False )
+        deltaDlg.setCallbacks( beforeAcceptCallback=validateDeltaData )
+        if deltaDlg.exec_() == QDialog.Accepted:
+            deltaDlg.getDynamicAttributeView().updateData()
+            try:
+                self._logic.insertOrderAndUpdateDepotData( delta, self._x )
+                self._infoPanel.updateOrderRelatedData()
+            except Exception as ex:
+                box = ErrorBox( "Fehler beim Insert in die Datenbank", str( ex ) )
+                box.exec_()
 
     def onShowKaufHistorie( self ):
-        print( "onShowKaufHistorie" )
         tm:BaseTableModel = self._logic.getOrders( self._x.wkn )
         tv = BaseTableView()
         tv.setModel( tm )
@@ -81,7 +124,7 @@ def test2():
     app = QApplication()
     ipc = InfoPanelController()
     logic = InvestMonitorLogic()
-    deppos = logic.getDepotPosition( "HMWD.L", Period.oneYear, Interval.oneWeek )
+    deppos = logic.getDepotPosition( "0P0001HFG4.F", Period.oneYear, Interval.oneWeek )
     ipanel = ipc.createInfoPanel( deppos )
     ipanel.show()
     app.exec_()
@@ -90,8 +133,8 @@ def test():
     from PySide2.QtWidgets import QApplication
     app = QApplication()
     ipc = InfoPanelController()
-    ticker = "IBCG.DE"  #IEFV.L" #"HMWD.L"
-    hist: Series = InvestMonitorLogic.getHistory( ticker, SeriesName.Close )
+    ticker = "IWDA.L"  #IEFV.L" #"HMWD.L"
+    #hist: Series = InvestMonitorLogic.getHistory( ticker, SeriesName.Close )
     log = InvestMonitorLogic( )
     poslist = log.getDepotPositions()
     for pos in poslist:

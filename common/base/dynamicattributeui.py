@@ -30,6 +30,8 @@ class DynamicAttributeView( BaseWidget ):
             self._layout.addWidget( lbl, row, col )
             col += 1
             w = self._createWidget( attr.key, attr.type, attr.editable, attr.getWidgetWidth(), attr.getWidgetHeight() )
+            if attr.tooltip:
+                w.setToolTip( attr.tooltip )
             self._widgets.append( w )
             if attr.trailingButton:
                 btn = self._createButton( attr.trailingButton )

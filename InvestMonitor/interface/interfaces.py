@@ -48,7 +48,7 @@ class XDelta( XBase ):
         self.wkn = ""
         self.delta_stck = 0
         self.delta_datum = ""
-        self.preis_stck = ""
+        self.preis_stck = 0.0
         self.order_summe = 0.0 # delta_stck * preis_stck
         self.bemerkung = ""
         if valuedict:

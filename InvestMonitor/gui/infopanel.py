@@ -309,6 +309,15 @@ class InfoPanel( QWidget ):
         self._lblKursAktuell.setValue( kurs )
         self._lblDivYield.setValue( divYield )
 
+    def updateOrderRelatedData( self ):
+        x = self._x
+        self._lblGesamtPreis.setValue( x.gesamtkaufpreis )
+        self._lblPreisProStueck.setValue( x.preisprostueck )
+        self._lblMaxKaufpreis.setValue( x.maxKaufpreis )
+        self._lblMinKaufpreis.setValue( x.minKaufpreis )
+        self._lblGesamtWertAktuell.setValue( x.gesamtwert_aktuell )
+        self._lblDeltaProz.setValue( x.delta_proz )
+
     def getModel( self ) -> XDepotPosition:
         return self._x
 

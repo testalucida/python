@@ -2,8 +2,10 @@ from PySide2.QtCore import Signal, QSize, QPoint
 from PySide2.QtGui import Qt, QScreen
 from PySide2.QtWidgets import QMainWindow, QScrollArea, QWidget, QApplication, QDesktopWidget
 
-from base.baseqtderivates import BaseGridLayout, BaseToolBar, SearchField
+from base.baseqtderivates import BaseGridLayout, BaseToolBar, SearchField, BaseComboBox, BaseLabel, Separator
+from base.enumhelper import getEnumValues, getEnumFromValue
 from gui.infopanel import InfoPanel
+from imon.enums import InfoPanelOrder
 
 
 class AllInfoPanel( QWidget ):
@@ -41,12 +43,21 @@ class IMonToolBar( BaseToolBar ):
         self._searchField.setPlaceholderText( "Suche nach WKN oder ISIN oder Ticker" )
         self._searchField.setFixedWidth( 300 )
         self.addWidget( self._searchField )
+        self._cboOrder = BaseComboBox()
+        self._cboOrder.addItems( getEnumValues( InfoPanelOrder ) )
+        self.addSeparator()
+        self.addWidget( BaseLabel( "   InfoPanel anordnen:  " ) )
+        self.addWidget( self._cboOrder )
 
     def getSearchField( self ) -> SearchField:
         return self._searchField
 
+    def getOrderComboBox( self ) -> BaseComboBox:
+        return self._cboOrder
+
 ############################################################
 class MainWindow( QMainWindow ):
+    change_infopanel_order = Signal( InfoPanelOrder )
     def __init__( self ):
         QMainWindow.__init__( self )
         self._toolBar = IMonToolBar()
@@ -55,6 +66,9 @@ class MainWindow( QMainWindow ):
         self._panelsScroll = AllInfoPanelsScrollArea()
         self._panelsScroll.setWidget( self._allInfoPanel )
         self.setCentralWidget( self._panelsScroll )
+        cbo = self._toolBar.getOrderComboBox()
+        cbo.currentTextChanged.connect(
+            lambda txt: self.change_infopanel_order.emit( getEnumFromValue( InfoPanelOrder, txt ) ) )
 
     def addInfoPanel( self, infopanel:InfoPanel ):
         self._allInfoPanel.addInfoPanel( infopanel )
@@ -65,15 +79,21 @@ class MainWindow( QMainWindow ):
     def getSearchField( self ) -> IMonToolBar:
         return self._toolBar.getSearchField()
 
+    # def getInfoPanelSortOrderComboBox( self ) -> BaseComboBox:
+    #     return self._toolBar.getOrderComboBox()
+
     def ensureVisible( self, infopanel:InfoPanel ):
         if infopanel.visibleRegion().isEmpty():
             self._panelsScroll.ensureWidgetVisible( infopanel )
 
 #####################################################################################################
 def test():
+    def changeOrder( newOrder:InfoPanelOrder ):
+        print( "new Order: ", newOrder.value )
     app = QApplication()
     win = MainWindow()
     win.show()
+    win.change_infopanel_order.connect( changeOrder )
     rect = QDesktopWidget().screenGeometry()
     #r:QPoint = rect.topRight()
     w = rect.right() - rect.left()

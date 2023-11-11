@@ -930,8 +930,16 @@ class SignedNumEdit( QWidget ):
             raise ValueError( "SignedNumEdit was intantiated with type==float.\nUse method getFloatValue()." )
         return self.getValue()
 
+######################### PositiveSignedFloatEdit ##################
+class PositiveSignedFloatEdit( SignedNumEdit ):
+    """
+    Diese Klasse brauchen wir, damit wir im DynamicAttributeView ein SignedNumEdit Objekt instanzieren können,
+    das per Default "+" statt "-" anzeigt.
+    """
+    def __init__( self, parent=None, isReadOnly=False ):
+        SignedNumEdit.__init__( self, numtype=float, sign="+" )
 
-#########################  FloatEdit  ################################
+#########################  IntEdit  ################################
 class IntEdit( BaseEdit ):
     def __init__( self, parent=None, showNegativNumbersRed:bool=True, isReadOnly=False ):
         BaseEdit.__init__( self, parent, isReadOnly=isReadOnly )
