@@ -136,10 +136,10 @@ def test():
     ticker = "IWDA.L"  #IEFV.L" #"HMWD.L"
     #hist: Series = InvestMonitorLogic.getHistory( ticker, SeriesName.Close )
     log = InvestMonitorLogic( )
-    poslist = log.getDepotPositions()
+    poslist, dummy = log.getDepotPositions()
     for pos in poslist:
         if pos.ticker == ticker:
-            pos.history = hist
+            #pos.history = hist
             ip = ipc.createInfoPanel( pos )
             ip.show()
     app.exec_()

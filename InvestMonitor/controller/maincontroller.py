@@ -1,4 +1,5 @@
-from typing import List
+from functools import cmp_to_key
+from typing import List, Any
 
 from PySide2.QtCore import QSize
 from PySide2.QtGui import QScreen
@@ -16,20 +17,23 @@ class MainController:
     def __init__( self ):
         self._logic: InvestMonitorLogic = InvestMonitorLogic()
         self._mainWin:MainWindow = None
-        # self._infoPanelList:List[InfoPanel] = list()
         self._infoPanelCtrlList:List[InfoPanelController] = list()
         self._selectedInfoPanel:InfoPanel = None
+        self._sortOrder:InfoPanelOrder = None #InfoPanelOrder.Unknown
+        self._sortKeys:List[str] = None
 
     def createMainWindow( self ) -> MainWindow:
         self._mainWin = MainWindow()
+        self._mainWin.setWindowTitle( "Investment-Monitor" )
         self._mainWin.getSearchField().doSearch.connect( self.onSearchInfoPanel )
         self._mainWin.getSearchField().searchTextChanged.connect( self.onSearchInfoPanelTextChanged )
         self._mainWin.change_infopanel_order.connect( self.onChangeSortOrder )
-        poslist: List[XDepotPosition] = self._logic.getDepotPositions()
+        poslist, self._sortOrder = self._logic.getDepotPositions()
         for xdepotpos in poslist:
             infopanelctrl = InfoPanelController()
             infopanel = infopanelctrl.createInfoPanel( xdepotpos )
-            #self._infoPanelList.append( infopanel )
+            sortfieldInfo = self._setSortKey( xdepotpos, self._sortOrder )
+            infopanel.setSortInfo( sortfieldInfo )
             self._mainWin.addInfoPanel( infopanel )
             self._infoPanelCtrlList.append( infopanelctrl )
         rect = QDesktopWidget().screenGeometry()
@@ -65,12 +69,82 @@ class MainController:
             self._selectedInfoPanel = None
 
     def onChangeSortOrder( self, order:InfoPanelOrder ):
-        print( "order by ", order.value )
+        self._sortOrder = order
+        infopanels:List[InfoPanel] = [ctrl.getInfoPanel() for ctrl in self._infoPanelCtrlList]
+        for ip in infopanels:
+            deppos:XDepotPosition = ip.getModel()
+            sortfieldInfo = self._setSortKey( deppos, order )
+            ip.setSortInfo( sortfieldInfo )
+        infopanels = sorted( infopanels, key=cmp_to_key( self._compare ) )
+        self._mainWin.clear()
+        for ip in infopanels:
+            self._mainWin.addInfoPanel( ip )
 
+    @staticmethod
+    def _setSortKey( x:XDepotPosition, order:InfoPanelOrder ) -> str:
+        """
+        Baut anhand des gewünschten Sortierkriteriums den SortKey auf und
+        schiebt ihn <x> als neues Attribut unter.
+        :return:
+        """
+        sortfield = ""
+        sortfieldInfo = ""
+        if order == InfoPanelOrder.Wkn:
+            sortfield = x.wkn.lower()
+            sortfieldInfo = "WKN: " + x.wkn
+        elif order == InfoPanelOrder.Name:
+            sortfield = x.name.lower()
+            sortfieldInfo = "Name: " + x.name
+        elif order == InfoPanelOrder.Index:
+            sortfield = "" if not x.basic_index else x.basic_index.lower()
+            sortfieldInfo = "Index: " + x.basic_index
+        elif order == InfoPanelOrder.Depot:
+            sortfield = x.depot_id + " / " + x.wkn
+            sortfieldInfo = "Depot-ID: " + x.depot_id + " / WKN: " + x.wkn
+        elif order == InfoPanelOrder.Wert:
+            sortfield = str( x.gesamtwert_aktuell )
+            sortfieldInfo = "Wert: " + str( x.gesamtwert_aktuell )
+        elif order == InfoPanelOrder.AccLast:
+            val = "0 / " if not x.flag_acc else "1 / "
+            sortfield = val + x.wkn.lower()
+            sortfieldInfo = "Acc.: " + ("Nein" if val.startswith("0") else "Ja" ) + " / WKN: " + x.wkn
+        elif order == InfoPanelOrder.AccFirst:
+            val = "0 / " if x.flag_acc else "1 / "
+            sortfield = val + x.wkn.lower()
+            sortfieldInfo = "Acc.: " + ("Ja" if x.flag_acc else "Nein" ) + " / WKN: " + x.wkn
+        elif order == InfoPanelOrder.DeltaWert:
+            sortfield = '%07.3f' % x.delta_proz
+            sortfieldInfo = "Wertentwicklg.: " + str( x.delta_proz )
+        elif order == InfoPanelOrder.DividendYield:
+            val = "0 / " if not x.flag_acc else "1 / "
+            sortfield = val + '%07.3f' % x.dividend_yield
+            sortfieldInfo = "Dividende: " + str( x.dividend_yield )
+        x.__dict__["__sortfield__"] = sortfield
+        return sortfieldInfo
+
+    @staticmethod
+    def _compare( ip1:InfoPanel, ip2:InfoPanel ) -> int:
+        v1 = ip1.getModel().__dict__["__sortfield__"]
+        v2 = ip2.getModel().__dict__["__sortfield__"]
+        if v1 == v2: return 0
+        else: return 1 if v1 > v2 else -1
+
+###############################################################################
 def test():
     from PySide2.QtWidgets import QApplication
     app = QApplication()
     ctrl = MainController()
     win = ctrl.createMainWindow()
     win.show()
+    app.exec_()
+
+def test2():
+    from PySide2.QtWidgets import QApplication
+    app = QApplication()
+    x = XDepotPosition()
+    ctrl = MainController()
+    ctrl._setSortKey( x, InfoPanelOrder.Name )
+    d = x.__dict__
+    for key, value in d.items():
+        print( key, ": ", value )
     app.exec_()

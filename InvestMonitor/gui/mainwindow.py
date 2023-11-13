@@ -24,6 +24,11 @@ class AllInfoPanel( QWidget ):
             self._row += 1
             self._col = 0
 
+    def clear( self ) -> None:
+        self.children().clear()
+        self._row = 0
+        self._col = 0
+
 
 ##############################################################
 class AllInfoPanelsScrollArea( QScrollArea ):
@@ -79,8 +84,8 @@ class MainWindow( QMainWindow ):
     def getSearchField( self ) -> IMonToolBar:
         return self._toolBar.getSearchField()
 
-    # def getInfoPanelSortOrderComboBox( self ) -> BaseComboBox:
-    #     return self._toolBar.getOrderComboBox()
+    def clear( self ) -> None:
+        self._allInfoPanel.clear()
 
     def ensureVisible( self, infopanel:InfoPanel ):
         if infopanel.visibleRegion().isEmpty():

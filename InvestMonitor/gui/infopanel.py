@@ -2,8 +2,9 @@ from enum import Enum
 from typing import List, Tuple
 
 import matplotlib
-from PySide2.QtCore import QSize, Signal, Qt, Slot
+from PySide2.QtCore import QSize, Signal, Qt, Slot, QRect
 #from pandas import DataFrame
+from PySide2.QtGui import QPalette, QColor
 
 from base.baseqtderivates import BaseGridLayout, BaseLabel, BaseEdit, SignedNumEdit, IntEdit, FloatEdit, HLine, \
     BaseButton, BaseComboBox, BaseLink, HistoryButton
@@ -12,7 +13,7 @@ from data.finance.tickerhistory import TickerHistory, Period, Interval
 from interface.interfaces import XDepotPosition
 
 matplotlib.use('Qt5Agg')
-from PySide2.QtWidgets import QWidget, QApplication, QHBoxLayout
+from PySide2.QtWidgets import QWidget, QApplication, QHBoxLayout, QFrame
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT #as NavigationToolbar
 from matplotlib.figure import Figure
@@ -48,7 +49,7 @@ class MplCanvas(FigureCanvasQTAgg):
 
 
 #############################################################
-class InfoPanel( QWidget ):
+class InfoPanel( QFrame ):
     """
     Ein InfoPanel enthält alle Informationen zu einem Wertpapier (Aktie, Fonds- oder ETF-Anteil)
     und einen Graph, der die Kursentwicklung eines Zeitraums anzeigt.
@@ -69,7 +70,7 @@ class InfoPanel( QWidget ):
         return cbo
 
     def __init__(self):
-        QWidget.__init__( self )
+        QFrame.__init__( self )
         maxwnumlabels = 70
         maxwtextlabels = 120
         self._layout = BaseGridLayout()
@@ -80,9 +81,17 @@ class InfoPanel( QWidget ):
         self._btnDetails = BaseButton( "ⓘ" )
         self._btnDetails.clicked.connect( self.show_details.emit )
         self._btnDetails.setMaximumSize( QSize(23, 23) )
+
+        self._laySort = QHBoxLayout()
+        #self._lblSortItems = BaseEdit( isReadOnly=True )
+        self._lblSortValues = BaseEdit( isReadOnly=True )
+        self._lblSortValues.setObjectName( "sortvalues" )
+        self._lblSortValues.setStyleSheet( "#sortvalues {background: #e7e3e4};")
+
         self._layCombos = QHBoxLayout()
         self._cboPeriod = self.createCombo( Period.getPeriods(), self.onPeriodIntervalChanged )
         self._cboInterval = self.createCombo( Interval.getIntervals(), self.onPeriodIntervalChanged )
+
         self._btnUpdateGraph = BaseButton( "⟳", callback=self.onUpdateGraphClicked )
         self._btnUpdateGraph.setFixedSize( QSize( 23, 23 ) )
         self._lblWkn = BaseEdit( isReadOnly=True )
@@ -136,13 +145,19 @@ class InfoPanel( QWidget ):
         l.addWidget( self._btnDetails, r, c )
 
         r += 1
+        c = 0
+        self._laySort.addWidget( BaseLabel( "Sort" ) )
+        #self._laySort.addWidget( self._lblSortItems )
+        self._laySort.addWidget( self._lblSortValues )
+        l.addLayout( self._laySort, r, c, 1, 5 )
+
         self._layCombos.addWidget( BaseLabel( "Period" ) )
         self._layCombos.addWidget( self._cboPeriod )
         self._layCombos.addWidget( BaseLabel( " Interval" ) )
         self._layCombos.addWidget( self._cboInterval )
         self._layCombos.addWidget( self._btnUpdateGraph )
         self._layCombos.addStretch()
-        c = 4
+        c = 5
         l.addLayout( self._layCombos, r, c )
 
         r += 1
@@ -266,6 +281,7 @@ class InfoPanel( QWidget ):
 
     def setModel( self, x:XDepotPosition ):
         self._x = x
+        self.setObjectName( x.wkn )
         self._dataToGui()
         self._btnUpdateGraph.setEnabled( False )
         self._plot()
@@ -321,10 +337,21 @@ class InfoPanel( QWidget ):
     def getModel( self ) -> XDepotPosition:
         return self._x
 
-    def setSelected( self, selected:bool=True ):
+    def setSelected2( self, selected:bool=True ):
         self._lblName.setBold( selected )
         color = "red" if selected else "black"
         self._lblName.setTextColor( color )
+
+    def setSelected( self, selected:bool=True ):
+        if selected:
+            borderstyle = "#" + self._x.wkn + " {border: 5px solid darkblue; }"
+        else:
+            borderstyle = "#" + self._x.wkn + " {border: 0px solid black; }"
+        self.setStyleSheet(  borderstyle )
+
+    def setSortInfo( self, values:str ):
+        #self._lblSortItems.setValue( items )
+        self._lblSortValues.setValue( values )
 
     def _plot( self ):
         self._x.history.plot( ax=self._mplCanvas.axes, grid=True )
@@ -343,6 +370,17 @@ class InfoPanel( QWidget ):
 def test():
     app = QApplication()
     ip = InfoPanel()
+    #ip.setFrameRect()
+    #ip.setContentsMargins( 5, 5, 5, 5 )
+    # pal = ip.palette()
+    # pal.setColor( QPalette.WindowText, QColor( "red" ) )
+    # ip.setPalette( pal )
+    # ip.setObjectName( "ip" )
+    # ip.setStyleSheet( "#ip {border: 5px solid black; }")
+    # ip.setStyleSheet( "#ip {border: 0px solid black; }" )
+    # ip.setFrameStyle( QFrame.Box | QFrame.Raised )
+    # ip.setLineWidth( 3 )
+    #ip.setFrameStyle( QFrame.NoFrame )
     x = XDepotPosition()
     x.name = "WisdomTree Global Quality Dividend Growth"
     x.wkn = "A2AG1E"
@@ -371,5 +409,6 @@ def test():
     #     [0, 10], [5, 15], [2, 20], [15, 25], [4, 10],
     # ], columns=['A', 'B'] )
     ip.setModel( x )
+    ip.setSelected2()
     ip.show()
     app.exec_()

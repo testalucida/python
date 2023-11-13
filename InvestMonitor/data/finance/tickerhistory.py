@@ -110,6 +110,11 @@ class TickerHistory:
 
 
 ################  TEST TEST TEST   ###########################
+def test4():
+    tick = TickerHistory()
+    fi = tick.getFastInfo( "IEFV.L" )
+    print( fi )
+
 def test3():
     tick_hist = TickerHistory()
     df = tick_hist.getTickerHistoriesByPeriod( ["EZTQ.F", "IEFV.L"] )
@@ -123,7 +128,7 @@ def test2():
 
 def test():
     tick_hist = TickerHistory()
-    df = tick_hist.getTickerHistoryByPeriod( "EZTQ.F" )
+    df = tick_hist.getTickerHistoryByPeriod( "IEFV.L" )
     series:Series = df["Close"]
     series.plot()
 

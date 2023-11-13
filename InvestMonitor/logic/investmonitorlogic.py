@@ -8,6 +8,7 @@ from yfinance.scrapers.quote import FastInfo
 from base.basetablemodel import BaseTableModel, SumTableModel
 from data.db.investmonitordata import InvestMonitorData
 from data.finance.tickerhistory import Period, Interval, TickerHistory, SeriesName
+from imon.enums import InfoPanelOrder
 from interface.interfaces import XDepotPosition, XDelta, XDetail
 from imon.definitions import DATABASE_DIR
 
@@ -77,7 +78,7 @@ class InvestMonitorLogic:
         self._provideWertpapierData( deppos, closeHist, dividends )
         return deppos
 
-    def getDepotPositions( self ) -> List[XDepotPosition]: #(List[XDepotPosition], Period, Interval):
+    def getDepotPositions( self ) -> (List[XDepotPosition], InfoPanelOrder): #(List[XDepotPosition], Period, Interval):
         """
         Liefert die Depot-Positionen inkl. der Bestände und der Kursentwicklung in der Default-Periode und
         im Default-Zeitintervall
@@ -100,10 +101,10 @@ class InvestMonitorLogic:
                 self._provideWertpapierData( deppos, closeHist, dividends )
             except Exception as ex:
                 print( deppos.ticker, " not found in DataFrame closeDf" )
-        return poslist
+        return poslist, InfoPanelOrder.Wkn
 
     @staticmethod
-    def _checkForNaN( df:DataFrame ) -> None:
+    def _checkForNaN( df:DataFrame ) -> DataFrame:
         row = df.tail(1) # damit haben wir die letzte Zeile des DataFrame, also die letzten Values aller Series (columns)
         for name, cellValues in row.items():
             # name: Spaltenkopf, z.B. EZTQ.F
@@ -282,7 +283,7 @@ def test():
 
     # logic.saveMyHistories()
 
-    poslist = logic.getDepotPositions()
+    poslist, dummy = logic.getDepotPositions()
     print( poslist )
 
     # df = logic.loadMyHistories()

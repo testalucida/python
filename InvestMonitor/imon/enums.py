@@ -5,11 +5,11 @@ class InfoPanelOrder( Enum ):
     Wkn = "WKN"
     Name = "Alphabetisch nach Name"
     Index = "Alphabetisch nach Index"
-    Depot = "Depot"
-    Gesamtwert = "Gesamtwert"
-    AccFirst = "Thesaurierende zuerst"
-    AccLast = "Ausschüttende zuerst"
-    TopsAndFlops = "Wertentwicklung"
+    Depot = "Depot, WKN"
+    Wert = "Wert"
+    AccFirst = "Thesaurierende, WKN"
+    AccLast = "Ausschüttende, WKN"
+    DeltaWert = "Wertentwicklung"
     DividendYield = "Dividendenrendite"
 
 class SeriesName( Enum ):
