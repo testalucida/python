@@ -62,7 +62,7 @@ class SollHausgeldEditView( QWidget ):
         r += 1
         self._feRueZuFue.setMaximumWidth( W )
         self._feRueZuFue.textChanged.connect( self.nettoOrRueZuFueChanged )
-        self._layout.addPair( "NKV: ", self._feRueZuFue, r, 0 )
+        self._layout.addPair( "Rücklagenzuführg: ", self._feRueZuFue, r, 0 )
         r += 1
         self._lblBrutto.setMaximumWidth( W )
         self._lblBrutto.setAlignment( Qt.AlignRight )
@@ -72,7 +72,7 @@ class SollHausgeldEditView( QWidget ):
         self._lblBrutto.setFont( font )
         self._lblBrutto.setStyleSheet( "color: red;" )
 
-        self._layout.addPair( "Bruttomiete: ", self._lblBrutto, r, 0 )
+        self._layout.addPair( "Brutto-Hausgeld: ", self._lblBrutto, r, 0 )
         r += 1
         self._mlBemerkung.setMaximumHeight( 60 )
         self._layout.addPair( "Bemerkung: ", self._mlBemerkung, r, 0, 1, 2 )

@@ -71,8 +71,9 @@ class InfoPanel( QFrame ):
 
     def __init__(self):
         QFrame.__init__( self )
+        self._row = -1 # row im MainWindow
+        self._col = -1 # col im MainWindow
         maxwnumlabels = 70
-        maxwtextlabels = 120
         self._layout = BaseGridLayout()
         self.setLayout( self._layout )
         self._mplCanvas = MplCanvas()
@@ -81,12 +82,15 @@ class InfoPanel( QFrame ):
         self._btnDetails = BaseButton( "ⓘ" )
         self._btnDetails.clicked.connect( self.show_details.emit )
         self._btnDetails.setMaximumSize( QSize(23, 23) )
-
+        self._btnSelect = BaseButton( "☐" )
+        self._btnSelect.clicked.connect( lambda x: self.setSelected( not self._isSelected ) )
+        self._isSelected = False
+        self._btnSelect.setMaximumSize( QSize( 23, 23 ) )
         self._laySort = QHBoxLayout()
         #self._lblSortItems = BaseEdit( isReadOnly=True )
         self._lblSortValues = BaseEdit( isReadOnly=True )
         self._lblSortValues.setObjectName( "sortvalues" )
-        self._lblSortValues.setStyleSheet( "#sortvalues {background: #e7e3e4};")
+        self._lblSortValues.setStyleSheet( "#sortvalues {background: #e7e3e4}")
 
         self._layCombos = QHBoxLayout()
         self._cboPeriod = self.createCombo( Period.getPeriods(), self.onPeriodIntervalChanged )
@@ -139,10 +143,15 @@ class InfoPanel( QFrame ):
         l = self._layout
         cols = 6
         r, c = 0, 0
-        l.addWidget( self._lblName, r, c, 1, 5 )
-        c = 5
+        l.addWidget( self._lblName, r, c, 1, 6 )
+        c = 6
+        layBtnDetAndMark = QHBoxLayout()
+        layBtnDetAndMark.addWidget( self._btnDetails )
+        layBtnDetAndMark.addWidget( self._btnSelect )
+        self._layout.addLayout( layBtnDetAndMark, r, c )
         self._btnDetails.setToolTip( "Details anzeigen" )
-        l.addWidget( self._btnDetails, r, c )
+        self._btnSelect.setToolTip( "Diese Depotposition markieren" )
+        ######l.addWidget( self._btnDetails, r, c )
 
         r += 1
         c = 0
@@ -348,6 +357,10 @@ class InfoPanel( QFrame ):
         else:
             borderstyle = "#" + self._x.wkn + " {border: 0px solid black; }"
         self.setStyleSheet(  borderstyle )
+        self._isSelected = selected
+
+    def isSelected( self ) -> bool:
+        return self._isSelected
 
     def setSortInfo( self, values:str ):
         #self._lblSortItems.setValue( items )
@@ -364,6 +377,13 @@ class InfoPanel( QFrame ):
         interval = getEnumFromValue( Interval, self._cboInterval.currentText() )
         self._btnUpdateGraph.setEnabled( False )
         self.update_graph.emit( period, interval )
+
+    def setPosition( self, row:int, col:int ):
+        self._row = row
+        self._col = col
+
+    def getPosition( self ) -> (int, int):
+        return self._row, self._col
 
 
 ##########  TEST ###  TEST  ###################################################

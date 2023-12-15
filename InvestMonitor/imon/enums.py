@@ -11,6 +11,9 @@ class InfoPanelOrder( Enum ):
     AccLast = "Ausschüttende, WKN"
     DeltaWert = "Wertentwicklung"
     DividendYield = "Dividendenrendite"
+    DeltaKurs_1 = "Kursentwicklung nach letztem Close"
+    # AverageKurs_50 = "⌀ Kurs letzte 50 Tage"
+    # AverageKurs_200 = "⌀ Kurs letzte 200 Tage"
 
 class SeriesName( Enum ):
     Close = "Close"

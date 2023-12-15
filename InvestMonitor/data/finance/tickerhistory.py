@@ -2,10 +2,11 @@ import enum
 import math
 from datetime import date
 from enum import Enum
-from typing import List
+from typing import List, Dict
 
 import yfinance
-from currency_converter import CurrencyConverter
+#from currency_converter import CurrencyConverter
+#from forex_python.converter import CurrencyRates
 from pandas import DataFrame, Series
 from yfinance.scrapers.quote import FastInfo
 
@@ -19,12 +20,47 @@ def getOneYearAgo() -> str:
     return datehelper.getIsoStringFromDate( oneyearago )
 
 ######################################################################
+import requests
+import json
+class CurrencyConverter:
+    url = "https://api.exchangerate-api.com/v4/latest/USD"
+    rel_keys = "EUR, GBP, CHF"
+    one_dollar_conversions:Dict = None
+
+    @staticmethod
+    def _loadCurrencies():
+        CurrencyConverter.one_dollar_conversions = dict()
+        response = requests.get( CurrencyConverter.url )
+        dic = json.loads( response.content )
+        rates = dic["rates"]
+        rel_keys = "USD, EUR, GBP, CHF"
+        for key, value in rates.items():
+            if key in rel_keys:
+                CurrencyConverter.one_dollar_conversions[key] = value
+
+    @staticmethod
+    def convert( amount:float, fromCurrency:str, toCurrency:str="EUR" ) -> float:
+        if not CurrencyConverter.one_dollar_conversions:
+            CurrencyConverter._loadCurrencies()
+        oneDollarInFromCurrency = CurrencyConverter.one_dollar_conversions[fromCurrency]
+        oneDollarInToCurrency = CurrencyConverter.one_dollar_conversions[toCurrency]
+        vh = oneDollarInToCurrency/oneDollarInFromCurrency
+        amountInToCurrency = vh * amount
+        return amountInToCurrency
+
+def testConversion():
+    eur = CurrencyConverter.convert( 1, "USD" )
+    print( "1 Dollar makes %f Euro" % eur )
+
+
+######################################################################
 class TickerHistory:
     currentDate = datehelper.getIsoStringFromDate( datehelper.getCurrentDate() )
     oneYearAgo = getOneYearAgo()
     default_period:Period = Period.oneYear
     default_interval:Interval = Interval.oneWeek
-    currConverter = CurrencyConverter()
+    # currConverter = CurrencyConverter()
+    # forex_curr_converter = CurrencyRates()
 
     @staticmethod
     def getFastInfo( ticker:str ) -> FastInfo:
@@ -32,13 +68,23 @@ class TickerHistory:
         return yf_ticker.fast_info
 
     @staticmethod
-    def convertToEuro( value, fromCurr:str ) -> float:
+    def convertToEuro( value, fromCurr: str ) -> float:
         curr = fromCurr
         if curr == "GBp":
             value /= 100
             curr = "GBP"
-        conv_val = TickerHistory.currConverter.convert( value, curr, "EUR" )
-        return conv_val
+        eur = CurrencyConverter.convert( value, fromCurr )
+        return eur
+
+    # @staticmethod
+    # def convertToEuro( value, fromCurr:str ) -> float:
+    #     curr = fromCurr
+    #     if curr == "GBp":
+    #         value /= 100
+    #         curr = "GBP"
+    #     #conv_val = TickerHistory.currConverter.convert( value, curr, "EUR" )
+    #     conv_val = TickerHistory.forex_curr_converter.convert( curr, "EUR", value )
+    #     return conv_val
 
     @staticmethod
     def getTickerHistoryByPeriod( ticker: str,
@@ -127,9 +173,15 @@ def test2():
     print( sname.name )
 
 def test():
+    ticker = "SEDM.L"
     tick_hist = TickerHistory()
-    df = tick_hist.getTickerHistoryByPeriod( "IEFV.L" )
+    df = tick_hist.getTickerHistoryByPeriod( ticker )
     series:Series = df["Close"]
+    fastinfo = tick_hist.getFastInfo( ticker )
+    last_price = fastinfo.last_price
+    if fastinfo.currency != "EUR":
+        last_price = tick_hist.convertToEuro( last_price, str(fastinfo.currency) )
+    print( ticker, " last_price in ", fastinfo.currency, ": ", fastinfo.last_price, " in EURO: ", last_price )
     series.plot()
 
 def testDf():
@@ -144,3 +196,12 @@ def testDf():
             df = df[:-1]
             break
     print( len(df) )
+
+def testFastInfo():
+    ticker = "SEDM.L"
+    tick = TickerHistory()
+    euro = tick.convertToEuro( 1.00, "USD" )
+    print( "one dollar makes '%f' euros" % euro )
+    fast_info = tick.getFastInfo( ticker )
+    euro = tick.convertToEuro( fast_info.last_price, str( fast_info.currency ) )
+    print( "currency: ", fast_info.currency, " last_price: ", fast_info.last_price, " in Euro: ", euro )

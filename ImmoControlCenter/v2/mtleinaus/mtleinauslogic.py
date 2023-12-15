@@ -453,6 +453,17 @@ class HausgeldLogic( MtlEinAusLogic ):
                 retlist.append( x )
         return retlist
 
+    def getHausgeldvorauszahlungen( self, mobj_id:str, debikredi:str, year:int, monthIdx:int ) -> EinAusTableModel:
+        """
+        Liefert für einen DebiKredi und eine mobj_id alle Zahlungen für einen Monat.
+        :param mobj_id:
+        :param debikredi:
+        :param year:
+        :param monthIdx:
+        :return:
+        """
+        return self._ealogic.getZahlungenModel5( EinAusArt.HAUSGELD_VORAUS.display, year, monthIdx, debikredi, mobj_id )
+
     def getEinAusArt( self ) -> str:
         return EinAusArt.HAUSGELD_VORAUS.display
 

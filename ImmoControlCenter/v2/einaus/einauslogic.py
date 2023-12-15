@@ -63,16 +63,18 @@ class EinAusLogic(IccLogic):
         """
         month_sss = iccMonthShortNames[monthIdx]
         l: List[XEinAus] = self._einausData.getEinAuszahlungen3( ea_art_display, jahr, month_sss, debikredi )
-        # for x in l:
-        #     x.write_time = x.write_time[0:10]
         tm = EinAusTableModel( l, jahr )
         return tm
 
     def getZahlungenModel4( self, sab_id:int, jahr:int, monthIdx:int ) -> EinAusTableModel:
         month_sss = iccMonthShortNames[monthIdx]
         l: List[XEinAus] = self._einausData.getEinAuszahlungen4( sab_id, jahr, month_sss )
-        # for x in l:
-        #     x.write_time = x.write_time[0:10]
+        tm = EinAusTableModel( l, jahr )
+        return tm
+
+    def getZahlungenModel5( self, ea_art_display, jahr: int, monthIdx: int, debikredi:str, mobj_id:str ) -> EinAusTableModel:
+        month_sss = iccMonthShortNames[monthIdx]
+        l: List[XEinAus] = self._einausData.getEinAuszahlungen5( ea_art_display, jahr, month_sss, debikredi, mobj_id )
         tm = EinAusTableModel( l, jahr )
         return tm
 

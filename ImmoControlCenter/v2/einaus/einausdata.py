@@ -283,6 +283,30 @@ class EinAusData( IccData ):
         self._mapDbValueToDisplay( xlist )
         return xlist
 
+    def getEinAuszahlungen5( self, ea_art_display: str, jahr: int, monat: str, debikredi: str, mobj_id:str ) -> List[XEinAus]:
+        """
+        Liefert eine Liste von XEinAus-Objekten, die den gegebenen Kriterien genügen
+        :param ea_art_display: display value (string) der EinAusArt
+        :param jahr: yyyy
+        :param monat: z.B. "jan", "mrz",... siehe iccMonthShortNames
+        :param debikredi: ID des Mieters oder Name der WEG oder Firma
+        :param mobj_id: ID des Mietobjekts
+        :return: List[XEinAus]
+        """
+        ea_art_db = EinAusArt.getDbValue( ea_art_display )
+        sql = "select ea_id, master_name, mobj_id, debi_kredi, leistung, sab_id, hga_id, nka_id, reise_id, " \
+              "jahr, monat, betrag, " \
+              "ea_art, verteilt_auf, umlegbar, buchungsdatum, buchungstext, write_time " \
+              "from einaus " \
+              "where jahr = %d " \
+              "and monat = '%s' " \
+              "and debi_kredi = '%s' " \
+              "and mobj_id = '%s' " \
+              "and ea_art = '%s' " % (jahr, monat, debikredi, mobj_id, ea_art_db)
+        xlist = self.readAllGetObjectList( sql, XEinAus )
+        self._mapDbValueToDisplay( xlist )
+        return xlist
+
     def getEinAuszahlungenByHgaId( self, hga_id:int ) -> List[XEinAus]:
         sql = "select ea_id, master_name, debi_kredi, hga_id, jahr, monat, betrag, " \
               "ea_art, buchungsdatum, buchungstext, write_time " \

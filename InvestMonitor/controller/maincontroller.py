@@ -6,6 +6,7 @@ from PySide2.QtGui import QScreen
 from PySide2.QtWidgets import QDesktopWidget
 
 from controller.infopanelcontroller import InfoPanelController
+from generictable_stuff.okcanceldialog import OkDialog
 from gui.infopanel import InfoPanel
 from gui.mainwindow import MainWindow
 from imon.enums import InfoPanelOrder
@@ -21,6 +22,7 @@ class MainController:
         self._selectedInfoPanel:InfoPanel = None
         self._sortOrder:InfoPanelOrder = None #InfoPanelOrder.Unknown
         self._sortKeys:List[str] = None
+        self._dlgSelected:OkDialog = None
 
     def createMainWindow( self ) -> MainWindow:
         self._mainWin = MainWindow()
@@ -28,6 +30,7 @@ class MainController:
         self._mainWin.getSearchField().doSearch.connect( self.onSearchInfoPanel )
         self._mainWin.getSearchField().searchTextChanged.connect( self.onSearchInfoPanelTextChanged )
         self._mainWin.change_infopanel_order.connect( self.onChangeSortOrder )
+        self._mainWin.undock_infopanel.connect( self.onUndock )
         poslist, self._sortOrder = self._logic.getDepotPositions()
         for xdepotpos in poslist:
             infopanelctrl = InfoPanelController()
@@ -67,6 +70,21 @@ class MainController:
         if self._selectedInfoPanel:
             self._selectedInfoPanel.setSelected( False )
             self._selectedInfoPanel = None
+
+    def onUndock( self ):
+        infopanels: List[InfoPanel] = [ctrl.getInfoPanel() for ctrl in self._infoPanelCtrlList]
+        selected:List[InfoPanel] = [ip for ip in infopanels if ip.isSelected() ]
+        if len( selected ) > 0:
+            win = MainWindow()
+            # vom bisherigen Parent lösen:
+            for ip in selected:
+                ip.setSelected( False )
+                self._mainWin.removeInfoPanel( ip )
+                win.addInfoPanel( ip )
+            self._mainWin.repaint()
+            win.show()
+
+            #dlg = OkDialog( title="Ausgewählte Depotpositionen" )
 
     def onChangeSortOrder( self, order:InfoPanelOrder ):
         self._sortOrder = order
@@ -124,10 +142,19 @@ class MainController:
 
     @staticmethod
     def _compare( ip1:InfoPanel, ip2:InfoPanel ) -> int:
-        v1 = ip1.getModel().__dict__["__sortfield__"]
-        v2 = ip2.getModel().__dict__["__sortfield__"]
-        if v1 == v2: return 0
-        else: return 1 if v1 > v2 else -1
+        try:
+            v1 = ip1.getModel().__dict__["__sortfield__"]
+            v2 = ip2.getModel().__dict__["__sortfield__"]
+
+            if v1 is None: return -1
+            if v2 is None: return 1
+            if v1 == v2: return 0
+            else:
+                if v1 > v2:  rc = 1
+                else: rc = -1
+                print( "_compare: v1=", v1, "; v2=", v2, " -> returning rc=", rc )
+        except:
+            print( "failed.")
 
 ###############################################################################
 def test():

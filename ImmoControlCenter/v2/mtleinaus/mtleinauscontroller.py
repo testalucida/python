@@ -84,7 +84,7 @@ class MtlEinAusController( IccController ):
         pass
 
     @abstractmethod
-    def getEinzelzahlungenModelMonat( self, debikredi:str, sab_id:int, jahr:int, monthIdx:int ) -> EinAusTableModel:
+    def getEinzelzahlungenModelMonat( self, debikredi:str, sab_id:int, jahr:int, monthIdx:int, mobj_id:str=None ) -> EinAusTableModel:
         pass
 
     @abstractmethod
@@ -274,8 +274,10 @@ class MtlEinAusController( IccController ):
 
         monatstm:MtlEinAusTableModel = self.getModel()
         monthIdx = monatstm.getSelectedMonthIdx()
-        eatm = self.getEinzelzahlungenModelMonat( monatstm.getDebiKredi( index.row() ),  monatstm.getSab_id( index.row() ),
-                                                  self._year, monthIdx )
+        eatm = self.getEinzelzahlungenModelMonat( monatstm.getDebiKredi( index.row() ),
+                                                  monatstm.getSab_id( index.row() ),
+                                                  self._year, monthIdx,
+                                                  monatstm.getMietobjekt( index.row() ) )
         if eatm.rowCount() > 0:
             # Es gibt schon eine Zahlung für den betreff. Monat.
             # Deshalb den TeilzahlungDialog zeigen, damit der User die Zahlung auswählen kann, die er ändern oder
@@ -416,12 +418,13 @@ class MieteController( MtlEinAusController ):
     # def getMenu( self ) -> QMenu:
     #     return None
 
-    def getEinzelzahlungenModelMonat( self, debikredi: str, sab_id:int, jahr: int, monthIdx: int ) -> EinAusTableModel:
+    def getEinzelzahlungenModelMonat( self, debikredi: str, sab_id:int, jahr: int, monthIdx: int, mobj_id:str=None ) -> EinAusTableModel:
         """
         :param debikredi: Mieter
         :param sab_id: wird hier nicht benötigt
         :param jahr:
         :param monthIdx:
+        :param mobj_id: optional, wird im MieteController nicht benötigt
         :return:
         """
         eatm = self._logic.getZahlungenModelDebiKrediMonat( debikredi, jahr, monthIdx )
@@ -517,11 +520,8 @@ class HausgeldController( MtlEinAusController ):
     def getLogic( self ) -> HausgeldLogic:
         return self._logic
 
-    # def getMenu( self ) -> QMenu:
-    #     return None
-
-    def getEinzelzahlungenModelMonat( self, debikredi: str, sab_id:int, jahr: int, monthIdx: int ) -> EinAusTableModel:
-        eatm = self._logic.getZahlungenModelDebiKrediMonat( debikredi, jahr, monthIdx )
+    def getEinzelzahlungenModelMonat( self, debikredi: str, sab_id:int, jahr: int, monthIdx: int, mobj_id:str=None ) -> EinAusTableModel:
+        eatm = self._logic.getHausgeldvorauszahlungen( mobj_id, debikredi, jahr, monthIdx )
         keys = ("master_name", "mobj_id", "debi_kredi", "jahr", "monat", "betrag", "buchungsdatum", "buchungstext", "write_time")
         headers = ("Haus",     "Wohnung", "WEG",        "Jahr", "Monat", "Betrag", "Buch.datum", "Buch.text", "gebucht am")
         eatm.setKeyHeaderMappings2( keys, headers )
@@ -608,7 +608,7 @@ class AbschlagController( MtlEinAusController ):
     def getMenu( self ) -> QMenu:
         return None
 
-    def getEinzelzahlungenModelMonat( self, debikredi: str, sab_id:int, jahr: int, monthIdx: int ) -> EinAusTableModel:
+    def getEinzelzahlungenModelMonat( self, debikredi: str, sab_id:int, jahr: int, monthIdx: int, mobj_id:str=None ) -> EinAusTableModel:
         # für die Anzeige, aus welchen Einzelzahlungen sich der ausgewiesene Monatswert zusammensetzt
         if not sab_id:
             sab_id = self._getSelection()[0]

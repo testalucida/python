@@ -119,12 +119,16 @@ class InfoPanelController:
         self._logic.updateKursAndDivYield( self._x )
         self._infoPanel.updateKursAktuell( self._x.kurs_aktuell, self._x.dividend_yield )
 
+    def isInfoPanelSelected( self ) -> bool:
+        return self._infoPanel.isSelected()
+
 def test2():
     from PySide2.QtWidgets import QApplication
     app = QApplication()
     ipc = InfoPanelController()
     logic = InvestMonitorLogic()
-    deppos = logic.getDepotPosition( "0P0001HFG4.F", Period.oneYear, Interval.oneWeek )
+    ticker = "SEDM.L"
+    deppos = logic.getDepotPosition( ticker, Period.oneYear, Interval.oneWeek )
     ipanel = ipc.createInfoPanel( deppos )
     ipanel.show()
     app.exec_()
@@ -133,7 +137,7 @@ def test():
     from PySide2.QtWidgets import QApplication
     app = QApplication()
     ipc = InfoPanelController()
-    ticker = "IWDA.L"  #IEFV.L" #"HMWD.L"
+    ticker = "SEDM.L"  #IEFV.L" #"HMWD.L"
     #hist: Series = InvestMonitorLogic.getHistory( ticker, SeriesName.Close )
     log = InvestMonitorLogic( )
     poslist, dummy = log.getDepotPositions()

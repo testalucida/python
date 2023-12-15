@@ -35,6 +35,9 @@ class XDepotPosition( XBase ):
         self.gesamtwert_aktuell = 0 # Stück * kurs_aktuell
         self.kurs_aktuell = 0.0
         self.delta_proz = 0.0 #prozentualer Unterschied zwischen preisprostueck und kurs_aktuell
+        self.delta_kurs_1 = 0.0 # Kursentwicklung seit letztem Close in Prozent
+        self.avg_kurs_50 = 0.0 # average Kurs letzte 50 Tage
+        self.avg_kurs_200 = 0.0  # average Kurs letzte 200 Tage
         self.depot_id = ""
         self.bank = ""
         self.depot_nr = ""

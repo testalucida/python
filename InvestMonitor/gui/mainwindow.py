@@ -2,7 +2,8 @@ from PySide2.QtCore import Signal, QSize, QPoint
 from PySide2.QtGui import Qt, QScreen
 from PySide2.QtWidgets import QMainWindow, QScrollArea, QWidget, QApplication, QDesktopWidget
 
-from base.baseqtderivates import BaseGridLayout, BaseToolBar, SearchField, BaseComboBox, BaseLabel, Separator
+from base.baseqtderivates import BaseGridLayout, BaseToolBar, SearchField, BaseComboBox, BaseLabel, Separator, \
+    BaseButton
 from base.enumhelper import getEnumValues, getEnumFromValue
 from gui.infopanel import InfoPanel
 from imon.enums import InfoPanelOrder
@@ -23,6 +24,9 @@ class AllInfoPanel( QWidget ):
         if self._col == self._maxCols:
             self._row += 1
             self._col = 0
+
+    def removeInfoPanel( self, ip:InfoPanel ):
+        self._layout.removeWidget( ip )
 
     def clear( self ) -> None:
         self.children().clear()
@@ -51,8 +55,12 @@ class IMonToolBar( BaseToolBar ):
         self._cboOrder = BaseComboBox()
         self._cboOrder.addItems( getEnumValues( InfoPanelOrder ) )
         self.addSeparator()
-        self.addWidget( BaseLabel( "   InfoPanel anordnen:  " ) )
+        self.addWidget( BaseLabel( "   InfoPanels anordnen:  " ) )
         self.addWidget( self._cboOrder )
+        self.addSeparator()
+        self._btnUndock = BaseButton( "⏏" )
+        self._btnUndock.setToolTip( "Markierte Depotpositionen in separatem Fenster zeigen" )
+        self.addWidget( self._btnUndock)
 
     def getSearchField( self ) -> SearchField:
         return self._searchField
@@ -60,9 +68,13 @@ class IMonToolBar( BaseToolBar ):
     def getOrderComboBox( self ) -> BaseComboBox:
         return self._cboOrder
 
+    def getUndockButton( self ) -> BaseButton:
+        return self._btnUndock
+
 ############################################################
 class MainWindow( QMainWindow ):
     change_infopanel_order = Signal( InfoPanelOrder )
+    undock_infopanel = Signal()
     def __init__( self ):
         QMainWindow.__init__( self )
         self._toolBar = IMonToolBar()
@@ -74,6 +86,8 @@ class MainWindow( QMainWindow ):
         cbo = self._toolBar.getOrderComboBox()
         cbo.currentTextChanged.connect(
             lambda txt: self.change_infopanel_order.emit( getEnumFromValue( InfoPanelOrder, txt ) ) )
+        btn = self._toolBar.getUndockButton()
+        btn.clicked.connect( self.undock_infopanel.emit )
 
     def addInfoPanel( self, infopanel:InfoPanel ):
         self._allInfoPanel.addInfoPanel( infopanel )
@@ -81,7 +95,7 @@ class MainWindow( QMainWindow ):
     def getToolBar( self ) -> IMonToolBar:
         return self._toolBar
 
-    def getSearchField( self ) -> IMonToolBar:
+    def getSearchField( self ) -> SearchField:
         return self._toolBar.getSearchField()
 
     def clear( self ) -> None:
@@ -90,6 +104,9 @@ class MainWindow( QMainWindow ):
     def ensureVisible( self, infopanel:InfoPanel ):
         if infopanel.visibleRegion().isEmpty():
             self._panelsScroll.ensureWidgetVisible( infopanel )
+
+    def removeInfoPanel( self, ip:InfoPanel ):
+        self._allInfoPanel.removeInfoPanel( ip )
 
 #####################################################################################################
 def test():
