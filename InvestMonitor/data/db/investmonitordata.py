@@ -11,7 +11,7 @@ class InvestMonitorData( DatabaseCommon ):
 
     def getDepotPositions( self ) -> List[XDepotPosition]:
         sql = "select pos.id, isin, ticker, wkn, basic_index, name, gattung, waehrung, flag_acc, beschreibung, " \
-              "dep.id as depot_id, dep.bank, dep.nr as depot_nr, dep.vrrkto " \
+              "dep.id as depot_id, dep.bank, dep.nr as depot_nr, dep.vrrkto as depot_vrrkto " \
               "from depotposition pos " \
               "inner join depot dep on dep.id = pos.depot_id " \
               "where flag_displ = 1 " \

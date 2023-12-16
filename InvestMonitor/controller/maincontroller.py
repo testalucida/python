@@ -2,7 +2,7 @@ from functools import cmp_to_key
 from typing import List, Any
 
 from PySide2.QtCore import QSize
-from PySide2.QtGui import QScreen
+# from PySide2.QtGui import QScreen
 from PySide2.QtWidgets import QDesktopWidget
 
 from controller.infopanelcontroller import InfoPanelController
@@ -89,11 +89,38 @@ class MainController:
     def onChangeSortOrder( self, order:InfoPanelOrder ):
         self._sortOrder = order
         infopanels:List[InfoPanel] = [ctrl.getInfoPanel() for ctrl in self._infoPanelCtrlList]
+        ### debug ###
+        #testlist = list()
+        #############
         for ip in infopanels:
             deppos:XDepotPosition = ip.getModel()
             sortfieldInfo = self._setSortKey( deppos, order )
             ip.setSortInfo( sortfieldInfo )
-        infopanels = sorted( infopanels, key=cmp_to_key( self._compare ) )
+            ### debug ###
+            # sortfield = ip.getModel().__dict__["__sortfield__"]
+            # testlist.append( sortfield )
+            #############
+        ### debug ###
+        # testlist = sorted( testlist )
+        #############
+        try:
+            infopanels = sorted( infopanels, key=cmp_to_key( self._compare ) )
+        except Exception as ex:
+            print( "MainController.onChangeSortOrder(): sorted() throws Exception\n%s" % str(ex) )
+            for ip in infopanels:
+                model = ip.getModel()
+                if not model:
+                    print( "found InfoPanel without model." )
+                    continue
+                try:
+                    sortfield = model.__dict__["__sortfield__"]
+                    if not sortfield:
+                        print( "Sortfield von Model '%s' has no value" % model.wkn )
+                        continue
+                    print( "Wert Sortfield von Model ", model.wkn, ": ", sortfield )
+                except Exception as ex:
+                    print( "Model '%s' has no sortfield" % model.wkn )
+
         self._mainWin.clear()
         for ip in infopanels:
             self._mainWin.addInfoPanel( ip )
@@ -131,30 +158,29 @@ class MainController:
             sortfield = val + x.wkn.lower()
             sortfieldInfo = "Acc.: " + ("Ja" if x.flag_acc else "Nein" ) + " / WKN: " + x.wkn
         elif order == InfoPanelOrder.DeltaWert:
-            sortfield = '%07.3f' % x.delta_proz
+            # sortfield = '%07.3f' % x.delta_proz
+            sortfield = x.delta_proz
             sortfieldInfo = "Wertentwicklg.: " + str( x.delta_proz )
         elif order == InfoPanelOrder.DividendYield:
             val = "0 / " if not x.flag_acc else "1 / "
             sortfield = val + '%07.3f' % x.dividend_yield
             sortfieldInfo = "Dividende: " + str( x.dividend_yield )
+        else:
+            raise Exception( "MainController._setSortKey(): unknown order:\n%s" % str(order) )
         x.__dict__["__sortfield__"] = sortfield
         return sortfieldInfo
 
     @staticmethod
     def _compare( ip1:InfoPanel, ip2:InfoPanel ) -> int:
-        try:
-            v1 = ip1.getModel().__dict__["__sortfield__"]
-            v2 = ip2.getModel().__dict__["__sortfield__"]
+        v1 = ip1.getModel().__dict__["__sortfield__"]
+        v2 = ip2.getModel().__dict__["__sortfield__"]
+        if v1 == v2: return 0
+        else:
+            if v1 > v2:  rc = 1
+            else: rc = -1
+            #print( "_compare: v1=", v1, "; v2=", v2, " -> returning rc=", rc )
+            return rc
 
-            if v1 is None: return -1
-            if v2 is None: return 1
-            if v1 == v2: return 0
-            else:
-                if v1 > v2:  rc = 1
-                else: rc = -1
-                print( "_compare: v1=", v1, "; v2=", v2, " -> returning rc=", rc )
-        except:
-            print( "failed.")
 
 ###############################################################################
 def test():

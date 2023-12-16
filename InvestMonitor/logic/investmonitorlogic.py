@@ -245,7 +245,8 @@ class InvestMonitorLogic:
                                   ("Datum",        "Stück",     "Stück-\npreis (€)", "Order-\nsumme (€)", "Bemerkung") )
         return tm
 
-    def getDetails( self, deppos:XDepotPosition ) -> XDetail:
+    @staticmethod
+    def getDetails( deppos:XDepotPosition ) -> XDetail:
         """
         Liefert die Daten für die Detailanzeige.
         Diese befinden sich bereits in <deppos>, sie müssen nur in ein XDetail-Objekt überführt werden.
