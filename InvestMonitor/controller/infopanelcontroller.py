@@ -41,6 +41,9 @@ class InfoPanelController:
     def getInfoPanel( self ) -> InfoPanel:
         return self._infoPanel
 
+    def getModel( self ) -> XDepotPosition:
+        return self._x
+
     def onShowDetails( self ):
         details:XDetail = self._logic.getDetails( self._x )
         detailsUI = XBaseUI( details )
@@ -57,9 +60,12 @@ class InfoPanelController:
         self._detailDlg.show()
 
     def onUpdateGraph( self, period:Period, interval:Interval ):
-        #print( "onUpdateGraph: ", period.value, " / ", interval.value )
         self._logic.updateWertpapierData( self._x, period, interval )
         self._infoPanel.changeModel( self._x )
+
+    def refreshAfterPeriodIntervalHasChanged( self, period:Period, interval:Interval ):
+        self._infoPanel.changeModel( self._x )
+        self._infoPanel.setPeriodAndInterval( period, interval )
 
     def onEnterBestandDelta( self ):
         def validateDeltaData() -> str or None:

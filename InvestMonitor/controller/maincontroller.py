@@ -9,7 +9,8 @@ from controller.infopanelcontroller import InfoPanelController
 from generictable_stuff.okcanceldialog import OkDialog
 from gui.infopanel import InfoPanel
 from gui.mainwindow import MainWindow
-from imon.enums import InfoPanelOrder
+from imon.definitions import DEFAULT_PERIOD, DEFAULT_INTERVAL, DEFAULT_INFOPANEL_ORDER
+from imon.enums import InfoPanelOrder, Period, Interval
 from interface.interfaces import XDepotPosition
 from logic.investmonitorlogic import InvestMonitorLogic
 
@@ -20,18 +21,19 @@ class MainController:
         self._mainWin:MainWindow = None
         self._infoPanelCtrlList:List[InfoPanelController] = list()
         self._selectedInfoPanel:InfoPanel = None
-        self._sortOrder:InfoPanelOrder = None #InfoPanelOrder.Unknown
+        self._sortOrder:InfoPanelOrder = DEFAULT_INFOPANEL_ORDER
         self._sortKeys:List[str] = None
         self._dlgSelected:OkDialog = None
 
     def createMainWindow( self ) -> MainWindow:
         self._mainWin = MainWindow()
         self._mainWin.setWindowTitle( "Investment-Monitor" )
+        self._mainWin.period_interval_changed.connect( self.onPeriodIntervalChanged )
         self._mainWin.getSearchField().doSearch.connect( self.onSearchInfoPanel )
         self._mainWin.getSearchField().searchTextChanged.connect( self.onSearchInfoPanelTextChanged )
         self._mainWin.change_infopanel_order.connect( self.onChangeSortOrder )
         self._mainWin.undock_infopanel.connect( self.onUndock )
-        poslist, self._sortOrder = self._logic.getDepotPositions()
+        poslist = self._logic.getDepotPositions( DEFAULT_PERIOD, DEFAULT_INTERVAL )
         for xdepotpos in poslist:
             infopanelctrl = InfoPanelController()
             infopanel = infopanelctrl.createInfoPanel( xdepotpos )
@@ -85,6 +87,12 @@ class MainController:
             win.show()
 
             #dlg = OkDialog( title="Ausgewählte Depotpositionen" )
+
+    def onPeriodIntervalChanged( self, period:Period, interval:Interval ):
+        poslist: List[XDepotPosition] = [ctrl.getModel() for ctrl in self._infoPanelCtrlList]
+        self._logic.getTickerHistories( poslist, period, interval )
+        for ctrl in self._infoPanelCtrlList:
+            ctrl.refreshAfterPeriodIntervalHasChanged( period, interval )
 
     def onChangeSortOrder( self, order:InfoPanelOrder ):
         self._sortOrder = order

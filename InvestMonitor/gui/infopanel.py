@@ -1,19 +1,16 @@
-from enum import Enum
-from typing import List, Tuple
+from typing import List, Tuple, Any
 
 import matplotlib
 from PySide2.QtCore import QSize, Signal, Qt, Slot, QRect
-#from pandas import DataFrame
-from PySide2.QtGui import QPalette, QColor
 
-from base.baseqtderivates import BaseGridLayout, BaseLabel, BaseEdit, SignedNumEdit, IntEdit, FloatEdit, HLine, \
-    BaseButton, BaseComboBox, BaseLink, HistoryButton
+from base.baseqtderivates import BaseGridLayout, BaseLabel, BaseEdit, IntEdit, FloatEdit, HLine, \
+    BaseButton, BaseComboBox, HistoryButton
 from base.enumhelper import getEnumFromValue
 from data.finance.tickerhistory import TickerHistory, Period, Interval
 from interface.interfaces import XDepotPosition
 
 matplotlib.use('Qt5Agg')
-from PySide2.QtWidgets import QWidget, QApplication, QHBoxLayout, QFrame
+from PySide2.QtWidgets import QApplication, QHBoxLayout, QFrame
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT #as NavigationToolbar
 from matplotlib.figure import Figure
@@ -47,6 +44,9 @@ class MplCanvas(FigureCanvasQTAgg):
         rend = self.get_renderer()
         self._figure.draw( rend )
 
+    def refresh( self ):
+        super().resize( self._width, self._height )
+
 
 #############################################################
 class InfoPanel( QFrame ):
@@ -63,10 +63,10 @@ class InfoPanel( QFrame ):
     show_details = Signal()
 
     @staticmethod
-    def createCombo( items: List[str], slot:Slot ) -> BaseComboBox:
+    def createCombo( items: List[str], callback ) -> BaseComboBox:
         cbo = BaseComboBox()
         cbo.addItems( items )
-        cbo.currentIndexChanged.connect( slot )
+        cbo.currentIndexChanged.connect( callback )
         return cbo
 
     def __init__(self):
@@ -87,7 +87,6 @@ class InfoPanel( QFrame ):
         self._isSelected = False
         self._btnSelect.setMaximumSize( QSize( 23, 23 ) )
         self._laySort = QHBoxLayout()
-        #self._lblSortItems = BaseEdit( isReadOnly=True )
         self._lblSortValues = BaseEdit( isReadOnly=True )
         self._lblSortValues.setObjectName( "sortvalues" )
         self._lblSortValues.setStyleSheet( "#sortvalues {background: #e7e3e4}")
@@ -95,9 +94,9 @@ class InfoPanel( QFrame ):
         self._layCombos = QHBoxLayout()
         self._cboPeriod = self.createCombo( Period.getPeriods(), self.onPeriodIntervalChanged )
         self._cboInterval = self.createCombo( Interval.getIntervals(), self.onPeriodIntervalChanged )
-
         self._btnUpdateGraph = BaseButton( "⟳", callback=self.onUpdateGraphClicked )
         self._btnUpdateGraph.setFixedSize( QSize( 23, 23 ) )
+
         self._lblWkn = BaseEdit( isReadOnly=True )
         #self._lblWkn.setMaximumWidth( maxwtextlabels )
         self._lblTicker = BaseEdit( isReadOnly=True )
@@ -295,6 +294,11 @@ class InfoPanel( QFrame ):
         self._btnUpdateGraph.setEnabled( False )
         self._plot()
 
+    def setPeriodAndInterval( self, period:Period, interval:Interval ):
+        self._cboPeriod.setCurrentText( period.value )
+        self._cboInterval.setCurrentText( interval.value )
+        self._btnUpdateGraph.setEnabled( False )
+
     def changeModel( self, x:XDepotPosition ):
         """
         Versieht dieses InfoPanel mit einer geänderten Depot-Position, was zur Änderung es Graphen führt.
@@ -307,6 +311,7 @@ class InfoPanel( QFrame ):
         self._mplCanvas.clear()
         self._plot()
         self._mplCanvas.draw()
+        self._mplCanvas.refresh()
 
     def _dataToGui( self ):
         x = self._x
@@ -369,7 +374,7 @@ class InfoPanel( QFrame ):
     def _plot( self ):
         self._x.history.plot( ax=self._mplCanvas.axes, grid=True )
 
-    def onPeriodIntervalChanged( self ):
+    def onPeriodIntervalChanged( self, arg ):
         self._btnUpdateGraph.setEnabled( True )
 
     def onUpdateGraphClicked( self ):

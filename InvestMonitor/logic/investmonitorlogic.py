@@ -10,15 +10,15 @@ from data.db.investmonitordata import InvestMonitorData
 from data.finance.tickerhistory import Period, Interval, TickerHistory, SeriesName
 from imon.enums import InfoPanelOrder
 from interface.interfaces import XDepotPosition, XDelta, XDetail
-from imon.definitions import DATABASE_DIR
+from imon.definitions import DATABASE_DIR, DEFAULT_PERIOD, DEFAULT_INTERVAL
 
 
 class InvestMonitorLogic:
     def __init__( self ):
         self._db = InvestMonitorData()
         self._tickerHist = TickerHistory()
-        self._defaultPeriod = Period.oneYear
-        self._defaultInterval = Interval.oneWeek
+        self._defaultPeriod = DEFAULT_PERIOD #Period.oneYear
+        self._defaultInterval = DEFAULT_INTERVAL #Interval.oneWeek
         self._minPeriod = Period.oneDay
         self._minInterval = Interval.oneMin
 
@@ -78,7 +78,7 @@ class InvestMonitorLogic:
         self._provideWertpapierData( deppos, closeHist, dividends )
         return deppos
 
-    def getDepotPositions( self ) -> (List[XDepotPosition], InfoPanelOrder): #(List[XDepotPosition], Period, Interval):
+    def getDepotPositions____( self, period:Period, interval:Interval ) -> List[XDepotPosition]:
         """
         Liefert die Depot-Positionen inkl. der Bestände und der Kursentwicklung in der Default-Periode und
         im Default-Zeitintervall
@@ -88,8 +88,8 @@ class InvestMonitorLogic:
         poslist:List[XDepotPosition] = self._db.getDepotPositions()
         tickerlist = [pos.ticker for pos in poslist]
         tickerHistories:DataFrame = self._tickerHist.getTickerHistoriesByPeriod( tickerlist,
-                                                                                 period=self._defaultPeriod,
-                                                                                 interval=self._defaultInterval )
+                                                                                 period=period,
+                                                                                 interval=interval )
         tickerHistories = self._checkForNaN( tickerHistories )
         closeDf:DataFrame = tickerHistories[SeriesName.Close.value]
         dividendsDf:DataFrame = tickerHistories[SeriesName.Dividends.value]
@@ -101,7 +101,37 @@ class InvestMonitorLogic:
                 self._provideWertpapierData( deppos, closeHist, dividends )
             except Exception as ex:
                 print( deppos.ticker, " not found in DataFrame closeDf" )
-        return poslist, InfoPanelOrder.Wkn
+        return poslist
+
+    def getDepotPositions( self, period:Period, interval:Interval ) -> List[XDepotPosition]:
+        """
+        Liefert die Depot-Positionen inkl. der Bestände und der Kursentwicklung in der Default-Periode und
+        im Default-Zeitintervall
+        :return:
+        """
+        # Depotpositonen holen:
+        poslist:List[XDepotPosition] = self._db.getDepotPositions()
+        for deppos in poslist:
+            self._provideOrderData( deppos )
+        return self.getTickerHistories( poslist, period, interval )
+
+    def getTickerHistories( self, poslist:List[XDepotPosition], period:Period, interval:Interval ) -> List[XDepotPosition]:
+        tickerlist = [pos.ticker for pos in poslist]
+        tickerHistories: DataFrame = self._tickerHist.getTickerHistoriesByPeriod( tickerlist,
+                                                                                  period=period,
+                                                                                  interval=interval )
+        tickerHistories = self._checkForNaN( tickerHistories )
+        closeDf: DataFrame = tickerHistories[SeriesName.Close.value]
+        dividendsDf: DataFrame = tickerHistories[SeriesName.Dividends.value]
+        for deppos in poslist:
+            self._provideOrderData( deppos )
+            try:
+                closeHist: Series = closeDf[deppos.ticker]
+                dividends: Series = dividendsDf[deppos.ticker]
+                self._provideWertpapierData( deppos, closeHist, dividends )
+            except Exception as ex:
+                print( deppos.ticker, " not found in DataFrame closeDf" )
+        return poslist
 
     @staticmethod
     def _checkForNaN( df:DataFrame ) -> DataFrame:
