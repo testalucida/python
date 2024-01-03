@@ -1,4 +1,5 @@
 import ftplib
+import io
 import os
 
 from mycrypt import EncryptDecrypt
@@ -132,14 +133,18 @@ class Ftp:
             raise( x )
             #raise( Exception( "ftp.download(): Download %s to %s failed:\n%s" % ( remotepathnfile, localpathnfile, str( x ) ) ) )
 
-
+    def deleteFile( self, remotefilename:str ):
+        self._ftp.cwd( self._ftpIni.getRemotePath() )
+        self._ftp.delete( remotefilename )
 
 
 def testUpAndDownload():
-    ftpIni = FtpIni( "../ImmoControlCenter/ftp.ini" )
+    ftpIni = FtpIni( "../ImmoControlCenter/v2/icc/ftp.ini" )
     ftp = Ftp( ftpIni )
     ftp.connect()
-    #ftp.upload( "immo.db", "immodb.test" )
-    ftp.download( "immo_state", "immo_state" )
+    ftp.deleteFile( "db_in_use" )
+    #ftp.upload( "db_in_use", "db_in_use" )
+    #ftp.upload( "immo.db", "immo.db" )
+    #ftp.download( "immo.db", "immo.db" )
     ftp.quit()
 

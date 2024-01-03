@@ -237,7 +237,8 @@ class MainController( IccController ):
     def onExportDatabase( self ):
         try:
             dic = self._win.getLetzteBuchung()
-            self._logic.exportDatabaseToServer( dic["datum"], dic["text"] )
+            self._logic.saveLetzteBuchung( dic["datum"], dic["text"] )
+            self._logic.exportDatabaseToServer()
             box = InfoBox( "Datenbank-Export", "Export der Datenbank abgeschlossen.", "", "OK" )
             box.exec_()
         except Exception as ex:
@@ -270,11 +271,22 @@ class MainController( IccController ):
         dic = self._win.getLetzteBuchung()
         try:
             self._logic.saveLetzteBuchung( dic["datum"], dic["text"])
-            return True
+            #return True #+ todo: auskommentieren
         except Exception as ex:
             box = WarningBox( "Speichern der letzten Buchung", "Speichern fehlgeschlagen: " + str(ex),
                               "Anwendung trotzdem schließen?", "Ja", "Nein" )
-            return (box.exec_() == QMessageBox.Yes)
+        #return (box.exec_() == QMessageBox.Yes) # todo: auskommentieren
+
+        # todo: aktivieren
+        try:
+            self._logic.exportDatabaseToServer()
+            box = InfoBox( "Datenbank-Export", "Datenbank exportiert.", "", "OK" )
+            box.exec_()
+            return True
+        except Exception as ex:
+            box = ErrorBox( "Datenbank-Export", "Export der Datenbank fehlgeschlagen.", str(ex) )
+            box.exec_()
+            return False
 
 ####################################################################################
 def testScreenSize( win:IccMainWindow ):

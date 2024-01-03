@@ -68,42 +68,42 @@ def saveDatabase() -> None:
             box.exec_()
 
 
-def createControlFile():
-    try:
-        f = open( "already_running", "x" )
-    except:
-        box = QMessageBox()
-        box.setWindowTitle( "Anwendung kann nicht gestartet werden" )
-        box.setIcon( QMessageBox.Critical )
-        box.setText( "Das ImmoControlCenter kann nicht gestartet werden:\n"
-                     "Die Kontrolldatei kann nicht angelegt werden." )
-        box.exec_()
-        sys.exit( 1 )
+# def createControlFile():
+#     try:
+#         f = open( "already_running", "x" )
+#     except:
+#         box = QMessageBox()
+#         box.setWindowTitle( "Anwendung kann nicht gestartet werden" )
+#         box.setIcon( QMessageBox.Critical )
+#         box.setText( "Das ImmoControlCenter kann nicht gestartet werden:\n"
+#                      "Die Kontrolldatei kann nicht angelegt werden." )
+#         box.exec_()
+#         sys.exit( 1 )
 
-def deleteControlFile():
-    os.remove( "already_running" )
+# def deleteControlFile():
+#     os.remove( "already_running" )
 
 def runningInDev() -> bool:
     scriptdir = os.path.dirname( os.path.realpath( __file__ ) )
     return True if "python" in scriptdir else False
 
-def terminate_if_running():
-    exists = os.path.exists( "already_running" )
-    if exists:
-        box = QMessageBox()
-        box.setWindowTitle( "Anwendung läuft schon" )
-        box.setIcon( QMessageBox.Critical )
-        box.setText( "Das ImmoControlCenter läuft bereits.\nEs kann nicht mehrfach ausgeführt werden." )
-        box.exec_()
-        sys.exit( 1 )
+# def terminate_if_running():
+#     exists = os.path.exists( "already_running" )
+#     if exists:
+#         box = QMessageBox()
+#         box.setWindowTitle( "Anwendung läuft schon" )
+#         box.setIcon( QMessageBox.Critical )
+#         box.setText( "Das ImmoControlCenter läuft bereits.\nEs kann nicht mehrfach ausgeführt werden." )
+#         box.exec_()
+#         sys.exit( 1 )
 
-def quit_app( self ):
-    saveDatabase()
-    #geom = self._win.geometry()
-    #print( 'CLEAN EXIT. x=%d - y=%d - w=%d - h=%d' % (geom.x(), geom.y(), geom.width(), geom.height()) )
-    #writeGeometryOnShutdown( geom.x(), geom.y(), geom.width(), geom.height() )
-    self._win.removeEventFilter( self )
-    self._app.quit()
+# def quit_app( self ):
+#     saveDatabase()
+#     #geom = self._win.geometry()
+#     #print( 'CLEAN EXIT. x=%d - y=%d - w=%d - h=%d' % (geom.x(), geom.y(), geom.width(), geom.height()) )
+#     #writeGeometryOnShutdown( geom.x(), geom.y(), geom.width(), geom.height() )
+#     self._win.removeEventFilter( self )
+#     self._app.quit()
 
 def main():
     #os.chdir("~")
@@ -124,15 +124,15 @@ def main():
     mainwin.show()
     w = mainwin.getPreferredWidth()
     h = mainwin.getPreferredHeight()
-    mainwin.resize( QSize(w, h) )
+    mainwin.resize( QSize(1400, 800) )
 
     icon = QIcon( "./images/houses.png" )
     app.setWindowIcon( icon )
 
     app.exec_()
 
-    if not runningInDev():
-        deleteControlFile()
+    # if not runningInDev():
+    #     deleteControlFile()
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 from typing import List, Iterable, Dict
 
+import datehelper
 from base.basetablemodel import BaseTableModel, SumTableModel
 from base.interfaces import XBase
 from v2.icc.iccdata import IccData
@@ -22,13 +23,32 @@ class IccLogic:
     def __init__(self):
         self._iccdata = IccData()
         self._masterobjekte:List[XMasterobjekt] = None
+        self._yearsInDatabase:List[int] = None
 
     def getJahre( self ) -> List[int]:
         """
-        Liefert eine Liste der Jahre, für die Daten in der Datenbank vorhanden sind.
+        Liefert eine Liste der Jahre, für die Daten in der Datenbank vorhanden sind PLUS das aktuelle Jahr,
+        sofern es nicht in der Liste vorhanden ist.
         :return:
         """
-        return self._iccdata.getJahre()
+        if self._yearsInDatabase and len( self._yearsInDatabase ) > 0:
+            return self._yearsInDatabase
+        jahre = self._iccdata.getJahre()
+        current = datehelper.getCurrentYear()
+        if not current in jahre:
+            jahre.insert( 0, current )
+        self._yearsInDatabase = jahre
+        return jahre
+
+    def getYearToStartWith( self ) -> int:
+        if not self._yearsInDatabase:
+            self.getJahre()
+        return self._yearsInDatabase[0]
+
+    @staticmethod
+    def getMonthToStartWith():
+        dic = datehelper.getCurrentYearAndMonth()
+        return dic["month"] - 1
 
     def getMasterobjekte( self ) -> List[XMasterobjekt]:
         if not self._masterobjekte:
@@ -86,7 +106,8 @@ class IccLogic:
             return x
         return None
 
-    def getNachnameVornameFromMv_id( self, mv_id:str ) -> str:
+    @staticmethod
+    def getNachnameVornameFromMv_id( mv_id:str ) -> str:
         nameparts = mv_id.split( "_" )
         if len( nameparts ) == 2:
             vorname = nameparts[1].capitalize()
@@ -109,22 +130,22 @@ class IccLogic:
                 return leistungslist[0]
         else: return None
 
-    def _getLetzteBuchung_alt( self ) -> [str, str]:
-        """
-        Liefert den letzten Eintrag aus der Tabelle einaus
-        :return: datum, text, so wie es im Mainwindow angezeigt werden soll
-        """
-        ea = self._iccdata.getLetzteBuchung()
-        if not ea: return "", ""
-        text = ea["debi_kredi"] + ":  " + str( ea["betrag"] ) + " €  "
-        buchungsdatum = ea["buchungsdatum"]
-        if buchungsdatum:
-            datum = buchungsdatum
-            text += " (Datum=Buchung)"
-        else:
-            datum = ea["write_time"][0:10]
-            text += " (Datum=Eintragung)"
-        return datum, text
+    # def _getLetzteBuchung_alt( self ) -> [str, str]:
+    #     """
+    #     Liefert den letzten Eintrag aus der Tabelle einaus
+    #     :return: datum, text, so wie es im Mainwindow angezeigt werden soll
+    #     """
+    #     ea = self._iccdata.getLetzteBuchung()
+    #     if not ea: return "", ""
+    #     text = ea["debi_kredi"] + ":  " + str( ea["betrag"] ) + " €  "
+    #     buchungsdatum = ea["buchungsdatum"]
+    #     if buchungsdatum:
+    #         datum = buchungsdatum
+    #         text += " (Datum=Buchung)"
+    #     else:
+    #         datum = ea["write_time"][0:10]
+    #         text += " (Datum=Eintragung)"
+    #     return datum, text
 
     def getLetzteBuchung( self ) -> [str, str]:
         """

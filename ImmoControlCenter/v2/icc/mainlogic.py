@@ -24,7 +24,7 @@ class MainLogic( IccLogic ):
         data.insertLetzteBuchung( datum, text )
         data.commit()
 
-    def exportDatabaseToServer( self, datum:str, text:str ):
+    def exportDatabaseToServer( self ):
         """
         Speichert die immo-Datenbank auf dem Server.
         Vorher werden noch die Daten der letzten Buchung in der Datenbank gespeichert (Tabelle letztebuchung)
@@ -41,8 +41,6 @@ class MainLogic( IccLogic ):
         # print( "os.path.dirname(): ", os.path.dirname(sys.argv[0] ) )
         ftpini = FtpIni( ROOT_DIR + "/ftp.ini" )
         ftp = Ftp( ftpini )
-        # store last booking
-        self.saveLetzteBuchung( datum, text )
         try:
             ftp.connect()
             ftp.upload( "immo.db", "immo.db" )

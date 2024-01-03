@@ -13,10 +13,12 @@ from v2.icc.iccmainwindow import IccMainWindow
 class IccController( QObject ):
     def __init__( self ):
         QObject.__init__( self )
-        dic = datehelper.getCurrentYearAndMonth()
-        self._year = dic["year"]
-        self._month = dic["month"] - 1
+        # dic = datehelper.getCurrentYearAndMonth()
+        # self._year = dic["year"]
+        # self._month = dic["month"] - 1
         self._icclogic = IccLogic()
+        self._year = self._icclogic.getYearToStartWith()
+        self._month = self._icclogic.getMonthToStartWith()
 
     @abstractmethod
     def createGui( self ) -> QWidget:
