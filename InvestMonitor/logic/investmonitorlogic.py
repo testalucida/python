@@ -248,6 +248,8 @@ class InvestMonitorLogic:
         :return:
         """
         deltalist:List[XDelta] = self._db.getDeltas( deppos.wkn )
+        deppos.stueck = 0
+        deppos.gesamtkaufpreis = deppos.maxKaufpreis = deppos.minKaufpreis = 0
         for delta in deltalist:
             deppos.stueck += delta.delta_stck
             orderpreis = delta.delta_stck * delta.preis_stck

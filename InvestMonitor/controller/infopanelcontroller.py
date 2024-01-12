@@ -143,15 +143,12 @@ def test():
     from PySide2.QtWidgets import QApplication
     app = QApplication()
     ipc = InfoPanelController()
-    ticker = "SEDM.L"  #IEFV.L" #"HMWD.L"
+    ticker = "GDIG.L"  #IEFV.L" #"HMWD.L"
     #hist: Series = InvestMonitorLogic.getHistory( ticker, SeriesName.Close )
     log = InvestMonitorLogic( )
-    poslist, dummy = log.getDepotPositions()
-    for pos in poslist:
-        if pos.ticker == ticker:
-            #pos.history = hist
-            ip = ipc.createInfoPanel( pos )
-            ip.show()
+    pos:XDepotPosition = log.getDepotPosition( ticker )
+    ip = ipc.createInfoPanel( pos )
+    ip.show()
     app.exec_()
 
 
