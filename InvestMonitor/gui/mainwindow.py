@@ -69,6 +69,10 @@ class IMonToolBar( BaseToolBar ):
         self._btnUndock = BaseButton( "⏏" )
         self._btnUndock.setToolTip( "Markierte Depotpositionen in separatem Fenster zeigen" )
         self.addWidget( self._btnUndock)
+        self.addSeparator()
+        self._btnAllDeltas = BaseButton( "Deltas" )
+        self._btnAllDeltas.setToolTip( "Anzeige aller Käufe und Verkäufe" )
+        self.addWidget( self._btnAllDeltas )
 
     def _addPeriodAndIntervalWidget( self ):
         self._cboPeriod.addItems( Period.getPeriods() )
@@ -97,6 +101,9 @@ class IMonToolBar( BaseToolBar ):
     def getUndockButton( self ) -> BaseButton:
         return self._btnUndock
 
+    def getAllDeltasButton( self ) -> BaseButton:
+        return self._btnAllDeltas
+
     def onPeriodIntervalChanged( self, arg ):
         self._btnUpdateAllInfoPanels.setEnabled( True )
 
@@ -112,6 +119,7 @@ class MainWindow( QMainWindow ):
     change_infopanel_order = Signal( InfoPanelOrder )
     undock_infopanel = Signal()
     period_interval_changed = Signal( Period, Interval )
+    show_deltas = Signal()
     def __init__( self ):
         QMainWindow.__init__( self )
         self._toolBar = IMonToolBar()
@@ -126,6 +134,8 @@ class MainWindow( QMainWindow ):
             lambda txt: self.change_infopanel_order.emit( getEnumFromValue( InfoPanelOrder, txt ) ) )
         btn = self._toolBar.getUndockButton()
         btn.clicked.connect( self.undock_infopanel.emit )
+        btn = self._toolBar.getAllDeltasButton()
+        btn.clicked.connect( self.show_deltas.emit )
 
     def addInfoPanel( self, infopanel:InfoPanel ):
         self._allInfoPanel.addInfoPanel( infopanel )

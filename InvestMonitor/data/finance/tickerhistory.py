@@ -52,6 +52,11 @@ def testConversion():
     eur = CurrencyConverter.convert( 1, "USD" )
     print( "1 Dollar makes %f Euro" % eur )
 
+def testRequests():
+    url = "https://justetf.com/en/etf-profile.html?isin=IE00B9F5YL18#dividends"
+    response = requests.get( url )
+    print( response )
+
 
 ######################################################################
 class TickerHistory:
@@ -158,7 +163,7 @@ class TickerHistory:
 ################  TEST TEST TEST   ###########################
 def test4():
     tick = TickerHistory()
-    fi = tick.getFastInfo( "IEFV.L" )
+    fi = tick.getFastInfo( "VJPN.SW" )
     print( fi )
 
 def test3():
@@ -172,10 +177,17 @@ def test2():
     sname = SeriesName.Close
     print( sname.name )
 
-def test():
-    ticker = "SEDM.L"
+def testDividend():
+    ticker = "ISPA.DE"  # "SEDY.L"
     tick_hist = TickerHistory()
-    df = tick_hist.getTickerHistoryByPeriod( ticker )
+    df = tick_hist.getTickerHistoryByPeriod( ticker, Period.oneYear, Interval.oneWeek )
+    dividends: Series = df["Dividends"]
+    print( dividends.index[0] )
+
+def test():
+    ticker = "ISPA.DE" #"SEDY.L"
+    tick_hist = TickerHistory()
+    df = tick_hist.getTickerHistoryByPeriod( ticker, Period.oneYear, Interval.oneWeek )
     series:Series = df["Close"]
     fastinfo = tick_hist.getFastInfo( ticker )
     last_price = fastinfo.last_price

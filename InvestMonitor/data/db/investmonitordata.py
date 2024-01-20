@@ -36,6 +36,16 @@ class InvestMonitorData( DatabaseCommon ):
         deltalist = self.readAllGetObjectList( sql, XDelta )
         return deltalist
 
+    def getAllDeltas( self ) -> List[XDelta]:
+        sql = "select delta.id, delta.delta_stck, delta.delta_datum, delta.preis_stck, " \
+              "delta.bemerkung, delta_stck*preis_stck as order_summe, " \
+              "dp.name, dp.depot_id, delta.wkn, dp.isin, dp.ticker " \
+              "from delta delta " \
+              "inner join depotposition dp on dp.wkn = delta.wkn " \
+              "order by delta.delta_datum desc, delta.id desc "
+        deltalist = self.readAllGetObjectList( sql, XDelta )
+        return deltalist
+
     def getAllMyTickers( self ) -> List[str]:
         sql = "select ticker " \
               "from depotposition pos " \
@@ -56,6 +66,8 @@ class InvestMonitorData( DatabaseCommon ):
 
 def test():
     data = InvestMonitorData()
+    li = data.getAllDeltas()
+    print( li )
     #l = data.getDepotPositions()
     strlist = data.getAllMyTickers()
     print( strlist )

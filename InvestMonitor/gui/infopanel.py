@@ -258,7 +258,8 @@ class InfoPanel( QFrame ):
         c = 0
         l.addWidget( BaseLabel( "Div.Rend." ), r, c )
         c = 1
-        self._lblDivYield.setToolTip( "Dividendenrendite: Dividende/akt.Kurs" )
+        self._lblDivYield.setToolTip( "Dividendenrendite: Summe der Dividenden in der gewählten Periode/"
+                                      "Kurs am ersten Tag der Periode" )
         l.addWidget( self._lblDivYield, r, c )
         c = 2
         l.addWidget( BaseLabel( "%" ) )
@@ -341,6 +342,7 @@ class InfoPanel( QFrame ):
 
     def updateOrderRelatedData( self ):
         x = self._x
+        self._lblStueck.setValue( x.stueck )
         self._lblGesamtPreis.setValue( x.gesamtkaufpreis )
         self._lblPreisProStueck.setValue( x.preisprostueck )
         self._lblMaxKaufpreis.setValue( x.maxKaufpreis )

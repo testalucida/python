@@ -161,7 +161,9 @@ class InvestMonitorLogic:
                 deppos.dividend_period = \
                     round( TickerHistory.convertToEuro( deppos.dividend_period, orig_currency ), 3 )
         if deppos.dividend_period > 0:
-            deppos.dividend_yield = self._computeDividendYield( deppos.kurs_aktuell, deppos.dividend_period )
+            # deppos.dividend_yield = self._computeDividendYield( deppos.kurs_aktuell, deppos.dividend_period )
+            first_kurs_period = closeHist.array[0]
+            deppos.dividend_yield = self._computeDividendYield( first_kurs_period, deppos.dividend_period )
         self._provideGesamtwertAndDelta( deppos )
 
     @staticmethod
@@ -192,11 +194,13 @@ class InvestMonitorLogic:
     def updateKursAndDivYield( self, deppos:XDepotPosition ):
         deppos.kurs_aktuell, dummy = self.getKursAktuellInEuro( deppos.ticker )
         if deppos.kurs_aktuell > 0 and deppos.dividend_period > 0:
-            deppos.dividend_yield = self._computeDividendYield( deppos.kurs_aktuell, deppos.dividend_period )
+            first_kurs_period = deppos.history.array[0]
+            # deppos.dividend_yield = self._computeDividendYield( deppos.kurs_aktuell, deppos.dividend_period )
+            deppos.dividend_yield = self._computeDividendYield( first_kurs_period, deppos.dividend_period )
 
     @staticmethod
-    def _computeDividendYield( kurs_aktuell:float, dividend:float ) -> float:
-        divYield = dividend / kurs_aktuell
+    def _computeDividendYield( kurs:float, dividend:float ) -> float:
+        divYield = dividend / kurs
         return round( divYield*100, 3 )
 
     def getKursAktuellInEuro( self, ticker:str ) -> (float, str):
@@ -293,6 +297,16 @@ class InvestMonitorLogic:
         x.depot_vrrkto = deppos.depot_vrrkto
         return x
 
+    def getAllOrders( self ) -> SumTableModel:
+        deltas:List[XDelta] = self._db.getAllDeltas()
+        tm = SumTableModel( deltas, 0, ("order_summe",) )
+        tm.setKeyHeaderMappings2(
+            ( "id", "delta_datum", "name", "wkn", "isin", "ticker", "depot_id", "delta_stck", "preis_stck", "order_summe"),
+            ( "Id", "Datum", "Name", "WKN", "ISIN", "Ticker", "Depot", "Stück", "Preis/Stck", "Ordersumme" ) )
+        return tm
+
+
+
     def insertOrderAndUpdateDepotData( self, delta:XDelta, deppos:XDepotPosition ):
         """
         Fügt eine Order (Kauf oder Verkauf) in Tabelle delta ein.
@@ -302,7 +316,8 @@ class InvestMonitorLogic:
         :param deppos: die Depotposition, die sich durch die Order verändert
         :return:
         """
-        delta.preis_stck = round( delta.order_summe / delta.delta_stck, 3 )
+        # delta.preis_stck = round( delta.order_summe / delta.delta_stck, 3 )
+        delta.order_summe = round( delta.preis_stck * delta.delta_stck, 2 )
         self._db.insertDelta( delta )
         self._db.commit()
         self._provideOrderData( deppos )

@@ -48,7 +48,10 @@ class XDepotPosition( XBase ):
 class XDelta( XBase ):
     def __init__( self, valuedict:Dict=None ):
         XBase.__init__( self )
+        self.name = ""
         self.wkn = ""
+        self.isin = ""
+        self.ticker = ""
         self.delta_stck = 0
         self.delta_datum = ""
         self.preis_stck = 0.0

@@ -5,6 +5,8 @@ from PySide2.QtCore import QSize
 # from PySide2.QtGui import QScreen
 from PySide2.QtWidgets import QDesktopWidget
 
+from base.basetablemodel import SumTableModel
+from base.basetableview import BaseTableView
 from controller.infopanelcontroller import InfoPanelController
 from generictable_stuff.okcanceldialog import OkDialog
 from gui.infopanel import InfoPanel
@@ -33,6 +35,7 @@ class MainController:
         self._mainWin.getSearchField().searchTextChanged.connect( self.onSearchInfoPanelTextChanged )
         self._mainWin.change_infopanel_order.connect( self.onChangeSortOrder )
         self._mainWin.undock_infopanel.connect( self.onUndock )
+        self._mainWin.show_deltas.connect( self.onShowDeltas )
         poslist = self._logic.getDepotPositions( DEFAULT_PERIOD, DEFAULT_INTERVAL )
         for xdepotpos in poslist:
             infopanelctrl = InfoPanelController()
@@ -87,6 +90,18 @@ class MainController:
             win.show()
 
             #dlg = OkDialog( title="Ausgewählte Depotpositionen" )
+
+    def onShowDeltas( self ):
+        tmOrders:SumTableModel = self._logic.getAllOrders()
+        tv = BaseTableView()
+        tv.setAlternatingRowColors( True )
+        tv.setModel( tmOrders )
+        w = tv.getPreferredWidth()
+        h = tv.getPreferredHeight()
+        dlg = OkDialog( title="Orderhistorie" )
+        dlg.addWidget( tv, 0 )
+        dlg.resize( QSize( w + 25, h + 35 ) )
+        dlg.exec_()
 
     def onPeriodIntervalChanged( self, period:Period, interval:Interval ):
         poslist: List[XDepotPosition] = [ctrl.getModel() for ctrl in self._infoPanelCtrlList]
@@ -198,6 +213,12 @@ def test():
     win = ctrl.createMainWindow()
     win.show()
     app.exec_()
+
+def testAllOrdersTableView():
+    from PySide2.QtWidgets import QApplication
+    app = QApplication()
+    ctrl = MainController()
+    ctrl.onShowDeltas()
 
 def test2():
     from PySide2.QtWidgets import QApplication

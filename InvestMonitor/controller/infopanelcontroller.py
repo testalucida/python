@@ -76,8 +76,9 @@ class InfoPanelController:
             w:PositiveSignedFloatEdit = view.getWidget( "delta_stck" )
             if w.getValue() ==0:
                 return "Stückzahl darf nicht 0 sein."
-            if view.getWidget( "order_summe" ).getValue() <= 0:
-                return "Die Ordersumme muss immer positiv sein.\nDie Erkennung Kauf/Verkauf erfolgt über das " \
+            # if view.getWidget( "order_summe" ).getValue() <= 0:
+            if view.getWidget( "preis_stck" ).getValue() <= 0:
+                return "Der Kurs muss immer positiv sein.\nDie Erkennung Kauf/Verkauf erfolgt über das " \
                        "Vorzeichen der Stückzahl (+ -> Kauf, - -> Verkauf)."
 
         delta = XDelta()
@@ -91,10 +92,13 @@ class InfoPanelController:
             VisibleAttribute( "delta_stck", PositiveSignedFloatEdit, "Anzahl Stück: ", widgetWidth=100,
                               tooltip="Bei Kauf Vorzeichen '+' verwenden, bei Verkauf '-'",
                               editable=True, nextRow=True ),
-            VisibleAttribute( "order_summe", FloatEdit, "Kauf-/Verkaufspreis (€): ", widgetWidth=100,
-                              tooltip="Ordersumme inkl. Nebenkosten.\nVorzeichen muss immer '+' sein,\n"
-                                      "die Erkennung ob Kauf oder Verkauf erfolgt über das Vorzeichen der Stückzahl",
+            VisibleAttribute( "preis_stck", FloatEdit, "Kurs (€): ", widgetWidth=100,
+                              tooltip="Kurs, zu dem gekauft/verkauft wurde",
                               editable=True, nextRow=True ),
+            # VisibleAttribute( "order_summe", FloatEdit, "Kauf-/Verkaufspreis (€): ", widgetWidth=100,
+            #                   tooltip="Ordersumme inkl. Nebenkosten.\nVorzeichen muss immer '+' sein,\n"
+            #                           "die Erkennung ob Kauf oder Verkauf erfolgt über das Vorzeichen der Stückzahl",
+            #                   editable=True, nextRow=True ),
             VisibleAttribute( "bemerkung", MultiLineEdit, "Bemerkung: ", editable=True, widgetHeight=50, nextRow=True ),
         )
         deltaUI.addVisibleAttributes( vislist )
@@ -143,7 +147,7 @@ def test():
     from PySide2.QtWidgets import QApplication
     app = QApplication()
     ipc = InfoPanelController()
-    ticker = "GDIG.L"  #IEFV.L" #"HMWD.L"
+    ticker = "ISPA.DE" # "IEDY.L"  #IEFV.L" #"HMWD.L"
     #hist: Series = InvestMonitorLogic.getHistory( ticker, SeriesName.Close )
     log = InvestMonitorLogic( )
     pos:XDepotPosition = log.getDepotPosition( ticker )
