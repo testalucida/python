@@ -15,6 +15,10 @@ class InfoPanelOrder( Enum ):
     # AverageKurs_50 = "⌀ Kurs letzte 50 Tage"
     # AverageKurs_200 = "⌀ Kurs letzte 200 Tage"
 
+class SortDirection( Enum ):
+    ASC = 0
+    DESC = 1
+
 class SeriesName( Enum ):
     Close = "Close"
     Dividends = "Dividends"
@@ -31,6 +35,7 @@ class Period( Enum ):
     sixMonths = "6mo"
     oneYear = "1y"
     twoYears = "2y"
+    threYears = "3y"
     fiveYears = "5y"
     tenYears = "10y"
     max = "max"
@@ -47,6 +52,11 @@ class Period( Enum ):
         for name in names:
             l.append( Period.__dict__[name].value )
         return l
+
+# class PeriodLenInDays( Enum ):
+#     oneDay = 1
+#     fiveDays = 5
+#     oneMonth =
 
 class Interval( Enum ):
     # 1m,2m,5m,15m,30m,60m,90m,1h,1d,5d,1wk,1mo,3mo

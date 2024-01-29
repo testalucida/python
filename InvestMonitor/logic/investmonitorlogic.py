@@ -148,6 +148,7 @@ class InvestMonitorLogic:
         deppos.history = closeHist
         deppos.history_period = self._defaultPeriod
         deppos.history_interval = self._defaultInterval
+        deppos.dividends = dividends
 
         deppos.kurs_aktuell, orig_currency = self.getKursAktuellInEuro( deppos.ticker )
         if deppos.kurs_aktuell == 0:
@@ -158,6 +159,7 @@ class InvestMonitorLogic:
         if orig_currency != "EUR":
             deppos.history = self._convertSeries( deppos.history, orig_currency )
             if deppos.dividend_period > 0:
+                deppos.dividends = self._convertSeries( deppos.dividends, orig_currency )
                 deppos.dividend_period = \
                     round( TickerHistory.convertToEuro( deppos.dividend_period, orig_currency ), 3 )
         if deppos.dividend_period > 0:
@@ -169,8 +171,9 @@ class InvestMonitorLogic:
     @staticmethod
     def _provideGesamtwertAndDelta( deppos:XDepotPosition ):
         deppos.gesamtwert_aktuell = int( round( deppos.stueck * deppos.kurs_aktuell, 2 ) )
-        if deppos.gesamtkaufpreis > 0:
-            deppos.delta_proz = round( (deppos.gesamtwert_aktuell / deppos.gesamtkaufpreis - 1) * 100, 2 )
+        #if deppos.gesamtkaufpreis > 0:
+        if deppos.einstandswert_restbestand > 0:
+            deppos.delta_proz = round( (deppos.gesamtwert_aktuell / deppos.einstandswert_restbestand - 1) * 100, 2 )
 
     @staticmethod
     def _getSumDividends( dividends: Series ) -> float:
@@ -245,26 +248,55 @@ class InvestMonitorLogic:
         serNew = Series(vlist, index)
         return serNew
 
-    def _provideOrderData( self, deppos:XDepotPosition ):
+    # def _provideOrderData( self, deppos:XDepotPosition ):
+    #     """
+    #     Holt zur übergebenen Depotposition die delta-Daten aus der DB und trägt sie ein
+    #     :param deppos:
+    #     :return:
+    #     """
+    #     deltalist:List[XDelta] = self._db.getDeltas( deppos.wkn )
+    #     deppos.stueck = 0
+    #     deppos.gesamtkaufpreis = deppos.maxKaufpreis = deppos.minKaufpreis = 0
+    #     for delta in deltalist:
+    #         deppos.stueck += delta.delta_stck
+    #         if delta.delta_stck > 0:
+    #             # Kauf; Verkäufe dürfen für die Ermittlung von max, min und Durchscnitt nicht
+    #             # berücksichtigt werden
+    #             orderpreis = delta.delta_stck * delta.preis_stck
+    #             deppos.gesamtkaufpreis += orderpreis
+    #             deppos.maxKaufpreis = delta.preis_stck if delta.preis_stck > deppos.maxKaufpreis else deppos.maxKaufpreis
+    #             deppos.minKaufpreis = delta.preis_stck \
+    #                                   if delta.preis_stck < deppos.minKaufpreis or deppos.minKaufpreis == 0 \
+    #                                   else deppos.minKaufpreis
+    #     deppos.gesamtkaufpreis = int( round( deppos.gesamtkaufpreis, 2 ) )
+    #     if deppos.stueck > 0:
+    #         deppos.preisprostueck = round( deppos.gesamtkaufpreis / deppos.stueck, 2 )
+
+    def _provideOrderData( self, deppos: XDepotPosition ):
         """
         Holt zur übergebenen Depotposition die delta-Daten aus der DB und trägt sie ein
         :param deppos:
         :return:
         """
-        deltalist:List[XDelta] = self._db.getDeltas( deppos.wkn )
-        deppos.stueck = 0
+        deltalist: List[XDelta] = self._db.getDeltas( deppos.wkn )
+        deppos.stueck = gekaufte_stueck = 0
         deppos.gesamtkaufpreis = deppos.maxKaufpreis = deppos.minKaufpreis = 0
         for delta in deltalist:
             deppos.stueck += delta.delta_stck
-            orderpreis = delta.delta_stck * delta.preis_stck
-            deppos.gesamtkaufpreis += orderpreis
-            deppos.maxKaufpreis = delta.preis_stck if delta.preis_stck > deppos.maxKaufpreis else deppos.maxKaufpreis
-            deppos.minKaufpreis = delta.preis_stck \
-                                  if delta.preis_stck < deppos.minKaufpreis or deppos.minKaufpreis == 0 \
-                                  else deppos.minKaufpreis
+            if delta.delta_stck > 0:
+                # Kauf; Verkäufe dürfen für die Ermittlung von max, min und Durchscnitt nicht
+                # berücksichtigt werden
+                gekaufte_stueck += delta.delta_stck
+                orderpreis = delta.delta_stck * delta.preis_stck
+                deppos.gesamtkaufpreis += orderpreis
+                deppos.maxKaufpreis = delta.preis_stck if delta.preis_stck > deppos.maxKaufpreis else deppos.maxKaufpreis
+                deppos.minKaufpreis = delta.preis_stck \
+                    if delta.preis_stck < deppos.minKaufpreis or deppos.minKaufpreis == 0 \
+                    else deppos.minKaufpreis
         deppos.gesamtkaufpreis = int( round( deppos.gesamtkaufpreis, 2 ) )
-        if deppos.stueck > 0:
-            deppos.preisprostueck = round( deppos.gesamtkaufpreis / deppos.stueck, 2 )
+        if deppos.stueck > 0: # es gibt noch einen Depot-Bestand
+            deppos.preisprostueck = round( deppos.gesamtkaufpreis / gekaufte_stueck, 2 )
+            deppos.einstandswert_restbestand = int( round( deppos.preisprostueck * deppos.stueck, 2 ) )
 
     def getHistoryByPeriod( self, ticker:str, period:Period, interval:Interval ):
         df:DataFrame = self._tickerHist.getTickerHistoryByPeriod( ticker, period, interval )
@@ -292,6 +324,9 @@ class InvestMonitorLogic:
         x = XDetail()
         x.basic_index = deppos.basic_index
         x.beschreibung = deppos.beschreibung
+        x.topfirmen = deppos.topfirmen
+        x.toplaender = deppos.toplaender
+        x.topsektoren = deppos.topsektoren
         x.bank = deppos.bank
         x.depot_nr = deppos.depot_nr
         x.depot_vrrkto = deppos.depot_vrrkto
@@ -317,7 +352,7 @@ class InvestMonitorLogic:
         :return:
         """
         # delta.preis_stck = round( delta.order_summe / delta.delta_stck, 3 )
-        delta.order_summe = round( delta.preis_stck * delta.delta_stck, 2 )
+        delta.order_summe = abs( round( delta.preis_stck * delta.delta_stck, 2 ) )
         self._db.insertDelta( delta )
         self._db.commit()
         self._provideOrderData( deppos )

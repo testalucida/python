@@ -61,6 +61,7 @@ class InfoPanel( QFrame ):
     show_kauf_historie = Signal()
     update_kurs = Signal()
     show_details = Signal()
+    show_div_payments = Signal()
 
     @staticmethod
     def createCombo( items: List[str], callback ) -> BaseComboBox:
@@ -132,6 +133,9 @@ class InfoPanel( QFrame ):
         self._btnKursAktualisieren.setFixedSize( QSize(23, 23) )
         self._lblDivJeStck = FloatEdit( isReadOnly=True )
         self._lblDivJeStck.setMaximumWidth( maxwnumlabels )
+        self._btnDividendPayments = BaseButton( "🔎" )
+        self._btnDividendPayments.clicked.connect( self.show_div_payments.emit )
+        self._btnDividendPayments.setFixedSize( QSize( 23, 23 ) )
         self._lblDivYield = FloatEdit( isReadOnly=True )
         self._lblDivYield.setMaximumWidth( maxwnumlabels )
         self._lblDeltaProz = FloatEdit( isReadOnly=True )
@@ -190,38 +194,52 @@ class InfoPanel( QFrame ):
         c = 3
         self._btnStueckDelta.setToolTip( "Bestandsveränderung eintragen (Kauf/Verkauf)" )
         l.addWidget( self._btnStueckDelta, r, c, 1, 1, Qt.AlignLeft )
+
+        # r += 1
+        # c = 0
+        # l.addWidget( BaseLabel( "Kauf" ), r, c )
+        # c = 1
+        # self._lblGesamtPreis.setToolTip( "Stück mal Ø Kp./Stck" ) #( "Summe aller Einzelkäufe" )
+        # l.addWidget( self._lblGesamtPreis, r, c )
+        # c = 2
+        # l.addWidget( BaseLabel( "€" ), r, c )
+        # c = 3
+        # l.addWidget( self._btnKaufHistorie, r, c, 1, 1, Qt.AlignLeft )
+
         r += 1
         c = 0
-        l.addWidget( BaseLabel( "Kauf" ), r, c )
-        c = 1
-        self._lblGesamtPreis.setToolTip( "Summe aller Einzelkäufe" )
-        l.addWidget( self._lblGesamtPreis, r, c )
-        c = 2
-        l.addWidget( BaseLabel( "€" ), r, c )
-        c = 3
-        l.addWidget( self._btnKaufHistorie, r, c, 1, 1, Qt.AlignLeft )
-        r += 1
-        c = 0
-        l.addWidget( BaseLabel( "Ø je Stck" ), r, c )
+        l.addWidget( BaseLabel( "Ø Kp./Stck" ), r, c )
         c = 1
         self._lblPreisProStueck.setToolTip( "Summe aller Einzelkäufe / Stück" )
         l.addWidget( self._lblPreisProStueck, r, c )
         c = 2
         l.addWidget( BaseLabel( "€"), r, c )
+
+        # r += 1
+        # c = 0
+        # l.addWidget( BaseLabel( "max je Stck" ), r, c )
+        # c = 1
+        # l.addWidget( self._lblMaxKaufpreis, r, c )
+        # c = 2
+        # l.addWidget( BaseLabel( "€" ), r, c )
+        # r += 1
+        # c = 0
+        # l.addWidget( BaseLabel( "min je Stck" ), r, c )
+        # c = 1
+        # l.addWidget( self._lblMinKaufpreis, r, c )
+        # c = 2
+        # l.addWidget( BaseLabel( "€" ), r, c )
+
         r += 1
         c = 0
-        l.addWidget( BaseLabel( "max je Stck" ), r, c )
+        l.addWidget( BaseLabel( "∑ Käufe" ), r, c )
         c = 1
-        l.addWidget( self._lblMaxKaufpreis, r, c )
+        self._lblGesamtPreis.setToolTip( "Stück mal Ø Kp./Stck" )  # ( "Summe aller Einzelkäufe" )
+        l.addWidget( self._lblGesamtPreis, r, c )
         c = 2
         l.addWidget( BaseLabel( "€" ), r, c )
-        r += 1
-        c = 0
-        l.addWidget( BaseLabel( "min je Stck" ), r, c )
-        c = 1
-        l.addWidget( self._lblMinKaufpreis, r, c )
-        c = 2
-        l.addWidget( BaseLabel( "€" ), r, c )
+        c = 3
+        l.addWidget( self._btnKaufHistorie, r, c, 1, 1, Qt.AlignLeft )
 
         r += 1
         c = 0
@@ -253,6 +271,9 @@ class InfoPanel( QFrame ):
         l.addWidget( self._lblDivJeStck, r, c )
         c = 2
         l.addWidget( BaseLabel( "€" ) )
+        c = 3
+        self._btnDividendPayments.setToolTip( "Dividendenzahlungen im gewählten Zeitraum in EUR" )
+        l.addWidget( self._btnDividendPayments, r, c, 1, 1, Qt.AlignLeft )
 
         r += 1
         c = 0
@@ -326,7 +347,8 @@ class InfoPanel( QFrame ):
         self._lblWaehrung.setValue( x.waehrung )
         self._lblAcc.setValue( "Thesaurierend" if x.flag_acc else "Ausschüttend" )
         self._lblStueck.setValue( x.stueck )
-        self._lblGesamtPreis.setValue( x.gesamtkaufpreis )
+        #self._lblGesamtPreis.setValue( x.gesamtkaufpreis )
+        self._lblGesamtPreis.setValue( x.einstandswert_restbestand )
         self._lblPreisProStueck.setValue( x.preisprostueck )
         self._lblMaxKaufpreis.setValue( x.maxKaufpreis )
         self._lblMinKaufpreis.setValue( x.minKaufpreis )

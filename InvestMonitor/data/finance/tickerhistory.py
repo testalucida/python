@@ -78,7 +78,7 @@ class TickerHistory:
         if curr == "GBp":
             value /= 100
             curr = "GBP"
-        eur = CurrencyConverter.convert( value, fromCurr )
+        eur = CurrencyConverter.convert( value, curr )
         return eur
 
     # @staticmethod
@@ -174,8 +174,19 @@ def test3():
     print( "fertig" )
 
 def test2():
-    sname = SeriesName.Close
-    print( sname.name )
+    import yfinance as yf
+    ticker = "IEDY.L"
+    data = yf.download( ticker, start="2023-01-20", end="2024-01-19" )
+    print( data )
+
+    # info = yf_ticker.info
+    # if info:
+    #     print( 'Forward PE:' )
+    #     print( info['forwardPE'] )
+    # print( 'Dividends:' )
+    # div = yf_ticker.info.get( 'trailingAnnualDividendYield' )
+    # print( div )
+
 
 def testDividend():
     ticker = "ISPA.DE"  # "SEDY.L"
@@ -185,7 +196,7 @@ def testDividend():
     print( dividends.index[0] )
 
 def test():
-    ticker = "ISPA.DE" #"SEDY.L"
+    ticker = "EUNY.DE" #"IEDY.L" #"ISPA.DE" #"SEDY.L"
     tick_hist = TickerHistory()
     df = tick_hist.getTickerHistoryByPeriod( ticker, Period.oneYear, Interval.oneWeek )
     series:Series = df["Close"]
@@ -198,7 +209,7 @@ def test():
 
 def testDf():
     tick_hist = TickerHistory()
-    df = tick_hist.getTickerHistoriesByPeriod( ["EZTQ.F", "IEFV.L"] )
+    df = tick_hist.getTickerHistoriesByPeriod( ["EZTQ.F", "IEFV.L"], period=Period.twoYears, interval=Interval.oneMonth )
     close:Series = df["Close"]
     row = close.tail(1)
     for name, series in row.items():
@@ -217,3 +228,29 @@ def testFastInfo():
     fast_info = tick.getFastInfo( ticker )
     euro = tick.convertToEuro( fast_info.last_price, str( fast_info.currency ) )
     print( "currency: ", fast_info.currency, " last_price: ", fast_info.last_price, " in Euro: ", euro )
+
+def testGetMethods():
+    import yfinance as yf
+    msft = yf.Ticker( "IEDY.L" )
+    #h = msft.history( )
+    a = msft.get_actions()
+    d = msft.get_dividends()
+    print( d )
+
+def testYahooFinance():
+    url = "http://finance.yahoo.com/quote/AAPL/history"
+    data = requests.get( url )
+    print( data )
+
+def testFMP():
+    def test():
+        ticker = "EUNY.DE"  # "IEDY.L" #"ISPA.DE" #"SEDY.L"
+        tick_hist = TickerHistory()
+        df = tick_hist.getTickerHistoryByPeriod( ticker, Period.oneYear, Interval.oneWeek )
+        series: Series = df["Close"]
+        fastinfo = tick_hist.getFastInfo( ticker )
+        last_price = fastinfo.last_price
+        if fastinfo.currency != "EUR":
+            last_price = tick_hist.convertToEuro( last_price, str( fastinfo.currency ) )
+        print( ticker, " last_price in ", fastinfo.currency, ": ", fastinfo.last_price, " in EURO: ", last_price )
+        series.plot()

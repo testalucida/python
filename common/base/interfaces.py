@@ -47,6 +47,16 @@ class XBase:
     def print( self ):
         print( self.toString( printWithClassname=True ) )
 
+class XSeriesItem( XBase ):
+    """
+    Generische Schnittstelle, wenn eine pandas.Series in eine XBase-List umgewandelt werden soll.
+    Jedes Item des Series-Objekts wird dazu in ein XSeriesItem-Objekt umgewandelt.
+    """
+    def __init__( self, index:Any=None, value:Any=None ):
+        XBase.__init__( self )
+        self.index:Any = index
+        self.value:Any = value
+
 #################   ButtonDefinition   #######################
 class ButtonDefinition:
     def __init__( self, text:str, callback:Callable, tooltip:str=None, ident:Any=None, iconpath:str=None,

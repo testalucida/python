@@ -1,6 +1,8 @@
 import sys
 
 #import matplotlib.pyplot as plt  !!!ERST NACH QtWidgets IMPORTIEREN!!!
+from typing import List
+
 import yfinance, json
 import matplotlib as mpl
 #matplotlib.use( 'Agg' )
@@ -9,6 +11,13 @@ from pandas import Series, DataFrame
 # from fixerio import Fixerio
 # fixer_api_access_key = "55582428e945eafd3ff8efbc1cb12706"
 from currency_converter import CurrencyConverter
+
+from base.basetablemodel import BaseTableModel, SumTableModel
+from base.basetableview import BaseTableView
+from base.interfaces import XSeriesItem
+from generictable_stuff.okcanceldialog import OkCancelDialog
+from interface.interfaces import XDividendPayment
+
 
 def testCurrencyConverter():
     c = CurrencyConverter()
@@ -28,9 +37,31 @@ def getOneYearHistory( ticker:str ) -> Series:
     #series.plot()
     return series
 
+def testCreateTableModelFromSeries():
+    from PySide2.QtWidgets import QApplication
+    app = QApplication()
+    ticker = yfinance.Ticker( "IEDY.L" )
+    df = ticker.history( period="1y", interval="1wk" )
+    series: Series = df["Dividends"]
+    # divlist:List[XSeriesItem] = list()
+    # for index, value in series.items():
+    #     if value > 0.0:
+    #         print( f"Index : {index}, Value : {value}" )
+    #         x = XSeriesItem( str(index)[:10], value )
+    #         divlist.append( x )
+    tm = SumTableModel.fromSeries( series, indexLen=10, jahr=0, colsToSum=("value",) )
+    tm.setKeyHeaderMappings2( ("index", "value"), ("Datum", "Dividende") )
+    tv = BaseTableView()
+    tv.setModel( tm )
+    tv.setAlternatingRowColors( True )
+    dlg = OkCancelDialog( title="Dividendenzahlungen" )
+    dlg.addWidget( tv, 0 )
+    dlg.exec_()
+    app.exec_()
+
 def test6():
     import matplotlib.pyplot as plt
-    ticker = yfinance.Ticker( "PRIJ.L" )
+    ticker = yfinance.Ticker( "IEDY.L" )
     fi = ticker.fast_info
     df = ticker.history( period="1y", interval="1wk" )
     """

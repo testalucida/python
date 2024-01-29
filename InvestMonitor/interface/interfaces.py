@@ -5,6 +5,11 @@ from pandas import DataFrame, Series
 from base.interfaces import XBase
 from imon.enums import Period, Interval
 
+class XDividendPayment( XBase ):
+    def __init__( self, day:str="", value:float=0.0 ):
+        XBase.__init__( self )
+        self.day = day # Datum der Dividendenzahlung
+        self.value = value # Betrag der Dividendenzahlung
 
 class XDepotPosition( XBase ):
     def __init__( self, valuedict:Dict=None ):
@@ -19,17 +24,23 @@ class XDepotPosition( XBase ):
         self.waehrung = ""
         self.flag_acc = False
         self.beschreibung = ""
+        self.toplaender = ""
+        self.topfirmen = ""
+        self.topsektoren = ""
         self.history:Series = None
         self.history_period = Period.unknown
         self.history_interval = Interval.unknown
-        #self.dividends:Series = None # Dividenden, die im Lauf von history_period ausgeschüttet wurden.
+        self.dividends:Series = None # Dividenden, die im Lauf von history_period ausgeschüttet wurden.
         self.dividend_period = 0.0 # Summe der Dividenden PRO STÜCK, die während history_period ausgeschüttet wurden
         self.dividend_yield = 0.0 # Dividenden-Rendite
         self.low_price = 0.0 # todo: der niedrigste Preis in der Periode
         self.high_price = 0.0 # todo: der höchste Preis in der Periode
-        self.stueck = 0
-        self.gesamtkaufpreis = 0 #Kaufpreis des gesamten Bestands
-        self.preisprostueck = 0.0 # Gesamtkaufpreis / Stück
+        self.stueck = 0 # Restbestand (Käufe und Verkäufe saldiert)
+        self.gesamtkaufpreis = 0 #Kaufpreis des gesamten Bestands -- eigentlich irrelevant: wenn von 995 Stück 900 verkauft werden,
+                                 # was soll dann der Gesamtkaufpreis aussagen?
+        self.einstandswert_restbestand = 0 # Einstandswert des (Rest-)Bestandes, ermittelt nach der Formel:
+                                      # Stückzahl * durchschnittlicher Stück-Kaufpreis
+        self.preisprostueck = 0.0 # durchschnittl. Preis pro Stück nach der Formel: Gesamtkaufpreis / Stück
         self.maxKaufpreis = 0.0 # Max. Kaufpreis / Stück
         self.minKaufpreis = 0.0 # Min. Kaufpreis / Stück
         self.gesamtwert_aktuell = 0 # Stück * kurs_aktuell
@@ -69,6 +80,9 @@ class XDetail(XBase):
         XBase.__init__( self )
         self.basic_index = ""
         self.beschreibung = ""
+        self.toplaender = ""
+        self.topfirmen = ""
+        self.topsektoren = ""
         self.bank = ""
         self.depot_nr = ""
         self.depot_vrrkto = ""

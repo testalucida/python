@@ -7,13 +7,13 @@ from pandas import Series
 import datehelper
 from base.baseqtderivates import BaseEdit, MultiLineEdit, SmartDateEdit, IntEdit, FloatEdit, SignedNumEdit, \
     PositiveSignedFloatEdit
-from base.basetablemodel import BaseTableModel
+from base.basetablemodel import BaseTableModel, SumTableModel
 from base.basetableview import BaseTableView
 from base.dynamicattributeui import DynamicAttributeView, DynamicAttributeDialog
 from base.interfaces import XBaseUI, VisibleAttribute
 from base.messagebox import ErrorBox
 from data.finance.tickerhistory import Period, Interval, SeriesName
-from generictable_stuff.okcanceldialog import OkDialog
+from generictable_stuff.okcanceldialog import OkDialog, OkCancelDialog
 from gui.infopanel import InfoPanel
 from interface.interfaces import XDepotPosition, XDelta, XDetail
 from logic.investmonitorlogic import InvestMonitorLogic
@@ -31,6 +31,7 @@ class InfoPanelController:
         infopanel = InfoPanel()
         infopanel.setModel( xdepotpos )
         infopanel.show_details.connect( self.onShowDetails )
+        infopanel.show_div_payments.connect( self.onShowDividendPayments )
         infopanel.update_graph.connect( self.onUpdateGraph )
         infopanel.enter_bestand_delta.connect( self.onEnterBestandDelta )
         infopanel.show_kauf_historie.connect( self.onShowKaufHistorie )
@@ -50,6 +51,9 @@ class InfoPanelController:
         vislist = (
             VisibleAttribute( "basic_index", BaseEdit, "Index: ", editable=False, nextRow=True ),
             VisibleAttribute( "beschreibung", MultiLineEdit, "", editable=False, nextRow=True ),
+            VisibleAttribute( "toplaender", BaseEdit, "Top-Länder: ", editable=False, nextRow=True ),
+            VisibleAttribute( "topsektoren", BaseEdit, "Top-Sektoren: ", editable=False, nextRow=True ),
+            VisibleAttribute( "topfirmen", MultiLineEdit, "Top-Firmen: ", widgetHeight=60, editable=False, nextRow=True ),
             VisibleAttribute( "bank", BaseEdit, "Bank: ", editable=False, nextRow=True ),
             VisibleAttribute( "depot_nr", BaseEdit, "Depot-Nr.: ", editable=False, nextRow=True ),
             VisibleAttribute( "depot_vrrkto", BaseEdit, "Vrr.-Konto: ", editable=False, nextRow=True )
@@ -57,7 +61,20 @@ class InfoPanelController:
         detailsUI.addVisibleAttributes( vislist )
         self._detailDlg = DynamicAttributeDialog( detailsUI, title="Details zur Depotposition '%s'" % self._x.name,
                                                   okButton=False, applyButton=False )
+        self._detailDlg.resize( QSize(500, 500) )
         self._detailDlg.show()
+
+    def onShowDividendPayments( self ):
+        import matplotlib.pyplot as plt
+        divs:Series = self._x.dividends
+        tm = SumTableModel.fromSeries( divs, indexLen=10, jahr=0, colsToSum=("value",) )
+        tm.setKeyHeaderMappings2( ("index", "value"), ("Datum", "Dividende") )
+        tv = BaseTableView()
+        tv.setModel( tm )
+        tv.setAlternatingRowColors( True )
+        dlg = OkCancelDialog( title="Dividendenzahlungen" )
+        dlg.addWidget( tv, 0 )
+        dlg.exec_()
 
     def onUpdateGraph( self, period:Period, interval:Interval ):
         self._logic.updateWertpapierData( self._x, period, interval )
@@ -137,7 +154,7 @@ def test2():
     app = QApplication()
     ipc = InfoPanelController()
     logic = InvestMonitorLogic()
-    ticker = "SEDM.L"
+    ticker = "IEDY.L"
     deppos = logic.getDepotPosition( ticker, Period.oneYear, Interval.oneWeek )
     ipanel = ipc.createInfoPanel( deppos )
     ipanel.show()
@@ -147,7 +164,7 @@ def test():
     from PySide2.QtWidgets import QApplication
     app = QApplication()
     ipc = InfoPanelController()
-    ticker = "ISPA.DE" # "IEDY.L"  #IEFV.L" #"HMWD.L"
+    ticker = "DBXS.DE" # "IEDY.L" #"H4ZJ.DE" #"XSMI.SW" #"EUNY.DE" # "IEDY.L"  #IEFV.L" #"HMWD.L"
     #hist: Series = InvestMonitorLogic.getHistory( ticker, SeriesName.Close )
     log = InvestMonitorLogic( )
     pos:XDepotPosition = log.getDepotPosition( ticker )

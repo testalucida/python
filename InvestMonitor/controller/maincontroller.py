@@ -12,7 +12,7 @@ from generictable_stuff.okcanceldialog import OkDialog
 from gui.infopanel import InfoPanel
 from gui.mainwindow import MainWindow
 from imon.definitions import DEFAULT_PERIOD, DEFAULT_INTERVAL, DEFAULT_INFOPANEL_ORDER
-from imon.enums import InfoPanelOrder, Period, Interval
+from imon.enums import InfoPanelOrder, Period, Interval, SortDirection
 from interface.interfaces import XDepotPosition
 from logic.investmonitorlogic import InvestMonitorLogic
 
@@ -25,7 +25,9 @@ class MainController:
         self._selectedInfoPanel:InfoPanel = None
         self._sortOrder:InfoPanelOrder = DEFAULT_INFOPANEL_ORDER
         self._sortKeys:List[str] = None
+        self._sortDirection = SortDirection.ASC
         self._dlgSelected:OkDialog = None
+        self._dlgAllOrders:OkDialog = None
 
     def createMainWindow( self ) -> MainWindow:
         self._mainWin = MainWindow()
@@ -40,7 +42,7 @@ class MainController:
         for xdepotpos in poslist:
             infopanelctrl = InfoPanelController()
             infopanel = infopanelctrl.createInfoPanel( xdepotpos )
-            sortfieldInfo = self._setSortKey( xdepotpos, self._sortOrder )
+            sortfieldInfo = self._setSortKeyAndDirection( xdepotpos, self._sortOrder )
             infopanel.setSortInfo( sortfieldInfo )
             self._mainWin.addInfoPanel( infopanel )
             self._infoPanelCtrlList.append( infopanelctrl )
@@ -98,10 +100,12 @@ class MainController:
         tv.setModel( tmOrders )
         w = tv.getPreferredWidth()
         h = tv.getPreferredHeight()
-        dlg = OkDialog( title="Orderhistorie" )
+        if not self._dlgAllOrders:
+            self._dlgAllOrders = OkDialog( title="Orderhistorie" )
+        dlg = self._dlgAllOrders
         dlg.addWidget( tv, 0 )
         dlg.resize( QSize( w + 25, h + 35 ) )
-        dlg.exec_()
+        dlg.show()
 
     def onPeriodIntervalChanged( self, period:Period, interval:Interval ):
         poslist: List[XDepotPosition] = [ctrl.getModel() for ctrl in self._infoPanelCtrlList]
@@ -117,7 +121,7 @@ class MainController:
         #############
         for ip in infopanels:
             deppos:XDepotPosition = ip.getModel()
-            sortfieldInfo = self._setSortKey( deppos, order )
+            sortfieldInfo = self._setSortKeyAndDirection( deppos, order )
             ip.setSortInfo( sortfieldInfo )
             ### debug ###
             # sortfield = ip.getModel().__dict__["__sortfield__"]
@@ -148,8 +152,7 @@ class MainController:
         for ip in infopanels:
             self._mainWin.addInfoPanel( ip )
 
-    @staticmethod
-    def _setSortKey( x:XDepotPosition, order:InfoPanelOrder ) -> str:
+    def _setSortKeyAndDirection( self, x:XDepotPosition, order:InfoPanelOrder ) -> str:
         """
         Baut anhand des gewünschten Sortierkriteriums den SortKey auf und
         schiebt ihn <x> als neues Attribut unter.
@@ -160,47 +163,61 @@ class MainController:
         if order == InfoPanelOrder.Wkn:
             sortfield = x.wkn.lower()
             sortfieldInfo = "WKN: " + x.wkn
+            self._sortDirection = SortDirection.ASC
         elif order == InfoPanelOrder.Name:
             sortfield = x.name.lower()
             sortfieldInfo = "Name: " + x.name
+            self._sortDirection = SortDirection.ASC
         elif order == InfoPanelOrder.Index:
             sortfield = "" if not x.basic_index else x.basic_index.lower()
             sortfieldInfo = "Index: " + x.basic_index
+            self._sortDirection = SortDirection.ASC
         elif order == InfoPanelOrder.Depot:
             sortfield = x.depot_id + " / " + x.wkn
             sortfieldInfo = "Depot-ID: " + x.depot_id + " / WKN: " + x.wkn
+            self._sortDirection = SortDirection.ASC
         elif order == InfoPanelOrder.Wert:
-            sortfield = str( x.gesamtwert_aktuell )
+            sortfield = x.gesamtwert_aktuell
             sortfieldInfo = "Wert: " + str( x.gesamtwert_aktuell )
+            self._sortDirection = SortDirection.DESC
         elif order == InfoPanelOrder.AccLast:
             val = "0 / " if not x.flag_acc else "1 / "
             sortfield = val + x.wkn.lower()
             sortfieldInfo = "Acc.: " + ("Nein" if val.startswith("0") else "Ja" ) + " / WKN: " + x.wkn
+            self._sortDirection = SortDirection.ASC
         elif order == InfoPanelOrder.AccFirst:
             val = "0 / " if x.flag_acc else "1 / "
             sortfield = val + x.wkn.lower()
             sortfieldInfo = "Acc.: " + ("Ja" if x.flag_acc else "Nein" ) + " / WKN: " + x.wkn
+            self._sortDirection = SortDirection.ASC
         elif order == InfoPanelOrder.DeltaWert:
             # sortfield = '%07.3f' % x.delta_proz
             sortfield = x.delta_proz
             sortfieldInfo = "Wertentwicklg.: " + str( x.delta_proz )
+            self._sortDirection = SortDirection.DESC
         elif order == InfoPanelOrder.DividendYield:
-            val = "0 / " if not x.flag_acc else "1 / "
+            val = "1 / " if not x.flag_acc else "0 / "
             sortfield = val + '%07.3f' % x.dividend_yield
             sortfieldInfo = "Dividende: " + str( x.dividend_yield )
+            self._sortDirection = SortDirection.DESC
         else:
             raise Exception( "MainController._setSortKey(): unknown order:\n%s" % str(order) )
         x.__dict__["__sortfield__"] = sortfield
         return sortfieldInfo
 
-    @staticmethod
-    def _compare( ip1:InfoPanel, ip2:InfoPanel ) -> int:
+    def _compare( self, ip1:InfoPanel, ip2:InfoPanel ) -> int:
+        if self._sortDirection == SortDirection.ASC:
+            rc_if_gt = 1
+            rc_if_lt = -1
+        else:
+            rc_if_gt = -1
+            rc_if_lt = 1
         v1 = ip1.getModel().__dict__["__sortfield__"]
         v2 = ip2.getModel().__dict__["__sortfield__"]
         if v1 == v2: return 0
         else:
-            if v1 > v2:  rc = 1
-            else: rc = -1
+            if v1 > v2:  rc = rc_if_gt # 1
+            else: rc = rc_if_lt # -1
             #print( "_compare: v1=", v1, "; v2=", v2, " -> returning rc=", rc )
             return rc
 
@@ -225,7 +242,7 @@ def test2():
     app = QApplication()
     x = XDepotPosition()
     ctrl = MainController()
-    ctrl._setSortKey( x, InfoPanelOrder.Name )
+    ctrl._setSortKeyAndDirection( x, InfoPanelOrder.Name )
     d = x.__dict__
     for key, value in d.items():
         print( key, ": ", value )
