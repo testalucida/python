@@ -1,7 +1,7 @@
 from functools import cmp_to_key
 from typing import List, Any
 
-from PySide2.QtCore import QSize
+from PySide2.QtCore import QSize, QObject
 # from PySide2.QtGui import QScreen
 from PySide2.QtWidgets import QDesktopWidget
 
@@ -17,8 +17,9 @@ from interface.interfaces import XDepotPosition
 from logic.investmonitorlogic import InvestMonitorLogic
 
 
-class MainController:
+class MainController( QObject ):
     def __init__( self ):
+        QObject.__init__( self )
         self._logic: InvestMonitorLogic = InvestMonitorLogic()
         self._mainWin:MainWindow = None
         self._infoPanelCtrlList:List[InfoPanelController] = list()
@@ -28,6 +29,7 @@ class MainController:
         self._sortDirection = SortDirection.ASC
         self._dlgSelected:OkDialog = None
         self._dlgAllOrders:OkDialog = None
+        self._summeGesamtwerte = 0
 
     def createMainWindow( self ) -> MainWindow:
         self._mainWin = MainWindow()
@@ -40,8 +42,12 @@ class MainController:
         self._mainWin.show_deltas.connect( self.onShowDeltas )
         poslist = self._logic.getDepotPositions( DEFAULT_PERIOD, DEFAULT_INTERVAL )
         for xdepotpos in poslist:
+            self._summeGesamtwerte += xdepotpos.gesamtwert_aktuell
+        for xdepotpos in poslist:
+            xdepotpos.anteil_an_summe_gesamtwerte = self._computeAnteilAnSummeGesamtwerte( xdepotpos )
             infopanelctrl = InfoPanelController()
             infopanel = infopanelctrl.createInfoPanel( xdepotpos )
+            infopanelctrl.order_inserted.connect( self.onSummeGesamtwerteChanged )
             sortfieldInfo = self._setSortKeyAndDirection( xdepotpos, self._sortOrder )
             infopanel.setSortInfo( sortfieldInfo )
             self._mainWin.addInfoPanel( infopanel )
@@ -51,6 +57,16 @@ class MainController:
         h = rect.bottom() - rect.top()
         self._mainWin.resize( QSize( w, h ) )
         return self._mainWin
+
+    def onSummeGesamtwerteChanged( self, delta:int ):
+        self._summeGesamtwerte += delta
+        for ipc in self._infoPanelCtrlList:
+            deppos = ipc.getModel()
+            anteil = self._computeAnteilAnSummeGesamtwerte( deppos )
+            ipc.updateAnteilAnSummeGesamtwerte( anteil )
+
+    def _computeAnteilAnSummeGesamtwerte( self, deppos:XDepotPosition ) -> int:
+        return int( round( deppos.gesamtwert_aktuell / self._summeGesamtwerte * 100, 0 ) )
 
     def onSearchInfoPanel( self, wknOrIsinOrTicker:str ):
         """
@@ -109,7 +125,7 @@ class MainController:
 
     def onPeriodIntervalChanged( self, period:Period, interval:Interval ):
         poslist: List[XDepotPosition] = [ctrl.getModel() for ctrl in self._infoPanelCtrlList]
-        self._logic.getTickerHistories( poslist, period, interval )
+        self._logic.provideTickerHistories( poslist, period, interval )
         for ctrl in self._infoPanelCtrlList:
             ctrl.refreshAfterPeriodIntervalHasChanged( period, interval )
 
@@ -179,6 +195,10 @@ class MainController:
         elif order == InfoPanelOrder.Wert:
             sortfield = x.gesamtwert_aktuell
             sortfieldInfo = "Wert: " + str( x.gesamtwert_aktuell )
+            self._sortDirection = SortDirection.DESC
+        elif order == InfoPanelOrder.Anteil:
+            sortfield = x.anteil_an_summe_gesamtwerte
+            sortfieldInfo = "Anteil: " + str( x.anteil_an_summe_gesamtwerte )
             self._sortDirection = SortDirection.DESC
         elif order == InfoPanelOrder.AccLast:
             val = "0 / " if not x.flag_acc else "1 / "

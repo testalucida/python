@@ -1,6 +1,6 @@
 from typing import List
 
-from PySide2.QtCore import QSize
+from PySide2.QtCore import QSize, QObject, Signal
 from PySide2.QtWidgets import QDialog
 from pandas import Series
 
@@ -19,8 +19,11 @@ from interface.interfaces import XDepotPosition, XDelta, XDetail
 from logic.investmonitorlogic import InvestMonitorLogic
 
 
-class InfoPanelController:
+class InfoPanelController( QObject ):
+    order_inserted = Signal( int ) # parameter: Ordersumme (pos. oder neg.)
+
     def __init__( self ):
+        QObject.__init__( self )
         self._x:XDepotPosition = None
         self._logic:InvestMonitorLogic = InvestMonitorLogic()
         self._infoPanel:InfoPanel = None
@@ -139,9 +142,19 @@ class InfoPanelController:
             try:
                 self._logic.insertOrderAndUpdateDepotData( delta, self._x )
                 self._infoPanel.updateOrderRelatedData()
+                self.order_inserted.emit( delta.order_summe )
             except Exception as ex:
                 box = ErrorBox( "Fehler beim Insert in die Datenbank", str( ex ) )
                 box.exec_()
+
+    def updateAnteilAnSummeGesamtwerte( self, anteil:int ):
+        """
+        Nach einer eingetragenen Order ändert sich der Anteil dieser DepotPosition an der Gesamtheit.
+        Die DepotPosition muss geändert werden, danach die Anzeige aktualisiert werden.
+        :return:
+        """
+        self._x.anteil_an_summe_gesamtwerte = anteil
+        self._infoPanel.updateAnteilAnSummeGesamtwerte()
 
     def onShowKaufHistorie( self ):
         tm:BaseTableModel = self._logic.getOrders( self._x.wkn )

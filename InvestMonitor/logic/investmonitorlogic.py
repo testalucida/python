@@ -15,6 +15,7 @@ from imon.definitions import DATABASE_DIR, DEFAULT_PERIOD, DEFAULT_INTERVAL
 
 
 class InvestMonitorLogic:
+    #summe_gesamtwerte = 0.0
     def __init__( self ):
         self._db = InvestMonitorData()
         self._tickerHist = TickerHistory()
@@ -61,6 +62,10 @@ class InvestMonitorLogic:
     #                                                                               period=period,
     #                                                                               interval=interval )
     #     return tickerHistories
+
+    # @staticmethod
+    # def getSummeGesamtwerte():
+    #     return InvestMonitorLogic.summe_gesamtwerte
 
     def getDepotPosition( self, ticker:str, period=Period.oneYear, interval=Interval.oneWeek ) -> XDepotPosition:
         """
@@ -114,9 +119,11 @@ class InvestMonitorLogic:
         poslist:List[XDepotPosition] = self._db.getDepotPositions()
         for deppos in poslist:
             self._provideOrderData( deppos )
-        return self.getTickerHistories( poslist, period, interval )
+        # Wertpapierdaten in Positionen eintragen (Kursverlauf, Dividenden etc.)
+        poslist = self.provideTickerHistories( poslist, period, interval )
+        return poslist
 
-    def getTickerHistories( self, poslist:List[XDepotPosition], period:Period, interval:Interval ) -> List[XDepotPosition]:
+    def provideTickerHistories( self, poslist:List[XDepotPosition], period:Period, interval:Interval ) -> List[XDepotPosition]:
         tickerlist = [pos.ticker for pos in poslist]
         tickerHistories: DataFrame = self._tickerHist.getTickerHistoriesByPeriod( tickerlist,
                                                                                   period=period,
@@ -150,6 +157,7 @@ class InvestMonitorLogic:
         deppos.history_period = self._defaultPeriod
         deppos.history_interval = self._defaultInterval
         deppos.dividends = dividends
+        deppos.dividend_yield = 0.0
 
         deppos.kurs_aktuell, orig_currency = self.getKursAktuellInEuro( deppos.ticker )
         if deppos.kurs_aktuell == 0:
@@ -365,8 +373,6 @@ class InvestMonitorLogic:
             ( "Id", "Datum", "Name", "WKN", "ISIN", "Ticker", "Depot", "Stück", "Preis/Stck", "Ordersumme" ) )
         return tm
 
-
-
     def insertOrderAndUpdateDepotData( self, delta:XDelta, deppos:XDepotPosition ):
         """
         Fügt eine Order (Kauf oder Verkauf) in Tabelle delta ein.
@@ -380,6 +386,7 @@ class InvestMonitorLogic:
         delta.order_summe = abs( round( delta.preis_stck * delta.delta_stck, 2 ) )
         self._db.insertDelta( delta )
         self._db.commit()
+
         self._provideOrderData( deppos )
         self._provideGesamtwertAndDelta( deppos )
 

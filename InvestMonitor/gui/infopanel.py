@@ -128,6 +128,8 @@ class InfoPanel( QFrame ):
         self._lblMinKaufpreis.setMaximumWidth( maxwnumlabels )
         self._lblGesamtWertAktuell = IntEdit( isReadOnly=True )
         self._lblGesamtWertAktuell.setMaximumWidth( maxwnumlabels )
+        self._lblAnteilAnSummeGesamtwerte = IntEdit( isReadOnly=True )
+        self._lblAnteilAnSummeGesamtwerte.setMaximumWidth( 23 )
         self._lblKursAktuell = FloatEdit( isReadOnly=True )
         self._lblKursAktuell.setMaximumWidth( maxwnumlabels )
         self._btnKursAktualisieren = BaseButton( symREFRESH )
@@ -257,6 +259,15 @@ class InfoPanel( QFrame ):
         l.addWidget( self._lblGesamtWertAktuell, r, c )
         c = 2
         l.addWidget( BaseLabel( "€" ), r, c )
+        c = 3
+        self._lblAnteilAnSummeGesamtwerte.setToolTip( "Anteil dieser Depotposition an der Summe der Gesamtwerte "
+                                                      "aller Depotpositionen im InvestMonitor" )
+        #l.addWidget( self._lblAnteilAnSummeGesamtwerte, r, c )
+        lay = QHBoxLayout()
+        lay.setSpacing( 0 )
+        lay.addWidget( self._lblAnteilAnSummeGesamtwerte )
+        lay.addWidget( BaseLabel( "%" ) )
+        l.addLayout( lay, r, c )
         r += 1
         c = 0
         l.addWidget( BaseLabel( "Kurs" ), r, c )
@@ -362,6 +373,7 @@ class InfoPanel( QFrame ):
         self._lblMaxKaufpreis.setValue( x.maxKaufpreis )
         self._lblMinKaufpreis.setValue( x.minKaufpreis )
         self._lblGesamtWertAktuell.setValue( x.gesamtwert_aktuell )
+        self._lblAnteilAnSummeGesamtwerte.setValue( x.anteil_an_summe_gesamtwerte )
         self._lblKursAktuell.setValue( x.kurs_aktuell )
         self._lblDivJeStck.setValue( x.dividend_period )
         self._lblDivYield.setValue( x.dividend_yield )
@@ -379,7 +391,11 @@ class InfoPanel( QFrame ):
         self._lblMaxKaufpreis.setValue( x.maxKaufpreis )
         self._lblMinKaufpreis.setValue( x.minKaufpreis )
         self._lblGesamtWertAktuell.setValue( x.gesamtwert_aktuell )
+        self._lblAnteilAnSummeGesamtwerte.setValue( x.anteil_an_summe_gesamtwerte )
         self._lblDeltaProz.setValue( x.delta_proz )
+
+    def updateAnteilAnSummeGesamtwerte( self ):
+        self._lblAnteilAnSummeGesamtwerte.setValue( self._x.anteil_an_summe_gesamtwerte )
 
     def getModel( self ) -> XDepotPosition:
         return self._x
@@ -457,6 +473,7 @@ def test():
     x.maxKaufpreis = 31.21
     x.kurs_aktuell = 30.02
     x.gesamtwert_aktuell = round( x.stueck * x.kurs_aktuell, 2 )
+    x.anteil_an_summe_gesamtwerte = 25
     #x.delta_proz = round( (x.gesamtwert_aktuell - x.gesamtkaufpreis) * 100 / x.gesamtkaufpreis, 2 )
     x.delta_proz = round( (x.kurs_aktuell - x.preisprostueck) * 100 / x.preisprostueck, 2 )
     x.depot_id = "ING_023"

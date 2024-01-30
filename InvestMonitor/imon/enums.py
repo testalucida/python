@@ -7,11 +7,12 @@ class InfoPanelOrder( Enum ):
     Index = "Alphabetisch nach Index"
     Depot = "Depot, WKN"
     Wert = "Wert"
+    Anteil = "Anteil an der Summe der akt. Gesamtwerte"
     AccFirst = "Thesaurierende, WKN"
     AccLast = "Ausschüttende, WKN"
     DeltaWert = "Wertentwicklung"
     DividendYield = "Dividendenrendite"
-    DeltaKurs_1 = "Kursentwicklung nach letztem Close"
+    #DeltaKurs_1 = "Kursentwicklung nach letztem Close"
     # AverageKurs_50 = "⌀ Kurs letzte 50 Tage"
     # AverageKurs_200 = "⌀ Kurs letzte 200 Tage"
 

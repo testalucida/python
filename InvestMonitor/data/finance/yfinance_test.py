@@ -14,9 +14,7 @@ from currency_converter import CurrencyConverter
 
 from base.basetablemodel import BaseTableModel, SumTableModel
 from base.basetableview import BaseTableView
-from base.interfaces import XSeriesItem
 from generictable_stuff.okcanceldialog import OkCancelDialog
-from interface.interfaces import XDividendPayment
 
 
 def testCurrencyConverter():

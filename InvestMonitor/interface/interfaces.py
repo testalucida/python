@@ -5,12 +5,6 @@ from pandas import DataFrame, Series
 from base.interfaces import XBase
 from imon.enums import Period, Interval
 
-class XDividendPayment( XBase ):
-    def __init__( self, day:str="", value:float=0.0 ):
-        XBase.__init__( self )
-        self.day = day # Datum der Dividendenzahlung
-        self.value = value # Betrag der Dividendenzahlung
-
 class XDepotPosition( XBase ):
     def __init__( self, valuedict:Dict=None ):
         XBase.__init__( self )
@@ -44,6 +38,8 @@ class XDepotPosition( XBase ):
         self.maxKaufpreis = 0.0 # Max. Kaufpreis / Stück
         self.minKaufpreis = 0.0 # Min. Kaufpreis / Stück
         self.gesamtwert_aktuell = 0 # Stück * kurs_aktuell
+        self.anteil_an_summe_gesamtwerte = 0  # wie hoch der Anteil dieser Depotposition an der Gesamtsumme der
+                                              # im IMON befindlichen Positionen ist (in Prozent)
         self.kurs_aktuell = 0.0
         self.delta_proz = 0.0 #prozentualer Unterschied zwischen preisprostueck und kurs_aktuell
         self.delta_kurs_1 = 0.0 # Kursentwicklung seit letztem Close in Prozent
