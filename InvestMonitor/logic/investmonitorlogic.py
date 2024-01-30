@@ -5,6 +5,7 @@ from pandas import DataFrame, Series
 import pandas as pd
 from yfinance.scrapers.quote import FastInfo
 
+import datehelper
 from base.basetablemodel import BaseTableModel, SumTableModel
 from data.db.investmonitordata import InvestMonitorData
 from data.finance.tickerhistory import Period, Interval, TickerHistory, SeriesName
@@ -205,6 +206,30 @@ class InvestMonitorLogic:
     def _computeDividendYield( kurs:float, dividend:float ) -> float:
         divYield = dividend / kurs
         return round( divYield*100, 3 )
+
+    @staticmethod
+    def getSimulatedDividendYield( kurs_aktuell:float, dividends:Series ) -> float:
+        """
+        Berechnet die theoretische Dividendenrendite auf Basis des aktuellen Kurses und des Durchschnitts der
+        Dividendenzahlungen in der eingestellten Periode
+        :return: die Rendite in Prozent, gerundet auf 2 Stellen genau
+        """
+        sumDiv = 0.0
+        startDayIso = ""
+        endDayIso = ""
+        for index, value in dividends.items():
+            dateIso = str(index)[:10]
+            if not startDayIso:
+                startDayIso = dateIso
+            endDayIso = dateIso
+            if value and value > 0:
+                sumDiv += value
+        days = datehelper.getNumberOfDays3( startDayIso, endDayIso )
+        years = days/365
+        if years > 0:
+            avg_annual_yield = sumDiv / years
+            return round( avg_annual_yield/kurs_aktuell*100, 2 )
+        return 0.0
 
     def getKursAktuellInEuro( self, ticker:str ) -> (float, str):
         """

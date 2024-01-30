@@ -1,12 +1,13 @@
-from typing import List, Tuple, Any
+from typing import List
 
 import matplotlib
-from PySide2.QtCore import QSize, Signal, Qt, Slot, QRect
+from PySide2.QtCore import QSize, Signal, Qt
 
 from base.baseqtderivates import BaseGridLayout, BaseLabel, BaseEdit, IntEdit, FloatEdit, HLine, \
     BaseButton, BaseComboBox, HistoryButton
 from base.enumhelper import getEnumFromValue
 from data.finance.tickerhistory import TickerHistory, Period, Interval
+from utfsymbols import symDELTA, symREFRESH, symZOOM, symBORDER, symINFO, symBINOC, symSUM, symAVG
 from interface.interfaces import XDepotPosition
 
 matplotlib.use('Qt5Agg')
@@ -62,6 +63,7 @@ class InfoPanel( QFrame ):
     update_kurs = Signal()
     show_details = Signal()
     show_div_payments = Signal()
+    show_simul_yield = Signal()
 
     @staticmethod
     def createCombo( items: List[str], callback ) -> BaseComboBox:
@@ -80,10 +82,10 @@ class InfoPanel( QFrame ):
         self._mplCanvas = MplCanvas()
         self._x:XDepotPosition = None
         self._lblName = BaseEdit( isReadOnly=True)
-        self._btnDetails = BaseButton( "ⓘ" )
+        self._btnDetails = BaseButton( symINFO )
         self._btnDetails.clicked.connect( self.show_details.emit )
         self._btnDetails.setMaximumSize( QSize(23, 23) )
-        self._btnSelect = BaseButton( "☐" )
+        self._btnSelect = BaseButton( symBORDER )
         self._btnSelect.clicked.connect( lambda x: self.setSelected( not self._isSelected ) )
         self._isSelected = False
         self._btnSelect.setMaximumSize( QSize( 23, 23 ) )
@@ -110,7 +112,7 @@ class InfoPanel( QFrame ):
         #self._lblAcc.setMaximumWidth( maxwtextlabels )
         self._lblStueck = IntEdit( isReadOnly=True )
         self._lblStueck.setMaximumWidth( maxwnumlabels )
-        self._btnStueckDelta = BaseButton( "Δ" )
+        self._btnStueckDelta = BaseButton( symDELTA )
         self._btnStueckDelta.clicked.connect( self.enter_bestand_delta.emit )
         self._btnStueckDelta.setFixedSize( QSize(23, 23) )
         self._lblGesamtPreis = IntEdit( isReadOnly=True )
@@ -128,16 +130,19 @@ class InfoPanel( QFrame ):
         self._lblGesamtWertAktuell.setMaximumWidth( maxwnumlabels )
         self._lblKursAktuell = FloatEdit( isReadOnly=True )
         self._lblKursAktuell.setMaximumWidth( maxwnumlabels )
-        self._btnKursAktualisieren = BaseButton( "⟳" )
+        self._btnKursAktualisieren = BaseButton( symREFRESH )
         self._btnKursAktualisieren.clicked.connect( self.update_kurs.emit )
         self._btnKursAktualisieren.setFixedSize( QSize(23, 23) )
         self._lblDivJeStck = FloatEdit( isReadOnly=True )
         self._lblDivJeStck.setMaximumWidth( maxwnumlabels )
-        self._btnDividendPayments = BaseButton( "🔎" )
+        self._btnDividendPayments = BaseButton( symZOOM )
         self._btnDividendPayments.clicked.connect( self.show_div_payments.emit )
         self._btnDividendPayments.setFixedSize( QSize( 23, 23 ) )
         self._lblDivYield = FloatEdit( isReadOnly=True )
         self._lblDivYield.setMaximumWidth( maxwnumlabels )
+        self._btnSimulYield = BaseButton( symBINOC )
+        self._btnSimulYield.setFixedSize( QSize(23, 23) )
+        self._btnSimulYield.clicked.connect( self.show_simul_yield.emit )
         self._lblDeltaProz = FloatEdit( isReadOnly=True )
         self._lblDeltaProz.setMaximumWidth( maxwnumlabels )
         self._createGui()
@@ -232,9 +237,9 @@ class InfoPanel( QFrame ):
 
         r += 1
         c = 0
-        l.addWidget( BaseLabel( "∑ Käufe" ), r, c )
+        l.addWidget( BaseLabel( symSUM + " Käufe" ), r, c )
         c = 1
-        self._lblGesamtPreis.setToolTip( "Stück mal Ø Kp./Stck" )  # ( "Summe aller Einzelkäufe" )
+        self._lblGesamtPreis.setToolTip( "Stück mal " + symAVG + " Kp./Stck" )  # ( "Summe aller Einzelkäufe" )
         l.addWidget( self._lblGesamtPreis, r, c )
         c = 2
         l.addWidget( BaseLabel( "€" ), r, c )
@@ -284,6 +289,10 @@ class InfoPanel( QFrame ):
         l.addWidget( self._lblDivYield, r, c )
         c = 2
         l.addWidget( BaseLabel( "%" ) )
+        c = 3
+        self._btnSimulYield.setToolTip( "Simuliere die Dividendenrendite für 1 Jahr anhand der durschnittl. Dividendzahlung der eingestellten Periode "
+                                        "\nund des aktuellen Kurses")
+        l.addWidget( self._btnSimulYield, r, c )
 
         r += 1
         c = 0

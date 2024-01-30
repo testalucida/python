@@ -70,7 +70,7 @@ class IMonToolBar( BaseToolBar ):
         self._btnUndock.setToolTip( "Markierte Depotpositionen in separatem Fenster zeigen" )
         self.addWidget( self._btnUndock)
         self.addSeparator()
-        self._btnAllDeltas = BaseButton( "Deltas" )
+        self._btnAllDeltas = BaseButton( "Orders" )
         self._btnAllDeltas.setToolTip( "Anzeige aller Käufe und Verkäufe" )
         self.addWidget( self._btnAllDeltas )
 

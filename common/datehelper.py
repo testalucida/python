@@ -319,6 +319,26 @@ def getNumberOfDays2( d1:str, d2:str, year:int ):
     delta = d2 - d1
     return delta.days + 1
 
+def getNumberOfDays3( d1:str, d2:str ) -> int:
+    """
+    Returns the number of days between two given dates.
+    :param d1: isodate like "2023-01-01"
+    :param d2: same as d1. Must be greater (later) than d1
+    :return:
+    """
+    assert d2 > d1
+    date1 = dateutil.parser.parse( d1 )
+    date2 = dateutil.parser.parse( d2 )
+    delta = date2 - date1
+    return delta.days + 1 # +1 since delta is computed as difference between the given dates, so delta would be 0
+                          # if d1 == d2 which would be wrong.
+
+def testNumberOfDays3( ):
+    d1 = "2024-01-29"
+    d2 = "2024-01-28"
+    days = getNumberOfDays3( d1, d2 )
+    print( days + 1 )
+
 def getLastMonth() -> Tuple[int, str]:
     monat = datetime.now().month
     monat = 12 if monat == 1 else monat-1

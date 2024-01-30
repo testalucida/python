@@ -11,7 +11,7 @@ from base.basetablemodel import BaseTableModel, SumTableModel
 from base.basetableview import BaseTableView
 from base.dynamicattributeui import DynamicAttributeView, DynamicAttributeDialog
 from base.interfaces import XBaseUI, VisibleAttribute
-from base.messagebox import ErrorBox
+from base.messagebox import ErrorBox, InfoBox
 from data.finance.tickerhistory import Period, Interval, SeriesName
 from generictable_stuff.okcanceldialog import OkDialog, OkCancelDialog
 from gui.infopanel import InfoPanel
@@ -32,6 +32,7 @@ class InfoPanelController:
         infopanel.setModel( xdepotpos )
         infopanel.show_details.connect( self.onShowDetails )
         infopanel.show_div_payments.connect( self.onShowDividendPayments )
+        infopanel.show_simul_yield.connect( self.onShowSimulatedDividendYield )
         infopanel.update_graph.connect( self.onUpdateGraph )
         infopanel.enter_bestand_delta.connect( self.onEnterBestandDelta )
         infopanel.show_kauf_historie.connect( self.onShowKaufHistorie )
@@ -65,7 +66,6 @@ class InfoPanelController:
         self._detailDlg.show()
 
     def onShowDividendPayments( self ):
-        import matplotlib.pyplot as plt
         divs:Series = self._x.dividends
         tm = SumTableModel.fromSeries( divs, indexLen=10, jahr=0, colsToSum=("value",) )
         tm.setKeyHeaderMappings2( ("index", "value"), ("Datum", "Dividende") )
@@ -75,6 +75,18 @@ class InfoPanelController:
         dlg = OkCancelDialog( title="Dividendenzahlungen" )
         dlg.addWidget( tv, 0 )
         dlg.exec_()
+
+    def onShowSimulatedDividendYield( self ):
+        """
+        Öffnet ein Infofenster, in dem die theoretische Dividendenrendite auf Basis des aktuellen Kurses und des Durchschnitts der
+        Dividendenzahlungen in der eingestellten Periode angezeigt wird.
+        :return: None
+        """
+        divyield:float = self._logic.getSimulatedDividendYield( self._x.kurs_aktuell, self._x.dividends )
+        box = InfoBox( title="Theoretische Rendite", info="Auf Basis in der Vergangenheit (eingestellte Periode) gezahlter Dividenden "
+                                                          "und des aktuellen Kurses\nergibt sich für das kommende Jahr rechnerisch eine Rendite von",
+                       more=str(divyield) + "%" )
+        box.exec_()
 
     def onUpdateGraph( self, period:Period, interval:Interval ):
         self._logic.updateWertpapierData( self._x, period, interval )
@@ -155,7 +167,7 @@ def test2():
     ipc = InfoPanelController()
     logic = InvestMonitorLogic()
     ticker = "IEDY.L"
-    deppos = logic.getDepotPosition( ticker, Period.oneYear, Interval.oneWeek )
+    deppos = logic.getDepotPosition( ticker, Period.twoYears, Interval.oneWeek )
     ipanel = ipc.createInfoPanel( deppos )
     ipanel.show()
     app.exec_()
