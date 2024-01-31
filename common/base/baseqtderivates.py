@@ -700,6 +700,7 @@ class BaseEdit( QLineEdit, AutoWidth, GetSetValue ):
 
     def setValue( self, value: str ):
         self.setText( value )
+        self.setCursorPosition( 0 )
 
     def setBold( self, bold=True ):
         font = self.font()
@@ -724,6 +725,10 @@ class BaseEdit( QLineEdit, AutoWidth, GetSetValue ):
     def focusInEvent( self, evt ):
         super().focusInEvent( evt )
         self.setSelection( 0, len( self.text() ) )
+
+    def focusOutEvent( self, evt ):
+        super().focusOutEvent( evt )
+        self.setCursorPosition( 0 )
 
     # def focusOutEvent( self, evt ):
     #     super().focusOutEvent( evt )

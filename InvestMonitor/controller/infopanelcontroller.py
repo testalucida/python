@@ -75,7 +75,7 @@ class InfoPanelController( QObject ):
         tv = BaseTableView()
         tv.setModel( tm )
         tv.setAlternatingRowColors( True )
-        dlg = OkCancelDialog( title="Dividendenzahlungen" )
+        dlg = OkCancelDialog( title="Dividendenzahlungen " + self._x.wkn )
         dlg.addWidget( tv, 0 )
         dlg.exec_()
 
@@ -86,8 +86,9 @@ class InfoPanelController( QObject ):
         :return: None
         """
         divyield:float = self._logic.getSimulatedDividendYield( self._x.kurs_aktuell, self._x.dividends )
-        box = InfoBox( title="Theoretische Rendite", info="Auf Basis in der Vergangenheit (eingestellte Periode) gezahlter Dividenden "
-                                                          "und des aktuellen Kurses\nergibt sich für das kommende Jahr rechnerisch eine Rendite von",
+        box = InfoBox( title="Theoretische Rendite " + self._x.wkn,
+                       info="Auf Basis in der Vergangenheit (eingestellte Periode) gezahlter Dividenden "
+                            "und des aktuellen Kurses\nergibt sich für das kommende Jahr rechnerisch eine Rendite von",
                        more=str(divyield) + "%" )
         box.exec_()
 

@@ -3,7 +3,7 @@ from PySide2.QtGui import Qt, QScreen
 from PySide2.QtWidgets import QMainWindow, QScrollArea, QWidget, QApplication, QDesktopWidget, QHBoxLayout
 
 from base.baseqtderivates import BaseGridLayout, BaseToolBar, SearchField, BaseComboBox, BaseLabel, Separator, \
-    BaseButton, BaseWidget
+    BaseButton, BaseWidget, BaseEdit
 from base.enumhelper import getEnumValues, getEnumFromValue
 from gui.infopanel import InfoPanel
 from imon.definitions import DEFAULT_PERIOD, DEFAULT_INTERVAL
@@ -50,6 +50,12 @@ class IMonToolBar( BaseToolBar ):
     period_interval_changed = Signal( Period, Interval )
     def __init__(self):
         BaseToolBar.__init__( self )
+        self.addWidget( BaseLabel( "Im Monitor: " ) )
+        self._summeAktuelleWerte = BaseEdit( isReadOnly=True )
+        self._summeAktuelleWerte.setFixedWidth( 70 )
+        self.addWidget( self._summeAktuelleWerte )
+        self.addWidget( BaseLabel( "€" ) )
+        self.addSeparator()
         self._searchField = SearchField()
         self._searchField.setPlaceholderText( "Suche nach WKN oder ISIN oder Ticker" )
         self._searchField.setFixedWidth( 300 )
@@ -91,6 +97,9 @@ class IMonToolBar( BaseToolBar ):
         lay.addWidget( self._btnUpdateAllInfoPanels )
         self._periodAndIntervalWidget.setLayout( lay )
         self.addWidget( self._periodAndIntervalWidget )
+
+    def setSummeAktuelleWerte( self, value ):
+        self._summeAktuelleWerte.setValue( str( value ) )
 
     def getSearchField( self ) -> SearchField:
         return self._searchField
@@ -145,6 +154,9 @@ class MainWindow( QMainWindow ):
 
     def getSearchField( self ) -> SearchField:
         return self._toolBar.getSearchField()
+
+    def setInfoPanelOrder( self, order:InfoPanelOrder ):
+        self._toolBar.getOrderComboBox().setValue( order.value )
 
     def clear( self ) -> None:
         self._allInfoPanel.clear()

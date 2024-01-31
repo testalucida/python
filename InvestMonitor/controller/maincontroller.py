@@ -43,6 +43,7 @@ class MainController( QObject ):
         poslist = self._logic.getDepotPositions( DEFAULT_PERIOD, DEFAULT_INTERVAL )
         for xdepotpos in poslist:
             self._summeGesamtwerte += xdepotpos.gesamtwert_aktuell
+        self._mainWin.getToolBar().setSummeAktuelleWerte( self._summeGesamtwerte )
         for xdepotpos in poslist:
             xdepotpos.anteil_an_summe_gesamtwerte = self._computeAnteilAnSummeGesamtwerte( xdepotpos )
             infopanelctrl = InfoPanelController()
@@ -56,10 +57,12 @@ class MainController( QObject ):
         w = rect.right() - rect.left()
         h = rect.bottom() - rect.top()
         self._mainWin.resize( QSize( w, h ) )
+        self._mainWin.setInfoPanelOrder( DEFAULT_INFOPANEL_ORDER )
         return self._mainWin
 
     def onSummeGesamtwerteChanged( self, delta:int ):
         self._summeGesamtwerte += delta
+        self._mainWin.getToolBar().setSummeAktuelleWerte( self._summeGesamtwerte )
         for ipc in self._infoPanelCtrlList:
             deppos = ipc.getModel()
             anteil = self._computeAnteilAnSummeGesamtwerte( deppos )
