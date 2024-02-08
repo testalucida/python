@@ -30,6 +30,7 @@ class MainController( QObject ):
         self._dlgSelected:OkDialog = None
         self._dlgAllOrders:OkDialog = None
         self._summeGesamtwerte = 0
+        self._summeKaeufe = 0
 
     def createMainWindow( self ) -> MainWindow:
         self._mainWin = MainWindow()
@@ -39,11 +40,16 @@ class MainController( QObject ):
         self._mainWin.getSearchField().searchTextChanged.connect( self.onSearchInfoPanelTextChanged )
         self._mainWin.change_infopanel_order.connect( self.onChangeSortOrder )
         self._mainWin.undock_infopanel.connect( self.onUndock )
-        self._mainWin.show_deltas.connect( self.onShowDeltas )
+        self._mainWin.show_orders.connect( self.onShowOrders )
         poslist = self._logic.getDepotPositions( DEFAULT_PERIOD, DEFAULT_INTERVAL )
         for xdepotpos in poslist:
             self._summeGesamtwerte += xdepotpos.gesamtwert_aktuell
-        self._mainWin.getToolBar().setSummeAktuelleWerte( self._summeGesamtwerte )
+            self._summeKaeufe += xdepotpos.einstandswert_restbestand
+        if self._summeKaeufe > 0:
+            delta = round( (self._summeGesamtwerte - self._summeKaeufe) / self._summeKaeufe * 100, 1 )
+        else:
+            delta = 0.0
+        self._mainWin.getToolBar().setSummen( self._summeKaeufe, self._summeGesamtwerte, delta )
         for xdepotpos in poslist:
             xdepotpos.anteil_an_summe_gesamtwerte = self._computeAnteilAnSummeGesamtwerte( xdepotpos )
             infopanelctrl = InfoPanelController()
@@ -62,7 +68,7 @@ class MainController( QObject ):
 
     def onSummeGesamtwerteChanged( self, delta:int ):
         self._summeGesamtwerte += delta
-        self._mainWin.getToolBar().setSummeAktuelleWerte( self._summeGesamtwerte )
+        self._mainWin.getToolBar().setSummen( self._summeGesamtwerte )
         for ipc in self._infoPanelCtrlList:
             deppos = ipc.getModel()
             anteil = self._computeAnteilAnSummeGesamtwerte( deppos )
@@ -112,7 +118,7 @@ class MainController( QObject ):
 
             #dlg = OkDialog( title="Ausgewählte Depotpositionen" )
 
-    def onShowDeltas( self ):
+    def onShowOrders( self ):
         tmOrders:SumTableModel = self._logic.getAllOrders()
         tv = BaseTableView()
         tv.setAlternatingRowColors( True )
@@ -203,6 +209,10 @@ class MainController( QObject ):
             sortfield = x.anteil_an_summe_gesamtwerte
             sortfieldInfo = "Anteil: " + str( x.anteil_an_summe_gesamtwerte )
             self._sortDirection = SortDirection.DESC
+        elif order == InfoPanelOrder.Anteil_USA:
+            sortfield = x.anteil_usa
+            sortfieldInfo = "USA-Firmen (%): " + str( x.anteil_usa )
+            self._sortDirection = SortDirection.DESC
         elif order == InfoPanelOrder.AccLast:
             val = "0 / " if not x.flag_acc else "1 / "
             sortfield = val + x.wkn.lower()
@@ -258,7 +268,7 @@ def testAllOrdersTableView():
     from PySide2.QtWidgets import QApplication
     app = QApplication()
     ctrl = MainController()
-    ctrl.onShowDeltas()
+    ctrl.onShowOrders()
 
 def test2():
     from PySide2.QtWidgets import QApplication

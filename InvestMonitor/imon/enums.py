@@ -8,6 +8,7 @@ class InfoPanelOrder( Enum ):
     Depot = "Depot, WKN"
     Wert = "Wert"
     Anteil = "Anteil an der Summe der akt. Gesamtwerte"
+    Anteil_USA = "Anteil USA-Firmen"
     AccFirst = "Thesaurierende, WKN"
     AccLast = "Ausschüttende, WKN"
     DeltaWert = "Wertentwicklung"

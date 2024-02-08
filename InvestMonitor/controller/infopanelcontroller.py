@@ -6,7 +6,7 @@ from pandas import Series
 
 import datehelper
 from base.baseqtderivates import BaseEdit, MultiLineEdit, SmartDateEdit, IntEdit, FloatEdit, SignedNumEdit, \
-    PositiveSignedFloatEdit
+    PositiveSignedFloatEdit, FixedNegativeSignedFloatEdit
 from base.basetablemodel import BaseTableModel, SumTableModel
 from base.basetableview import BaseTableView
 from base.dynamicattributeui import DynamicAttributeView, DynamicAttributeDialog
@@ -32,7 +32,7 @@ class InfoPanelController( QObject ):
     def createInfoPanel( self, xdepotpos:XDepotPosition ) -> InfoPanel:
         self._x = xdepotpos
         infopanel = InfoPanel()
-        infopanel.setModel( xdepotpos )
+        infopanel.setDepotPosition( xdepotpos )
         infopanel.show_details.connect( self.onShowDetails )
         infopanel.show_div_payments.connect( self.onShowDividendPayments )
         infopanel.show_simul_yield.connect( self.onShowSimulatedDividendYield )
@@ -113,6 +113,9 @@ class InfoPanelController( QObject ):
             if view.getWidget( "preis_stck" ).getValue() <= 0:
                 return "Der Kurs muss immer positiv sein.\nDie Erkennung Kauf/Verkauf erfolgt über das " \
                        "Vorzeichen der Stückzahl (+ -> Kauf, - -> Verkauf)."
+            if view.getWidget( "delta_stck" ).getValue() < 0 and view.getWidget( "verkaufskosten" ).getValue() == 0:
+               return "Bei einem Verkauf müssen die Kosten des Verkaufs angegeben werden." \
+                      "\nAndernfalls wird ein zu hoher Veräußerungsgewinn berechnet."
 
         delta = XDelta()
         delta.wkn = self._x.wkn
@@ -128,10 +131,9 @@ class InfoPanelController( QObject ):
             VisibleAttribute( "preis_stck", FloatEdit, "Kurs (€): ", widgetWidth=100,
                               tooltip="Kurs, zu dem gekauft/verkauft wurde",
                               editable=True, nextRow=True ),
-            # VisibleAttribute( "order_summe", FloatEdit, "Kauf-/Verkaufspreis (€): ", widgetWidth=100,
-            #                   tooltip="Ordersumme inkl. Nebenkosten.\nVorzeichen muss immer '+' sein,\n"
-            #                           "die Erkennung ob Kauf oder Verkauf erfolgt über das Vorzeichen der Stückzahl",
-            #                   editable=True, nextRow=True ),
+            VisibleAttribute( "verkaufskosten", FixedNegativeSignedFloatEdit, "Orderkosten (€) (nur bei Verkauf)", widgetWidth=100,
+                              tooltip="Kosten, die beim Verkauf erhoben wurden.\nKönnen vom Veräuß.gewinn abgezogen werden.",
+                              editable=True, nextRow=True ),
             VisibleAttribute( "bemerkung", MultiLineEdit, "Bemerkung: ", editable=True, widgetHeight=50, nextRow=True ),
         )
         deltaUI.addVisibleAttributes( vislist )
@@ -180,8 +182,8 @@ def test2():
     app = QApplication()
     ipc = InfoPanelController()
     logic = InvestMonitorLogic()
-    ticker = "IEDY.L"
-    deppos = logic.getDepotPosition( ticker, Period.twoYears, Interval.oneWeek )
+    ticker = "HMWD.L"
+    deppos = logic.getDepotPosition( ticker, Period.oneYear, Interval.oneWeek )
     ipanel = ipc.createInfoPanel( deppos )
     ipanel.show()
     app.exec_()

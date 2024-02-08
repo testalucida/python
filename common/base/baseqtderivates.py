@@ -804,9 +804,11 @@ class SignedNumEdit( QWidget ):
     class Sign( BaseButton ):
         PLUS = "+"
         MINUS = "-"
-        def __init__( self, sign=MINUS, isEnabled=True ):
+        def __init__( self, sign=MINUS, isEnabled=True, maySwitch=True ):
             BaseButton.__init__( self, text=sign )
             self.setEnabled( isEnabled )
+            if not maySwitch and self.isEnabled():
+                self.setEnabled( False )
             self._currentSign = sign
             font = QFont( "Arial", 20 )
             font.setBold( True )
@@ -842,10 +844,10 @@ class SignedNumEdit( QWidget ):
             else:
                 self.setStyleSheet( "background-color: green; color: white" )
 
-    def __init__( self, numtype:type=float, sign="-", parent=None, isReadOnly=False ):
+    def __init__( self, numtype:type=float, sign="-", parent=None, isReadOnly=False, maySwitch=True ):
         QWidget.__init__( self, parent )
         self._type = numtype
-        self._sign = self.Sign( sign, isEnabled=not isReadOnly )
+        self._sign = self.Sign( sign, isEnabled=not isReadOnly, maySwitch=maySwitch )
         if numtype == int:
             self._numEdit = IntEdit( showNegativNumbersRed=False, isReadOnly=isReadOnly )
         else:
@@ -943,6 +945,15 @@ class PositiveSignedFloatEdit( SignedNumEdit ):
     """
     def __init__( self, parent=None, isReadOnly=False ):
         SignedNumEdit.__init__( self, numtype=float, sign="+" )
+
+######################## FixedNegativeSignedFloatEdit ##################
+class FixedNegativeSignedFloatEdit( SignedNumEdit ):
+    """
+    Diese Klasse brauchen wir, damit wir im DynamicAttributeView ein SignedNumEdit Objekt instanzieren können,
+    das per Default "-" anzeigt und dessen Sign nicht auf "+" gestellt werden kann
+    """
+    def __init__( self, parent=None, isReadOnly=False ):
+        SignedNumEdit.__init__( self, numtype=float, sign="-", maySwitch=False )
 
 #########################  IntEdit  ################################
 class IntEdit( BaseEdit ):

@@ -1,4 +1,5 @@
 import math
+from operator import itemgetter, attrgetter
 from typing import List
 
 from pandas import DataFrame, Series
@@ -77,6 +78,7 @@ class InvestMonitorLogic:
         :return:
         """
         deppos:XDepotPosition = self._db.getDepotPosition( ticker )
+        #self.provideTickerHistories( [deppos,], period=period, interval=interval )
         self._provideOrderData( deppos )
         tickerHistory:DataFrame = self._tickerHist.getTickerHistoryByPeriod( ticker, period, interval )
         closeHist:Series = tickerHistory[SeriesName.Close.value]
@@ -84,30 +86,30 @@ class InvestMonitorLogic:
         self._provideWertpapierData( deppos, closeHist, dividends )
         return deppos
 
-    def getDepotPositions____( self, period:Period, interval:Interval ) -> List[XDepotPosition]:
-        """
-        Liefert die Depot-Positionen inkl. der Bestände und der Kursentwicklung in der Default-Periode und
-        im Default-Zeitintervall
-        :return:
-        """
-        # Depotpositonen holen:
-        poslist:List[XDepotPosition] = self._db.getDepotPositions()
-        tickerlist = [pos.ticker for pos in poslist]
-        tickerHistories:DataFrame = self._tickerHist.getTickerHistoriesByPeriod( tickerlist,
-                                                                                 period=period,
-                                                                                 interval=interval )
-        tickerHistories = self._checkForNaN( tickerHistories )
-        closeDf:DataFrame = tickerHistories[SeriesName.Close.value]
-        dividendsDf:DataFrame = tickerHistories[SeriesName.Dividends.value]
-        for deppos in poslist:
-            self._provideOrderData( deppos )
-            try:
-                closeHist:Series = closeDf[deppos.ticker]
-                dividends:Series = dividendsDf[deppos.ticker]
-                self._provideWertpapierData( deppos, closeHist, dividends )
-            except Exception as ex:
-                print( deppos.ticker, " not found in DataFrame closeDf" )
-        return poslist
+    # def getDepotPositions____( self, period:Period, interval:Interval ) -> List[XDepotPosition]:
+    #     """
+    #     Liefert die Depot-Positionen inkl. der Bestände und der Kursentwicklung in der Default-Periode und
+    #     im Default-Zeitintervall
+    #     :return:
+    #     """
+    #     # Depotpositonen holen:
+    #     poslist:List[XDepotPosition] = self._db.getDepotPositions()
+    #     tickerlist = [pos.ticker for pos in poslist]
+    #     tickerHistories:DataFrame = self._tickerHist.getTickerHistoriesByPeriod( tickerlist,
+    #                                                                              period=period,
+    #                                                                              interval=interval )
+    #     tickerHistories = self._checkForNaN( tickerHistories )
+    #     closeDf:DataFrame = tickerHistories[SeriesName.Close.value]
+    #     dividendsDf:DataFrame = tickerHistories[SeriesName.Dividends.value]
+    #     for deppos in poslist:
+    #         self._provideOrderData( deppos )
+    #         try:
+    #             closeHist:Series = closeDf[deppos.ticker]
+    #             dividends:Series = dividendsDf[deppos.ticker]
+    #             self._provideWertpapierData( deppos, closeHist, dividends )
+    #         except Exception as ex:
+    #             print( deppos.ticker, " not found in DataFrame closeDf" )
+    #     return poslist
 
     def getDepotPositions( self, period:Period, interval:Interval ) -> List[XDepotPosition]:
         """
@@ -117,8 +119,8 @@ class InvestMonitorLogic:
         """
         # Depotpositonen holen:
         poslist:List[XDepotPosition] = self._db.getDepotPositions()
-        for deppos in poslist:
-            self._provideOrderData( deppos )
+        # for deppos in poslist:
+        #     self._provideOrderData( deppos )
         # Wertpapierdaten in Positionen eintragen (Kursverlauf, Dividenden etc.)
         poslist = self.provideTickerHistories( poslist, period, interval )
         return poslist
@@ -176,6 +178,49 @@ class InvestMonitorLogic:
             first_kurs_period = closeHist.array[0]
             deppos.dividend_yield = self._computeDividendYield( first_kurs_period, deppos.dividend_period )
         self._provideGesamtwertAndDelta( deppos )
+        self._providePaidDividends( deppos, dividends )
+
+    def _providePaidDividends( self, deppos:XDepotPosition, dividends:Series ):
+        """
+        Ermittelt die Dividendenzahlungen, die für <deppos> gemäß Eintragungen in <dividends> angefallen sind.
+        Für jede Dividendenzahlung wird nur der zu diesem Zeitpunkt vorhandene Depotbestand berücksichtigt.
+        :param deppos:
+        :param dividends:
+        :return:
+        """
+        deppos.dividend_paid_period = 0
+        #todo
+        deltas = self._db.getDeltas( deppos.wkn  )
+        deltas.sort( key=attrgetter( "delta_datum" ) )
+        sum_dividends = 0
+        for pay_ts, value in dividends.items():
+            if value > 0:
+                #print( "paid: ", str(pay_ts)[:10], ": ", value )
+                # den Depotbestand der Position <deppos> zum Datum <paydate> ermitteln:
+                sum_dividends += self._computeDividendOnBestand( deltas, float( value ), str( pay_ts )[:10] )
+        deppos.dividend_paid_period = sum_dividends
+
+    @staticmethod
+    def _computeDividendOnBestand( deltas:List[XDelta], dividend:float, paydate:str ) -> int:
+        """
+        Errechnet die Dividende, die auf den am Ausschüttungstag <paydate> vorhandenen Bestand bezahlt wurde.
+        :param deltas: Alle Käufe u. Verkäufe eines bestimmten Fonds (oder Aktie)
+                       Es wird vorausgesetzt, dass deltas nach <delta_datum> aufsteigend sortiert ist.
+        :param dividend: an paydate bezahlte Dividende pro Stück
+        :param paydate: Ausschüttungstag (ISO-Format)
+        :return:
+        """
+        summe_stck = 0
+        for delta in deltas:
+            if delta.delta_datum < paydate:
+                summe_stck += delta.delta_stck # gekaufte Stücke werden addiert, verkaufte subtrahiert.
+                                               # <delta.verkauft_stck> braucht nicht berücksichtigt werden,
+                                               # da sie nur eine Aufteilung der Verkäufe (die hier subtrahiert werden)
+                                               # auf die Käufe darstellen (im Sinne verfügbarer Stücke)
+            else:
+                break
+        return int(round( summe_stck * dividend, 2 ) )
+
 
     @staticmethod
     def _provideGesamtwertAndDelta( deppos:XDepotPosition ):
@@ -305,31 +350,58 @@ class InvestMonitorLogic:
     #     if deppos.stueck > 0:
     #         deppos.preisprostueck = round( deppos.gesamtkaufpreis / deppos.stueck, 2 )
 
+    # def _provideOrderData( self, deppos: XDepotPosition ):
+    #     """
+    #     Holt zur übergebenen Depotposition die delta-Daten aus der DB und trägt sie ein
+    #     :param deppos:
+    #     :return:
+    #     """
+    #     deltalist: List[XDelta] = self._db.getDeltas( deppos.wkn )
+    #     deppos.stueck = gekaufte_stueck = 0
+    #     deppos.gesamtkaufpreis = deppos.maxKaufpreis = deppos.minKaufpreis = 0
+    #     for delta in deltalist:
+    #         deppos.stueck += delta.delta_stck
+    #         if delta.delta_stck > 0:
+    #             # Kauf; Verkäufe dürfen für die Ermittlung von max, min und Durchscnitt nicht
+    #             # berücksichtigt werden
+    #             gekaufte_stueck += delta.delta_stck
+    #             orderpreis = delta.delta_stck * delta.preis_stck
+    #             deppos.gesamtkaufpreis += orderpreis
+    #             deppos.maxKaufpreis = delta.preis_stck if delta.preis_stck > deppos.maxKaufpreis else deppos.maxKaufpreis
+    #             deppos.minKaufpreis = delta.preis_stck \
+    #                 if delta.preis_stck < deppos.minKaufpreis or deppos.minKaufpreis == 0 \
+    #                 else deppos.minKaufpreis
+    #     deppos.gesamtkaufpreis = int( round( deppos.gesamtkaufpreis, 2 ) )
+    #     if deppos.stueck > 0: # es gibt noch einen Depot-Bestand
+    #         deppos.preisprostueck = round( deppos.gesamtkaufpreis / gekaufte_stueck, 2 )
+    #         deppos.einstandswert_restbestand = int( round( deppos.preisprostueck * deppos.stueck, 2 ) )
+
     def _provideOrderData( self, deppos: XDepotPosition ):
         """
         Holt zur übergebenen Depotposition die delta-Daten aus der DB und trägt sie ein
         :param deppos:
         :return:
         """
-        deltalist: List[XDelta] = self._db.getDeltas( deppos.wkn )
-        deppos.stueck = gekaufte_stueck = 0
-        deppos.gesamtkaufpreis = deppos.maxKaufpreis = deppos.minKaufpreis = 0
+        deltalist: List[XDelta] = self._db.getDeltas( deppos.wkn ) # sortiert nach delta_datum absteigend
+        deppos.stueck = 0
+        deppos.einstandswert_restbestand = deppos.maxKaufpreis = deppos.minKaufpreis = 0
         for delta in deltalist:
-            deppos.stueck += delta.delta_stck
             if delta.delta_stck > 0:
                 # Kauf; Verkäufe dürfen für die Ermittlung von max, min und Durchscnitt nicht
                 # berücksichtigt werden
-                gekaufte_stueck += delta.delta_stck
-                orderpreis = delta.delta_stck * delta.preis_stck
-                deppos.gesamtkaufpreis += orderpreis
+                if not deppos.letzter_kauf:
+                    deppos.letzter_kauf = delta.delta_datum
+                deppos.erster_kauf = delta.delta_datum
+                deppos.stueck += ( delta.delta_stck - delta.verkauft_stck )
+                deppos.einstandswert_restbestand += ( delta.delta_stck * delta.preis_stck )
                 deppos.maxKaufpreis = delta.preis_stck if delta.preis_stck > deppos.maxKaufpreis else deppos.maxKaufpreis
                 deppos.minKaufpreis = delta.preis_stck \
                     if delta.preis_stck < deppos.minKaufpreis or deppos.minKaufpreis == 0 \
                     else deppos.minKaufpreis
-        deppos.gesamtkaufpreis = int( round( deppos.gesamtkaufpreis, 2 ) )
+        deppos.einstandswert_restbestand = int( round( deppos.einstandswert_restbestand, 2 ) )
         if deppos.stueck > 0: # es gibt noch einen Depot-Bestand
-            deppos.preisprostueck = round( deppos.gesamtkaufpreis / gekaufte_stueck, 2 )
-            deppos.einstandswert_restbestand = int( round( deppos.preisprostueck * deppos.stueck, 2 ) )
+            deppos.preisprostueck = round( deppos.einstandswert_restbestand / deppos.stueck, 2 )
+            deppos.einstandswert_restbestand = int( round( deppos.einstandswert_restbestand, 2 ) )
 
     def getHistoryByPeriod( self, ticker:str, period:Period, interval:Interval ):
         df:DataFrame = self._tickerHist.getTickerHistoryByPeriod( ticker, period, interval )
@@ -342,8 +414,10 @@ class InvestMonitorLogic:
     def getOrders( self, wkn:str ) -> SumTableModel:
         deltalist = self._db.getDeltas( wkn )
         tm = SumTableModel( deltalist, 0, ("delta_stck", "order_summe") )
-        tm.setKeyHeaderMappings2( ("delta_datum", "delta_stck", "preis_stck",    "order_summe",   "bemerkung"),
-                                  ("Datum",        "Stück",     "Stück-\npreis (€)", "Order-\nsumme (€)", "Bemerkung") )
+        tm.setKeyHeaderMappings2( ("delta_datum", "delta_stck", "preis_stck", "order_summe",
+                                   "verkauft_stck", "verkaufskosten", "bemerkung"),
+                                  ("Datum",  "Stück", "Stück-\npreis (€)", "Order-\nsumme (€)",
+                                   "Stück vk.", "Verk.kosten", "Bemerkung") )
         return tm
 
     @staticmethod
@@ -377,18 +451,62 @@ class InvestMonitorLogic:
         """
         Fügt eine Order (Kauf oder Verkauf) in Tabelle delta ein.
         Danach werden die deppos-Attribute stueck, gesamtkaufpreis, preisprostueck und ggf. maxKaufpreis oder minKaufpreis
-        geändert. Außerdem werden gesamtwert_aktuell und elta_prod neu berechnet.
+        geändert. Außerdem werden gesamtwert_aktuell und delta_proz neu berechnet.
         :param delta: die Daten der neuen Order
         :param deppos: die Depotposition, die sich durch die Order verändert
         :return:
         """
-        # delta.preis_stck = round( delta.order_summe / delta.delta_stck, 3 )
         delta.order_summe = abs( round( delta.preis_stck * delta.delta_stck, 2 ) )
         self._db.insertDelta( delta )
+        if delta.delta_stck < 0:
+            # es ist ein Verkauf, jetzt muss die verkaufte Stückzahl in einen oder mehrere Kauf-Sätze
+            # gebucht werden
+            self._bookShareSale( delta, deppos )
         self._db.commit()
-
         self._provideOrderData( deppos )
         self._provideGesamtwertAndDelta( deppos )
+
+    def _bookShareSale( self, verkauf:XDelta, deppos:XDepotPosition ):
+        """
+        nach einem Anteilsverkauf muss die Anzahl der verkauften Stücke auf die vorherigen Käufe verteilt werden.
+        Beispiel:
+        Verkauft wurden 100 Stück.
+        Es gibt 2 Käufe, der ältere mit 80 Stück, der jüngere mit 40 Stück.
+        Gem FIFO-Prinzip müssen nun im älteren Kauf 80 verkaufte Stück eingetragen werden und im neueren Kauf
+        20 Stück.
+        Nach diesen Datenbank-Updates müssen in der Depotpositon <deppos> die Felder stueck und einstandswert_restbestand
+        neu berechnet werden.
+        :param verkauf:
+        :param deppos:
+        :return:
+        """
+        # Zuerst die Kauf-Orders dieses Wertpapiers holen:
+        deltas:List[XDelta] = self._db.getKaeufe( verkauf.wkn ) # sortiert nach Kaufdatum aufsteigend, also ältester Kauf oben
+        verkaufte_stuecke = verkauf.delta_stck * -1
+        rest = verkaufte_stuecke
+        deppos.stueck = 0
+        deppos.einstandswert_restbestand = 0
+        for delta in deltas:
+            vfgbar = delta.delta_stck - delta.verkauft_stck
+            if vfgbar >= rest:
+                # es gibt in diesem Satz (Kauf) soviele verfügbare Stücke, dass der Verkauf aus ihnen bedient
+                # werden kann
+                delta.verkauft_stck += rest
+                rest = 0
+            else:
+                # nicht genügend Stücke für den Verkauf vorhanden. Die vorhandenen in verkauft_stck eintragen.
+                delta.verkauft_stck += vfgbar
+                rest -= vfgbar
+            self._db.updateDeltaVerkaufteStuecke( delta.id, delta.verkauft_stck )
+            deppos.stueck += rest
+            deppos.einstandswert_restbestand += (rest * delta.preis_stck)
+            if rest == 0:
+                break
+        if deppos.stueck > 0:
+            # Durchschnittl. Preis pro Stück:
+            deppos.preisprostueck = round( deppos.einstandswert_restbestand / deppos.stueck, 2 )
+
+
 
 def test():
     logic = InvestMonitorLogic()

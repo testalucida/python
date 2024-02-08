@@ -45,7 +45,8 @@ class SollHausgeldEditController( IccController ):
         :return:
         """
         def validate() -> bool:
-            msg = self._logic.validate( x )
+            xcop = v.getDataCopyWithChanges()
+            msg = self._logic.validate( xcop )
             if msg:
                 box = ErrorBox( "Validierungsfehler", msg, "" )
                 box.exec_()

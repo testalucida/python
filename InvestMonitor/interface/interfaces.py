@@ -21,30 +21,36 @@ class XDepotPosition( XBase ):
         self.toplaender = ""
         self.topfirmen = ""
         self.topsektoren = ""
+        self.anteil_usa = 0  # Anteil von in den USA gelegenen Firmen
         self.history:Series = None
         self.history_period = Period.unknown
         self.history_interval = Interval.unknown
         self.dividends:Series = None # Dividenden, die im Lauf von history_period ausgeschüttet wurden.
         self.dividend_period = 0.0 # Summe der Dividenden PRO STÜCK, die während history_period ausgeschüttet wurden
         self.dividend_yield = 0.0 # Dividenden-Rendite
-        self.low_price = 0.0 # todo: der niedrigste Preis in der Periode
-        self.high_price = 0.0 # todo: der höchste Preis in der Periode
+        # self.dividend_vj = 0  # Die Summe der Dividenden, die für diese Depotposition im Vorjahr ausbezahlt wurde
+        self.dividend_paid_period = 0  # Die Summe der Dividenden, die für diese Depotposition in der eingestellten
+                                       # Periode ausbezahlt wurde
+        # self.low_price = 0.0 # todo: der niedrigste Preis in der Periode
+        # self.high_price = 0.0 # todo: der höchste Preis in der Periode
         self.stueck = 0 # Restbestand (Käufe und Verkäufe saldiert)
-        self.gesamtkaufpreis = 0 #Kaufpreis des gesamten Bestands -- eigentlich irrelevant: wenn von 995 Stück 900 verkauft werden,
+        #self.gesamtkaufpreis = 0 #Kaufpreis des gesamten Bestands -- eigentlich irrelevant: wenn von 995 Stück 900 verkauft werden,
                                  # was soll dann der Gesamtkaufpreis aussagen?
         self.einstandswert_restbestand = 0 # Einstandswert des (Rest-)Bestandes, ermittelt nach der Formel:
                                       # Stückzahl * durchschnittlicher Stück-Kaufpreis
         self.preisprostueck = 0.0 # durchschnittl. Preis pro Stück nach der Formel: Gesamtkaufpreis / Stück
         self.maxKaufpreis = 0.0 # Max. Kaufpreis / Stück
         self.minKaufpreis = 0.0 # Min. Kaufpreis / Stück
+        self.erster_kauf = "" # DAtum des ersten Kaufs
+        self.letzter_kauf = "" # Datum des letzten Kaufs
         self.gesamtwert_aktuell = 0 # Stück * kurs_aktuell
         self.anteil_an_summe_gesamtwerte = 0  # wie hoch der Anteil dieser Depotposition an der Gesamtsumme der
                                               # im IMON befindlichen Positionen ist (in Prozent)
         self.kurs_aktuell = 0.0
         self.delta_proz = 0.0 #prozentualer Unterschied zwischen preisprostueck und kurs_aktuell
-        self.delta_kurs_1 = 0.0 # Kursentwicklung seit letztem Close in Prozent
-        self.avg_kurs_50 = 0.0 # average Kurs letzte 50 Tage
-        self.avg_kurs_200 = 0.0  # average Kurs letzte 200 Tage
+        # self.delta_kurs_1 = 0.0 # Kursentwicklung seit letztem Close in Prozent
+        # self.avg_kurs_50 = 0.0 # average Kurs letzte 50 Tage
+        # self.avg_kurs_200 = 0.0  # average Kurs letzte 200 Tage
         self.depot_id = ""
         self.bank = ""
         self.depot_nr = ""
@@ -55,6 +61,7 @@ class XDepotPosition( XBase ):
 class XDelta( XBase ):
     def __init__( self, valuedict:Dict=None ):
         XBase.__init__( self )
+        self.id = 0
         self.name = ""
         self.wkn = ""
         self.isin = ""
@@ -62,7 +69,10 @@ class XDelta( XBase ):
         self.delta_stck = 0
         self.delta_datum = ""
         self.preis_stck = 0.0
-        self.order_summe = 0.0 # delta_stck * preis_stck
+        self.order_summe = 0.0 # delta_stck * preis_stck (Kurs, zu dem gekauft wurde)
+        self.verkauft_stck = 0 # wieviel Stück von einem früheren, bereits existenten Kauf-Satz verkauft wurden
+        self.verkaufskosten = 0.0 # Kosten, die bei einem Verkauf anfallen. Werden steuerlich berücksichtigt bei der
+                                  # Ermittlung des Veräußerungsgewinnes
         self.bemerkung = ""
         if valuedict:
             self.setFromDict( valuedict )

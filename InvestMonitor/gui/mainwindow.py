@@ -1,6 +1,7 @@
 from PySide2.QtCore import Signal, QSize, QPoint
 from PySide2.QtGui import Qt, QScreen
-from PySide2.QtWidgets import QMainWindow, QScrollArea, QWidget, QApplication, QDesktopWidget, QHBoxLayout
+from PySide2.QtWidgets import QMainWindow, QScrollArea, QWidget, QApplication, QDesktopWidget, QHBoxLayout, QMenu, \
+    QAction, QMenuBar
 
 from base.baseqtderivates import BaseGridLayout, BaseToolBar, SearchField, BaseComboBox, BaseLabel, Separator, \
     BaseButton, BaseWidget, BaseEdit
@@ -8,6 +9,7 @@ from base.enumhelper import getEnumValues, getEnumFromValue
 from gui.infopanel import InfoPanel
 from imon.definitions import DEFAULT_PERIOD, DEFAULT_INTERVAL
 from imon.enums import InfoPanelOrder, Period, Interval
+from utfsymbols import symSUM, symDELTA
 
 
 class AllInfoPanel( QWidget ):
@@ -50,12 +52,24 @@ class IMonToolBar( BaseToolBar ):
     period_interval_changed = Signal( Period, Interval )
     def __init__(self):
         BaseToolBar.__init__( self )
-        self.addWidget( BaseLabel( "Im Monitor: " ) )
+        self._wertInfo = BaseWidget()
+        self.addWidget( BaseLabel( symSUM + " Käufe: ") )
+        self._summeKaeufe = BaseEdit( isReadOnly=True )
+        self._summeKaeufe.setFixedWidth( 70 )
+        self.addWidget( self._summeKaeufe )
+        self.addWidget( BaseLabel( "€   " ) )
+        self.addWidget( BaseLabel( symSUM + " akt. Wert: " ) )
         self._summeAktuelleWerte = BaseEdit( isReadOnly=True )
         self._summeAktuelleWerte.setFixedWidth( 70 )
         self.addWidget( self._summeAktuelleWerte )
-        self.addWidget( BaseLabel( "€" ) )
+        self.addWidget( BaseLabel( "€   " ) )
+        self.addWidget( BaseLabel( symDELTA + ": ") )
+        self._delta = BaseEdit( isReadOnly=True )
+        self._delta.setFixedWidth( 35 )
+        self.addWidget( self._delta )
+        self.addWidget( BaseLabel( "%  " ) )
         self.addSeparator()
+
         self._searchField = SearchField()
         self._searchField.setPlaceholderText( "Suche nach WKN oder ISIN oder Ticker" )
         self._searchField.setFixedWidth( 300 )
@@ -63,22 +77,17 @@ class IMonToolBar( BaseToolBar ):
         self._cboOrder = BaseComboBox()
         self._cboOrder.addItems( getEnumValues( InfoPanelOrder ) )
         self.addSeparator()
-        self.addWidget( BaseLabel( "   InfoPanels anordnen:  " ) )
+
+        self.addWidget( BaseLabel( " InfoPanels anordnen:  " ) )
         self.addWidget( self._cboOrder )
         self.addSeparator()
+
         self._periodAndIntervalWidget = BaseWidget()
         self._cboPeriod = BaseComboBox()
         self._cboInterval = BaseComboBox()
         self._btnUpdateAllInfoPanels = BaseButton( "⟳", callback=self.onUpdateAllInfoPanels )
         self._addPeriodAndIntervalWidget()
         self.addSeparator()
-        self._btnUndock = BaseButton( "⏏" )
-        self._btnUndock.setToolTip( "Markierte Depotpositionen in separatem Fenster zeigen" )
-        self.addWidget( self._btnUndock)
-        self.addSeparator()
-        self._btnAllDeltas = BaseButton( "Orders" )
-        self._btnAllDeltas.setToolTip( "Anzeige aller Käufe und Verkäufe" )
-        self.addWidget( self._btnAllDeltas )
 
     def _addPeriodAndIntervalWidget( self ):
         self._cboPeriod.addItems( Period.getPeriods() )
@@ -98,8 +107,10 @@ class IMonToolBar( BaseToolBar ):
         self._periodAndIntervalWidget.setLayout( lay )
         self.addWidget( self._periodAndIntervalWidget )
 
-    def setSummeAktuelleWerte( self, value ):
-        self._summeAktuelleWerte.setValue( str( value ) )
+    def setSummen( self, sumEinstand:int, sumWert:int, delta:float ):
+        self._summeKaeufe.setValue( str( sumEinstand ) )
+        self._summeAktuelleWerte.setValue( str( sumWert ) )
+        self._delta.setValue( str( delta ) )
 
     def getSearchField( self ) -> SearchField:
         return self._searchField
@@ -124,13 +135,33 @@ class IMonToolBar( BaseToolBar ):
 
 
 ############################################################
+class IMonMenuBar( QMenuBar ):
+    undock_infopanel = Signal()
+    show_orders = Signal()
+    def __init__(self):
+        QMenuBar.__init__( self )
+        self._menuIMon = QMenu( "InvestMonitor" )
+        self._actionBeenden = self._menuIMon.addAction( "Beenden" )
+        self.addMenu( self._menuIMon )
+        self._menuExtras = QMenu( "Extras" )
+        self._actionUndock = self._menuExtras.addAction( "Markierte InfoPanels in separatem Dialog anziegen" )
+        self._actionUndock.triggered.connect( self.undock_infopanel.emit )
+        self._menuExtras.addSeparator()
+        self._actionShowOrders = self._menuExtras.addAction( "Alle Orders anzeigen" )
+        self._actionShowOrders.triggered.connect( self.show_orders.emit )
+        self.addMenu( self._menuExtras )
+############################################################
 class MainWindow( QMainWindow ):
     change_infopanel_order = Signal( InfoPanelOrder )
     undock_infopanel = Signal()
     period_interval_changed = Signal( Period, Interval )
-    show_deltas = Signal()
+    show_orders = Signal()
     def __init__( self ):
         QMainWindow.__init__( self )
+        self._menuBar = IMonMenuBar()
+        self._menuBar.undock_infopanel.connect( self.undock_infopanel.emit )
+        self._menuBar.show_orders.connect( self.show_orders.emit )
+        self.setMenuBar( self._menuBar )
         self._toolBar = IMonToolBar()
         self.addToolBar( self._toolBar )
         self._toolBar.period_interval_changed.connect( self.period_interval_changed.emit )
@@ -141,10 +172,10 @@ class MainWindow( QMainWindow ):
         cbo = self._toolBar.getOrderComboBox()
         cbo.currentTextChanged.connect(
             lambda txt: self.change_infopanel_order.emit( getEnumFromValue( InfoPanelOrder, txt ) ) )
-        btn = self._toolBar.getUndockButton()
-        btn.clicked.connect( self.undock_infopanel.emit )
-        btn = self._toolBar.getAllDeltasButton()
-        btn.clicked.connect( self.show_deltas.emit )
+        # btn = self._toolBar.getUndockButton()
+        # btn.clicked.connect( self.undock_infopanel.emit )
+        # btn = self._toolBar.getAllDeltasButton()
+        # btn.clicked.connect( self.show_orders.emit )
 
     def addInfoPanel( self, infopanel:InfoPanel ):
         self._allInfoPanel.addInfoPanel( infopanel )
