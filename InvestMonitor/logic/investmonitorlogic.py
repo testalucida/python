@@ -166,7 +166,7 @@ class InvestMonitorLogic:
             print( deppos.wkn, "/", deppos.ticker,
                    ": _provideWertpapierData(): call to getKursAktuellInEuro() failed.\nNo last_price availabel.")
 
-        deppos.dividend_period = self._getSumDividends( dividends )
+        deppos.dividend_period = self._getSumDividends( deppos.dividends )
         if orig_currency != "EUR":
             deppos.history = self._convertSeries( deppos.history, orig_currency )
             if deppos.dividend_period > 0:
@@ -178,14 +178,13 @@ class InvestMonitorLogic:
             first_kurs_period = closeHist.array[0]
             deppos.dividend_yield = self._computeDividendYield( first_kurs_period, deppos.dividend_period )
         self._provideGesamtwertAndDelta( deppos )
-        self._providePaidDividends( deppos, dividends )
+        self._providePaidDividends( deppos )
 
-    def _providePaidDividends( self, deppos:XDepotPosition, dividends:Series ):
+    def _providePaidDividends( self, deppos:XDepotPosition ):
         """
         Ermittelt die Dividendenzahlungen, die für <deppos> gemäß Eintragungen in <dividends> angefallen sind.
         Für jede Dividendenzahlung wird nur der zu diesem Zeitpunkt vorhandene Depotbestand berücksichtigt.
         :param deppos:
-        :param dividends:
         :return:
         """
         deppos.dividend_paid_period = 0
@@ -193,7 +192,7 @@ class InvestMonitorLogic:
         deltas = self._db.getDeltas( deppos.wkn  )
         deltas.sort( key=attrgetter( "delta_datum" ) )
         sum_dividends = 0
-        for pay_ts, value in dividends.items():
+        for pay_ts, value in deppos.dividends.items():
             if value > 0:
                 #print( "paid: ", str(pay_ts)[:10], ": ", value )
                 # den Depotbestand der Position <deppos> zum Datum <paydate> ermitteln:

@@ -31,6 +31,7 @@ class MainController( QObject ):
         self._dlgAllOrders:OkDialog = None
         self._summeGesamtwerte = 0
         self._summeKaeufe = 0
+        self._summeDividendPaid = 0
 
     def createMainWindow( self ) -> MainWindow:
         self._mainWin = MainWindow()
@@ -45,11 +46,13 @@ class MainController( QObject ):
         for xdepotpos in poslist:
             self._summeGesamtwerte += xdepotpos.gesamtwert_aktuell
             self._summeKaeufe += xdepotpos.einstandswert_restbestand
+            self._summeDividendPaid += xdepotpos.dividend_paid_period
         if self._summeKaeufe > 0:
             delta = round( (self._summeGesamtwerte - self._summeKaeufe) / self._summeKaeufe * 100, 1 )
         else:
             delta = 0.0
         self._mainWin.getToolBar().setSummen( self._summeKaeufe, self._summeGesamtwerte, delta )
+        self._mainWin.getToolBar().setDividendPaid( self._summeDividendPaid )
         for xdepotpos in poslist:
             xdepotpos.anteil_an_summe_gesamtwerte = self._computeAnteilAnSummeGesamtwerte( xdepotpos )
             infopanelctrl = InfoPanelController()
@@ -135,8 +138,12 @@ class MainController( QObject ):
     def onPeriodIntervalChanged( self, period:Period, interval:Interval ):
         poslist: List[XDepotPosition] = [ctrl.getModel() for ctrl in self._infoPanelCtrlList]
         self._logic.provideTickerHistories( poslist, period, interval )
+        self._summeDividendPaid = 0
         for ctrl in self._infoPanelCtrlList:
             ctrl.refreshAfterPeriodIntervalHasChanged( period, interval )
+            deppos = ctrl.getModel()
+            self._summeDividendPaid += deppos.dividend_paid_period
+        self._mainWin.getToolBar().setDividendPaid( self._summeDividendPaid )
 
     def onChangeSortOrder( self, order:InfoPanelOrder ):
         self._sortOrder = order
@@ -223,6 +230,10 @@ class MainController( QObject ):
             sortfield = val + x.wkn.lower()
             sortfieldInfo = "Acc.: " + ("Ja" if x.flag_acc else "Nein" ) + " / WKN: " + x.wkn
             self._sortDirection = SortDirection.ASC
+        elif order == InfoPanelOrder.LetzterKauf:
+            sortfield = x.letzter_kauf
+            sortfieldInfo = "Letzter Kauf: " + x.letzter_kauf
+            self._sortDirection = SortDirection.DESC
         elif order == InfoPanelOrder.DeltaWert:
             # sortfield = '%07.3f' % x.delta_proz
             sortfield = x.delta_proz
@@ -232,6 +243,10 @@ class MainController( QObject ):
             val = "1 / " if not x.flag_acc else "0 / "
             sortfield = val + '%07.3f' % x.dividend_yield
             sortfieldInfo = "Dividende: " + str( x.dividend_yield )
+            self._sortDirection = SortDirection.DESC
+        elif order == InfoPanelOrder.DividendPaid:
+            sortfield = x.dividend_paid_period
+            sortfieldInfo = "Ausschüttung: " + str( x.dividend_paid_period )
             self._sortDirection = SortDirection.DESC
         else:
             raise Exception( "MainController._setSortKey(): unknown order:\n%s" % str(order) )

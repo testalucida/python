@@ -4,7 +4,7 @@ from PySide2.QtWidgets import QMainWindow, QScrollArea, QWidget, QApplication, Q
     QAction, QMenuBar
 
 from base.baseqtderivates import BaseGridLayout, BaseToolBar, SearchField, BaseComboBox, BaseLabel, Separator, \
-    BaseButton, BaseWidget, BaseEdit
+    BaseButton, BaseWidget, BaseEdit, IntEdit
 from base.enumhelper import getEnumValues, getEnumFromValue
 from gui.infopanel import InfoPanel
 from imon.definitions import DEFAULT_PERIOD, DEFAULT_INTERVAL
@@ -54,17 +54,17 @@ class IMonToolBar( BaseToolBar ):
         BaseToolBar.__init__( self )
         self._wertInfo = BaseWidget()
         self.addWidget( BaseLabel( symSUM + " Käufe: ") )
-        self._summeKaeufe = BaseEdit( isReadOnly=True )
+        self._summeKaeufe = IntEdit( isReadOnly=True )
         self._summeKaeufe.setFixedWidth( 70 )
         self.addWidget( self._summeKaeufe )
         self.addWidget( BaseLabel( "€   " ) )
         self.addWidget( BaseLabel( symSUM + " akt. Wert: " ) )
-        self._summeAktuelleWerte = BaseEdit( isReadOnly=True )
+        self._summeAktuelleWerte = IntEdit( isReadOnly=True )
         self._summeAktuelleWerte.setFixedWidth( 70 )
         self.addWidget( self._summeAktuelleWerte )
         self.addWidget( BaseLabel( "€   " ) )
         self.addWidget( BaseLabel( symDELTA + ": ") )
-        self._delta = BaseEdit( isReadOnly=True )
+        self._delta = IntEdit( isReadOnly=True )
         self._delta.setFixedWidth( 35 )
         self.addWidget( self._delta )
         self.addWidget( BaseLabel( "%  " ) )
@@ -86,7 +86,13 @@ class IMonToolBar( BaseToolBar ):
         self._cboPeriod = BaseComboBox()
         self._cboInterval = BaseComboBox()
         self._btnUpdateAllInfoPanels = BaseButton( "⟳", callback=self.onUpdateAllInfoPanels )
+        self._lblDividendPaid = IntEdit( isReadOnly=True )
+        self._lblDividendPaid.setFixedWidth( 70 )
         self._addPeriodAndIntervalWidget()
+        self._lblDividendPaid.setToolTip( "Summe der tatsächlich erhaltenen Dividenden in der eingestellten Periode" )
+        self.addWidget( BaseLabel( symSUM + " Div: " ) )
+        self.addWidget( self._lblDividendPaid )
+        self.addWidget( BaseLabel( "€" ) )
         self.addSeparator()
 
     def _addPeriodAndIntervalWidget( self ):
@@ -108,9 +114,9 @@ class IMonToolBar( BaseToolBar ):
         self.addWidget( self._periodAndIntervalWidget )
 
     def setSummen( self, sumEinstand:int, sumWert:int, delta:float ):
-        self._summeKaeufe.setValue( str( sumEinstand ) )
-        self._summeAktuelleWerte.setValue( str( sumWert ) )
-        self._delta.setValue( str( delta ) )
+        self._summeKaeufe.setValue( sumEinstand )
+        self._summeAktuelleWerte.setValue( sumWert )
+        self._delta.setValue( delta )
 
     def getSearchField( self ) -> SearchField:
         return self._searchField
@@ -132,6 +138,9 @@ class IMonToolBar( BaseToolBar ):
         interval = getEnumFromValue( Interval, self._cboInterval.currentText() )
         self._btnUpdateAllInfoPanels.setEnabled( False )
         self.period_interval_changed.emit( period, interval )
+
+    def setDividendPaid( self, val:int ):
+        self._lblDividendPaid.setValue( val )
 
 
 ############################################################

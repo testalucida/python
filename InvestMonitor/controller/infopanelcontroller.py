@@ -28,6 +28,7 @@ class InfoPanelController( QObject ):
         self._logic:InvestMonitorLogic = InvestMonitorLogic()
         self._infoPanel:InfoPanel = None
         self._detailDlg:DynamicAttributeDialog = None
+        self._dividendPaidDlg:OkCancelDialog = None
 
     def createInfoPanel( self, xdepotpos:XDepotPosition ) -> InfoPanel:
         self._x = xdepotpos
@@ -75,9 +76,9 @@ class InfoPanelController( QObject ):
         tv = BaseTableView()
         tv.setModel( tm )
         tv.setAlternatingRowColors( True )
-        dlg = OkCancelDialog( title="Dividendenzahlungen " + self._x.wkn )
-        dlg.addWidget( tv, 0 )
-        dlg.exec_()
+        self._dividendPaidDlg = OkCancelDialog( title="Dividendenzahlungen " + self._x.wkn )
+        self._dividendPaidDlg.addWidget( tv, 0 )
+        self._dividendPaidDlg.show()
 
     def onShowSimulatedDividendYield( self ):
         """
@@ -182,7 +183,7 @@ def test2():
     app = QApplication()
     ipc = InfoPanelController()
     logic = InvestMonitorLogic()
-    ticker = "HMWD.L"
+    ticker = "GLDV.L"
     deppos = logic.getDepotPosition( ticker, Period.oneYear, Interval.oneWeek )
     ipanel = ipc.createInfoPanel( deppos )
     ipanel.show()

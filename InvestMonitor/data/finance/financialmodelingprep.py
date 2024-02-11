@@ -69,7 +69,7 @@ class FMP:
 def testFMPhistPrices():
     import matplotlib.pyplot as plt
     fmp = FMP()
-    td:TickerData = fmp.getHistoricalPricesByTicker( "AAPL" )
+    td:TickerData = fmp.getHistoricalPricesByTicker( "IBCQ" )
     # print( td.ticker )
     # print( td.close )
     td.close.plot()
@@ -84,7 +84,7 @@ def testCurrency():
     print( data )
 
 def testRealTimePrice():
-    url = "https://financialmodelingprep.com/api/v3/stock/real-time-price/AAPL?apikey=554aa031d25c1457115803e9c2562cb8"
+    url = "https://financialmodelingprep.com/api/v3/stock/real-time-price/IBCQ?apikey=554aa031d25c1457115803e9c2562cb8"
     data = requests.get( url )
     print( data )
 

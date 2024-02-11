@@ -110,6 +110,8 @@ class InfoPanel( QFrame ):
         # self._lblIsin.setMaximumWidth( 110 )
         self._lblAnteilUSA = BaseEdit( isReadOnly=True )
         self._lblAnteilUSA.setFixedWidth( 23 )
+        self._lblTer = FloatEdit( isReadOnly=True )
+        self._lblTer.setFixedWidth( 30 )
         self._lblWaehrung = BaseEdit( isReadOnly=True )
         self._lblWaehrung.setFixedWidth( 90 )
         self._lblAcc = BaseEdit( isReadOnly=True )
@@ -222,8 +224,9 @@ class InfoPanel( QFrame ):
         self._lblAnteilUSA.setToolTip( "Anteil von Firmen mit Sitz in den USA" )
         lay = QHBoxLayout()
         lay.addWidget( self._lblAnteilUSA )
-        lay.addWidget( BaseLabel( "%" ) )
-        l.addLayout( lay, r, c )
+        lay.addWidget( BaseLabel( "%  TER " ) )
+        lay.addWidget( self._lblTer )
+        l.addLayout( lay, r, c, 1, 3 )
 
         r += 1
         c = 0
