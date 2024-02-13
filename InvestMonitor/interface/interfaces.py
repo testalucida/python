@@ -15,6 +15,7 @@ class XDepotPosition( XBase ):
         self.basic_index = ""
         self.name = ""
         self.gattung = ""
+        self.ter = 0.0  # annual total expense ratio
         self.waehrung = ""
         self.flag_acc = False
         self.beschreibung = ""

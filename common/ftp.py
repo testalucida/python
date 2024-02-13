@@ -77,6 +77,18 @@ class Ftp:
         """
         self._ftp.quit()
 
+    def existsFile( self, remotefilename:str ) -> bool:
+        """
+        Checks if <remotefilenname> exists on the remote path set in self._ftpIni.
+        Returns True if file exists else False
+        :param remotefilename:
+        :return:
+        """
+        path = self._ftpIni.getRemotePath()
+        self._ftp.cwd( self._ftpIni.getRemotePath() )
+        lst = self._ftp.nlst( )
+        return remotefilename in lst
+
     def upload( self, localfilename:str, remotefilename:str ) -> None:
         """
         stores file <localfilename> from folder self._ftpIni.getLocalPath() as file <remotefilename> to
@@ -139,10 +151,12 @@ class Ftp:
 
 
 def testUpAndDownload():
-    ftpIni = FtpIni( "../ImmoControlCenter/v2/icc/ftp.ini" )
+    # ftpIni = FtpIni( "../ImmoControlCenter/v2/icc/ftp.ini" )
+    ftpIni = FtpIni( "../InvestMonitor/imon/ftp.ini" )
     ftp = Ftp( ftpIni )
     ftp.connect()
-    ftp.deleteFile( "db_in_use" )
+    rc = ftp.existsFile( "db_in_use" )
+    #ftp.deleteFile( "db_in_use" )
     #ftp.upload( "db_in_use", "db_in_use" )
     #ftp.upload( "immo.db", "immo.db" )
     #ftp.download( "immo.db", "immo.db" )

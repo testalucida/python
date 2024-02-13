@@ -111,7 +111,7 @@ class InfoPanel( QFrame ):
         self._lblAnteilUSA = BaseEdit( isReadOnly=True )
         self._lblAnteilUSA.setFixedWidth( 23 )
         self._lblTer = FloatEdit( isReadOnly=True )
-        self._lblTer.setFixedWidth( 30 )
+        self._lblTer.setFixedWidth( 43 )
         self._lblWaehrung = BaseEdit( isReadOnly=True )
         self._lblWaehrung.setFixedWidth( 90 )
         self._lblAcc = BaseEdit( isReadOnly=True )
@@ -210,23 +210,30 @@ class InfoPanel( QFrame ):
         c = 0
         l.addWidget( self._lblIsin, r, c, 1, 2 )
 
-        # lay=QHBoxLayout()
-        # lay.addWidget( self._lblIsin  )
-        # lay.addWidget( BaseLabel( "  USA: " ) )
-        # lay.addWidget( self._lblAnteilUSA )
-        # lay.addWidget( BaseLabel( "%" ) )
-        # l.addLayout( lay, r, c, 1, 4 )
-
         r += 1
         c = 0
         l.addWidget( BaseLabel( "USA " ), r, c )
         c = 1
         self._lblAnteilUSA.setToolTip( "Anteil von Firmen mit Sitz in den USA" )
         lay = QHBoxLayout()
+        lay.setSpacing( 1 )
+        lay.setMargin( 0 )
         lay.addWidget( self._lblAnteilUSA )
-        lay.addWidget( BaseLabel( "%  TER " ) )
+        lblProz = BaseLabel( "%" )
+        lblProz.setFixedWidth( 20 )
+        lay.addWidget( lblProz )
+        lblTer = BaseLabel( "TER" )
+        lblTer.setFixedWidth( 30 )
+        lay.addWidget( lblTer )
+        l.addLayout( lay, r, c, 1, 1, alignment=Qt.AlignLeft )
+        c = 2
+        lay = QHBoxLayout()
+        lay.setSpacing( 1 )
         lay.addWidget( self._lblTer )
-        l.addLayout( lay, r, c, 1, 3 )
+        lblProz = BaseLabel( "%" )
+        lblProz.setFixedWidth( 20 )
+        lay.addWidget( lblProz )
+        l.addLayout( lay, r, c, 1, 2 )
 
         r += 1
         c = 0
@@ -285,7 +292,6 @@ class InfoPanel( QFrame ):
         c = 3
         self._lblAnteilAnSummeGesamtwerte.setToolTip( "Anteil dieser Depotposition an der Summe der Gesamtwerte "
                                                       "aller Depotpositionen im InvestMonitor" )
-        #l.addWidget( self._lblAnteilAnSummeGesamtwerte, r, c )
         lay = QHBoxLayout()
         lay.setSpacing( 0 )
         lay.addWidget( self._lblAnteilAnSummeGesamtwerte )
@@ -328,10 +334,6 @@ class InfoPanel( QFrame ):
                                         "\nund des aktuellen Kurses")
         l.addWidget( self._btnSimulYield, r, c )
 
-        # r += 1
-        # c = 0
-        # l.addWidget( HLine(), r, c, 1, 3 )
-
         r += 1
         c = 0
         l.addWidget( BaseLabel( symSUM + " Div. Periode" ), r, c )
@@ -342,17 +344,6 @@ class InfoPanel( QFrame ):
         l.addWidget( self._lblPaidDividend )
         c = 2
         l.addWidget( BaseLabel( "€" ), r, c )
-
-        # r += 1
-        # c = 0
-        # l.addWidget( BaseLabel( symSUM + " Div. akt.Jahr" ), r, c )
-        # c = 1
-        # self._lblDivAktJahr.setToolTip( "Zeigt die Summe der Dividendenzahlungen (vor Abgeltungssteuer) "
-        #                            "für diese Depotposition in der eingestellten Periode an, "
-        #                            "Es wird der zum Zeitpunkt der Ausschüttung vorhandene Bestand berücksichtigt." )
-        # l.addWidget( self._lblDivAktJahr, r, c )
-        # c = 2
-        # l.addWidget( BaseLabel( "€" ), r, c )
 
         r += 1
         c = 0
@@ -409,9 +400,9 @@ class InfoPanel( QFrame ):
         self._cboPeriod.setCurrentText( x.history_period.value )
         self._cboInterval.setCurrentText( x.history_interval.value )
         self._lblName.setValue( x.name )
-        # self._lblWkn.setValue( x.wkn )
         self._lblIsin.setValue( x.isin )
         self._lblAnteilUSA.setValue( str(x.anteil_usa ) )
+        self._lblTer.setValue( x.ter )
         self._lblWkn.setValue( x.wkn )
         self._lblTicker.setValue( x.ticker )
         self._lblWaehrung.setValue( x.waehrung )
@@ -520,6 +511,7 @@ def test():
     x.gattung = "ETF"
     x.waehrung = "USD"
     x.flag_acc = True
+    x.ter = 0.12
     x.beschreibung = "The WisdomTree Global Quality Dividend Growth UCITS ETF USD Acc seeks to track the WisdomTree Global Developed Quality Dividend Growth index. The WisdomTree Global Developed Quality Dividend Growth index tracks dividend-paying developed markets stocks with growth characteristics. The index is a fundamentally weighted index."
     x.history = TickerHistory.getTickerHistoryByPeriod( x.ticker )
     x.stueck = 445

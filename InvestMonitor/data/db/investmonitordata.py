@@ -10,7 +10,7 @@ class InvestMonitorData( DatabaseCommon ):
         DatabaseCommon.__init__( self, DATABASE )
 
     def getDepotPositions( self ) -> List[XDepotPosition]:
-        sql = "select pos.id, isin, ticker, wkn, basic_index, name, gattung, waehrung, flag_acc, beschreibung, " \
+        sql = "select pos.id, isin, ticker, wkn, basic_index, name, gattung, ter, waehrung, flag_acc, beschreibung, " \
               "toplaender, topsektoren, topfirmen, anteil_usa, " \
               "dep.id as depot_id, dep.bank, dep.nr as depot_nr, dep.vrrkto as depot_vrrkto " \
               "from depotposition pos " \
@@ -21,7 +21,7 @@ class InvestMonitorData( DatabaseCommon ):
         return xlist
 
     def getDepotPosition( self, ticker:str ) -> XDepotPosition:
-        sql = "select pos.id, isin, ticker, wkn, basic_index, name, gattung, waehrung, flag_acc, beschreibung, " \
+        sql = "select pos.id, isin, ticker, wkn, basic_index, name, gattung, ter, waehrung, flag_acc, beschreibung, " \
               "toplaender, topsektoren, topfirmen, anteil_usa, " \
               "dep.id as depot_id, dep.bank, dep.nr as depot_nr, dep.vrrkto as depot_vrrkto " \
               "from depotposition pos " \
