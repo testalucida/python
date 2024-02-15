@@ -122,6 +122,26 @@ def testHistoricalPrice():
     data = requests.get( url )
     return data
 
+def testCountryWeighting():
+    url = "https://financialmodelingprep.com/api/v3/etf-country-weightings/ISPA.DE?apikey=554aa031d25c1457115803e9c2562cb8"
+    data = requests.get( url )
+    return data
+
+def testSectorWeighting():
+    url = "https://financialmodelingprep.com/api/v3/etf-sector-weightings/ISPA.DE?apikey=554aa031d25c1457115803e9c2562cb8"
+    data = requests.get( url )
+    return data
+
+def testEtfInformation():
+    url = "https://financialmodelingprep.com/api/v4/etf-info?symbol=ISPA.DE&apikey=554aa031d25c1457115803e9c2562cb8"
+    data = requests.get( url )
+    return data
+
+def testEtfHoldings():
+    # nur für Enterprise oder Premium Plan
+    url = "https://financialmodelingprep.com/api/v4/etf-holdings?symbol=ISPA.DE&apikey=554aa031d25c1457115803e9c2562cb8"
+    data = requests.get( url )
+    return data
 
 
 def testConvertIntoDataFrame():

@@ -15,6 +15,7 @@ class InfoPanelOrder( Enum ):
     DeltaWert = "Wertentwicklung"
     DividendYield = "Dividendenrendite"
     DividendPaid = "Ausschüttung in Periode"
+    Buy = "Kaufen"
     #DeltaKurs_1 = "Kursentwicklung nach letztem Close"
     # AverageKurs_50 = "⌀ Kurs letzte 50 Tage"
     # AverageKurs_200 = "⌀ Kurs letzte 200 Tage"

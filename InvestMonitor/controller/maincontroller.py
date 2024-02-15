@@ -3,10 +3,12 @@ from typing import List, Any
 
 from PySide2.QtCore import QSize, QObject
 # from PySide2.QtGui import QScreen
-from PySide2.QtWidgets import QDesktopWidget
+from PySide2.QtWidgets import QDesktopWidget, QAction
 
+from base.basetablefunctions import BaseTableFunctions
 from base.basetablemodel import SumTableModel
 from base.basetableview import BaseTableView
+from base.messagebox import InfoBox
 from controller.infopanelcontroller import InfoPanelController
 from generictable_stuff.okcanceldialog import OkDialog
 from gui.infopanel import InfoPanel
@@ -15,6 +17,7 @@ from imon.definitions import DEFAULT_PERIOD, DEFAULT_INTERVAL, DEFAULT_INFOPANEL
 from imon.enums import InfoPanelOrder, Period, Interval, SortDirection
 from interface.interfaces import XDepotPosition
 from logic.investmonitorlogic import InvestMonitorLogic
+from utfsymbols import symDELTA
 
 
 class MainController( QObject ):
@@ -119,13 +122,47 @@ class MainController( QObject ):
             self._mainWin.repaint()
             win.show()
 
-            #dlg = OkDialog( title="Ausgewählte Depotpositionen" )
-
     def onShowOrders( self ):
+        def provideMenuItems( index, point, selectedIndexes ) -> List[QAction]:
+            l = list()
+            action = QAction( "WKN kopieren" )
+            l.append( action )
+            action = QAction( "Ticker kopieren" )
+            l.append( action )
+            sep = QAction()
+            sep.setSeparator( True )
+            l.append( sep )
+            action = QAction( "Aktuellen Kurs zeigen..." )
+            l.append( action )
+            return l
+        def onContextMenuSelected( action: QAction ):
+            selRow = tv.getFirstSelectedRow()
+            txt = action.text()
+            if txt.startswith( "WKN" ):
+                key = "wkn"
+            elif txt.startswith( "Ticker" ):
+                key = "ticker"
+            elif txt.startswith( "Aktuell" ):
+                # Aktuellen Kurs von der Logik holen
+                key = ""
+            else: return
+            if key:
+                colIdx = tmOrders.getColumnIndexByKey( key )
+                BaseTableFunctions.copyCellValueToClipboard( tv, selRow, colIdx )
+            else:
+                # aktuellen Kurs ermitteln, dazu brauchen wir erst den Ticker:
+                colIdx = tmOrders.getColumnIndexByKey( "ticker" )
+                ticker = tmOrders.getValue( selRow, colIdx )
+                kurs, currency = self._logic.getKursAktuellInEuro( ticker )
+                box = InfoBox( "Aktueller Kurs", "Der aktuelle Kurs von '" + ticker + "' liegt bei\n",
+                               str(kurs) + " EUR" )
+                box.exec_()
+
         tmOrders:SumTableModel = self._logic.getAllOrders()
         tv = BaseTableView()
         tv.setAlternatingRowColors( True )
         tv.setModel( tmOrders )
+        tv.setContextMenuCallbacks( provideMenuItems, onContextMenuSelected )
         w = tv.getPreferredWidth()
         h = tv.getPreferredHeight()
         if not self._dlgAllOrders:
@@ -134,6 +171,8 @@ class MainController( QObject ):
         dlg.addWidget( tv, 0 )
         dlg.resize( QSize( w + 25, h + 35 ) )
         dlg.show()
+
+
 
     def onPeriodIntervalChanged( self, period:Period, interval:Interval ):
         poslist: List[XDepotPosition] = [ctrl.getModel() for ctrl in self._infoPanelCtrlList]
@@ -248,6 +287,11 @@ class MainController( QObject ):
             sortfield = x.dividend_paid_period
             sortfieldInfo = "Ausschüttung: " + str( x.dividend_paid_period )
             self._sortDirection = SortDirection.DESC
+        elif order == InfoPanelOrder.Buy:
+            diff = round( x.dividend_yield - x.delta_proz, 3 )
+            sortfield = diff
+            sortfieldInfo = "Differenz Div.Rend. und " + symDELTA + " Wert: " + str( diff )
+            self._sortDirection = SortDirection.DESC
         else:
             raise Exception( "MainController._setSortKey(): unknown order:\n%s" % str(order) )
         x.__dict__["__sortfield__"] = sortfield
@@ -295,3 +339,18 @@ def test2():
     for key, value in d.items():
         print( key, ": ", value )
     app.exec_()
+
+##############################################################
+# creating an outer function
+def outerFunc(sample_text):
+   text = sample_text
+    # creating an inner function
+   def innerFunc():
+    # Printing the variable of the parent class(outer class)
+      print(text)
+    # calling inner function
+   innerFunc()
+
+def testOuterFunc():
+    # Calling the outer Function by passing some random name
+    outerFunc('Hello tutorialspoint python')

@@ -22,7 +22,7 @@ class XDepotPosition( XBase ):
         self.toplaender = ""
         self.topfirmen = ""
         self.topsektoren = ""
-        self.anteil_usa = 0  # Anteil von in den USA gelegenen Firmen
+        self.anteil_usa = 0  # Anteil von US-Firmen
         self.history:Series = None
         self.history_period = Period.unknown
         self.history_interval = Interval.unknown

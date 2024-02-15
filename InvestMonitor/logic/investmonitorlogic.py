@@ -286,8 +286,7 @@ class InvestMonitorLogic:
     def getKursAktuellInEuro( self, ticker:str ) -> (float, str):
         """
         Ermittelt den letzten Kurs des Wertpapiers.
-        Transformiert ihn in EUR, wenn erforderlich.
-        umgewandelt in eine Serie mit EUR-Werten.
+        Transformiert ihn in EUR, wenn er nicht in EUR geliefert wird.
         :param ticker:
         :return: den letzten Kurs in Euro, gerundet auf 3 Stellen hinter dem Komma
                  UND die ursprüngliche Währung (EUR oder Fremdwährung, die konvertiert wurde)

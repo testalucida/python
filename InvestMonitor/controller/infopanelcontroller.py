@@ -29,6 +29,8 @@ class InfoPanelController( QObject ):
         self._infoPanel:InfoPanel = None
         self._detailDlg:DynamicAttributeDialog = None
         self._dividendPaidDlg:OkCancelDialog = None
+        self._orderHistorieDig:OkDialog = None
+        self._theoretischeRenditeBox:InfoBox = None
 
     def createInfoPanel( self, xdepotpos:XDepotPosition ) -> InfoPanel:
         self._x = xdepotpos
@@ -56,9 +58,9 @@ class InfoPanelController( QObject ):
         vislist = (
             VisibleAttribute( "basic_index", BaseEdit, "Index: ", editable=False, nextRow=True ),
             VisibleAttribute( "beschreibung", MultiLineEdit, "", editable=False, nextRow=True ),
-            VisibleAttribute( "toplaender", BaseEdit, "Top-Länder: ", editable=False, nextRow=True ),
-            VisibleAttribute( "topsektoren", BaseEdit, "Top-Sektoren: ", editable=False, nextRow=True ),
-            VisibleAttribute( "topfirmen", MultiLineEdit, "Top-Firmen: ", widgetHeight=60, editable=False, nextRow=True ),
+            VisibleAttribute( "toplaender", MultiLineEdit, "Top-Länder: ", widgetHeight=55, editable=False, nextRow=True ),
+            VisibleAttribute( "topsektoren", MultiLineEdit, "Top-Sektoren: ", widgetHeight=55, editable=False, nextRow=True ),
+            VisibleAttribute( "topfirmen", MultiLineEdit, "Top-Firmen: ", widgetHeight=55, editable=False, nextRow=True ),
             VisibleAttribute( "bank", BaseEdit, "Bank: ", editable=False, nextRow=True ),
             VisibleAttribute( "depot_nr", BaseEdit, "Depot-Nr.: ", editable=False, nextRow=True ),
             VisibleAttribute( "depot_vrrkto", BaseEdit, "Vrr.-Konto: ", editable=False, nextRow=True )
@@ -87,11 +89,12 @@ class InfoPanelController( QObject ):
         :return: None
         """
         divyield:float = self._logic.getSimulatedDividendYield( self._x.kurs_aktuell, self._x.dividends )
-        box = InfoBox( title="Theoretische Rendite " + self._x.wkn,
+        self._theoretischeRenditeBox = \
+              InfoBox( title="Theoretische Rendite " + self._x.wkn,
                        info="Auf Basis in der Vergangenheit (eingestellte Periode) gezahlter Dividenden "
                             "und des aktuellen Kurses\nergibt sich für das kommende Jahr rechnerisch eine Rendite von",
                        more=str(divyield) + "%" )
-        box.exec_()
+        self._theoretischeRenditeBox.show()
 
     def onUpdateGraph( self, period:Period, interval:Interval ):
         self._logic.updateWertpapierData( self._x, period, interval )
@@ -166,10 +169,11 @@ class InfoPanelController( QObject ):
         tv.setModel( tm )
         w = tv.getPreferredWidth()
         h = tv.getPreferredHeight()
-        dlg = OkDialog( title="Orderhistorie für WKN '%s', '%s' " % (self._x.wkn, self._x.name) )
+        self._orderHistorieDig = OkDialog( title="Orderhistorie für WKN '%s', '%s' " % (self._x.wkn, self._x.name) )
+        dlg = self._orderHistorieDig
         dlg.addWidget( tv, 0 )
         dlg.resize( QSize(w+25, h+35) )
-        dlg.exec_()
+        dlg.show()
 
     def onUpdateKurs( self ):
         self._logic.updateKursAndDivYield( self._x )

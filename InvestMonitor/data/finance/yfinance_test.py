@@ -35,6 +35,19 @@ def getOneYearHistory( ticker:str ) -> Series:
     #series.plot()
     return series
 
+def testGetInfo():
+    t = yfinance.Ticker( "TSLA" )
+    shares_full = t.get_shares_full()
+    shares = t.shares
+    #df = t.history( period="1y", interval="1d", start="2022-09-07" )
+    info = t.fast_info
+    print( info )
+    fins = t.financials
+    print( fins )
+    # shares = t.get_shares() NOT IMPLEMENTED
+    holders = t.get_major_holders()
+    print( holders )
+
 def testCreateTableModelFromSeries():
     from PySide2.QtWidgets import QApplication
     app = QApplication()
