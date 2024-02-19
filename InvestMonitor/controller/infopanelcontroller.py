@@ -14,7 +14,7 @@ from base.interfaces import XBaseUI, VisibleAttribute
 from base.messagebox import ErrorBox, InfoBox
 from data.finance.tickerhistory import Period, Interval, SeriesName
 from generictable_stuff.okcanceldialog import OkDialog, OkCancelDialog
-from gui.infopanel import InfoPanel
+from gui.infopanel import InfoPanel, AbgeltungssteuerDlg
 from interface.interfaces import XDepotPosition, XDelta, XDetail
 from logic.investmonitorlogic import InvestMonitorLogic
 
@@ -28,6 +28,7 @@ class InfoPanelController( QObject ):
         self._logic:InvestMonitorLogic = InvestMonitorLogic()
         self._infoPanel:InfoPanel = None
         self._detailDlg:DynamicAttributeDialog = None
+        self._computeAbgeltSteuerDlg:AbgeltungssteuerDlg = None
         self._dividendPaidDlg:OkCancelDialog = None
         self._orderHistorieDig:OkDialog = None
         self._theoretischeRenditeBox:InfoBox = None
@@ -41,6 +42,7 @@ class InfoPanelController( QObject ):
         infopanel.show_simul_yield.connect( self.onShowSimulatedDividendYield )
         infopanel.update_graph.connect( self.onUpdateGraph )
         infopanel.enter_bestand_delta.connect( self.onEnterBestandDelta )
+        infopanel.compute_abgeltungssteuer.connect( self.onComputeAbgeltungssteuer )
         infopanel.show_kauf_historie.connect( self.onShowKaufHistorie )
         infopanel.update_kurs.connect( self.onUpdateKurs )
         self._infoPanel = infopanel
@@ -153,6 +155,21 @@ class InfoPanelController( QObject ):
             except Exception as ex:
                 box = ErrorBox( "Fehler beim Insert in die Datenbank", str( ex ) )
                 box.exec_()
+
+    def onComputeAbgeltungssteuer( self ):
+        """
+        Es wurde auf den Button Abgeltungssteuer geklickt.
+        Dialog zur Eingabe der gewünschten zu verkaufenden Stückzahl öffnen.
+        Mit OK die InvestmonitorLogic aufrufen, um die Abgeltungssteuer ausrechnen zu lassen.
+        Ergebnis im Dialog anzeigen.
+        :return:
+        """
+        def computeSteuer( anz_stck:int ):
+            steuer = self._logic.computeAbgeltungssteuer( self._x.wkn, self._x.kurs_aktuell, anz_stck )
+            dlg.setAbgeltungssteuer( steuer )
+        self._computeAbgeltSteuerDlg = dlg = AbgeltungssteuerDlg( self._x.wkn, self._x.kurs_aktuell, self._x.stueck )
+        dlg.compute_steuer.connect( computeSteuer )
+        dlg.show()
 
     def updateAnteilAnSummeGesamtwerte( self, anteil:int ):
         """

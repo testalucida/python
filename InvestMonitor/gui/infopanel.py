@@ -1,23 +1,97 @@
-from typing import List
+from typing import List, Callable
 
 import matplotlib
 from PySide2.QtCore import QSize, Signal, Qt
 from PySide2.QtGui import QFont
 
 from base.baseqtderivates import BaseGridLayout, BaseLabel, BaseEdit, IntEdit, FloatEdit, HLine, \
-    BaseButton, BaseComboBox, HistoryButton
+    BaseButton, BaseComboBox, HistoryButton, BaseDialogWithButtons, BaseButtonDefinition, ButtonIdent
 from base.enumhelper import getEnumFromValue
 from data.finance.tickerhistory import TickerHistory, Period, Interval
 from utfsymbols import symDELTA, symREFRESH, symZOOM, symBORDER, symINFO, symBINOC, symSUM, symAVG
 from interface.interfaces import XDepotPosition
 
 matplotlib.use('Qt5Agg')
-from PySide2.QtWidgets import QApplication, QHBoxLayout, QFrame
+from PySide2.QtWidgets import QApplication, QHBoxLayout, QFrame, QWidget
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT #as NavigationToolbar
 from matplotlib.figure import Figure
 #import pandas as pd
 
+class AbgeltungssteuerDlg( BaseDialogWithButtons ):
+    compute_steuer = Signal( int ) # arg: Anzahl zu verkaufender Stücke
+    @staticmethod
+    def getButtonDefinitions( compute_callback:Callable, close_callback:Callable ) -> List[BaseButtonDefinition]:
+        computeButtonDef = BaseButtonDefinition( text="Berechnen", tooltip="Abgeltungssteuer berechnen",
+                                                 callback=compute_callback, ident=ButtonIdent.IDENT_OK )
+        closeButtonDef = BaseButtonDefinition( text="Schließen", tooltip="Dialog schließen",
+                                               callback=close_callback, ident=ButtonIdent.IDENT_CLOSE )
+        return [computeButtonDef, closeButtonDef]
+
+    def __init__( self, wkn:str, kurs:float, max_stck:int ):
+        BaseDialogWithButtons.__init__( self, "Berechnung der Abgeltungssteuer für '%s'" % wkn,
+                                        AbgeltungssteuerDlg.getButtonDefinitions( self.onComputeBtnClicked,
+                                                                                  self.onCloseBtnClicked ) )
+        self._wkn = wkn
+        self._kurs = kurs
+        self._max_stck = max_stck # maximal zur Verfügung stehende Anteile
+        self._mainWidget = QWidget()
+        self._lblKurs = FloatEdit( isReadOnly=True )
+        self._lblKurs.setFixedWidth( 70 )
+        self._ieStueck = IntEdit()
+        self._ieStueck.setFixedWidth( 70 )
+        self._ieSteuer = IntEdit( isReadOnly=True )
+        self._ieSteuer.setFixedWidth( 70 )
+        self._createMainWidget()
+        self._dataToGui()
+        self.setMainWidget( self._mainWidget )
+        #self.setFixedWidth( 500 )
+
+    def _createMainWidget( self ):
+        l = BaseGridLayout()
+        self._mainWidget.setLayout( l )
+        r = c = 0
+        l.addWidget( BaseLabel( "Aktueller Kurs " ), r, c )
+        c = 1
+        l.addWidget( self._lblKurs, r, c )
+        c = 2
+        l.addWidget( BaseLabel( "€" ), r, c )
+
+        r += 1
+        c = 0
+        l.addWidget( BaseLabel( "Zu verkaufende Anteile "), r, c )
+        c = 1
+        l.addWidget( self._ieStueck, r, c )
+
+        r += 1
+        c = 0
+        l.addWidget( BaseLabel( "Errechnete Abgeltungssteuer " ), r, c )
+        c = 1
+        l.addWidget( self._ieSteuer, r, c )
+        c = 2
+        l.addWidget( BaseLabel( "€" ), r, c )
+
+    def _dataToGui( self ):
+        self._lblKurs.setValue( self._kurs )
+        self._ieStueck.setValue( self._max_stck )
+        self._ieSteuer.setValue( 0 )
+
+    def setAbgeltungssteuer( self, steuer:int ):
+        self._ieSteuer.setIntValue( steuer )
+
+    def onComputeBtnClicked( self ):
+        self.compute_steuer.emit( self._ieStueck.getIntValue() )
+
+    def onCloseBtnClicked( self ):
+        self.close()
+
+def testAbgeltungssteuerDlg():
+    app = QApplication()
+    dlg = AbgeltungssteuerDlg( wkn="ABCDEF", kurs=30.90, max_stck=30 )
+    dlg.exec_()
+
+
+############################################################
 class NavigationToolbar(NavigationToolbar2QT):
     # only display the buttons we need
     toolitems = [t for t in NavigationToolbar2QT.toolitems if
@@ -60,6 +134,7 @@ class InfoPanel( QFrame ):
     # interval_changed = Signal( Interval ) # arg: neues Intervall-Kürzel
     update_graph = Signal( Period, Interval )
     enter_bestand_delta = Signal()
+    compute_abgeltungssteuer = Signal()
     show_kauf_historie = Signal()
     update_kurs = Signal()
     show_details = Signal()
@@ -121,6 +196,10 @@ class InfoPanel( QFrame ):
         self._btnStueckDelta = BaseButton( symDELTA )
         self._btnStueckDelta.clicked.connect( self.enter_bestand_delta.emit )
         self._btnStueckDelta.setFixedSize( QSize(23, 23) )
+        self._btnAbgeltungssteuer = BaseButton( "§" )
+        #self._btnAbgeltungssteuer.clicked.connect( self.onAbgeltungssteuerClicked )
+        self._btnAbgeltungssteuer.clicked.connect( self.compute_abgeltungssteuer.emit )
+        self._btnAbgeltungssteuer.setFixedSize( QSize(23, 23) )
         self._lblEinstandswertRestbestand = IntEdit( isReadOnly=True )
         self._lblEinstandswertRestbestand.setMaximumWidth( maxwnumlabels )
         self._btnKaufHistorie = HistoryButton( "Zeigt die Historie der Käufe an" )
@@ -243,8 +322,15 @@ class InfoPanel( QFrame ):
         c = 2
         l.addWidget( BaseLabel("St"), r, c )
         c = 3
+        lay = QHBoxLayout()
+        lay.setSpacing( 1 )
+        lay.setMargin( 0 )
         self._btnStueckDelta.setToolTip( "Bestandsveränderung eintragen (Kauf/Verkauf)" )
-        l.addWidget( self._btnStueckDelta, r, c, 1, 1, Qt.AlignLeft )
+        #l.addWidget( self._btnStueckDelta, r, c, 1, 1, Qt.AlignLeft )
+        lay.addWidget( self._btnStueckDelta, stretch=0, alignment=Qt.AlignLeft )
+        self._btnAbgeltungssteuer.setToolTip( "Abgeltungssteuer auf zu verkaufende Stückzahl errechnen" )
+        lay.addWidget( self._btnAbgeltungssteuer, stretch=0, alignment=Qt.AlignLeft )
+        l.addLayout( lay, r, c )
 
         r += 1
         c = 0
@@ -485,7 +571,6 @@ class InfoPanel( QFrame ):
 
     def getPosition( self ) -> (int, int):
         return self._row, self._col
-
 
 ##########  TEST ###  TEST  ###################################################
 def test():

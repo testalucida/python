@@ -290,7 +290,7 @@ class MainController( QObject ):
         elif order == InfoPanelOrder.Buy:
             diff = round( x.dividend_yield - x.delta_proz, 3 )
             sortfield = diff
-            sortfieldInfo = "Differenz Div.Rend. und " + symDELTA + " Wert: " + str( diff )
+            sortfieldInfo = "Diff. Div.Rend. und " + symDELTA + " Wert: " + str( diff )
             self._sortDirection = SortDirection.DESC
         else:
             raise Exception( "MainController._setSortKey(): unknown order:\n%s" % str(order) )

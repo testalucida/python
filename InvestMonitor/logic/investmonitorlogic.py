@@ -466,13 +466,14 @@ class InvestMonitorLogic:
 
     def _bookShareSale( self, verkauf:XDelta, deppos:XDepotPosition ):
         """
-        nach einem Anteilsverkauf muss die Anzahl der verkauften Stücke auf die vorherigen Käufe verteilt werden.
+        nach einem Anteilsverkauf muss zur späteren Berechnung der Abgeltungssteuer die Anzahl der verkauften Stücke
+        auf die vorherigen Käufe verteilt werden.
         Beispiel:
         Verkauft wurden 100 Stück.
         Es gibt 2 Käufe, der ältere mit 80 Stück, der jüngere mit 40 Stück.
         Gem FIFO-Prinzip müssen nun im älteren Kauf 80 verkaufte Stück eingetragen werden und im neueren Kauf
         20 Stück.
-        Nach diesen Datenbank-Updates müssen in der Depotpositon <deppos> die Felder stueck und einstandswert_restbestand
+        Nach diesen Datenbank-Updates müssen in der Schnittstelle <deppos> die Felder stueck und einstandswert_restbestand
         neu berechnet werden.
         :param verkauf:
         :param deppos:
@@ -504,7 +505,39 @@ class InvestMonitorLogic:
             # Durchschnittl. Preis pro Stück:
             deppos.preisprostueck = round( deppos.einstandswert_restbestand / deppos.stueck, 2 )
 
+    def computeAbgeltungssteuer( self, wkn:str, kurs:float, stck:int ) -> int:
+        """
+        Berechnet die Abgeltungssteuer, die bei einem Verkauf von <stck> Papieren <wkn> bei aktuellem Kurs <kurs>
+        fällig würden
+        :param wkn:
+        :param kurs:
+        :param stck:
+        :return: die fällige Abgeltungssteuer
+        """
+        deltas: List[XDelta] = self._db.getKaeufe( wkn )  # sortiert nach Kaufdatum aufsteigend, also ältester Kauf oben
+        rest = stck
+        steuer = 0 # fällige Abgeltungssteuer
+        for delta in deltas:
+            vfgbar = delta.delta_stck - delta.verkauft_stck # so viele Stücke sind von dieser Order noch verfügbar
+            if rest >= vfgbar:  # alle verfügbaren Stücke des Kaufes <delta> werden für den gewünschten Verkauf benötigt
+                vk = vfgbar
+                rest -= vk
+            else:
+                vk = rest
+            if vk > 0:
+                kaufpreis = vk * delta.preis_stck # das war der damalige Order-Preis
+                vk_preis = vk * kurs  # das wäre der aktuelle Verkaufspreis
+                delta = vk_preis - kaufpreis # Gewinn bzw. Verlust dieser Order bei jetzigem Verkauf; negativ bei Verlust
+                steuer += (delta * 0.25) # 25% Abgeltungssteuer auf das Delta
+        return int( round(steuer, 2) )
 
+##################################################################################
+##################################################################################
+
+def testComputeAbgeltungssteuer():
+    logic = InvestMonitorLogic()
+    steuer = logic.computeAbgeltungssteuer( "ABCDEF", 31.00, 12 )
+    print( "Steuer: ", steuer )
 
 def test():
     logic = InvestMonitorLogic()
