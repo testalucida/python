@@ -25,8 +25,11 @@ class MietverhaeltnisLogic( IccLogic ):
 
     def getAktuellesMietverhaeltnis( self, mv_id:str ) -> XMietverhaeltnis:
         xmv:XMietverhaeltnis = self._db.getAktuellesMietverhaeltnis( mv_id )
-        xmv.name_vorname = self.getNachnameVornameFromMv_id( xmv.mv_id )
-        return xmv
+        if xmv:
+            xmv.name_vorname = self.getNachnameVornameFromMv_id( xmv.mv_id )
+            return xmv
+        else:
+            return None
 
     def getAktuellesMietverhaeltnisByMietobjekt( self, mobj_id:str ) -> XMietverhaeltnis:
         mv_id = self._db.getAktuelleMV_IDzuMietobjekt( mobj_id )
@@ -92,7 +95,8 @@ class MietverhaeltnisLogic( IccLogic ):
         """
         return self._db.getAktiveMietverhaeltnisseKurz( jahr, orderby="mv_id" )
 
-    def _create_mv_id( self, name:str, vorname:str ) -> str:
+    @staticmethod
+    def _create_mv_id( name:str, vorname:str ) -> str:
         def replaceUmlauteAndBlanks( s:str ) -> str:
             s = s.lower()
             s = s.replace( "ä", "ae" )
@@ -110,7 +114,7 @@ class MietverhaeltnisLogic( IccLogic ):
         Prüft die für die Neuanlage notwendigen Daten für das Mietverhältnis.
         (Die für die Anlage des Sollmieten-Satzes notwendigen Daten werden in sollmietelogic geprüft.)
         Macht einen Insert in Tabelle mietverhaeltnis und ruft sollmietelogic.createSollmiete() auf.
-        :param xmv:
+        :param xmv: die Daten des neuen MV
         :return:
         """
         msg = self.validateMietverhaeltnisDaten( xmv )
@@ -151,18 +155,7 @@ class MietverhaeltnisLogic( IccLogic ):
             raise Exception( "Bei der Anlage des Mietverhältnisses für '%s' ist der DB-Insert "
                              "in die Tabelle 'sollmiete' fehlgeschlagen:\n'%s'"
                              % (xsm.mv_id, str( ex )) )
-
-        # MtlEinAus-Satz anlegen:
-        meinauslogic = MtlEinAusLogic()
-        jahr = int(xmv.von[:4])
-        try:
-            #meinauslogic.insertMtlEinAusFuerMieter( xmv.mv_id, jahr )
-            pass
-        except Exception as ex:
-            raise Exception( "Bei der Anlage des Mietverhältnisses für '%s' ist der DB-Insert "
-                             "in die Tabelle 'mtleinaus' fehlgeschlagen:\n'%s'"
-                             % (xmv.mv_id, str( ex )) )
-
+        self._db.commit()
 
     def kuendigeMietverhaeltnis( self, xmv:XMietverhaeltnis ):
         """
@@ -200,13 +193,16 @@ class MietverhaeltnisLogic( IccLogic ):
         except Exception as ex:
             return str( ex )
 
-    def validateMietverhaeltnisDaten( self, xmv:XMietverhaeltnis ) -> str:
+    @staticmethod
+    def validateMietverhaeltnisDaten( xmv:XMietverhaeltnis ) -> str:
         if not xmv.von:
             return "Mietbeginn fehlt"
         if not datehelper.isValidIsoDatestring( xmv.von ):
             return "Mietbeginn: kein gültiges Datumsformat. Muss 'yyyy-mm-dd' sein."
         if xmv.bis and not datehelper.isValidIsoDatestring( xmv.bis ):
             return "Mietende: kein gültiges Datumsformat. Muss 'yyyy-mm-dd' sein."
+        if xmv.bis and xmv.bis < xmv.von:
+            return "Das Mietende darf nicht vor dem Mietbeginn liegen."
         if not xmv.name:
             return "Name des Mieters fehlt"
         if not xmv.vorname:
@@ -215,7 +211,8 @@ class MietverhaeltnisLogic( IccLogic ):
             return "Objekt fehlt"
         return ""
 
-    def validateKuendigungDaten( self, xmv:XMietverhaeltnis ) -> str:
+    @staticmethod
+    def validateKuendigungDaten( xmv:XMietverhaeltnis ) -> str:
         if not xmv.bis:
             return "Kündigungsdatum fehlt."
         if not datehelper.isValidIsoDatestring( xmv.bis ):
@@ -229,6 +226,17 @@ class MietverhaeltnisLogic( IccLogic ):
             return "Das Ende des Mietverhältnisses ('%s') darf nicht vor dessen Beginn ('%s') liegen." \
                    % ( xmv.bis, xmv.von )
         return ""
+
+def testNeuanlage():
+    xmv = XMietverhaeltnis()
+    xmv.mobj_id = "bueb"
+    xmv.name = "Hotzenplotz"
+    xmv.vorname = "Herbert"
+    xmv.von = "2024-03-01"
+    xmv.nettomiete = 300
+    xmv.nkv = 100
+    mvlogic = MietverhaeltnisLogic()
+    mvlogic.createMietverhaeltnis( xmv )
 
 def test():
     mvlogic = MietverhaeltnisLogic()

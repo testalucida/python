@@ -37,7 +37,7 @@ class MietverhaeltnisController( IccController ):
         action.triggered.connect( self.onMietverhaeltnisNeu )
         menu.addAction( action )
         action = BaseAction( "Mietverhältnis anschauen und bearbeiten...", parent=menu )
-        action.triggered.connect( self.onMietverhaeltnisShow )
+        action.triggered.connect( self.onMietverhaeltnisShowOrEdit )
         menu.addAction( action )
         action = BaseAction( "Mietverhältnis kündigen...", parent=menu ) #
         action.triggered.connect( self.onMietverhaeltnisKuendigen )
@@ -47,23 +47,46 @@ class MietverhaeltnisController( IccController ):
     @Slot()
     def onMietverhaeltnisNeu( self, mobj_id:str=None ):
         """
-        Wird aufgerufen, wenn in der Menübar der Anwendung "Mietverhältnis anzeigen und bearbeiten..." geklickt wurde
+        Wird aufgerufen, wenn in der Menübar der Anwendung "Mietverhältnis anlegen..." geklickt wurde
         :return:
         """
+        def validateNewMv() -> bool:
+            """
+            Wird vom MietverhaeltnisDialog aufgerufen.
+            Liefert True zurück, wenn die Validierung in Ordnung ist, sonst False.
+            :return:
+            """
+            return self.validate( dlg, isNewMv=True )
+        ################
         if not mobj_id:
             # zuerst über den Auswahldialog bestimmen, welche Daten für die View selektiert werden müssen
             mietobjektAuswahl = MietobjektAuswahl()
             xmo = mietobjektAuswahl.selectMietobjekt()
             if not xmo: return None
             mobj_id = xmo.mobj_id
-        # letztes Mietverhältnis holen
-        xmv:XMietverhaeltnis = self._mvlogic.getAktuellesMietverhaeltnisByMietobjekt( mobj_id )
-        self.createMvView( mobj_id )
-        dlg = MietverhaeltnisDialog( self._view )
-        dlg.exec_()
+        # letztes Mietverhältnis holen ("Vormieter")
+        xmvVormieter:XMietverhaeltnis = self._mvlogic.getAktuellesMietverhaeltnisByMietobjekt( mobj_id )
+        self._view = v = MietverhaeltnisView.createForNewMietverh( mobj_id,
+                                                                   vormieterName=xmvVormieter.name + ", " + xmvVormieter.vorname,
+                                                                   vormieterBis=xmvVormieter.bis )
+        dlg = MietverhaeltnisDialog( v, "Neues Mietverhältnis anlegen für Wohnung '%s'" % mobj_id )
+        dlg.setBeforeAcceptFunction( validateNewMv )
+        if dlg.exec_() == QDialog.Accepted:
+            try:
+                v.applyChanges()
+                vormieterBis = v.getVormieterMvBis()
+                if vormieterBis != xmvVormieter.bis: # Mietende des Vormieters im Neuanlage-Dialog geändert
+                    xmvVormieter.bis = vormieterBis
+                    self._mvlogic.kuendigeMietverhaeltnis( xmvVormieter )
+                xmvNeu = v.getMietverhaeltnis()
+                self._mvlogic.createMietverhaeltnis( xmvNeu )
+            except Exception as ex:
+                dlg.showErrorMessage( "Datenbankfehler bei der Anlage des Mietverhältnisses", str(ex) )
+        else:
+            dlg.close()
 
     @Slot()
-    def onMietverhaeltnisShow( self, mv_id:str = None ):
+    def onMietverhaeltnisShowOrEdit( self, mv_id:str = None ):
         """
         Wird aufgerufen, wenn in der Menübar der Anwendung "Mietverhältnis anzeigen und bearbeiten..." geklickt wurde
         :return:
@@ -80,6 +103,7 @@ class MietverhaeltnisController( IccController ):
             mobj_id = xmv.mobj_id
         self.createMvView( mobj_id )
         dlg = MietverhaeltnisDialog( self._view )
+        dlg.setBeforeAcceptFunction( self.validate( dlg, isNewMv=False ) )
         dlg.exec_()
 
     @Slot()
@@ -111,6 +135,11 @@ class MietverhaeltnisController( IccController ):
             dlg.exec_()
 
     def createMvView( self, mobj_id:str ):
+        """
+        Erzeugt den MvView, der für Anzeige und Änderung, NICHT für Neuanlage (siehe onMietverhaeltnisNeu) benötigt wird.
+        :param mobj_id:
+        :return:
+        """
         self._mvlist = self._mvlogic.getMietverhaeltnisListe( mobj_id )
         mvlist_len = len( self._mvlist )
         if mvlist_len > 0:
@@ -159,16 +188,27 @@ class MietverhaeltnisController( IccController ):
             self._view.clear()
             self._view._setMietverhaeltnisData( self._mv )
 
-    def _validate( self ) -> bool:
+    def validate( self, dlg:MietverhaeltnisDialog, isNewMv:bool ) -> bool:
         # Validierung sollte im ***Model*** sein, nicht im Controller.
         # siehe: https://stackoverflow.com/questions/5651175/mvc-question-should-i-put-form-validation-rules-in-the-controller-or-model
         # und https://stackoverflow.com/questions/5305854/best-place-for-validation-in-model-view-controller-model
         v = self._view
-        msg = ""
-        rc = True
+        title = "Validierung fehlgeschlagen"
         mvcopy = v.getMietverhaeltnisCopyWithChanges()
         if not mvcopy.von:
-            msg = "Mietbeginn fehlt"
+            dlg.showErrorMessage( title, "Mietbeginn fehlt" )
+            return False
+        if isNewMv:
+            # zusätzliche Prüfungen, wenn es sich um die Neuanlage eines MV handelt
+            vormieterBis = v.getVormieterMvBis()
+            if not vormieterBis:
+                dlg.showErrorMessage( title, "Für das vorige Mietverhältnis muss ein Kündigungsdatum angegeben werden." )
+                return False
+            if mvcopy.von < vormieterBis:
+                dlg.showErrorMessage( title, "Das neue Mietverhältnis darf nicht beginnen, bevor das alte beendet ist." )
+                return False
+        msg = ""
+        rc = True
         if mvcopy.bis and mvcopy.bis < mvcopy.von:
             msg = "Das Mietende darf nicht vor dem Mietbeginn liegen."
         elif not mvcopy.name:
@@ -181,12 +221,11 @@ class MietverhaeltnisController( IccController ):
             msg = "Anzahl Personen muss angegeben sein."
         elif not mvcopy.nettomiete or mvcopy.nettomiete == 0 or not mvcopy.nkv or mvcopy.nkv == 0:
             msg = "Nettomiete und Nebenkosten müssen angegeben werden."
-
         if msg > " ":
-            self.showErrorMessage( "Validierung fehlgeschlagen", msg )
+            dlg.showErrorMessage( title, msg )
             rc = False
         if not mvcopy.telefon and not mvcopy.mobil and not mvcopy.mailto:
-            self.showWarningMessage( "Validierung kritisch", "Es ist keine Kontaktmöglichkeit angegeben!\n"
+            dlg.showWarningMessage( "Validierung kritisch", "Es ist keine Kontaktmöglichkeit angegeben!\n"
                                                              "Telefon, Mobilfunk und Mailadresse sind leer!" )
         return rc
 
@@ -262,10 +301,8 @@ def testKuendigen():
 def test():
     app = QApplication()
     c = MietverhaeltnisController()
-    c.onMietverhaeltnisShow()
-    #c.showMietverhaeltnis( "pfeifer_martina" )
-    # v = c.createView()
-    #v.show()
+    #c.onMietverhaeltnisShow()
+    c.onMietverhaeltnisNeu( "bueb" )
     app.exec_()
 #
 # if __name__ == "__main__":

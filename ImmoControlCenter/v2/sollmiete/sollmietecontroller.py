@@ -43,6 +43,6 @@ class SollMieteController( IccController ):
 def test():
     app = QApplication()
     ctrl = SollMieteController()
-    ctrl.showSollMieteAndNkv( "lukas_franz", 2023, 3 )
+    ctrl.showSollMieteAndNkv( "bucher_lothar", 2024, 2 )
 
     app.exec_()

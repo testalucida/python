@@ -7,13 +7,17 @@ from typing import Tuple, Dict
 import datehelper
 from base.constants import monthLongNames, monatsletzter
 
-def getNumberOfDays( monthNumber:int ) -> int:
+def getNumberOfDays( monthNumber:int, year:int=None ) -> int:
     """
-    Schaltjahre werden vernachlässigt
+    Liefert die Anzahl Tage im gegebenen Monat. Schaltjahre werden berücksichtigt.
     :param monthNumber: 1 -> Januar, ... , 12 -> Dezember
+    :param year: wenn nicht gesetzt: current year
     :return:
     """
-    return monatsletzter[monthLongNames[monthNumber - 1]]
+    import calendar
+    if not year: year = getCurrentYear()
+    return calendar.monthrange( year, monthNumber )[1]
+    #return monatsletzter[monthLongNames[monthNumber - 1]]
 
 def currentDateIso() -> str:
     """

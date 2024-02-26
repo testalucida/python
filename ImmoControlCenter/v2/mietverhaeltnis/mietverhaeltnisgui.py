@@ -1,4 +1,5 @@
 import copy
+from enum import Enum
 
 from PySide2.QtCore import QSize, Signal
 from PySide2.QtGui import Qt, QIcon
@@ -16,19 +17,19 @@ from modifiyinfo import ModifyInfo
 from v2.icc.interfaces import XMietverhaeltnis
 
 class MietverhaeltnisView( QWidget ):
-    #save = Signal()
     dataChanged = Signal()
     nextMv = Signal()
     prevMv = Signal()
     def __init__( self, mietverhaeltnis:XMietverhaeltnis, enableBrowsing=True, parent=None ):
         QWidget.__init__( self, parent )
         self._mietverhaeltnis:XMietverhaeltnis = mietverhaeltnis
-        # self._withSaveButton = withSaveButton
         self._enableBrowsing = enableBrowsing # ob die Browse-Buttons angezeigt werden
         self._layout = QGridLayout()
-        #self._btnSave = QPushButton()
+        self._toolLayout = QHBoxLayout()
         self._btnVor = QPushButton()
         self._btnRueck = QPushButton()
+        # self._vormieterName = "" # Nur relevant, wenn die View im Mode.MV_NEW betrieben wird
+        self._sdEndeVormieterMietverh = SmartDateEdit()  #  ------------- "" ------------------
         self._sdBeginnMietverh = SmartDateEdit()
         self._sdEndeMietverh = SmartDateEdit()
         self._edMieterName_1 = BaseEdit()
@@ -46,48 +47,27 @@ class MietverhaeltnisView( QWidget ):
         self._edIban = BaseEdit()
         self._txtBemerkung1 = MultiLineEdit()
         self._txtBemerkung2 = MultiLineEdit()
-
         self._createGui()
         self._setMietverhaeltnisData( mietverhaeltnis )
-        #self.connectWidgetsToChangeSlot( self.onChange )
-        #self.connectWidgetsToChangeSlot( self.onChange, self.onResetChangeFlag )
 
-    # def onChange( self, newcontent:str=None ):
-    #     # if not self._btnSave.isEnabled():
-    #     #     self.setSaveButtonEnabled()
-    #     self.dataChanged.emit()
-
-    # def onResetChangeFlag( self ):
-    #     self.setSaveButtonEnabled( False )
-
-    # def setSaveButtonEnabled( self, enabled:bool=True ):
-    #     self._btnSave.setEnabled( enabled )
+    @classmethod
+    def createForNewMietverh( cls, mobj_id:str, vormieterName:str, vormieterBis:str="" ):
+        xmvNeu = XMietverhaeltnis()
+        xmvNeu.mobj_id = mobj_id
+        inst = cls( xmvNeu, enableBrowsing=False )
+        inst._createVormieterInfo( vormieterName )
+        if vormieterBis:
+            inst._sdEndeVormieterMietverh.setValue( vormieterBis )
+        return inst
 
     def _createGui( self ):
-        hbox = QHBoxLayout()
-        # if self._withSaveButton:
-        #     self._createSaveButton( hbox )
+        hbox = self._toolLayout
         if self._enableBrowsing:
             self._createVorRueckButtons( hbox )
-        self._layout.addLayout( hbox, 0, 0, alignment=Qt.AlignLeft )
+        self._layout.addLayout( hbox, 0, 0, 1, 3, alignment=Qt.AlignLeft )
         self._addHorizontalLine( 1 )
-        self._createFelder( 2 )
+        self._createFelder( r=2 )
         self.setLayout( self._layout )
-
-    # def _createSaveButton( self, hbox ):
-    #     btn = self._btnSave
-    #     btn.clicked.connect( self.save.emit )
-    #     btn.setFlat( True )
-    #     btn.setEnabled( False )
-    #     btn.setToolTip( "Änderungen am Mietverhältnis speichern" )
-    #     icon = ImageFactory.inst().getSaveIcon()
-    #     #icon = QIcon( "./images/save_30.png" )
-    #     btn.setIcon( icon )
-    #     size = QSize( 32, 32 )
-    #     btn.setFixedSize( size )
-    #     iconsize = QSize( 30, 30 )
-    #     btn.setIconSize( iconsize )
-    #     hbox.addWidget( btn )
 
     def _createVorRueckButtons( self, hbox ):
         self._prepareButton( self._btnRueck, ImageFactory.inst().getPrevIcon(),
@@ -97,7 +77,8 @@ class MietverhaeltnisView( QWidget ):
                              "Zum nächsten Mietverhältnis blättern", self.nextMv )
         hbox.addWidget( self._btnVor )
 
-    def _prepareButton( self, btn:QPushButton, icon:QIcon, tooltip:str, signal:Signal ):
+    @staticmethod
+    def _prepareButton( btn:QPushButton, icon:QIcon, tooltip:str, signal:Signal ):
         btn.setFlat( True )
         btn.setEnabled( True )
         btn.setToolTip( tooltip )
@@ -107,6 +88,16 @@ class MietverhaeltnisView( QWidget ):
         iconsize = QSize( 30, 30 )
         btn.setIconSize( iconsize )
         btn.clicked.connect( signal.emit )
+
+    def _createVormieterInfo( self, vormieterName:str ):
+        hbox = self._toolLayout
+        if not hbox.isEmpty():
+            spacer = BaseLabel()
+            spacer.setFixedWidth( 100 )
+            hbox.addWidget( spacer )
+        txt = "Ende des Mietverhältnisses mit " + vormieterName + ": "
+        hbox.addWidget( BaseLabel( txt ), stretch=1, alignment=Qt.AlignRight )
+        hbox.addWidget( self._sdEndeVormieterMietverh )
 
     def _addHorizontalLine( self, r:int ):
         hline = HLine()
@@ -221,8 +212,8 @@ class MietverhaeltnisView( QWidget ):
         hbox.addWidget( self._txtBemerkung2 )
         l.addLayout( hbox, r, c )
 
-        # cols = self._layout.columnCount()
-        # print( cols, " columns" )
+    def getVormieterMvBis( self ) -> str:
+        return self._sdEndeVormieterMietverh.getValue()
 
     def setNettoUndNkvEnabled( self, enabled:bool=True ):
         self._edNettomiete.setEnabled( enabled )
@@ -322,6 +313,7 @@ class MietverhaeltnisView( QWidget ):
     def clear( self ):
         self._sdBeginnMietverh.clear()
         self._sdEndeMietverh.clear()
+        self._sdEndeVormieterMietverh.clear()
         self._edMieterName_1.clear()
         self._edMieterVorname_1.clear()
         self._edMieterName_2.clear()
@@ -348,7 +340,7 @@ class MietverhaeltnisDialog( OkCancelDialog ):
         self.setWindowTitle( title )
         self._view = view
         self.addWidget( self._view, 0 )
-        self.setOkButtonText( "Speichern (derzeit nicht implementiert)" )
+        self.setOkButtonText( "Speichern" )
         self.setCancellationFunction( self.onCancellation )
 
     def getView( self ) -> MietverhaeltnisView:
@@ -359,7 +351,10 @@ class MietverhaeltnisDialog( OkCancelDialog ):
             box = WarningBox( "Änderungen im Dialog", "Es gibt Änderungen am Mietverhältnis.", "Wirklich abbrechen?",
                               "Ja, abbrechen", "Nein")
             if box.exec_() == MessageBox.Yes:
-                return 0
+                return 1 # Ja, abbrechen
+            return 0 # nein, nicht abbrechen
+        else:
+            # RC 1: ja, abbrechen
             return 1
 
     @classmethod
@@ -396,6 +391,9 @@ def onNextMv():
 def test():
     app = QApplication()
     xmv = XMietverhaeltnis()
+    xmv.name = "Hinterhuber"
+    xmv.vorname = "Konstantin-Wilhelm"
+    xmv.bis = "2023-12-31"
     v = MietverhaeltnisView( xmv, enableBrowsing=True )
     v.prevMv.connect( onPrevMv )
     v.nextMv.connect( onNextMv )
@@ -403,3 +401,11 @@ def test():
     dlg.exec_()
     #v.show()
     #app.exec_()
+
+def testNewMietverh():
+    app = QApplication()
+    v = MietverhaeltnisView.createForNewMietverh( mobj_id="bueb", vormieterName="Atatürk, Atze", vormieterBis="2024-02-29" )
+    v.prevMv.connect( onPrevMv )
+    v.nextMv.connect( onNextMv )
+    dlg = MietverhaeltnisDialog( v )
+    dlg.exec_()

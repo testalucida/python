@@ -114,9 +114,10 @@ class SollmieteLogic:
                 return "Das Ende eines Sollmietenzeitraums muss der Monatsletzte sein."
         # prüfen, ob das MV bereits gekündigt ist. Wenn ja, darf das xsm.bis nicht größer sein als das Künd.datum
         xmv = self._getAktuellesMietverhaeltnis( xsm.mv_id )
-        if xmv.bis and ( not xsm.bis or xsm.bis > xmv.bis ):
-            return "Das Ende-Datum des Sollmiete-Intervalls ('%s') darf nicht weiter in der Zukunft liegen " \
-                   "als das Kündigungsdatum ('%s') " % ( xsm.bis, xmv.bis )
+        if xmv:
+            if xmv.bis and ( not xsm.bis or xsm.bis > xmv.bis ):
+                return "Das Ende-Datum des Sollmiete-Intervalls ('%s') darf nicht weiter in der Zukunft liegen " \
+                       "als das Kündigungsdatum ('%s') " % ( xsm.bis, xmv.bis )
         if not xsm.netto:
             return "Nettomiete fehlt."
         if not xsm.nkv:
@@ -236,11 +237,12 @@ class SollmieteLogic:
         return xsm.bis
 
     @staticmethod
-    def _getAktuellesMietverhaeltnis( mv_id:str ) -> XMietverhaeltnis :
+    def _getAktuellesMietverhaeltnis( mv_id:str ) -> XMietverhaeltnis or None:
         from v2.mietverhaeltnis.mietverhaeltnislogic import MietverhaeltnisLogic  # muss hier importiert werden
         # wegen Gefahr des Zirkelbezugs
         mvlogic = MietverhaeltnisLogic()
         xmv:XMietverhaeltnis = mvlogic.getAktuellesMietverhaeltnis( mv_id )
+        # xmv kann None sein!
         return xmv
 
     def handleSollmieteBeiMvKuendigung( self, mv_id:str, kuenddatum:str ):

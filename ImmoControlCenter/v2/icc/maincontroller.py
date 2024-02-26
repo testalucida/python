@@ -1,6 +1,6 @@
 from typing import List, Iterable
 
-from PySide2.QtCore import Slot
+from PySide2.QtCore import Slot, QCoreApplication
 from PySide2.QtWidgets import QMenu, QMessageBox, QInputDialog, QLineEdit
 
 import datehelper
@@ -55,7 +55,7 @@ class MainController( IccController ):
 
         self._einausCtrl.year_changed.connect( self.onYearChanged )
         self._mieteCtrl.show_objekt.connect( self._mietObjektCtrl.onShowObjekt )
-        self._mieteCtrl.show_mietverhaeltnis.connect( self._mvCtrl.onMietverhaeltnisShow )
+        self._mieteCtrl.show_mietverhaeltnis.connect( self._mvCtrl.onMietverhaeltnisShowOrEdit )
         self._mieteCtrl.kuendige_mietverhaeltnis.connect( self._mvCtrl.onMietverhaeltnisKuendigen )
         self._mieteCtrl.show_NettomieteAndNkv.connect( self.onShowNettomieteAndNkv )
         self._hausgeldCtrl.show_verwaltung.connect( self.onShowVerwaltung )
@@ -162,16 +162,16 @@ class MainController( IccController ):
     def getMenu( self ) -> QMenu:
         menu = QMenu( "ImmoCenter" )
         # Menü "Datenbank zum Server exportieren"
-        action = BaseAction( "Datenbank zum Server exportieren", parent=menu )
-        action.triggered.connect( self.onExportDatabase )
-        menu.addAction( action )
-
-        # Menü "Datenbank vom Server importieren"
-        action = BaseAction( "Datenbank vom Server importieren", parent=menu )
-        action.triggered.connect( self.onImportDatabase )
-        menu.addAction( action )
-
-        menu.addSeparator()
+        # action = BaseAction( "Datenbank zum Server exportieren", parent=menu )
+        # action.triggered.connect( self.onExportDatabase )
+        # menu.addAction( action )
+        #
+        # # Menü "Datenbank vom Server importieren"
+        # action = BaseAction( "Datenbank vom Server importieren", parent=menu )
+        # action.triggered.connect( self.onImportDatabase )
+        # menu.addAction( action )
+        #
+        # menu.addSeparator()
 
         # # Menüpunkt "Ende"
         action = BaseAction( "Ende", parent=menu )
@@ -245,27 +245,26 @@ class MainController( IccController ):
             box = ErrorBox( "Datenbank-Export", "Export der Datenbank fehlgeschlagen.", str(ex) )
             box.exec_()
 
-    def onImportDatabase( self ):
-
-        dlg = QInputDialog()
-        dlg.move( self._mainwin.cursor().pos() )
-        name, ok = dlg.getText( self._mainwin, "Immo-Datenbank importieren",
-                                "Datenbank wird ins Verzeichnis\n\n'%s'\n\n importiert.\n\n"
-                                "<<<<Sie wird nicht für die laufende Anwendung verwendet!!>>>>\n\n"
-                                "Lokalen Namen für die Datenbank angeben: " % self._logic.getFtpLocalPath(),
-                                QLineEdit.Normal, "immo.db.imported" )
-
-        if not (ok and name): return
-        try:
-            self._logic.importDatabaseFromServer( name )
-            box = InfoBox( "Datenbank-Import", "Import der Datenbank abgeschlossen.", "", "OK" )
-            box.exec_()
-        except Exception as ex:
-            box = ErrorBox( "Datenbank-Import", "Import der Datenbank fehlgeschlagen.", str(ex) )
-            box.exec_()
+    # def onImportDatabase( self ):
+    #     dlg = QInputDialog()
+    #     dlg.move( self._mainwin.cursor().pos() )
+    #     name, ok = dlg.getText( self._mainwin, "Immo-Datenbank importieren",
+    #                             "Datenbank wird ins Verzeichnis\n\n'%s'\n\n importiert.\n\n"
+    #                             "<<<<Sie wird nicht für die laufende Anwendung verwendet!!>>>>\n\n"
+    #                             "Lokalen Namen für die Datenbank angeben: " % self._logic.getFtpLocalPath(),
+    #                             QLineEdit.Normal, "immo.db.imported" )
+    #
+    #     if not (ok and name): return
+    #     try:
+    #         self._logic.importDatabaseFromServer( name )
+    #         box = InfoBox( "Datenbank-Import", "Import der Datenbank abgeschlossen.", "", "OK" )
+    #         box.exec_()
+    #     except Exception as ex:
+    #         box = ErrorBox( "Datenbank-Import", "Import der Datenbank fehlgeschlagen.", str(ex) )
+    #         box.exec_()
 
     def onExit( self ):
-        print( "onExit" )
+        self._win.close()
 
     def onBeforeShutdown( self ) -> bool:
         dic = self._win.getLetzteBuchung()

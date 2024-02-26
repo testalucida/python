@@ -740,7 +740,7 @@ class BaseEdit( QLineEdit, AutoWidth, GetSetValue ):
             if event.key() == Qt.Key_Tab:
                 #print( "%s: TAB pressed" % obj )
                 self.tab_pressed.emit()
-                return True
+                return False
         return super().eventFilter( obj, event )
 
     # def keyPressEvent( self, event ):

@@ -61,8 +61,14 @@ class OkCancelDialog( QDialog ):
     def setCancellationFunction( self, fnc ):
         self._cancellationFnc = fnc
 
-    def showErrorMessage( self, title:str, msg:str ):
+    @staticmethod
+    def showErrorMessage( title:str, msg:str ):
         mb = QMessageBox( QMessageBox.Critical, title, msg )
+        mb.exec_()
+
+    @staticmethod
+    def showWarningMessage( title:str, msg:str ):
+        mb = QMessageBox( QMessageBox.Warning, title, msg )
         mb.exec_()
 
 ###################################################################################
