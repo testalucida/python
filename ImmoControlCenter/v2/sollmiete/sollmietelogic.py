@@ -251,7 +251,7 @@ class SollmieteLogic:
         Beendet das aktuelle Sollmiete-Intervall von Mieter mv_id zu <kuenddatum>
         und löscht (physisch) ein ggf. vorhandenes  Folge-Sollmiete-Intervall aus der Tabelle <sollmiete>.
         :param mv_id: Mieter
-        :param kuenddatum: KÜndigungsdatum des Mietvertrags
+        :param kuenddatum: KÜndigungsdatum des Mietvertrags; ACHTUNG: kann bei Rücknahme Kündigung auch LEER sein!!
         :return:
         """
         xsmlist:List[XSollMiete] = self._db.getSollmieteHistorie( mv_id )
@@ -259,7 +259,7 @@ class SollmieteLogic:
             raise Exception( "SollmieteLogic.handleSollmieteBeiMvKuendigung():\n"
                              "Für Mieter '%s' kein aktuelles Sollmieten-Intervall gefunden." % mv_id )
         for xsm in xsmlist:
-            if xsm.von > kuenddatum:
+            if kuenddatum and xsm.von > kuenddatum:
                 # Folge-Intervall:löschen
                 self._db.deleteSollmiete( xsm.sm_id )
             else:

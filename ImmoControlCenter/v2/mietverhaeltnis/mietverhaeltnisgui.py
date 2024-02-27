@@ -336,7 +336,10 @@ class MietverhaeltnisDialog( OkCancelDialog ):
         OkCancelDialog.__init__( self, parent )
         if not title:
             xmv = view.getMietverhaeltnis()
-            title = "Mietverhältnis '" + xmv.mv_id + "' in Wohnung '" + xmv.mobj_id  + "'"
+            if xmv.mv_id:
+                title = "Mietverhältnis '" + xmv.mv_id + "' in Wohnung '" + xmv.mobj_id  + "'"
+            else:
+                title = "Neues Mietverhältnis in Wohnung '" + xmv.mobj_id + "'"
         self.setWindowTitle( title )
         self._view = view
         self.addWidget( self._view, 0 )

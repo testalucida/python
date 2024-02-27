@@ -54,13 +54,13 @@ class MietverhaeltnisLogic( IccLogic ):
                 xmv.sollmiete_bemerkung = xsm.bemerkung
         return xmvlist
 
-    def getMietverhaeltnisById( self, mv_id:str ) -> XMietverhaeltnis:
-        """
-        Liefert das Mietverhältnis mit der Mietverhältnis-ID <mv_id>
-        :param id:
-        :return:
-        """
-        return self._db.getMietverhaeltnisById( mv_id )
+    # def getMietverhaeltnisById( self, mv_id:str ) -> XMietverhaeltnis:
+    #     """
+    #     Liefert das Mietverhältnis mit der Mietverhältnis-ID <mv_id>
+    #     :param id:
+    #     :return:
+    #     """
+    #     return self._db.getMietverhaeltnisById( mv_id )
 
     def getKuendigungsdatumParts( self, mv_id:str ) -> (int, int, int) or None :
         dic = self._db.getAktuellesMietverhaeltnisVonBis( mv_id )
@@ -157,7 +157,7 @@ class MietverhaeltnisLogic( IccLogic ):
                              % (xsm.mv_id, str( ex )) )
         self._db.commit()
 
-    def kuendigeMietverhaeltnis( self, xmv:XMietverhaeltnis ):
+    def kuendigeMietverhaeltnis( self, xmv:XMietverhaeltnis, commit=True ):
         """
         Kündigung in Tabelle mietverhaeltnis eintragen -
         aber nur, wenn sich das Kündigungsdatum geändert hat.
@@ -174,7 +174,8 @@ class MietverhaeltnisLogic( IccLogic ):
         # Sollmietensatz beenden
         smlogic = SollmieteLogic()
         smlogic.handleSollmieteBeiMvKuendigung( xmv.mv_id, xmv.bis )
-        self._db.commit()
+        if commit:
+            self._db.commit()
 
     def updateMietverhaeltnis( self, xmv:XMietverhaeltnis ):
         """
@@ -185,13 +186,13 @@ class MietverhaeltnisLogic( IccLogic ):
         :param xmv: das Mietverhältnis-Objekt mit den geänderten Daten.
         :return:
         """
-        try:
-            xmv_akt = self._db.getMietverhaeltnisById( xmv.id )
-            if xmv_akt.equals( xmv ):
-                return
-            self._db.updateMietverhaeltnis( xmv )
-        except Exception as ex:
-            return str( ex )
+        xmv_akt = self._db.getMietverhaeltnisById( xmv.id )
+        if xmv_akt.equals( xmv ):
+            return
+        if xmv_akt.bis != xmv.bis:
+            self.kuendigeMietverhaeltnis( xmv, commit=False )
+        self._db.updateMietverhaeltnis( xmv )
+        self._db.commit()
 
     @staticmethod
     def validateMietverhaeltnisDaten( xmv:XMietverhaeltnis ) -> str:
@@ -214,7 +215,8 @@ class MietverhaeltnisLogic( IccLogic ):
     @staticmethod
     def validateKuendigungDaten( xmv:XMietverhaeltnis ) -> str:
         if not xmv.bis:
-            return "Kündigungsdatum fehlt."
+            # Rücknahme Kündigung
+            return ""
         if not datehelper.isValidIsoDatestring( xmv.bis ):
             return "Datum nicht im vorgeschriebenen ISO-Format: '%s'" % xmv.bis
         # prüfen, ob das MV zum ENDE des Monats gekündigt wird - nur das ist zulässig
@@ -238,11 +240,6 @@ def testNeuanlage():
     mvlogic = MietverhaeltnisLogic()
     mvlogic.createMietverhaeltnis( xmv )
 
-def test():
-    mvlogic = MietverhaeltnisLogic()
-    #ret = mv.getKuendigungsdatumParts( "yilmaz_yasar" )
-    xmv = mvlogic.getMietverhaeltnisById( "gulsum_cakir" )
-    xmv.print()
 
 if __name__ == "__main__":
     test()

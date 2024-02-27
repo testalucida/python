@@ -91,7 +91,9 @@ class MietverhaeltnisController( IccController ):
         Wird aufgerufen, wenn in der Menübar der Anwendung "Mietverhältnis anzeigen und bearbeiten..." geklickt wurde
         :return:
         """
-        mobj_id = ""
+        def validateEditedMv() -> bool:
+            return self.validate( dlg, isNewMv=False )
+        ###################################
         if not mv_id:
             # zuerst über den Auswahldialog bestimmen, welche Daten für die View selektiert werden müssen
             mietobjektAuswahl = MietobjektAuswahl()
@@ -102,9 +104,19 @@ class MietverhaeltnisController( IccController ):
             xmv = self._mvlogic.getAktuellesMietverhaeltnis( mv_id )
             mobj_id = xmv.mobj_id
         self.createMvView( mobj_id )
-        dlg = MietverhaeltnisDialog( self._view )
-        dlg.setBeforeAcceptFunction( self.validate( dlg, isNewMv=False ) )
-        dlg.exec_()
+        v = self._view
+        dlg = MietverhaeltnisDialog( v )
+        dlg.setBeforeAcceptFunction( validateEditedMv )
+        if dlg.exec_() == QDialog.Accepted:
+            try:
+                xmv_orig = v.getMietverhaeltnis()
+                xmv_copy = v.getMietverhaeltnisCopyWithChanges()
+                if xmv_orig.equals( xmv_copy ):
+                    return
+                v.applyChanges()
+                self._mvlogic.updateMietverhaeltnis( xmv_orig )
+            except Exception as ex:
+                dlg.showErrorMessage( "Datenbankfehler beim Ändern des Mietverhältnisses", str(ex) )
 
     @Slot()
     def onMietverhaeltnisKuendigen( self, mv_id:str=None ):

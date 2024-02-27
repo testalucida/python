@@ -107,10 +107,10 @@ class MietverhaeltnisData( IccData ):
               "order by mv.von desc " % mobj_id
         return self.readAllGetObjectList( sql, XMietverhaeltnis )
 
-    def getMietverhaeltnisById( self, mv_id: str ) -> XMietverhaeltnis:
+    def getMietverhaeltnisById( self, id: int ) -> XMietverhaeltnis:
         """
-        Liefert das Mietverhältnis zu <mv_id>
-        :param mv_id:
+        Liefert das Mietverhältnis mit der id <id>
+        :param id:
         :return:
         """
         sql = "select mv.id, mv.mv_id, mv.mobj_id, mv.von, coalesce(mv.bis, '') as bis, mv.name, mv.vorname, " \
@@ -120,7 +120,7 @@ class MietverhaeltnisData( IccData ):
               "mv.bemerkung1, mv.bemerkung2, " \
               "coalesce(mv.kaution, 0) as kaution, coalesce(mv.kaution_bezahlt_am, '') as kaution_bezahlt_am " \
               "from mietverhaeltnis mv " \
-              "where mv.mv_id = '%s' " % mv_id
+              "where mv.id = %d " % id
         d = self.readOneGetDict( sql )
         x = XMietverhaeltnis( d )
         return x
@@ -217,6 +217,16 @@ class MietverhaeltnisData( IccData ):
         sql = "update mietverhaeltnis set %s = '%s' where id = %d " % (column, newVal, id)
         return self.write( sql )
 
+
+def test4():
+    mvsql = MietverhaeltnisData()
+    try:
+        x: XMietverhaeltnis = mvsql.getMietverhaeltnisById( 44 )
+    except Exception as ex:
+        print( str(ex) )
+    print( "Ende Test." )
+
+
 def test3():
     mvsql = MietverhaeltnisData()
     mvlist = mvsql.getMietverhaeltnisse( "mendel_8" )
@@ -234,6 +244,8 @@ def test():
     x:XMietverhaeltnis = mvsql.getAktuellesMietverhaeltnis( "yilmaz_yasar" )
     # x: XMietverhaeltnis = mvsql.getAktuellesMietverhaeltnis( "wagner_irmgardottilie" )
     print( "Ende Test." )
+
+
 
 if __name__ == "__main__":
     test()
