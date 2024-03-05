@@ -1,3 +1,5 @@
+from typing import List
+
 from PySide2.QtCore import Signal, QSize, QPoint
 from PySide2.QtGui import Qt, QScreen
 from PySide2.QtWidgets import QMainWindow, QScrollArea, QWidget, QApplication, QDesktopWidget, QHBoxLayout, QMenu, \
@@ -36,13 +38,22 @@ class AllInfoPanel( QWidget ):
         self._row = 0
         self._col = 0
 
+    # def getInfoPanels( self ) -> List[InfoPanel]:
+    #     """
+    #     Liefert eine Liste mit allen InfoPanels gem. Layout-Index
+    #     :return:
+    #     """
+    #     l = list()
+    #     for i in range( 0, self._layout.count() ):
+    #         l.append( self._layout.getItemPosition( i ) )
+    #     return l
 
 ##############################################################
 class AllInfoPanelsScrollArea( QScrollArea ):
     def __init__(self):
         QScrollArea.__init__( self )
-        self._layout = BaseGridLayout()
-        self.setLayout( self._layout )
+        # self._layout = BaseGridLayout()
+        # self.setLayout( self._layout )
         self.setVerticalScrollBarPolicy( Qt.ScrollBarAlwaysOn )
         self.setHorizontalScrollBarPolicy( Qt.ScrollBarAlwaysOn )
         self.setWidgetResizable( True )
@@ -142,7 +153,6 @@ class IMonToolBar( BaseToolBar ):
     def setDividendPaid( self, val:int ):
         self._lblDividendPaid.setValue( val )
 
-
 ############################################################
 class IMonMenuBar( QMenuBar ):
     undock_infopanel = Signal()
@@ -159,6 +169,7 @@ class IMonMenuBar( QMenuBar ):
         self._actionShowOrders = self._menuExtras.addAction( "Alle Orders anzeigen" )
         self._actionShowOrders.triggered.connect( self.show_orders.emit )
         self.addMenu( self._menuExtras )
+
 ############################################################
 class MainWindow( QMainWindow ):
     change_infopanel_order = Signal( InfoPanelOrder )

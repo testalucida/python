@@ -309,6 +309,7 @@ class InfoPanel( QFrame ):
         lay = QHBoxLayout()
         lay.setSpacing( 1 )
         lay.addWidget( self._lblTer )
+        self._lblTer.setToolTip( "Gesamtkosten dieser Depotposition pro Jahr (Total Expense Ratio)")
         lblProz = BaseLabel( "%" )
         lblProz.setFixedWidth( 20 )
         lay.addWidget( lblProz )

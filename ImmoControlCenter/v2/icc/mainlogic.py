@@ -56,6 +56,7 @@ class MainLogic( IccLogic ):
 
     @staticmethod
     def importDatabaseFromServer( localname:str ):
+        # DERZEIT NICHT BENUTZT
         ftpini = FtpIni( "ftp.ini" )
         ftp = Ftp( ftpini )
         try:

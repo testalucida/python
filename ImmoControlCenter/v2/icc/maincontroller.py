@@ -1,6 +1,6 @@
 from typing import List, Iterable
 
-from PySide2.QtCore import Slot, QCoreApplication
+from PySide2.QtCore import Slot, QCoreApplication, Qt
 from PySide2.QtWidgets import QMenu, QMessageBox, QInputDialog, QLineEdit
 
 import datehelper
@@ -267,22 +267,25 @@ class MainController( IccController ):
         self._win.close()
 
     def onBeforeShutdown( self ) -> bool:
+        """
+        "Letzte Buchung" speichern.
+        Datenbank zum Server hochladen.
+        :return:
+        """
         dic = self._win.getLetzteBuchung()
         try:
             self._logic.saveLetzteBuchung( dic["datum"], dic["text"])
-            #return True #+ todo: auskommentieren
         except Exception as ex:
             box = WarningBox( "Speichern der letzten Buchung", "Speichern fehlgeschlagen: " + str(ex),
                               "Anwendung trotzdem schließen?", "Ja", "Nein" )
-        #return (box.exec_() == QMessageBox.Yes) # todo: auskommentieren
-
-        # todo: aktivieren
         try:
+            self._win.setCursor( Qt.WaitCursor)
             self._logic.exportDatabaseToServer()
             box = InfoBox( "Datenbank-Export", "Datenbank exportiert.", "", "OK" )
             box.exec_()
             return True
         except Exception as ex:
+            self._win.setCursor( Qt.ArrowCursor )
             box = ErrorBox( "Datenbank-Export", "Export der Datenbank fehlgeschlagen.", str(ex) )
             box.exec_()
             return False

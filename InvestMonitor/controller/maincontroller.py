@@ -172,8 +172,6 @@ class MainController( QObject ):
         dlg.resize( QSize( w + 25, h + 35 ) )
         dlg.show()
 
-
-
     def onPeriodIntervalChanged( self, period:Period, interval:Interval ):
         poslist: List[XDepotPosition] = [ctrl.getModel() for ctrl in self._infoPanelCtrlList]
         self._logic.provideTickerHistories( poslist, period, interval )
