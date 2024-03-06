@@ -7,56 +7,84 @@ from PySide2.QtWidgets import QMainWindow, QScrollArea, QWidget, QApplication, Q
 
 from base.baseqtderivates import BaseGridLayout, BaseToolBar, SearchField, BaseComboBox, BaseLabel, Separator, \
     BaseButton, BaseWidget, BaseEdit, IntEdit
+from base.dragndrop import DragWidgetsContainer
 from base.enumhelper import getEnumValues, getEnumFromValue
 from gui.infopanel import InfoPanel
 from imon.definitions import DEFAULT_PERIOD, DEFAULT_INTERVAL
 from imon.enums import InfoPanelOrder, Period, Interval
 from utfsymbols import symSUM, symDELTA
 
+#
+# class AllInfoPanel___( QWidget ):
+#     def __init__( self ):
+#         QWidget.__init__( self )
+#         self._layout = BaseGridLayout()
+#         self.setLayout( self._layout )
+#         self._row = 0
+#         self._col = 0
+#         self._maxCols = 3
+#
+#     def addInfoPanel( self, infopanel: InfoPanel ):
+#         self._layout.addWidget( infopanel, self._row, self._col )
+#         self._col += 1
+#         if self._col == self._maxCols:
+#             self._row += 1
+#             self._col = 0
+#
+#     def removeInfoPanel( self, ip:InfoPanel ):
+#         self._layout.removeWidget( ip )
+#
+#     def clear( self ) -> None:
+#         self.children().clear()
+#         self._row = 0
+#         self._col = 0
 
-class AllInfoPanel( QWidget ):
+############################################################
+class AllInfoPanel( DragWidgetsContainer ):
     def __init__( self ):
-        QWidget.__init__( self )
-        self._layout = BaseGridLayout()
-        self.setLayout( self._layout )
+        DragWidgetsContainer.__init__( self )
         self._row = 0
         self._col = 0
         self._maxCols = 3
 
     def addInfoPanel( self, infopanel: InfoPanel ):
-        self._layout.addWidget( infopanel, self._row, self._col )
+        self.addWidget( infopanel, self._row, self._col )
         self._col += 1
         if self._col == self._maxCols:
             self._row += 1
             self._col = 0
+        rows, cols = self.getRowAndColumnCount()
+        #print( "rows: ", rows, " -- cols: ", cols )
 
     def removeInfoPanel( self, ip:InfoPanel ):
-        self._layout.removeWidget( ip )
+        self.removeWidget( ip )
 
     def clear( self ) -> None:
         self.children().clear()
         self._row = 0
         self._col = 0
 
-    # def getInfoPanels( self ) -> List[InfoPanel]:
-    #     """
-    #     Liefert eine Liste mit allen InfoPanels gem. Layout-Index
-    #     :return:
-    #     """
-    #     l = list()
-    #     for i in range( 0, self._layout.count() ):
-    #         l.append( self._layout.getItemPosition( i ) )
-    #     return l
 
 ##############################################################
 class AllInfoPanelsScrollArea( QScrollArea ):
     def __init__(self):
         QScrollArea.__init__( self )
+        self._allPanels = AllInfoPanel()
+        self.setWidget( self._allPanels )
         # self._layout = BaseGridLayout()
         # self.setLayout( self._layout )
         self.setVerticalScrollBarPolicy( Qt.ScrollBarAlwaysOn )
         self.setHorizontalScrollBarPolicy( Qt.ScrollBarAlwaysOn )
         self.setWidgetResizable( True )
+
+    def addInfoPanel( self, infoPanel:InfoPanel ):
+        self._allPanels.addInfoPanel( infoPanel )
+
+    def removeWidget( self, widget:QWidget ):
+        self._allPanels.removeWidget( widget )
+
+    def clear( self ):
+        self._allPanels.clear()
 
 ##############################################################
 class IMonToolBar( BaseToolBar ):
@@ -185,9 +213,9 @@ class MainWindow( QMainWindow ):
         self._toolBar = IMonToolBar()
         self.addToolBar( self._toolBar )
         self._toolBar.period_interval_changed.connect( self.period_interval_changed.emit )
-        self._allInfoPanel = AllInfoPanel()
+        ##########self._allInfoPanel = AllInfoPanel()
         self._panelsScroll = AllInfoPanelsScrollArea()
-        self._panelsScroll.setWidget( self._allInfoPanel )
+        ##########self._panelsScroll.setWidget( self._allInfoPanel )
         self.setCentralWidget( self._panelsScroll )
         cbo = self._toolBar.getOrderComboBox()
         cbo.currentTextChanged.connect(
@@ -198,7 +226,7 @@ class MainWindow( QMainWindow ):
         # btn.clicked.connect( self.show_orders.emit )
 
     def addInfoPanel( self, infopanel:InfoPanel ):
-        self._allInfoPanel.addInfoPanel( infopanel )
+        self._panelsScroll.addInfoPanel( infopanel )
 
     def getToolBar( self ) -> IMonToolBar:
         return self._toolBar
@@ -210,14 +238,14 @@ class MainWindow( QMainWindow ):
         self._toolBar.getOrderComboBox().setValue( order.value )
 
     def clear( self ) -> None:
-        self._allInfoPanel.clear()
+        self._panelsScroll.clear()
 
     def ensureVisible( self, infopanel:InfoPanel ):
         if infopanel.visibleRegion().isEmpty():
             self._panelsScroll.ensureWidgetVisible( infopanel )
 
     def removeInfoPanel( self, ip:InfoPanel ):
-        self._allInfoPanel.removeInfoPanel( ip )
+        self._panelsScroll.removeInfoPanel( ip )
 
 #####################################################################################################
 def test():

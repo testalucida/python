@@ -21,6 +21,7 @@ from utfsymbols import symDELTA
 
 
 class MainController( QObject ):
+    IS_TEST = False
     def __init__( self ):
         QObject.__init__( self )
         self._logic: InvestMonitorLogic = InvestMonitorLogic()
@@ -45,7 +46,7 @@ class MainController( QObject ):
         self._mainWin.change_infopanel_order.connect( self.onChangeSortOrder )
         self._mainWin.undock_infopanel.connect( self.onUndock )
         self._mainWin.show_orders.connect( self.onShowOrders )
-        poslist = self._logic.getDepotPositions( DEFAULT_PERIOD, DEFAULT_INTERVAL )
+        poslist = self._logic.getDepotPositions( DEFAULT_PERIOD, DEFAULT_INTERVAL, MainController.IS_TEST )
         for xdepotpos in poslist:
             self._summeGesamtwerte += xdepotpos.gesamtwert_aktuell
             self._summeKaeufe += xdepotpos.einstandswert_restbestand
@@ -81,7 +82,9 @@ class MainController( QObject ):
             ipc.updateAnteilAnSummeGesamtwerte( anteil )
 
     def _computeAnteilAnSummeGesamtwerte( self, deppos:XDepotPosition ) -> int:
-        return int( round( deppos.gesamtwert_aktuell / self._summeGesamtwerte * 100, 0 ) )
+        if self._summeGesamtwerte > 0:
+            return int( round( deppos.gesamtwert_aktuell / self._summeGesamtwerte * 100, 0 ) )
+        return 0
 
     def onSearchInfoPanel( self, wknOrIsinOrTicker:str ):
         """

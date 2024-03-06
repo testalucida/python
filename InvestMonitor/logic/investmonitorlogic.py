@@ -86,41 +86,21 @@ class InvestMonitorLogic:
         self._provideWertpapierData( deppos, closeHist, dividends )
         return deppos
 
-    # def getDepotPositions____( self, period:Period, interval:Interval ) -> List[XDepotPosition]:
-    #     """
-    #     Liefert die Depot-Positionen inkl. der Bestände und der Kursentwicklung in der Default-Periode und
-    #     im Default-Zeitintervall
-    #     :return:
-    #     """
-    #     # Depotpositonen holen:
-    #     poslist:List[XDepotPosition] = self._db.getDepotPositions()
-    #     tickerlist = [pos.ticker for pos in poslist]
-    #     tickerHistories:DataFrame = self._tickerHist.getTickerHistoriesByPeriod( tickerlist,
-    #                                                                              period=period,
-    #                                                                              interval=interval )
-    #     tickerHistories = self._checkForNaN( tickerHistories )
-    #     closeDf:DataFrame = tickerHistories[SeriesName.Close.value]
-    #     dividendsDf:DataFrame = tickerHistories[SeriesName.Dividends.value]
-    #     for deppos in poslist:
-    #         self._provideOrderData( deppos )
-    #         try:
-    #             closeHist:Series = closeDf[deppos.ticker]
-    #             dividends:Series = dividendsDf[deppos.ticker]
-    #             self._provideWertpapierData( deppos, closeHist, dividends )
-    #         except Exception as ex:
-    #             print( deppos.ticker, " not found in DataFrame closeDf" )
-    #     return poslist
-
-    def getDepotPositions( self, period:Period, interval:Interval ) -> List[XDepotPosition]:
+    def getDepotPositions( self, period:Period, interval:Interval, TEST=False ) -> List[XDepotPosition]:
         """
         Liefert die Depot-Positionen inkl. der Bestände und der Kursentwicklung in der Default-Periode und
         im Default-Zeitintervall
         :return:
         """
         # Depotpositonen holen:
+        if TEST:
+            poslist = list()
+            for i in range( 0, 5 ):
+                xdeppos = XDepotPosition()
+                poslist.append( xdeppos )
+            return poslist
+        ###################################
         poslist:List[XDepotPosition] = self._db.getDepotPositions()
-        # for deppos in poslist:
-        #     self._provideOrderData( deppos )
         # Wertpapierdaten in Positionen eintragen (Kursverlauf, Dividenden etc.)
         poslist = self.provideTickerHistories( poslist, period, interval )
         return poslist

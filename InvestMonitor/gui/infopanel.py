@@ -90,6 +90,50 @@ def testAbgeltungssteuerDlg():
     dlg = AbgeltungssteuerDlg( wkn="ABCDEF", kurs=30.90, max_stck=30 )
     dlg.exec_()
 
+########### TEST TEST TEST TEST TEST
+class InfoPanel_( QFrame ):
+    update_graph = Signal( Period, Interval )
+    enter_bestand_delta = Signal()
+    compute_abgeltungssteuer = Signal()
+    show_kauf_historie = Signal()
+    update_kurs = Signal()
+    show_details = Signal()
+    show_div_payments = Signal()
+    show_simul_yield = Signal()
+    nr = 0
+    labelfont = QFont( "Ubuntu", 16 )
+    def __init__( self ):
+        QFrame.__init__( self )
+        self._nr = str( self.nr )
+        #borderstyle = "#" + self._nr + " {border: 5px solid darkblue; }"
+        borderstyle = "border: 3px solid darkblue;"
+        self.setStyleSheet( borderstyle )
+        self.setFixedSize( QSize(400, 400) )
+        self._lbl = BaseLabel( self._nr )
+        self._lbl.setFont( self.labelfont )
+        self._lbl.setFixedWidth( 50 )
+        self._lbl.setFixedHeight( 50 )
+        self._lbl.setAlignment( Qt.AlignCenter )
+        labelstyle = "border: 1px solid red;"
+        self._lbl.setStyleSheet( labelstyle )
+        self.nr += 1
+        self._layout = BaseGridLayout()
+        self.setLayout( self._layout )
+        self._layout.addWidget( self._lbl, 0, 0, 1, 1, alignment=Qt.AlignVCenter | Qt.AlignHCenter )
+
+    def getLabel( self ) -> str:
+        return self._nr
+
+    def setDepotPosition( self, x: XDepotPosition ):
+        pass
+
+    def setPeriodAndInterval( self, period: Period, interval: Interval ):
+        pass
+
+    def setSortInfo( self, values: str ):
+        pass
+####################################
+
 
 ############################################################
 class NavigationToolbar(NavigationToolbar2QT):
@@ -130,8 +174,6 @@ class InfoPanel( QFrame ):
     Ein InfoPanel enthält alle Informationen zu einem Wertpapier (Aktie, Fonds- oder ETF-Anteil)
     und einen Graph, der die Kursentwicklung eines Zeitraums anzeigt.
     """
-    # period_changed = Signal( Period )   # arg: neues Periodenkürzel
-    # interval_changed = Signal( Interval ) # arg: neues Intervall-Kürzel
     update_graph = Signal( Period, Interval )
     enter_bestand_delta = Signal()
     compute_abgeltungssteuer = Signal()
@@ -150,6 +192,9 @@ class InfoPanel( QFrame ):
 
     def __init__(self):
         QFrame.__init__( self )
+        #borderstyle = "border: 3px solid darkblue;"
+        borderstyle = "InfoPanel {border: 2px solid darkblue; }"
+        self.setStyleSheet( borderstyle )
         self._row = -1 # row im MainWindow
         self._col = -1 # col im MainWindow
         maxwnumlabels = 70
@@ -260,7 +305,6 @@ class InfoPanel( QFrame ):
         self._layout.addLayout( layBtnDetAndMark, r, c )
         self._btnDetails.setToolTip( "Details anzeigen" )
         self._btnSelect.setToolTip( "Diese Depotposition markieren" )
-        ######l.addWidget( self._btnDetails, r, c )
 
         r += 1
         c = 0
@@ -327,7 +371,6 @@ class InfoPanel( QFrame ):
         lay.setSpacing( 1 )
         lay.setMargin( 0 )
         self._btnStueckDelta.setToolTip( "Bestandsveränderung eintragen (Kauf/Verkauf)" )
-        #l.addWidget( self._btnStueckDelta, r, c, 1, 1, Qt.AlignLeft )
         lay.addWidget( self._btnStueckDelta, stretch=0, alignment=Qt.AlignLeft )
         self._btnAbgeltungssteuer.setToolTip( "Abgeltungssteuer auf zu verkaufende Stückzahl errechnen" )
         lay.addWidget( self._btnAbgeltungssteuer, stretch=0, alignment=Qt.AlignLeft )
@@ -384,6 +427,7 @@ class InfoPanel( QFrame ):
         lay.addWidget( self._lblAnteilAnSummeGesamtwerte )
         lay.addWidget( BaseLabel( "%" ) )
         l.addLayout( lay, r, c )
+
         r += 1
         c = 0
         l.addWidget( BaseLabel( "Kurs" ), r, c )
@@ -439,14 +483,13 @@ class InfoPanel( QFrame ):
         r += 1
         c = 0
         l.addWidget( BaseLabel( symDELTA + " Wert" ), r, c )
-        #l.addWidget( BaseLabel( "Entwicklg." ), r, c )
         c = 1
         self._lblDeltaProz.setToolTip( "Verh. durchschn. Kaufpreis zu akt. Kurs" )
         l.addWidget( self._lblDeltaProz, r, c )
         c = 2
         l.addWidget( BaseLabel( "%" ), r, c )
 
-        # der Graph:
+        #der Graph:
         r, c = 2, 4
         l.addWidget( self._mplCanvas, r, c, l.rowCount()-1, 3 )
 
