@@ -24,6 +24,8 @@ class DragWidgetsContainer( QWidget ):
         self._dragWidget:QWidget = None
         self._dragWidgetIndex:int = -1
         self._dragWidgetPositon:Tuple = None # (Pos.info des _dragWidget: (row,  col, rowspan,  colspan) )
+        self._dragWidgetOldX:int = None
+        self._dragWidgetOldY: int = None
         self._lastPos:QPoint = None
         self._mouseRelToLeft:int = None
         self._mouseRelToTop:int = None
@@ -48,6 +50,8 @@ class DragWidgetsContainer( QWidget ):
         self._dragWidget = widget
         self._dragWidgetIndex = self._layout.indexOf( widget )
         self._dragWidgetPositon = self._layout.getItemPosition( self._dragWidgetIndex )
+        self._dragWidgetOldX = widget.x()
+        self._dragWidgetOldY = widget.y()
         others = self._layout.getAddedItems()
         for other in others:
             if other.item == widget: continue
@@ -64,8 +68,13 @@ class DragWidgetsContainer( QWidget ):
             # Drag-Vorgang beendet.
             # Jetzt die Widgets neu anordnen
             self._rearrange( intersectedItem )
+        else:
+            # das nicht genügend bewegte Panel wieder an seinen Platz verfrachten
+            self._dragWidget.move( self._dragWidgetOldX, self._dragWidgetOldY )
         self._dragWidget = None
         self._dragWidgetIndex = -1
+        self._dragWidgetOldX = None
+        self._dragWidgetOldY = None
         self._lastPos = None
         self._insertIndicator = None
 

@@ -21,7 +21,7 @@ from utfsymbols import symDELTA
 
 
 class MainController( QObject ):
-    IS_TEST = False
+    IS_TEST = True
     def __init__( self ):
         QObject.__init__( self )
         self._logic: InvestMonitorLogic = InvestMonitorLogic()

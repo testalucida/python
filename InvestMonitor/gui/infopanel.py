@@ -598,7 +598,11 @@ class InfoPanel( QFrame ):
         self._lblSortValues.setValue( values )
 
     def _plot( self ):
-        self._x.history.plot( ax=self._mplCanvas.axes, grid=True )
+        try:
+            # kann schiefgehen im TEST-Betrieb und kann dann ignoriert werden
+            self._x.history.plot( ax=self._mplCanvas.axes, grid=True )
+        except:
+            pass
 
     def onPeriodIntervalChanged( self, arg ):
         self._btnUpdateGraph.setEnabled( True )
