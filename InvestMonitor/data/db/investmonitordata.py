@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 from base.databasecommon2 import DatabaseCommon
 from interface.interfaces import XDepotPosition, XDelta
@@ -48,14 +48,17 @@ class InvestMonitorData( DatabaseCommon ):
         deltalist = self.readAllGetObjectList( sql, XDelta )
         return deltalist
 
-    def getAllDeltas( self ) -> List[XDelta]:
+    def getAllDeltas( self, distributingOnly=False, flag_displ=1 ) -> List[XDelta]:
         sql = "select delta.id, delta.delta_stck, delta.delta_datum, delta.preis_stck, " \
               "delta.verkauft_stck, delta.verkaufskosten, " \
               "delta.bemerkung, delta_stck*preis_stck as order_summe, " \
               "dp.name, dp.depot_id, delta.wkn, dp.isin, dp.ticker " \
               "from delta delta " \
               "inner join depotposition dp on dp.wkn = delta.wkn " \
-              "order by delta.delta_datum desc, delta.id desc "
+              "where dp.flag_displ = %d " % flag_displ
+        if distributingOnly:
+            sql += " and dp.flag_acc = 0 "
+        sql += "order by delta.delta_datum desc, delta.id desc "
         deltalist = self.readAllGetObjectList( sql, XDelta )
         return deltalist
 
@@ -66,6 +69,15 @@ class InvestMonitorData( DatabaseCommon ):
         tupleList = self.read( sql )
         tickerlist = [tpl[0] for tpl in tupleList]
         return tickerlist
+
+    def getAllWknAndTickers( self, distributingOnly=False, flag_displ=1 ) -> List[Dict]:
+        sql = "select wkn, ticker " \
+              "from depotposition " \
+              "where flag_displ = %d " % flag_displ
+        if distributingOnly:
+            sql += " and flag_acc = 0 "
+        dictlist = self.readAllGetDict( sql )
+        return dictlist
 
     def insertDelta( self, delta:XDelta ):
         """
@@ -105,7 +117,9 @@ class InvestMonitorData( DatabaseCommon ):
 
 def test():
     data = InvestMonitorData()
-    li = data.getAllDeltas()
+    li = data.getAllWknAndTickers( distributingOnly=True )
+
+    li = data.getAllDeltas( distributingOnly=False )
     print( li )
     #l = data.getDepotPositions()
     strlist = data.getAllMyTickers()

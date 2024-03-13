@@ -1,6 +1,6 @@
 import math
 from operator import itemgetter, attrgetter
-from typing import List
+from typing import List, Dict
 
 from pandas import DataFrame, Series
 import pandas as pd
@@ -18,6 +18,7 @@ from imon.definitions import DATABASE_DIR, DEFAULT_PERIOD, DEFAULT_INTERVAL
 class InvestMonitorLogic:
     #summe_gesamtwerte = 0.0
     def __init__( self ):
+
         self._db = InvestMonitorData()
         self._tickerHist = TickerHistory()
         self._defaultPeriod = DEFAULT_PERIOD #Period.oneYear
@@ -146,7 +147,7 @@ class InvestMonitorLogic:
             print( deppos.wkn, "/", deppos.ticker,
                    ": _provideWertpapierData(): call to getKursAktuellInEuro() failed.\nNo last_price availabel.")
 
-        deppos.dividend_period = self._getSumDividends( deppos.dividends )
+        deppos.dividend_period = self._getSumDividends( deppos.dividends ) # Summe der Div. PRO STÜCK während d. Periode
         if orig_currency != "EUR":
             deppos.history = self._convertSeries( deppos.history, orig_currency )
             if deppos.dividend_period > 0:
@@ -158,26 +159,29 @@ class InvestMonitorLogic:
             first_kurs_period = closeHist.array[0]
             deppos.dividend_yield = self._computeDividendYield( first_kurs_period, deppos.dividend_period )
         self._provideGesamtwertAndDelta( deppos )
-        self._providePaidDividends( deppos )
+        deltas = self._db.getDeltas( deppos.wkn )
+        deppos.dividend_paid_period = \
+            self._getPaidDividends( deppos.dividends, deltas ) # Summe der Dividendenzahlungen,
+                                                               # die während d. Perdiode
+                                                               # auf meinen Bestand gezahlt wurden
 
-    def _providePaidDividends( self, deppos:XDepotPosition ):
+    def _getPaidDividends( self, dividends:Series, deltas:List[XDelta] ) -> int:
         """
         Ermittelt die Dividendenzahlungen, die für <deppos> gemäß Eintragungen in <dividends> angefallen sind.
-        Für jede Dividendenzahlung wird nur der zu diesem Zeitpunkt vorhandene Depotbestand berücksichtigt.
-        :param deppos:
+        Für jede Dividendenzahlung wird nur der zum Zahlungszeitpunkt vorhandene Depotbestand berücksichtigt.
+        :param dividends: Die Dividenden-Serie. Es wird vorausgesetzt, dass sie in Euro übergeben wird.
+        :param deltas: Alle Orders, die sich auf <wkn> beziehen
         :return:
         """
-        deppos.dividend_paid_period = 0
-        #todo
-        deltas = self._db.getDeltas( deppos.wkn  )
+        # deltas = self._db.getDeltas( wkn  )
         deltas.sort( key=attrgetter( "delta_datum" ) )
         sum_dividends = 0
-        for pay_ts, value in deppos.dividends.items():
+        for pay_ts, value in dividends.items():
             if value > 0:
                 #print( "paid: ", str(pay_ts)[:10], ": ", value )
                 # den Depotbestand der Position <deppos> zum Datum <paydate> ermitteln:
                 sum_dividends += self._computeDividendOnBestand( deltas, float( value ), str( pay_ts )[:10] )
-        deppos.dividend_paid_period = sum_dividends
+        return sum_dividends
 
     @staticmethod
     def _computeDividendOnBestand( deltas:List[XDelta], dividend:float, paydate:str ) -> int:
@@ -199,7 +203,6 @@ class InvestMonitorLogic:
             else:
                 break
         return int(round( summe_stck * dividend, 2 ) )
-
 
     @staticmethod
     def _provideGesamtwertAndDelta( deppos:XDepotPosition ):
@@ -304,56 +307,6 @@ class InvestMonitorLogic:
         serNew = Series(vlist, index)
         return serNew
 
-    # def _provideOrderData( self, deppos:XDepotPosition ):
-    #     """
-    #     Holt zur übergebenen Depotposition die delta-Daten aus der DB und trägt sie ein
-    #     :param deppos:
-    #     :return:
-    #     """
-    #     deltalist:List[XDelta] = self._db.getDeltas( deppos.wkn )
-    #     deppos.stueck = 0
-    #     deppos.gesamtkaufpreis = deppos.maxKaufpreis = deppos.minKaufpreis = 0
-    #     for delta in deltalist:
-    #         deppos.stueck += delta.delta_stck
-    #         if delta.delta_stck > 0:
-    #             # Kauf; Verkäufe dürfen für die Ermittlung von max, min und Durchscnitt nicht
-    #             # berücksichtigt werden
-    #             orderpreis = delta.delta_stck * delta.preis_stck
-    #             deppos.gesamtkaufpreis += orderpreis
-    #             deppos.maxKaufpreis = delta.preis_stck if delta.preis_stck > deppos.maxKaufpreis else deppos.maxKaufpreis
-    #             deppos.minKaufpreis = delta.preis_stck \
-    #                                   if delta.preis_stck < deppos.minKaufpreis or deppos.minKaufpreis == 0 \
-    #                                   else deppos.minKaufpreis
-    #     deppos.gesamtkaufpreis = int( round( deppos.gesamtkaufpreis, 2 ) )
-    #     if deppos.stueck > 0:
-    #         deppos.preisprostueck = round( deppos.gesamtkaufpreis / deppos.stueck, 2 )
-
-    # def _provideOrderData( self, deppos: XDepotPosition ):
-    #     """
-    #     Holt zur übergebenen Depotposition die delta-Daten aus der DB und trägt sie ein
-    #     :param deppos:
-    #     :return:
-    #     """
-    #     deltalist: List[XDelta] = self._db.getDeltas( deppos.wkn )
-    #     deppos.stueck = gekaufte_stueck = 0
-    #     deppos.gesamtkaufpreis = deppos.maxKaufpreis = deppos.minKaufpreis = 0
-    #     for delta in deltalist:
-    #         deppos.stueck += delta.delta_stck
-    #         if delta.delta_stck > 0:
-    #             # Kauf; Verkäufe dürfen für die Ermittlung von max, min und Durchscnitt nicht
-    #             # berücksichtigt werden
-    #             gekaufte_stueck += delta.delta_stck
-    #             orderpreis = delta.delta_stck * delta.preis_stck
-    #             deppos.gesamtkaufpreis += orderpreis
-    #             deppos.maxKaufpreis = delta.preis_stck if delta.preis_stck > deppos.maxKaufpreis else deppos.maxKaufpreis
-    #             deppos.minKaufpreis = delta.preis_stck \
-    #                 if delta.preis_stck < deppos.minKaufpreis or deppos.minKaufpreis == 0 \
-    #                 else deppos.minKaufpreis
-    #     deppos.gesamtkaufpreis = int( round( deppos.gesamtkaufpreis, 2 ) )
-    #     if deppos.stueck > 0: # es gibt noch einen Depot-Bestand
-    #         deppos.preisprostueck = round( deppos.gesamtkaufpreis / gekaufte_stueck, 2 )
-    #         deppos.einstandswert_restbestand = int( round( deppos.preisprostueck * deppos.stueck, 2 ) )
-
     def _provideOrderData( self, deppos: XDepotPosition ):
         """
         Holt zur übergebenen Depotposition die delta-Daten aus der DB und trägt sie ein
@@ -424,6 +377,9 @@ class InvestMonitorLogic:
             ( "id", "delta_datum", "name", "wkn", "isin", "ticker", "depot_id", "delta_stck", "preis_stck", "order_summe"),
             ( "Id", "Datum", "Name", "WKN", "ISIN", "Ticker", "Depot", "Stück", "Preis/Stck", "Ordersumme" ) )
         return tm
+
+    def getAllOrdersList( self ) -> List[XDelta]:
+        return self._db.getAllDeltas()
 
     def insertOrderAndUpdateDepotData( self, delta:XDelta, deppos:XDepotPosition ):
         """
@@ -511,8 +467,49 @@ class InvestMonitorLogic:
                 steuer += (delta * 0.25) # 25% Abgeltungssteuer auf das Delta
         return int( round(steuer, 2) )
 
+    def getAllWknTickersForDividendComputation( self ) -> List[Dict]:
+        return self._db.getAllWknAndTickers( distributingOnly=True, flag_displ=1 )
+
+    def getSumDividendsCurrentYear( self, wkn_ticker_list:List[Dict], allOrders:List[XDelta] ) -> int:
+        """
+        Liefert die Summe aller Dividendenzahlungen für die im Monitor vertretenen Fonds für das laufende Jahr.
+        "Im Monitor vertreten" heißt: depotposition.flag_displ == 1.
+        :return: die Dividendensumme
+        """
+        def getWkn( tickr:str ) -> str:
+            for dic in wkn_ticker_list:
+                if tickr == dic["ticker"]:
+                    return dic["wkn"]
+            raise Exception( "Ticker '%s' nicht in der Ticker-/WKN-Liste gefunden." )
+
+        def getOrders( wkn:str ) -> List[XDelta]:
+            orderlist = [order for order in allOrders if order.wkn == wkn]
+            return orderlist
+
+        tickers = [d["ticker"] for d in wkn_ticker_list]
+        histlist:DataFrame = \
+            self._tickerHist.getTickerHistoriesByPeriod( tickers, period=Period.currentYear, interval=Interval.oneWeek )
+        dividends:DataFrame = histlist[SeriesName.Dividends.value]
+        sum_dividends = 0
+        for ticker in tickers:
+            divs = dividends[ticker]
+            currency = TickerHistory.getCurrency( ticker )
+            if currency != "EUR":
+                divs = self._convertSeries( divs, currency )
+            wkn = getWkn( ticker )
+            orders = getOrders( wkn )
+            sum_dividends += self._getPaidDividends( divs, orders )
+        return sum_dividends
+
+
+
 ##################################################################################
 ##################################################################################
+
+def testGetSumDividendsCurrentYear():
+    l = InvestMonitorLogic()
+    sum = l.getSumDividendsCurrentYear()
+    print( sum )
 
 def testComputeAbgeltungssteuer():
     logic = InvestMonitorLogic()

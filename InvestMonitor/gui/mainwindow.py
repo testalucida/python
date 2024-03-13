@@ -125,12 +125,25 @@ class IMonToolBar( BaseToolBar ):
         self._cboPeriod = BaseComboBox()
         self._cboInterval = BaseComboBox()
         self._btnUpdateAllInfoPanels = BaseButton( "⟳", callback=self.onUpdateAllInfoPanels )
+        self._addPeriodAndIntervalWidget()
+        self.addSeparator()
+        # Dividendenzahlungen
+        # a) in der eingestellten Period
         self._lblDividendPaid = IntEdit( isReadOnly=True )
         self._lblDividendPaid.setFixedWidth( 70 )
-        self._addPeriodAndIntervalWidget()
         self._lblDividendPaid.setToolTip( "Summe der tatsächlich erhaltenen Dividenden in der eingestellten Periode" )
-        self.addWidget( BaseLabel( symSUM + " Div: " ) )
+        self.addWidget( BaseLabel( symSUM + " Div. Periode: " ) )
         self.addWidget( self._lblDividendPaid )
+        self.addWidget( BaseLabel( "€" ) )
+        spacer = BaseLabel()
+        spacer.setFixedWidth( 10 )
+        self.addWidget( spacer )
+        # b) im laufenden Jahr
+        self._lblDividendPaidLfdJahr = IntEdit( isReadOnly=True )
+        self._lblDividendPaidLfdJahr.setFixedWidth( 70 )
+        self._lblDividendPaidLfdJahr.setToolTip( "Summe der tatsächlich erhaltenen Dividenden im laufenden Jahr" )
+        self.addWidget( BaseLabel( symSUM + " Div. lfd. Jahr: " ) )
+        self.addWidget( self._lblDividendPaidLfdJahr )
         self.addWidget( BaseLabel( "€" ) )
         self.addSeparator()
 
@@ -181,6 +194,9 @@ class IMonToolBar( BaseToolBar ):
     def setDividendPaid( self, val:int ):
         self._lblDividendPaid.setValue( val )
 
+    def setDividendPaidLfdJahr( self, val:int ):
+        self._lblDividendPaidLfdJahr.setValue( val )
+
 ############################################################
 class IMonMenuBar( QMenuBar ):
     undock_infopanel = Signal()
@@ -200,6 +216,7 @@ class IMonMenuBar( QMenuBar ):
 
 ############################################################
 class MainWindow( QMainWindow ):
+    showing_now = Signal()
     change_infopanel_order = Signal( InfoPanelOrder )
     undock_infopanel = Signal()
     period_interval_changed = Signal( Period, Interval )
@@ -246,6 +263,10 @@ class MainWindow( QMainWindow ):
 
     def removeInfoPanel( self, ip:InfoPanel ):
         self._panelsScroll.removeInfoPanel( ip )
+
+    def show( self ):
+        super().show()
+        self.showing_now.emit()
 
 #####################################################################################################
 def test():

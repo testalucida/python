@@ -156,7 +156,8 @@ def test5():
 
 def test3():
     #ticker = yfinance.Ticker( "SPYY.DE" )
-    ticker = yfinance.Ticker( "SEDM.L" )
+    ticker = yfinance.Ticker( "ISPA.DE" )
+    hist = ticker.history( period='ytd', interval='1wk' )
     daten = ticker.info
     for key, value in daten.items():
         print( key, ":\t", value )

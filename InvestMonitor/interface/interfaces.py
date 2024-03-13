@@ -32,6 +32,8 @@ class XDepotPosition( XBase ):
         # self.dividend_vj = 0  # Die Summe der Dividenden, die für diese Depotposition im Vorjahr ausbezahlt wurde
         self.dividend_paid_period = 0  # Die Summe der Dividenden, die für diese Depotposition in der eingestellten
                                        # Periode ausbezahlt wurde
+        self.dividend_paid_lfd_jahr = 0 # Summe der Dividendenzahlungen, die für diese Depotposition im lfd. Jahr
+                                        # ausbezahlt wurden
         # self.low_price = 0.0 # todo: der niedrigste Preis in der Periode
         # self.high_price = 0.0 # todo: der höchste Preis in der Periode
         self.stueck = 0 # Restbestand (Käufe und Verkäufe saldiert)

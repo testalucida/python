@@ -73,6 +73,11 @@ class TickerHistory:
         return yf_ticker.fast_info
 
     @staticmethod
+    def getCurrency( ticker:str ) -> str:
+        fi = TickerHistory.getFastInfo( ticker )
+        return fi.currency
+
+    @staticmethod
     def convertToEuro( value, fromCurr: str ) -> float:
         curr = fromCurr
         if curr == "GBp":

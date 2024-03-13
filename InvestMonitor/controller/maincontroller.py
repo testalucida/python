@@ -1,7 +1,9 @@
+import sys
+import traceback
 from functools import cmp_to_key
-from typing import List, Any
+from typing import List, Any, Dict
 
-from PySide2.QtCore import QSize, QObject
+from PySide2.QtCore import QSize, QObject, Signal, QRunnable, Slot, QThreadPool
 # from PySide2.QtGui import QScreen
 from PySide2.QtWidgets import QDesktopWidget, QAction
 
@@ -15,11 +17,40 @@ from gui.infopanel import InfoPanel
 from gui.mainwindow import MainWindow
 from imon.definitions import DEFAULT_PERIOD, DEFAULT_INTERVAL, DEFAULT_INFOPANEL_ORDER
 from imon.enums import InfoPanelOrder, Period, Interval, SortDirection
-from interface.interfaces import XDepotPosition
+from interface.interfaces import XDepotPosition, XDelta
 from logic.investmonitorlogic import InvestMonitorLogic
 from utfsymbols import symDELTA
 
 
+class WorkerSignals( QObject ):
+    finished = Signal()
+    error = Signal( tuple )
+    result = Signal( object )
+
+##############################################################
+class Worker( QRunnable ):
+    def __init__( self, fn, wkn_ticker_list:List[Dict], allOrders:List[XDelta] ):
+        super( Worker, self ).__init__()
+        # Store constructor arguments (re-used for processing)
+        self.fn = fn
+        self._wkn_ticker_list = wkn_ticker_list
+        self._allOrders = allOrders
+        self.signals = WorkerSignals()
+
+    @Slot()
+    def run( self ):
+        try:
+            result = self.fn( self._wkn_ticker_list, self._allOrders )
+        except:
+            traceback.print_exc()
+            exctype, value = sys.exc_info()[:2]
+            self.signals.error.emit( (exctype, value, traceback.format_exc()) )
+        else:
+            self.signals.result.emit( result )  # Return the result of the processing
+        finally:
+            self.signals.finished.emit()  # Done
+
+##############################################################
 class MainController( QObject ):
     IS_TEST = True
     def __init__( self ):
@@ -36,10 +67,13 @@ class MainController( QObject ):
         self._summeGesamtwerte = 0
         self._summeKaeufe = 0
         self._summeDividendPaid = 0
+        self._sumDividendPaidCurrentYear = 0
+        self._threadpool = QThreadPool()
 
     def createMainWindow( self ) -> MainWindow:
         self._mainWin = MainWindow()
         self._mainWin.setWindowTitle( "Investment-Monitor" )
+        self._mainWin.showing_now.connect( self.onMainWindowShowing )
         self._mainWin.period_interval_changed.connect( self.onPeriodIntervalChanged )
         self._mainWin.getSearchField().doSearch.connect( self.onSearchInfoPanel )
         self._mainWin.getSearchField().searchTextChanged.connect( self.onSearchInfoPanelTextChanged )
@@ -174,6 +208,37 @@ class MainController( QObject ):
         dlg.addWidget( tv, 0 )
         dlg.resize( QSize( w + 25, h + 35 ) )
         dlg.show()
+
+        ###################  Wenn das MainWindow aufgemacht wurde, ermitteln wir in einem separaten Thread
+        ###################  die Summe der im laufenden Jahr gezahlten Dividenden  #######################
+    def onMainWindowShowing( self ):
+        # Die InvestMonitorLogic kann im Thread keinen Datenbankzugriff machen.
+        # Deshalb ermitteln wir die Deltas und die WKN/Ticker hier und übergeben sie
+        # der Worker-Methode computeSumDividendsCurrentYear.
+        wkn_ticker_list = self._logic.getAllWknTickersForDividendComputation()
+        allOrders:List[XDelta] = self._logic.getAllOrdersList()
+        worker = Worker( self.computeSumDividendsCurrentYear, wkn_ticker_list, allOrders )
+        worker.signals.result.connect( self.onWorkerResult )
+        worker.signals.finished.connect( self.onWorkerComplete )
+        worker.signals.error.connect( self.onWorkerError )
+        self._threadpool.start( worker )
+
+    def computeSumDividendsCurrentYear( self, wkn_ticker_list:List[Dict], allOrders:List[XDelta] ):
+        print( "computeSumDividendsCurrentYear - called with %d Orders" % len(allOrders) )
+        self._sumDividendPaidCurrentYear = self._logic.getSumDividendsCurrentYear( wkn_ticker_list, allOrders )
+        print( "Summe Dividenden: ", self._sumDividendPaidCurrentYear )
+
+    def onWorkerResult( self, sum_dividends:int ):
+        self._mainWin.getToolBar().setDividendPaidLfdJahr( self._sumDividendPaidCurrentYear )
+
+    def onWorkerComplete( self ):
+        print( "Worker completed." )
+
+    def onWorkerError( self, tuple ):
+        print( "Something went wrong: ", tuple )
+
+        ###########  Ende der für die Thread-Verarbeitung benötigten Methoden  #################
+        ########################################################################################
 
     def onPeriodIntervalChanged( self, period:Period, interval:Interval ):
         poslist: List[XDepotPosition] = [ctrl.getModel() for ctrl in self._infoPanelCtrlList]

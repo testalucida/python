@@ -38,6 +38,7 @@ class Period( Enum ):
     oneMonth = "1mo"
     threeMonths = "3mo"
     sixMonths = "6mo"
+    currentYear = "ytd"
     oneYear = "1y"
     twoYears = "2y"
     threYears = "3y"
