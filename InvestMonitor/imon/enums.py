@@ -92,3 +92,7 @@ class Interval( Enum ):
         for name in names:
             l.append( Interval.__dict__[name].value )
         return l
+
+def test():
+    p = Period.oneYear
+    print( p.value )

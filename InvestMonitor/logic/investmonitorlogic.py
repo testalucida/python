@@ -11,7 +11,7 @@ from base.basetablemodel import BaseTableModel, SumTableModel
 from data.db.investmonitordata import InvestMonitorData
 from data.finance.tickerhistory import Period, Interval, TickerHistory, SeriesName
 from imon.enums import InfoPanelOrder
-from interface.interfaces import XDepotPosition, XDelta, XDetail
+from interface.interfaces import XDepotPosition, XDelta, XDetail, XDividend
 from imon.definitions import DATABASE_DIR, DEFAULT_PERIOD, DEFAULT_INTERVAL
 
 
@@ -165,22 +165,30 @@ class InvestMonitorLogic:
                                                                # die während d. Perdiode
                                                                # auf meinen Bestand gezahlt wurden
 
-    def _getPaidDividends( self, dividends:Series, deltas:List[XDelta] ) -> int:
+    def _getPaidDividends( self, dividends:Series, deltas:List[XDelta], callback=None ) -> int:
         """
         Ermittelt die Dividendenzahlungen, die für <deppos> gemäß Eintragungen in <dividends> angefallen sind.
         Für jede Dividendenzahlung wird nur der zum Zahlungszeitpunkt vorhandene Depotbestand berücksichtigt.
         :param dividends: Die Dividenden-Serie. Es wird vorausgesetzt, dass sie in Euro übergeben wird.
         :param deltas: Alle Orders, die sich auf <wkn> beziehen
+        :param callback: Funktion, die aufgerufen wird für jede Dividendensumme, die durch _computeDividendOnBestand
+                        ausgerechnet wurde.
+                        Die Callback-Funktion muss 3 Argumente empfangen: den Div.-Zahltag (ISO), die Div. pro Stück
+                        und die Gesamt-Dividende, die auf den am Zahltag vorhandenen Bestand ausgezahlt wurde.
         :return:
         """
-        # deltas = self._db.getDeltas( wkn  )
         deltas.sort( key=attrgetter( "delta_datum" ) )
         sum_dividends = 0
         for pay_ts, value in dividends.items():
             if value > 0:
                 #print( "paid: ", str(pay_ts)[:10], ": ", value )
                 # den Depotbestand der Position <deppos> zum Datum <paydate> ermitteln:
-                sum_dividends += self._computeDividendOnBestand( deltas, float( value ), str( pay_ts )[:10] )
+                div_pro_stck = float( value )
+                pay_day = str( pay_ts )[:10]
+                div = self._computeDividendOnBestand( deltas, div_pro_stck, pay_day )
+                if callback:
+                    callback( pay_day, div_pro_stck, div )
+                sum_dividends += div
         return sum_dividends
 
     @staticmethod
@@ -468,12 +476,69 @@ class InvestMonitorLogic:
         return int( round(steuer, 2) )
 
     def getAllWknTickersForDividendComputation( self ) -> List[Dict]:
+        """
+        Liefert eine Liste von Dictionaries mit den Keys "wkn" und "ticker".
+        Dictionaries werden nur für ausschüttende und im Monitor angezeigte Fonds geliefert.
+        :return: List[Dict]
+        """
         return self._db.getAllWknAndTickers( distributingOnly=True, flag_displ=1 )
+
+    def getPaidDividendsTableModel( self, period:Period ) -> SumTableModel:
+        """
+        Diese Methode wird *nicht* aus einem separaten Thread aufgerufen.
+        Sie ermittelt die WKN-/Tickerlist, alle Orders und mittels TickerHistories alle Dividenden und
+        baut daraus ein SumTableModel und liefert es zurück.
+        :param period: Gibt die Periode an, für die die Dividendenzahlungen ermittelt werden sollen
+        :return:
+        """
+        def getTicker( wkn:str) -> str:
+            for dic in wkn_ticker_list:
+                if dic["wkn"] == wkn:
+                    return dic["ticker"]
+
+        def createXDividendAndAddToList( pay_day, div_pro_stck, div ):
+            #print( pay_day, div_pro_stck, div )
+            xdiv = XDividend()
+            xdiv.wkn = wkn
+            xdiv.name = name
+            xdiv.ticker = ticker
+            xdiv.pay_day = pay_day
+            xdiv.div_pro_stck = div_pro_stck
+            xdiv.div_summe = div
+            xdiv_list.append( xdiv )
+
+        xdiv_list:List[XDividend] = list()
+        wkn_ticker_list = self.getAllWknTickersForDividendComputation()
+        wkn_ticker_list.sort( key=lambda x: x["wkn"] )
+        ticker_list = [x["ticker"] for x in wkn_ticker_list]
+        histlist: DataFrame = \
+            self._tickerHist.getTickerHistoriesByPeriod( ticker_list, period=period, interval=Interval.oneWeek )
+        dividends: DataFrame = histlist[SeriesName.Dividends.value]
+        allOrders: List[XDelta] = self.getAllOrdersList()
+        wkn_list = [x["wkn"] for x in wkn_ticker_list]
+        for wkn in wkn_list:
+            wkn_orders = [order for order in allOrders if order.wkn == wkn ]
+            if len( wkn_orders ) > 0:
+                name = wkn_orders[0].name
+                ticker = getTicker( wkn )
+                divs = dividends[ticker]
+                currency = TickerHistory.getCurrency( ticker )
+                if currency != "EUR":
+                    divs = self._convertSeries( divs, currency )
+                self._getPaidDividends( divs, wkn_orders, callback=createXDividendAndAddToList )
+
+        tm = SumTableModel( xdiv_list, None, ("div_summe",) )
+        tm.setKeyHeaderMappings2( ( "name", "wkn", "ticker", "pay_day", "div_pro_stck", "div_summe" ),
+                                  ( "Name", "WKN", "Ticker", "Zahltag", "Dividende\nje Stck", "Dividende" ) )
+        return tm
 
     def getSumDividendsCurrentYear( self, wkn_ticker_list:List[Dict], allOrders:List[XDelta] ) -> int:
         """
         Liefert die Summe aller Dividendenzahlungen für die im Monitor vertretenen Fonds für das laufende Jahr.
         "Im Monitor vertreten" heißt: depotposition.flag_displ == 1.
+        Hier dürfen keine DB-Zugriffe gemacht werden, weil diese Methode auch aus einem separaten Thread aufgerufen wird.
+        :param wkn_ticker_list: Liste aller WKN/Ticker, für die die Div.zahlungen ermittelt werden sollen.
+        :param allOrders: Alle Orders aus Tabelle <delta>
         :return: die Dividendensumme
         """
         def getWkn( tickr:str ) -> str:
@@ -505,6 +570,11 @@ class InvestMonitorLogic:
 
 ##################################################################################
 ##################################################################################
+
+def testGetSumDividendsCurrentYear2():
+    l = InvestMonitorLogic()
+    sum = l.getPaidDividendsTableModel()
+    print( sum )
 
 def testGetSumDividendsCurrentYear():
     l = InvestMonitorLogic()

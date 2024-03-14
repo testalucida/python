@@ -80,6 +80,19 @@ class XDelta( XBase ):
         if valuedict:
             self.setFromDict( valuedict )
 
+class XDividend( XBase ):
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self )
+        self.name = ""
+        self.wkn = ""
+        # self.isin = ""
+        self.ticker = ""
+        self.pay_day = "" # Datum der Dividendenzahlung
+        self.div_pro_stck = 0.0 # Div.Zahlunge pro Stück
+        self.div_summe = 0.0 # Div.Zahlung pro Stück * Stück unter Berücksichtigung des am Zahltag vorhandenen Bestands.
+        if valuedict:
+            self.setFromDict( valuedict )
+
 class XDetail(XBase):
     """
     Wird für die Detail-Anzeige im InfoPanel benötigt (nach Drücken des Detail-Buttons).

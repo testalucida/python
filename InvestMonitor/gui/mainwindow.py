@@ -182,6 +182,13 @@ class IMonToolBar( BaseToolBar ):
     def getAllDeltasButton( self ) -> BaseButton:
         return self._btnAllDeltas
 
+    def getPeriod( self ) -> Period:
+        """
+        Liefert die in der Combobox "period" eingestellte Periode.
+        :return:
+        """
+        return getEnumFromValue( Period, self._cboPeriod.currentText() )
+
     def onPeriodIntervalChanged( self, arg ):
         self._btnUpdateAllInfoPanels.setEnabled( True )
 
@@ -201,18 +208,31 @@ class IMonToolBar( BaseToolBar ):
 class IMonMenuBar( QMenuBar ):
     undock_infopanel = Signal()
     show_orders = Signal()
+    show_dividends_period = Signal()
+    show_dividends_curr_year = Signal()
     def __init__(self):
         QMenuBar.__init__( self )
         self._menuIMon = QMenu( "InvestMonitor" )
         self._actionBeenden = self._menuIMon.addAction( "Beenden" )
         self.addMenu( self._menuIMon )
+        #----
+        self._menuDividends = QMenu( "Dividenden" )
+        self._actionDividendsPeriod = self._menuDividends.addAction(
+                                        "Dividendenzahlungen in der eingestellten Periode..." )
+        self._actionDividendsPeriod.triggered.connect( self.show_dividends_period.emit )
+        self._actionDividendsCurrYear = self._menuDividends.addAction(
+                                        "Dividendenzahlungen im lfd. Jahr..." )
+        self._actionDividendsCurrYear.triggered.connect( self.show_dividends_curr_year.emit )
+        self.addMenu( self._menuDividends )
+        #----
         self._menuExtras = QMenu( "Extras" )
-        self._actionUndock = self._menuExtras.addAction( "Markierte InfoPanels in separatem Dialog anziegen" )
+        self._actionUndock = self._menuExtras.addAction( "Markierte InfoPanels in separatem Dialog anzeigen..." )
         self._actionUndock.triggered.connect( self.undock_infopanel.emit )
         self._menuExtras.addSeparator()
         self._actionShowOrders = self._menuExtras.addAction( "Alle Orders anzeigen" )
         self._actionShowOrders.triggered.connect( self.show_orders.emit )
         self.addMenu( self._menuExtras )
+        #---
 
 ############################################################
 class MainWindow( QMainWindow ):
@@ -221,11 +241,15 @@ class MainWindow( QMainWindow ):
     undock_infopanel = Signal()
     period_interval_changed = Signal( Period, Interval )
     show_orders = Signal()
+    show_dividends_period = Signal()
+    show_dividends_curr_year = Signal()
     def __init__( self ):
         QMainWindow.__init__( self )
         self._menuBar = IMonMenuBar()
         self._menuBar.undock_infopanel.connect( self.undock_infopanel.emit )
         self._menuBar.show_orders.connect( self.show_orders.emit )
+        self._menuBar.show_dividends_period.connect( self.show_dividends_period.emit )
+        self._menuBar.show_dividends_curr_year.connect( self.show_dividends_curr_year.emit )
         self.setMenuBar( self._menuBar )
         self._toolBar = IMonToolBar()
         self.addToolBar( self._toolBar )

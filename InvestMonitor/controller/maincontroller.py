@@ -8,11 +8,11 @@ from PySide2.QtCore import QSize, QObject, Signal, QRunnable, Slot, QThreadPool
 from PySide2.QtWidgets import QDesktopWidget, QAction
 
 from base.basetablefunctions import BaseTableFunctions
-from base.basetablemodel import SumTableModel
+from base.basetablemodel import SumTableModel, BaseTableModel
 from base.basetableview import BaseTableView
 from base.messagebox import InfoBox
 from controller.infopanelcontroller import InfoPanelController
-from generictable_stuff.okcanceldialog import OkDialog
+from generictable_stuff.okcanceldialog import OkDialog, OkCancelDialog
 from gui.infopanel import InfoPanel
 from gui.mainwindow import MainWindow
 from imon.definitions import DEFAULT_PERIOD, DEFAULT_INTERVAL, DEFAULT_INFOPANEL_ORDER
@@ -51,8 +51,86 @@ class Worker( QRunnable ):
             self.signals.finished.emit()  # Done
 
 ##############################################################
+
+class GenericDetailsDialog( OkDialog ):
+    """
+    Dialog, der im IMON dazu dient, z.B. alle Orders oder Dividenden in verschiedenen Zeiträumen anzuschauen.
+    Das zur Instanzierung übergebene TableModel muss die Spalten WKN und Ticker enthalten, und der
+    Kontextmenü-Eintrag "Aktuellen Kurs zeigen..." muss sinnhaft sein.
+    """
+    def __init__( self, title:str, tm:BaseTableModel, summableColumnIdx=-1 ):
+        """
+        :param title:
+        :param tm:
+        :param summableColumnIdx: Index der Spalte, deren Wert summiert werden können sollen.
+                                  Wenn der Index == -1 (default) gibt es keine solche Spalte.
+        """
+        OkDialog.__init__( self, title )
+        self._tm = tm
+        self._summableColumnIdx = summableColumnIdx
+        self._tv = BaseTableView()
+        self._tv.setAlternatingRowColors( True )
+        self._tv.setModel( tm, selectRows=True, singleSelection=False )
+        self._tv.setContextMenuCallbacks( self.provideMenuItems, self.onContextMenuSelected )
+        w = self._tv.getPreferredWidth()
+        h = self._tv.getPreferredHeight()
+        self.addWidget( self._tv, 0 )
+        self.resize( QSize( w + 25, h + 35 ) )
+
+    def provideMenuItems( self, index, point, selectedIndexes ) -> List[QAction]:
+        l = list()
+        action = QAction( "WKN kopieren" )
+        l.append( action )
+        action = QAction( "Ticker kopieren" )
+        l.append( action )
+        sep = QAction()
+        sep.setSeparator( True )
+        l.append( sep )
+        action = QAction( "Aktuellen Kurs zeigen..." )
+        l.append( action )
+        if self._summableColumnIdx > -1:
+            sep = QAction()
+            sep.setSeparator( True )
+            l.append( sep )
+            colName = self._tm.getHeader( self._summableColumnIdx )
+            action = QAction( "Summe der markierten Werte in Spalte '%s' anzeigen..." % colName )
+            l.append( action )
+        return l
+
+    def onContextMenuSelected( self, action: QAction ):
+        selRow = self._tv.getFirstSelectedRow()
+        txt = action.text()
+        if txt.startswith( "WKN" ):
+            key = "wkn"
+        elif txt.startswith( "Ticker" ):
+            key = "ticker"
+        elif txt.startswith( "Summe" ):
+            key = "sum"
+        elif txt.startswith( "Aktuell" ):
+            # Aktuellen Kurs von der Logik holen
+            key = ""
+        else:
+            return
+        if key in ("wkn", "ticker"):
+            colIdx = self._tm.getColumnIndexByKey( key )
+            BaseTableFunctions.copyCellValueToClipboard( self._tv, selRow, colIdx )
+        elif key == "sum":
+            colName = self._tm.getHeader( self._summableColumnIdx )
+            BaseTableFunctions.computeSumme( self._tv, columnVon=self._summableColumnIdx, columnBis=self._summableColumnIdx,
+                                             dlg_title="Summe Spalte '%s'" % colName )
+        else:
+            # aktuellen Kurs ermitteln, dazu brauchen wir erst den Ticker:
+            colIdx = self._tm.getColumnIndexByKey( "ticker" )
+            ticker = self._tm.getValue( selRow, colIdx )
+            logic = InvestMonitorLogic()
+            kurs, currency = logic.getKursAktuellInEuro( ticker )
+            box = InfoBox( "Aktueller Kurs", "Der aktuelle Kurs von '" + ticker + "' liegt bei\n",
+                           str( round( kurs, 2 ) ) + " EUR" )
+            box.exec_()
+
+###############################################################
 class MainController( QObject ):
-    IS_TEST = True
+    IS_TEST = False
     def __init__( self ):
         QObject.__init__( self )
         self._logic: InvestMonitorLogic = InvestMonitorLogic()
@@ -63,12 +141,13 @@ class MainController( QObject ):
         self._sortKeys:List[str] = None
         self._sortDirection = SortDirection.ASC
         self._dlgSelected:OkDialog = None
-        self._dlgAllOrders:OkDialog = None
+        self._dlgGenericDetails:GenericDetailsDialog = None
         self._summeGesamtwerte = 0
         self._summeKaeufe = 0
         self._summeDividendPaid = 0
         self._sumDividendPaidCurrentYear = 0
         self._threadpool = QThreadPool()
+        self._dlgDividenden:OkCancelDialog = None
 
     def createMainWindow( self ) -> MainWindow:
         self._mainWin = MainWindow()
@@ -80,6 +159,8 @@ class MainController( QObject ):
         self._mainWin.change_infopanel_order.connect( self.onChangeSortOrder )
         self._mainWin.undock_infopanel.connect( self.onUndock )
         self._mainWin.show_orders.connect( self.onShowOrders )
+        self._mainWin.show_dividends_period.connect( lambda: self.onShowDividends( self._mainWin.getToolBar().getPeriod() ) )
+        self._mainWin.show_dividends_curr_year.connect( lambda: self.onShowDividends( Period.currentYear ) )
         poslist = self._logic.getDepotPositions( DEFAULT_PERIOD, DEFAULT_INTERVAL, MainController.IS_TEST )
         for xdepotpos in poslist:
             self._summeGesamtwerte += xdepotpos.gesamtwert_aktuell
@@ -160,58 +241,42 @@ class MainController( QObject ):
             win.show()
 
     def onShowOrders( self ):
-        def provideMenuItems( index, point, selectedIndexes ) -> List[QAction]:
-            l = list()
-            action = QAction( "WKN kopieren" )
-            l.append( action )
-            action = QAction( "Ticker kopieren" )
-            l.append( action )
-            sep = QAction()
-            sep.setSeparator( True )
-            l.append( sep )
-            action = QAction( "Aktuellen Kurs zeigen..." )
-            l.append( action )
-            return l
-        def onContextMenuSelected( action: QAction ):
-            selRow = tv.getFirstSelectedRow()
-            txt = action.text()
-            if txt.startswith( "WKN" ):
-                key = "wkn"
-            elif txt.startswith( "Ticker" ):
-                key = "ticker"
-            elif txt.startswith( "Aktuell" ):
-                # Aktuellen Kurs von der Logik holen
-                key = ""
-            else: return
-            if key:
-                colIdx = tmOrders.getColumnIndexByKey( key )
-                BaseTableFunctions.copyCellValueToClipboard( tv, selRow, colIdx )
-            else:
-                # aktuellen Kurs ermitteln, dazu brauchen wir erst den Ticker:
-                colIdx = tmOrders.getColumnIndexByKey( "ticker" )
-                ticker = tmOrders.getValue( selRow, colIdx )
-                kurs, currency = self._logic.getKursAktuellInEuro( ticker )
-                box = InfoBox( "Aktueller Kurs", "Der aktuelle Kurs von '" + ticker + "' liegt bei\n",
-                               str(kurs) + " EUR" )
-                box.exec_()
-
         tmOrders:SumTableModel = self._logic.getAllOrders()
+        self._dlgGenericDetails = GenericDetailsDialog( title="Orderhistorie", tm=tmOrders, summableColumnIdx=9 )
+        self._dlgGenericDetails.show()
+
+    def onShowDividends( self, period:Period ):
+        """
+        Wird aufgerufen, wenn einer der Menüpunkte des Menüs "Dividenden" ausgewählt wird.
+        :return:
+        """
+        tm:SumTableModel = self._logic.getPaidDividendsTableModel( period )
+        dlgTitel = "Dividendenzahlungen "
+        if period.value == "ytd":
+            dlgTitel += " im laufenden Jahr"
+        elif period.value == "1y":
+            dlgTitel += " in den letzten 12 Monaten"
+        else:
+            dlgTitel += " in der Periode '%s'" % period.value
+        self._dlgGenericDetails = GenericDetailsDialog( title=dlgTitel, tm=tm, summableColumnIdx=5 )
+        self._dlgGenericDetails.show()
+
+    def _showDividendDialog( self, dialogTitle:str, tm:SumTableModel ):
         tv = BaseTableView()
+        tv.setModel( tm )
         tv.setAlternatingRowColors( True )
-        tv.setModel( tmOrders )
-        tv.setContextMenuCallbacks( provideMenuItems, onContextMenuSelected )
+        self._dlgDividenden = OkCancelDialog( title=dialogTitle )
+        self._dlgDividenden.addWidget( tv, 0 )
         w = tv.getPreferredWidth()
         h = tv.getPreferredHeight()
-        if not self._dlgAllOrders:
-            self._dlgAllOrders = OkDialog( title="Orderhistorie" )
-        dlg = self._dlgAllOrders
-        dlg.addWidget( tv, 0 )
-        dlg.resize( QSize( w + 25, h + 35 ) )
-        dlg.show()
+        self._dlgDividenden.resize( QSize(w+50, h+50) )
+        self._dlgDividenden.show()
 
         ###################  Wenn das MainWindow aufgemacht wurde, ermitteln wir in einem separaten Thread
         ###################  die Summe der im laufenden Jahr gezahlten Dividenden  #######################
     def onMainWindowShowing( self ):
+        # Wird aufgerufen, sobald das MainWindow gezeigt wird, um in einem separaten Thread die im lfd. Jahr
+        # gezahlte Dividendensumme anzuzeigen (Toolbar).
         # Die InvestMonitorLogic kann im Thread keinen Datenbankzugriff machen.
         # Deshalb ermitteln wir die Deltas und die WKN/Ticker hier und übergeben sie
         # der Worker-Methode computeSumDividendsCurrentYear.
@@ -224,15 +289,15 @@ class MainController( QObject ):
         self._threadpool.start( worker )
 
     def computeSumDividendsCurrentYear( self, wkn_ticker_list:List[Dict], allOrders:List[XDelta] ):
-        print( "computeSumDividendsCurrentYear - called with %d Orders" % len(allOrders) )
+        #print( "computeSumDividendsCurrentYear - called with %d Orders" % len(allOrders) )
         self._sumDividendPaidCurrentYear = self._logic.getSumDividendsCurrentYear( wkn_ticker_list, allOrders )
-        print( "Summe Dividenden: ", self._sumDividendPaidCurrentYear )
+        #print( "Summe Dividenden: ", self._sumDividendPaidCurrentYear )
 
     def onWorkerResult( self, sum_dividends:int ):
         self._mainWin.getToolBar().setDividendPaidLfdJahr( self._sumDividendPaidCurrentYear )
 
     def onWorkerComplete( self ):
-        print( "Worker completed." )
+        pass #rint( "Worker completed." )
 
     def onWorkerError( self, tuple ):
         print( "Something went wrong: ", tuple )
