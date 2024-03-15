@@ -3,7 +3,7 @@ import traceback
 from functools import cmp_to_key
 from typing import List, Any, Dict
 
-from PySide2.QtCore import QSize, QObject, Signal, QRunnable, Slot, QThreadPool
+from PySide2.QtCore import QSize, QObject, Signal, QRunnable, Slot, QThreadPool, Qt
 # from PySide2.QtGui import QScreen
 from PySide2.QtWidgets import QDesktopWidget, QAction
 
@@ -222,6 +222,14 @@ class MainController( QObject ):
                 self._selectedInfoPanel = infopanel
                 break
 
+    def getAllDepotPositions( self ) -> List[XDepotPosition]:
+        l = list()
+        for infopanelctrl in self._infoPanelCtrlList:
+            infopanel = infopanelctrl.getInfoPanel()
+            deppos:XDepotPosition = infopanel.getModel()
+            l.append( deppos )
+        return l
+
     def onSearchInfoPanelTextChanged( self ):
         if self._selectedInfoPanel:
             self._selectedInfoPanel.setSelected( False )
@@ -306,6 +314,7 @@ class MainController( QObject ):
         ########################################################################################
 
     def onPeriodIntervalChanged( self, period:Period, interval:Interval ):
+        self._mainWin.setCursor( Qt.WaitCursor )
         poslist: List[XDepotPosition] = [ctrl.getModel() for ctrl in self._infoPanelCtrlList]
         self._logic.provideTickerHistories( poslist, period, interval )
         self._summeDividendPaid = 0
@@ -314,6 +323,7 @@ class MainController( QObject ):
             deppos = ctrl.getModel()
             self._summeDividendPaid += deppos.dividend_paid_period
         self._mainWin.getToolBar().setDividendPaid( self._summeDividendPaid )
+        self._mainWin.setCursor( Qt.ArrowCursor )
 
     def onChangeSortOrder( self, order:InfoPanelOrder ):
         self._sortOrder = order
@@ -423,6 +433,11 @@ class MainController( QObject ):
             sortfield = diff
             sortfieldInfo = "Diff. Div.Rend. und " + symDELTA + " Wert: " + str( diff )
             self._sortDirection = SortDirection.DESC
+        elif order == InfoPanelOrder.DeltaKursAsc:
+            sortfield = x.delta_kurs_1_percent
+            sortfieldInfo = symDELTA + " Kurs seit letztem Close: %.2f" % x.delta_kurs_1_percent
+            sortfieldInfo += "%"
+            self._sortDirection = SortDirection.ASC
         else:
             raise Exception( "MainController._setSortKey(): unknown order:\n%s" % str(order) )
         x.__dict__["__sortfield__"] = sortfield

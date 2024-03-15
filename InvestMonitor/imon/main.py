@@ -2,9 +2,10 @@ import os
 import sys
 import time
 
-from PySide2.QtCore import QObject, QEvent, Qt
-from PySide2.QtGui import QPixmap, QIcon, QCursor, QGuiApplication
+from PySide2.QtCore import QObject, QEvent, Qt, QSize, QPoint
+from PySide2.QtGui import QPixmap, QIcon, QCursor, QGuiApplication, QScreen
 from PySide2.QtWidgets import QApplication, QSplashScreen, QWidget
+
 sys.path.append( "../" )
 sys.path.append( "../common" )
 print( "sys.path: ", sys.path )
@@ -15,13 +16,15 @@ from controller.maincontroller import MainController
 def showSplash( app:QApplication ):
     pixmap = QPixmap( "../images/bulle2.png" )
     splash = QSplashScreen( pixmap )
-    #desktop = app.desktop()
     # obsolete:
-    #scrn = desktop.screenNumber( QCursor.pos() )
+    # desktop = app.desktop()
+    # scrn = desktop.screenNumber( QCursor.pos() )
     # currDesktopCenter = desktop.availableGeometry( scrn).center()
     # instead:
-    scrn = QGuiApplication.primaryScreen()
-    currDesktopCenter = scrn.availableGeometry().center()
+    #scrn = QGuiApplication.primaryScreen()
+    point:QPoint = QCursor.pos()
+    screen:QScreen = QGuiApplication.screenAt( point )
+    currDesktopCenter = screen.availableGeometry().center()
     splash.move( currDesktopCenter - splash.rect().center() )
     splash.show()
     app.processEvents()
@@ -80,6 +83,7 @@ class ShutDownFilter( QObject ):
 def main():
     app = QApplication( sys.argv )
     splash = showSplash( app )
+    splash.setCursor( Qt.WaitCursor )
     try:
         app.processEvents()
         downloadDatabase()

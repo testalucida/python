@@ -229,7 +229,7 @@ class IMonMenuBar( QMenuBar ):
         self._actionUndock = self._menuExtras.addAction( "Markierte InfoPanels in separatem Dialog anzeigen..." )
         self._actionUndock.triggered.connect( self.undock_infopanel.emit )
         self._menuExtras.addSeparator()
-        self._actionShowOrders = self._menuExtras.addAction( "Alle Orders anzeigen" )
+        self._actionShowOrders = self._menuExtras.addAction( "Alle Orders anzeigen..." )
         self._actionShowOrders.triggered.connect( self.show_orders.emit )
         self.addMenu( self._menuExtras )
         #---

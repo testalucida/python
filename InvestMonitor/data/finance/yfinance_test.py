@@ -35,6 +35,15 @@ def getOneYearHistory( ticker:str ) -> Series:
     #series.plot()
     return series
 
+
+def testFastInfo():
+    import yfinance as yf
+    tckr = yf.Ticker( "TSLA" )
+    info = tckr.fast_info
+    price = info.last_price
+    price_yesterday = info.previous_close
+    print( price, price_yesterday )
+
 def testGetInfo():
     t = yfinance.Ticker( "TSLA" )
     shares_full = t.get_shares_full()

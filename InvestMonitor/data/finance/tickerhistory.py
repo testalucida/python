@@ -86,16 +86,6 @@ class TickerHistory:
         eur = CurrencyConverter.convert( value, curr )
         return eur
 
-    # @staticmethod
-    # def convertToEuro( value, fromCurr:str ) -> float:
-    #     curr = fromCurr
-    #     if curr == "GBp":
-    #         value /= 100
-    #         curr = "GBP"
-    #     #conv_val = TickerHistory.currConverter.convert( value, curr, "EUR" )
-    #     conv_val = TickerHistory.forex_curr_converter.convert( curr, "EUR", value )
-    #     return conv_val
-
     @staticmethod
     def getTickerHistoryByPeriod( ticker: str,
                                   period:Period = default_period, interval:Interval = default_interval ) -> DataFrame:
@@ -166,6 +156,10 @@ class TickerHistory:
 
 
 ################  TEST TEST TEST   ###########################
+# def test5():
+#     l = TickerHistory.getFastInfoList( ("IEDY.L", "ISPA.DE") )
+#     print( l )
+
 def test4():
     tick = TickerHistory()
     fi = tick.getFastInfo( "VJPN.SW" )
@@ -224,6 +218,14 @@ def testDf():
             df = df[:-1]
             break
     print( len(df) )
+
+def testGetTickerHistoriesByDates():
+    tick_hist = TickerHistory()
+    df = tick_hist.getTickerHistoriesByPeriod( ["IEDY.L", "ISPA.DE"], period=Period.fiveDays,
+                                               interval=Interval.oneDay )
+    closeDf = df["Close"]
+    fast_info = tick_hist.getFastInfo( "IEDY.L" )
+    print( df )
 
 def testFastInfo():
     ticker = "SEDM.L"

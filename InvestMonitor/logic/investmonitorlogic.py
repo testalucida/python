@@ -1,6 +1,7 @@
 import math
+import threading
 from operator import itemgetter, attrgetter
-from typing import List, Dict
+from typing import List, Dict, Iterable
 
 from pandas import DataFrame, Series
 import pandas as pd
@@ -14,11 +15,37 @@ from imon.enums import InfoPanelOrder
 from interface.interfaces import XDepotPosition, XDelta, XDetail, XDividend
 from imon.definitions import DATABASE_DIR, DEFAULT_PERIOD, DEFAULT_INTERVAL
 
+# class WorkerSignals( QObject ):
+#     finished = Signal()
+#     error = Signal( tuple )
+#     result = Signal( object )
+#
+# ##############################################################
+# class Worker( QRunnable ):
+#     def __init__( self, fn, wkn_ticker_list:List[Dict], allOrders:List[XDelta] ):
+#         super( Worker, self ).__init__()
+#         # Store constructor arguments (re-used for processing)
+#         self.fn = fn
+#         self._wkn_ticker_list = wkn_ticker_list
+#         self._allOrders = allOrders
+#         self.signals = WorkerSignals()
+#
+#     @Slot()
+#     def run( self ):
+#         try:
+#             result = self.fn( self._wkn_ticker_list, self._allOrders )
+#         except:
+#             traceback.print_exc()
+#             exctype, value = sys.exc_info()[:2]
+#             self.signals.error.emit( (exctype, value, traceback.format_exc()) )
+#         else:
+#             self.signals.result.emit( result )  # Return the result of the processing
+#         finally:
+#             self.signals.finished.emit()  # Done
 
 class InvestMonitorLogic:
     #summe_gesamtwerte = 0.0
     def __init__( self ):
-
         self._db = InvestMonitorData()
         self._tickerHist = TickerHistory()
         self._defaultPeriod = DEFAULT_PERIOD #Period.oneYear
@@ -81,6 +108,7 @@ class InvestMonitorLogic:
         deppos:XDepotPosition = self._db.getDepotPosition( ticker )
         #self.provideTickerHistories( [deppos,], period=period, interval=interval )
         self._provideOrderData( deppos )
+        self.provideFastInfo( [deppos,] )
         tickerHistory:DataFrame = self._tickerHist.getTickerHistoryByPeriod( ticker, period, interval )
         closeHist:Series = tickerHistory[SeriesName.Close.value]
         dividends:Series = tickerHistory[SeriesName.Dividends.value]
@@ -103,8 +131,22 @@ class InvestMonitorLogic:
         ###################################
         poslist:List[XDepotPosition] = self._db.getDepotPositions()
         # Wertpapierdaten in Positionen eintragen (Kursverlauf, Dividenden etc.)
+        # thread = threading.Thread( target=InvestMonitorLogic.provideFastInfo, args=(poslist,) )
+        # thread.start()
         poslist = self.provideTickerHistories( poslist, period, interval )
+        # thread.join()
         return poslist
+
+    @staticmethod
+    def provideFastInfo( poslist:Iterable[XDepotPosition] ):
+        """
+        Wird von getDepotPositions() in einem separaten Thread aufgerufen und versorgt
+        in aas Attribut fastInfo in allen übergebenen XDepotPositon-Objekten
+        :param poslist: Iterable of XDepotPosition
+        :return:
+        """
+        for deppos in poslist:
+            deppos.fastInfo =TickerHistory.getFastInfo( deppos.ticker )
 
     def provideTickerHistories( self, poslist:List[XDepotPosition], period:Period, interval:Interval ) -> List[XDepotPosition]:
         tickerlist = [pos.ticker for pos in poslist]
@@ -142,7 +184,7 @@ class InvestMonitorLogic:
         deppos.dividends = dividends
         deppos.dividend_yield = 0.0
 
-        deppos.kurs_aktuell, orig_currency = self.getKursAktuellInEuro( deppos.ticker )
+        orig_currency = self._provideFastInfoData( deppos )
         if deppos.kurs_aktuell == 0:
             print( deppos.wkn, "/", deppos.ticker,
                    ": _provideWertpapierData(): call to getKursAktuellInEuro() failed.\nNo last_price availabel.")
@@ -155,7 +197,6 @@ class InvestMonitorLogic:
                 deppos.dividend_period = \
                     round( TickerHistory.convertToEuro( deppos.dividend_period, orig_currency ), 3 )
         if deppos.dividend_period > 0:
-            # deppos.dividend_yield = self._computeDividendYield( deppos.kurs_aktuell, deppos.dividend_period )
             first_kurs_period = closeHist.array[0]
             deppos.dividend_yield = self._computeDividendYield( first_kurs_period, deppos.dividend_period )
         self._provideGesamtwertAndDelta( deppos )
@@ -239,7 +280,7 @@ class InvestMonitorLogic:
         x.history_interval = interval
 
     def updateKursAndDivYield( self, deppos:XDepotPosition ):
-        deppos.kurs_aktuell, dummy = self.getKursAktuellInEuro( deppos.ticker )
+        self._provideFastInfoData( deppos )
         if deppos.kurs_aktuell > 0 and deppos.dividend_period > 0:
             first_kurs_period = deppos.history.array[0]
             # deppos.dividend_yield = self._computeDividendYield( deppos.kurs_aktuell, deppos.dividend_period )
@@ -274,7 +315,30 @@ class InvestMonitorLogic:
             return round( avg_annual_yield/kurs_aktuell*100, 2 )
         return 0.0
 
-    def getKursAktuellInEuro( self, ticker:str ) -> (float, str):
+    def _provideFastInfoData( self, deppos:XDepotPosition ) -> str:
+        """
+        Ermittelt die yfinance.Ticker.fast_info des Wertpapiers und schreibt sie in <deppos>
+        Transformiert den letzten Kurs (fast_info.last_price) in EUR, wenn er nicht in EUR geliefert wird.
+        :param deppos: das XDepotPosition-Objekt, das mit den FastInfo-Daten versorgt werden soll.
+        :return: die ursprüngliche Währung (EUR oder Fremdwährung, die konvertiert wurde)
+        """
+        fastInfo: FastInfo = self._tickerHist.getFastInfo( deppos.ticker )
+        if fastInfo:
+            deppos.fastInfo = fastInfo
+            last_price = fastInfo.last_price
+            currency = str( fastInfo.currency )
+            if currency != "EUR":
+                last_price = TickerHistory.convertToEuro( last_price, currency )
+            deppos.kurs_aktuell = round( last_price, 3 )
+            deltaPrice = fastInfo.last_price - fastInfo.previous_close
+            # Verhältnis des akt. Kurses zum Schlusskurs des Vortages:
+            deppos.delta_kurs_1_percent = round( deltaPrice / fastInfo.previous_close * 100, 2 )
+            return currency
+        else:
+            print( "Ticker '%s':\nNo FastInfo available" % deppos.ticker )
+            return ""
+
+    def getKursAktuellInEuro( self, ticker: str ) -> (float, str):
         """
         Ermittelt den letzten Kurs des Wertpapiers.
         Transformiert ihn in EUR, wenn er nicht in EUR geliefert wird.
@@ -566,10 +630,12 @@ class InvestMonitorLogic:
             sum_dividends += self._getPaidDividends( divs, orders )
         return sum_dividends
 
-
-
 ##################################################################################
 ##################################################################################
+def testProvideFastInfoInSeparateThread():
+    logic = InvestMonitorLogic()
+    depposList:List[XDepotPosition] = logic.getDepotPositions( period=Period.oneYear, interval=Interval.oneWeek )
+    print( depposList )
 
 def testGetSumDividendsCurrentYear2():
     l = InvestMonitorLogic()

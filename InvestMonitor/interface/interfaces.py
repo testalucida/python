@@ -1,6 +1,7 @@
 from typing import Dict
 
 from pandas import DataFrame, Series
+from yfinance.scrapers.quote import FastInfo
 
 from base.interfaces import XBase
 from imon.enums import Period, Interval
@@ -51,7 +52,8 @@ class XDepotPosition( XBase ):
                                               # im IMON befindlichen Positionen ist (in Prozent)
         self.kurs_aktuell = 0.0
         self.delta_proz = 0.0 #prozentualer Unterschied zwischen preisprostueck und kurs_aktuell
-        # self.delta_kurs_1 = 0.0 # Kursentwicklung seit letztem Close in Prozent
+        self.fastInfo:FastInfo = None # fast_info aus yfinance.Ticker
+        self.delta_kurs_1_percent = 0.0 # Kursentwicklung seit letztem Close in Prozent
         # self.avg_kurs_50 = 0.0 # average Kurs letzte 50 Tage
         # self.avg_kurs_200 = 0.0  # average Kurs letzte 200 Tage
         self.depot_id = ""
