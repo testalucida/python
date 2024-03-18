@@ -159,11 +159,17 @@ class InvestMonitorLogic:
         for deppos in poslist:
             self._provideOrderData( deppos )
             try:
-                closeHist: Series = closeDf[deppos.ticker]
-                dividends: Series = dividendsDf[deppos.ticker]
-                self._provideWertpapierData( deppos, closeHist, dividends )
+                if isinstance( closeDf, Series ):
+                    closeHist:Series = closeDf
+                    dividends: Series = dividendsDf
+                else:
+                    closeHist: Series = closeDf[deppos.ticker]
+                    dividends: Series = dividendsDf[deppos.ticker]
             except Exception as ex:
                 print( deppos.ticker, " not found in DataFrame closeDf" )
+                return poslist
+
+            self._provideWertpapierData( deppos, closeHist, dividends )
         return poslist
 
     @staticmethod
@@ -185,6 +191,8 @@ class InvestMonitorLogic:
         deppos.dividend_yield = 0.0
 
         orig_currency = self._provideFastInfoData( deppos )
+        if not orig_currency:
+            return
         if deppos.kurs_aktuell == 0:
             print( deppos.wkn, "/", deppos.ticker,
                    ": _provideWertpapierData(): call to getKursAktuellInEuro() failed.\nNo last_price availabel.")
@@ -330,9 +338,18 @@ class InvestMonitorLogic:
             if currency != "EUR":
                 last_price = TickerHistory.convertToEuro( last_price, currency )
             deppos.kurs_aktuell = round( last_price, 3 )
-            deltaPrice = fastInfo.last_price - fastInfo.previous_close
-            # Verhältnis des akt. Kurses zum Schlusskurs des Vortages:
-            deppos.delta_kurs_1_percent = round( deltaPrice / fastInfo.previous_close * 100, 2 )
+            try:
+                # wegen des lazy loading der fast_info geht das hin und wieder schief
+                previous_close = fastInfo.previous_close
+                if previous_close:
+                    deltaPrice = fastInfo.last_price - previous_close
+                    # Verhältnis des akt. Kurses zum Schlusskurs des Vortages:
+                    deppos.delta_kurs_1_percent = round( deltaPrice / previous_close * 100, 2 )
+                else:
+                    deppos.delta_kurs_1_percent = 0
+                    print( deppos.ticker, ": fastInfo.previous_close is None." )
+            except Exception as ex:
+                print( deppos.ticker, ": Zugriff auf Feld previous_close nicht möglich." )
             return currency
         else:
             print( "Ticker '%s':\nNo FastInfo available" % deppos.ticker )
@@ -621,7 +638,10 @@ class InvestMonitorLogic:
         dividends:DataFrame = histlist[SeriesName.Dividends.value]
         sum_dividends = 0
         for ticker in tickers:
-            divs = dividends[ticker]
+            if isinstance( dividends, Series ):
+                divs = dividends
+            else:
+                divs = dividends[ticker]
             currency = TickerHistory.getCurrency( ticker )
             if currency != "EUR":
                 divs = self._convertSeries( divs, currency )

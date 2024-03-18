@@ -70,7 +70,10 @@ class TickerHistory:
     @staticmethod
     def getFastInfo( ticker:str ) -> FastInfo:
         yf_ticker = yfinance.Ticker( ticker )
-        return yf_ticker.fast_info
+        fast_info = yf_ticker.fast_info
+        # while fast_info is None:
+        #     fast_info = yf_ticker.fast_info
+        return fast_info
 
     @staticmethod
     def getCurrency( ticker:str ) -> str:
@@ -127,6 +130,8 @@ class TickerHistory:
                 Intraday data cannot extend last 60 days
         :return:
         """
+        if len( tickers ) == 1:
+            return TickerHistory.getTickerHistoryByPeriod( tickers[0], period, interval )
         yf_tickers = yfinance.Tickers( tickers )
         df = yf_tickers.history( period.value, interval.value )
         return df

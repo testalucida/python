@@ -289,6 +289,8 @@ class MainController( QObject ):
         # Deshalb ermitteln wir die Deltas und die WKN/Ticker hier und übergeben sie
         # der Worker-Methode computeSumDividendsCurrentYear.
         wkn_ticker_list = self._logic.getAllWknTickersForDividendComputation()
+        if len( wkn_ticker_list ) < 1:
+            return
         allOrders:List[XDelta] = self._logic.getAllOrdersList()
         worker = Worker( self.computeSumDividendsCurrentYear, wkn_ticker_list, allOrders )
         worker.signals.result.connect( self.onWorkerResult )

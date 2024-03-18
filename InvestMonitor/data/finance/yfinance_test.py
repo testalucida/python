@@ -81,7 +81,7 @@ def testCreateTableModelFromSeries():
 
 def test6():
     import matplotlib.pyplot as plt
-    ticker = yfinance.Ticker( "IEDY.L" )
+    ticker = yfinance.Ticker( "DBXS.DE" )
     fi = ticker.fast_info
     df = ticker.history( period="1y", interval="1wk" )
     """

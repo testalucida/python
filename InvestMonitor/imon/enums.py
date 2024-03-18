@@ -1,6 +1,9 @@
 from enum import Enum
 from typing import List
 
+from utfsymbols import symDELTA
+
+
 class InfoPanelOrder( Enum ):
     Wkn = "WKN"
     Name = "Alphabetisch nach Name"
@@ -16,7 +19,7 @@ class InfoPanelOrder( Enum ):
     DividendYield = "Dividendenrendite"
     DividendPaid = "Ausschüttung in Periode"
     Buy = "Kaufen"
-    DeltaKursAsc = "Kursentwicklung im Vergleich zum Vortag (aufsteigend)"
+    DeltaKursAsc = symDELTA + " Kurs i. Vgl. z. Vortag (ASC)"
     #DeltaKurs_1 = "Kursentwicklung nach letztem Close"
     # AverageKurs_50 = "⌀ Kurs letzte 50 Tage"
     # AverageKurs_200 = "⌀ Kurs letzte 200 Tage"
