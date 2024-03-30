@@ -24,7 +24,8 @@ class MainLogic( IccLogic ):
         data.insertLetzteBuchung( datum, text )
         data.commit()
 
-    def exportDatabaseToServer( self ):
+    @staticmethod
+    def exportDatabaseToServer():
         """
         Speichert die immo-Datenbank auf dem Server.
         Vorher werden noch die Daten der letzten Buchung in der Datenbank gespeichert (Tabelle letztebuchung)

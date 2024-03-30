@@ -122,8 +122,8 @@ def main():
     shutDownFilter = ShutDownFilter( mainwin, app )
     mainwin.installEventFilter( shutDownFilter )
     mainwin.show()
-    w = mainwin.getPreferredWidth()
-    h = mainwin.getPreferredHeight()
+    # w = mainwin.getPreferredWidth()
+    # h = mainwin.getPreferredHeight()
     mainwin.resize( QSize(1400, 800) )
 
     icon = QIcon( "./images/houses.png" )

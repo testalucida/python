@@ -1,7 +1,9 @@
-from typing import List, Iterable
+import sys
+import traceback
+from typing import List, Iterable, Dict
 
-from PySide2.QtCore import Slot, QCoreApplication, Qt
-from PySide2.QtWidgets import QMenu, QMessageBox, QInputDialog, QLineEdit
+from PySide2.QtCore import Slot, QCoreApplication, Qt, QObject, Signal, QRunnable, QThreadPool
+from PySide2.QtWidgets import QMenu, QMessageBox, QInputDialog, QLineEdit, QApplication
 
 import datehelper
 from base.baseqtderivates import BaseAction
@@ -15,7 +17,7 @@ from v2.extras.extrascontroller import ExtrasController
 from v2.geschaeftsreise.geschaeftsreisecontroller import GeschaeftsreiseController
 from v2.icc.constants import EinAusArt
 from v2.icc.icccontroller import IccController
-from v2.icc.iccmainwindow import IccMainWindow
+from v2.icc.iccmainwindow import IccMainWindow, InfoPanel
 from v2.icc.iccwidgets import IccCheckTableViewFrame
 from v2.icc.interfaces import XEinAus, XSummen
 from v2.icc.mainlogic import MainLogic
@@ -25,7 +27,34 @@ from v2.mtleinaus.mtleinauscontroller import MieteController, HausgeldController
 from v2.sollhausgeld.sollhausgeldcontroller import SollHausgeldController, SollzahlungenController
 from v2.sollmiete.sollmietecontroller import SollMieteController
 
+class WorkerSignals( QObject ):
+    finished = Signal()
+    error = Signal( tuple )
+    result = Signal( object )
 
+##############################################################
+class Worker( QRunnable ):
+    def __init__( self, fn ):
+        super( Worker, self ).__init__()
+        # Store constructor arguments (re-used for processing)
+        self.fn = fn
+        self.signals = WorkerSignals()
+
+    @Slot()
+    def run( self ):
+        try:
+            result = self.fn()
+        except:
+            traceback.print_exc()
+            exctype, value = sys.exc_info()[:2]
+            self.signals.error.emit( (exctype, value, traceback.format_exc()) )
+        else:
+            self.signals.result.emit( result )  # Return the result of the processing
+        finally:
+            self.signals.finished.emit()  # Done
+
+
+###########################################################
 class MainController( IccController ):
     def __init__( self, environment:str ):
         IccController.__init__( self )
@@ -45,6 +74,8 @@ class MainController( IccController ):
         self._mietObjektCtrl.edit_mieter.connect( self.onEditMieter )
         self._mvCtrl = MietverhaeltnisController()
         self._extrasCtrl = ExtrasController()
+        self._threadpool = QThreadPool()
+        self._rcFtpExportDatabase = False
         self._connectToSignals()
 
     def _connectToSignals( self ):
@@ -272,23 +303,56 @@ class MainController( IccController ):
         Datenbank zum Server hochladen.
         :return:
         """
+        def onExported():
+            print( "Database exported.")
+            self._rcFtpExportDatabase = True
+
+        def onExportError():
+            print( "uups - something went wrong" )
+            self._win.setCursor( Qt.ArrowCursor )
+            box = ErrorBox( "Datenbank-Export", "Export der Datenbank fehlgeschlagen.", str( ex ) )
+            box.exec_()
+            self._rcFtpExportDatabase = False
+
+        self._rcFtpExportDatabase = None
         dic = self._win.getLetzteBuchung()
         try:
             self._logic.saveLetzteBuchung( dic["datum"], dic["text"])
         except Exception as ex:
             box = WarningBox( "Speichern der letzten Buchung", "Speichern fehlgeschlagen: " + str(ex),
                               "Anwendung trotzdem schließen?", "Ja", "Nein" )
-        try:
-            self._win.setCursor( Qt.WaitCursor)
-            self._logic.exportDatabaseToServer()
-            box = InfoBox( "Datenbank-Export", "Datenbank exportiert.", "", "OK" )
-            box.exec_()
-            return True
-        except Exception as ex:
-            self._win.setCursor( Qt.ArrowCursor )
-            box = ErrorBox( "Datenbank-Export", "Export der Datenbank fehlgeschlagen.", str(ex) )
-            box.exec_()
+            if box.exec_() == QMessageBox.Yes:
+                return True
             return False
+
+        self._win.setCursor( Qt.WaitCursor )
+        worker = Worker( self._logic.exportDatabaseToServer )
+        worker.signals.finished.connect( onExported )
+        worker.signals.error.connect( onExportError )
+        infopanel = InfoPanel( "Bitte warten", "Datenbank wird zum Server exportiert..." )
+        infopanel.moveToCursor()
+        infopanel.show()
+        self._threadpool.start( worker )
+        while self._rcFtpExportDatabase is None:
+            QApplication.processEvents()
+        infopanel.close()
+        return self._rcFtpExportDatabase
+
+        # try:
+        #     self._win.setCursor( Qt.WaitCursor)
+        #     worker = Worker( self._logic.exportDatabaseToServer() )
+        #     worker.signals.finished( onExported )
+        #     worker.signals.error.connect( onExportError )
+        #     self._threadpool.start( worker )
+        #     #self._logic.exportDatabaseToServer()
+        #     # box = InfoBox( "Datenbank-Export", "Datenbank exportiert.", "", "OK" )
+        #     # box.exec_()
+        #     return True
+        # except Exception as ex:
+        #     self._win.setCursor( Qt.ArrowCursor )
+        #     box = ErrorBox( "Datenbank-Export", "Export der Datenbank fehlgeschlagen.", str(ex) )
+        #     box.exec_()
+        #     return False
 
 ####################################################################################
 def testScreenSize( win:IccMainWindow ):

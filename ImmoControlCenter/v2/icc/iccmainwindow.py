@@ -2,15 +2,15 @@ from functools import partial
 from typing import Dict, Any, List, Callable
 
 from PySide2 import QtCore, QtWidgets, QtGui
-from PySide2.QtCore import Qt, Signal
+from PySide2.QtCore import Qt, Signal, QSize
 from PySide2.QtWidgets import QApplication, QMainWindow, QWidget, QMenuBar, QToolBar, QAction, QMessageBox, QLineEdit, \
     QLabel, \
     QMenu, QTabWidget
-from PySide2.QtGui import QKeySequence, QFont
+from PySide2.QtGui import QKeySequence, QFont, QCursor
 from enum import Enum
 
 import datehelper
-from base.baseqtderivates import SmartDateEdit, IntDisplay, BaseTabWidget
+from base.baseqtderivates import SmartDateEdit, IntDisplay, BaseTabWidget, BaseGridLayout, BaseLabel
 from base.messagebox import InfoBox
 from datehelper import getDateParts
 from v2.einaus.einausview import EinAusTableViewFrame
@@ -96,6 +96,28 @@ class MainTabWidget( BaseTabWidget ):
 
     # def getAlleZahlungenTab( self ) -> AlleZahlungenTabWidget:
     #     return self._alleZahlungenTab
+
+########################  InfoPanel  ########################
+class InfoPanel( QWidget ):
+    """
+    Ein InfoPanel ohne Buttons, das vom Programm aus geschlossen wird, nachdem ein Thread abgearbeitet ist.
+    """
+    def __init__( self, title:str, text:str ):
+        QWidget.__init__( self )
+        self.setWindowTitle( title )
+        self._text = text
+        self._layout = BaseGridLayout()
+        self.setLayout( self._layout )
+        self._label = BaseLabel()
+        self._label.setText( self._text )
+        self._label.setAlignment( Qt.AlignCenter )
+        self._layout.addWidget( self._label, 0, 0 )
+        self.resize( QSize( 500, 200 ) )
+
+    def moveToCursor( self ):
+        crsr = QCursor.pos()
+        self.move( crsr.x(), crsr.y() )
+
 
 ########################   IccMainWindow   ####################
 class IccMainWindow( QMainWindow ):
