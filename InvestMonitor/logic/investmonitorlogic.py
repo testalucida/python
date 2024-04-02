@@ -418,7 +418,9 @@ class InvestMonitorLogic:
                 deppos.minKaufpreis = delta.preis_stck \
                     if delta.preis_stck < deppos.minKaufpreis or deppos.minKaufpreis == 0 \
                     else deppos.minKaufpreis
-        deppos.einstandswert_restbestand = int( round( deppos.einstandswert_restbestand, 2 ) )
+            else:
+                # Verkauf
+                deppos.einstandswert_restbestand += ( delta.delta_stck * delta.preis_stck ) # delta_stck < 0, deshalb "+"
         if deppos.stueck > 0: # es gibt noch einen Depot-Bestand
             deppos.preisprostueck = round( deppos.einstandswert_restbestand / deppos.stueck, 2 )
             deppos.einstandswert_restbestand = int( round( deppos.einstandswert_restbestand, 2 ) )
