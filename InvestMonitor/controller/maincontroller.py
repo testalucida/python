@@ -19,7 +19,7 @@ from imon.definitions import DEFAULT_PERIOD, DEFAULT_INTERVAL, DEFAULT_INFOPANEL
 from imon.enums import InfoPanelOrder, Period, Interval, SortDirection
 from interface.interfaces import XDepotPosition, XDelta
 from logic.investmonitorlogic import InvestMonitorLogic
-from utfsymbols import symDELTA
+from utfsymbols import symDELTA, symAVG
 
 
 class WorkerSignals( QObject ):
@@ -439,6 +439,10 @@ class MainController( QObject ):
             sortfield = x.delta_kurs_1_percent
             sortfieldInfo = symDELTA + " Kurs seit letztem Close: %.2f" % x.delta_kurs_1_percent
             sortfieldInfo += "%"
+            self._sortDirection = SortDirection.ASC
+        elif order == InfoPanelOrder.RelKursAvgKp:
+            sortfield = ((x.kurs_aktuell - x.preisprostueck) / x.preisprostueck) * 100
+            sortfieldInfo = "Vh. Kurs / " + symAVG + (" Kaufpr.: %.2f" % sortfield) + "%"
             self._sortDirection = SortDirection.ASC
         else:
             raise Exception( "MainController._setSortKey(): unknown order:\n%s" % str(order) )

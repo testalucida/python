@@ -1,12 +1,12 @@
 import copy
 
 from PySide2.QtCore import Signal
-from PySide2.QtGui import Qt
+from PySide2.QtGui import Qt, QFont
 from PySide2.QtWidgets import QWidget, QGridLayout, QHBoxLayout, QApplication
 
 from base.baseqtderivates import FatLabel, BaseBoldEdit, LabelTimesBold12, SmartDateEdit, MultiLineEdit, HLine, \
     LabelTimes12, BaseLabel, EditIconButton, LabelArial12
-from generictable_stuff.okcanceldialog import OkDialog
+from generictable_stuff.okcanceldialog import OkDialog, OkCancelDialog
 from v2.icc.iccwidgets import IccTableView
 from v2.icc.interfaces import XMietobjektExt
 
@@ -21,7 +21,7 @@ class MietobjektAuswahlTableView( IccTableView ):
 
 ######################   MietobjektView   #############################
 class MietobjektView( QWidget ):
-    save = Signal()  # speichere Änderungen am Hauswart, der Masterobjekt-Bemerkung,
+    # save = Signal()  # speichere Änderungen am Hauswart, der Masterobjekt-Bemerkung,
     # des Mietobjekt-Containers und der Mietobjekt-Bemerkung
     edit_mieter = Signal( str ) # mv_id
     edit_miete = Signal( str ) # mv_id
@@ -135,15 +135,22 @@ class MietobjektView( QWidget ):
             return r
 
         def _createMasterAddress( r: int ) -> int:
+            #disabledFont = QFont( "Arial", 12, QFont.Bold )
             c = 0
             lbl = BaseLabel( "Adresse: " )
             l.addWidget( lbl, r, c )
             c = 1
             self._bbePlz.setMaximumWidth( 60 )
+            self._bbePlz.setEnabled( False )
+            self._bbePlz.setTextColor( "black" )
             l.addWidget( self._bbePlz, r, c )
             c = 2
+            self._bbeOrt.setEnabled( False )
+            self._bbeOrt.setTextColor( "black" )
             l.addWidget( self._bbeOrt, r, c, 1, 4 )
             c = 6
+            self._bbeStrHnr.setEnabled( False )
+            self._bbeStrHnr.setTextColor( "black" )
             l.addWidget( self._bbeStrHnr, r, c, 1, 7 )
             return r
 
@@ -415,23 +422,35 @@ class MietobjektView( QWidget ):
         return self._mietobjekt
 
 ##################   MietobjektDialog   ######################
-class MietobjektDialog( OkDialog ):
+class MietobjektDialog( OkCancelDialog ):
     def __init__( self, view:MietobjektView, title:str="" ):
-        OkDialog.__init__( self, title + " (nur Ansicht, Änderungen noch nicht möglich)" )
+        # OkDialog.__init__( self, title + " (nur Ansicht, Änderungen noch nicht möglich)" )
+        OkCancelDialog.__init__( self, title  )
         self._view = view
         self.addWidget( view, 0 )
-        self.setOkButtonText( "Schließen (derzeit ohne Speichern)" )
+        # self.setOkButtonText( "Schließen (derzeit ohne Speichern)" )
+        self.setOkButtonText( "OK" )
+    #     self.setBeforeAcceptFunction( self.onOk )
+    #
+    # def onOk( self ) -> bool:
+    #     print( "onOk" )
+    #     return False
 
 
 
 ##################   TEST   TEST   TEST   #####################
-def onSaveChanges():
-    print( "onSaveChanges" )
-
-def onEditVerwaltung():
-    print( "onEditVerwaltung" )
+# def onSaveChanges():
+#     print( "onSaveChanges" )
+#
+# def onEditVerwaltung():
+#     print( "onEditVerwaltung" )
 
 def test():
+    def validate() -> bool:
+        print( "vasliddate")
+        print( "mobj_id: ", x.mobj_id )
+        return True
+
     x = XMietobjektExt()
     x.master_id = 17
     x.master_name = "NK-Kleist"
@@ -463,9 +482,10 @@ def test():
 
     app = QApplication()
     v = MietobjektView( x )
-    v.save.connect( onSaveChanges )
+    #v.save.connect( onSaveChanges )
     #v.show()
     dlg = MietobjektDialog( v, x.mobj_id )
-    dlg.exec_()
-
-    #app.exec_()
+    dlg.setBeforeAcceptFunction( validate )
+    #dlg.exec_()
+    dlg.show()
+    app.exec_()

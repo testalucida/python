@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List
 
-from utfsymbols import symDELTA
+from utfsymbols import symDELTA, symAVG
 
 
 class InfoPanelOrder( Enum ):
@@ -20,6 +20,7 @@ class InfoPanelOrder( Enum ):
     DividendPaid = "Ausschüttung in Periode"
     Buy = "Kaufen"
     DeltaKursAsc = symDELTA + " Kurs i. Vgl. z. Vortag (ASC)"
+    RelKursAvgKp = symDELTA + " Verhältnis akt. Kurs zu " + symAVG + " Kaufpreis"
     #DeltaKurs_1 = "Kursentwicklung nach letztem Close"
     # AverageKurs_50 = "⌀ Kurs letzte 50 Tage"
     # AverageKurs_200 = "⌀ Kurs letzte 200 Tage"
