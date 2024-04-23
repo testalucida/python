@@ -76,6 +76,7 @@ class MietobjektController( IccController ):
 
     def __init__( self, mobj_id:str=None ):
         IccController.__init__( self )
+        self._dlg:MietobjektDialog = None
         self._logic = MietobjektLogic()
 
     def createGui( self ) -> QWidget:
@@ -109,12 +110,35 @@ class MietobjektController( IccController ):
         self._showMietobjektView( xmobj_ext )
 
     def _showMietobjektView( self, xmobj_ext: XMietobjektExt ):
+        def trySave() -> bool:
+            print( "validating" )
+            x:XMietobjektExt = v.getMietobjektCopyWithChanges()
+            try:
+                msg = self._logic.saveMietobjektExt( x )
+                if msg:
+                    # Fehler beim Validieren
+                    box = ErrorBox( "Validierungsfehler",
+                                    "Änderungen am Objekt '%s' sind nicht korrekt: " % x.mobj_id,
+                                    msg )
+                    box.exec_()
+                    return False
+                return True
+            except Exception as ex:
+                # Fehler beim Speichern
+                box = ErrorBox( "Datenbankfehler",
+                                "Änderungen am Objekt '%s' konnten nicht gespeichert werden:" % x.mobj_id,
+                                str(ex) )
+                box.exec_()
+                return False
+
         v = MietobjektView( xmobj_ext )
         v.edit_miete.connect( self.edit_miete.emit )  # weiterleiten
         v.edit_mieter.connect( self.edit_mieter.emit )  # weiterleiten
         v.edit_hausgeld.connect( self.onEditHausgeld )
         dlg = MietobjektDialog( v, xmobj_ext.master_name + " / " + xmobj_ext.mobj_id )
-        dlg.exec_()
+        dlg.setBeforeAcceptFunction( trySave )
+        dlg.show()
+        self._dlg = dlg
 
     def onEditHausgeld( self, mobj_id:str ):
         self._notYetImplemented( "'%s': Funktion Hausgeld Ändern noch nicht realisiert" % mobj_id )
@@ -124,6 +148,12 @@ class MietobjektController( IccController ):
         box.exec_()
 
 
+def test3():
+    from PySide2.QtWidgets import QApplication
+    app = QApplication()
+    c = MietobjektController()
+    c.onShowObjekt( "kleist_11" )
+    app.exec_()
 
 def test():
     def myslot( arg ):

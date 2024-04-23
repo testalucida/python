@@ -1,6 +1,6 @@
-from typing import List
+from typing import List, Dict
 
-from v2.icc.iccdata import IccData
+from v2.icc.iccdata import IccData, DbAction
 from v2.icc.interfaces import XMietobjektAuswahl, XMietobjektExt
 
 
@@ -41,7 +41,7 @@ class MietobjektData( IccData ):
         :return:
         """
         sql = "select m.master_id, m.master_name, m.strasse_hnr, m.plz, m.ort, m.gesamt_wfl, m.anz_whg, m.veraeussert_am," \
-              "m.hauswart, m.hauswart_telefon, m.hauswart_mailto, m.bemerkung as bemerkung_masterobjekt, " \
+              "m.hauswart, m.hauswart_telefon, m.hauswart_mailto, m.heizung, m.energieeffz, m.bemerkung as bemerkung_masterobjekt, " \
               "o.mobj_id, o.whg_bez, o.qm, o.container_nr, o.bemerkung as bemerkung_mietobjekt," \
               "vwg.vw_id as verwalter, vwg.weg_name " \
               "from mietobjekt o " \
@@ -50,8 +50,57 @@ class MietobjektData( IccData ):
               "where o.mobj_id = '%s' " % mobj_id
         return self.readOneGetObject( sql, XMietobjektExt )
 
+    def getMietobjektData1( self, mobj_id:str ) -> Dict:
+        """
+        Liefert whg_bez, container_nr und bemerkung zu einer mobj_id.
+        Wird von updateMietobjekt1 verwendet, um das WriteLog schreiben zu können.
+        :param mobj_id:
+        :return:
+        """
+        sql = "select mobj_id_num, whg_bez, container_nr, bemerkung " \
+              "from mietobjekt " \
+              "where mobj_id = '%s' " % mobj_id
+        di = self.readOneGetDict( sql )
+        return di
 
+    def updateMietobjekt1( self, mobj_id:str, whg_bez:str, container_nr:str, bemerkung:str ) -> int:
+        """
+        Speichert Änderungen an einem Mietobjekt: whg_bez, container_nr, bemerkung.
+        ACHTUNG: Vor Aufruf dieser Methode müssen die Werte, die *nicht* verändert werden sollen,
+                 gelesen und dem Aufruf dieser Methode mitgegeben werden (z.B. mit getMietobjektData1).
+        :param mobj_id: Identifizierende ID des Objekts, an dem die Änderungen durchgeführt werden sollen.
+        :param whg_bez:
+        :param container_nr:
+        :param bemerkung:
+        :return: die Anzahl der vom Update betroffenen Sätze (sollte 1 sein)
+        """
+        # aktuelles Objekt holen, wegen WriteLog
+        oldD:Dict = self.getMietobjektData1( mobj_id )
+        mobj_id_num = oldD["mobj_id_num"]
+        oldD.pop( "mobj_id_num", None )
+        sql = "update mietobjekt " \
+              "set whg_bez = '%s', " \
+              "container_nr = '%s', " \
+              "bemerkung = '%s' " \
+              "where mobj_id = '%s' " % (whg_bez, container_nr, bemerkung, mobj_id)
+        newD = { "whg_bez": whg_bez, "container_nr": container_nr, "bemerkung": bemerkung }
+        rowsAffected = self.writeAndLog( sql, DbAction.UPDATE,
+                                         table="mietobjekt", id_name="mobj_id_num", id_value=mobj_id_num,
+                                         newvalues=str(newD), oldvalues=str(oldD) )
+        return rowsAffected
 
+#####################################################################################################################
+#####################     TESTS  TESTS  TESTS
+#####################################################################################################################
+def testUpdateMietobjekt():
+    data = MietobjektData()
+    mobj_id = "kleist_11"
+    whg_bez = "1. OG links"
+    container_nr = "123ABC"
+    bemerkung = "Testbemerkung zu testwohnung"
+    data.updateMietobjekt1( mobj_id, whg_bez, container_nr, bemerkung )
+    data.commit()
+    print( "done." )
 
 def testExt():
     data = MietobjektData()

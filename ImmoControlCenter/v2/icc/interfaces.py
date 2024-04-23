@@ -318,6 +318,8 @@ class XMietobjektExt( XBase ):
         self.hauswart:str = ""
         self.hauswart_telefon:str = ""
         self.hauswart_mailto:str = ""
+        self.heizung:str = ""
+        self.energieeffz:str = ""
         self.bemerkung_masterobjekt:str = "" ### ACHTUNG: Dieses Feld heißt in der Tabelle masterobjekt "bemerkung" --
                                                 # Beim Select berücksichtigen!
         ### dann die Daten des Mietobjekts, das ausgesucht wurde

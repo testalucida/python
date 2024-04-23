@@ -3,6 +3,7 @@ from v2.icc.icclogic import IccLogic, IccTableModel
 from v2.icc.interfaces import XMietobjektAuswahl, XMietobjektExt, XMietverhaeltnis, XSollHausgeld
 
 ##########################   MietobjektTableModel   ###################
+from v2.masterobjekt.masterobjektdata import MasterobjektData
 from v2.mietobjekt.mietobjektdata import MietobjektData
 from v2.mietverhaeltnis.mietverhaeltnislogic import MietverhaeltnisLogic
 from v2.sollhausgeld.sollhausgeldlogic import SollHausgeldLogic
@@ -71,6 +72,32 @@ class MietobjektLogic( IccLogic ):
             xmo.ruezufue = xsh.ruezufue
             xmo.hgv_brutto = xsh.brutto
         return xmo
+
+    def saveMietobjektExt( self, x:XMietobjektExt ) -> str:
+        """
+        Speichert die Änderungen an einem XMietobjektExt - Objekt, sofern es welche gegeben hat.
+        Wenn die Validierung nicht ok ist, wird eine Meldung zurückgegeben.
+        Wenn Validierung == OK, wird die Speicher-Methode aufgerufen. Wenn das Speichern schiefgeht, wird
+        von der Speicher-Methode eine Exception geworfen, die hier nicht aufgefangen wird (muss im Controller 
+        geschehen).
+        :param x:
+        :return: 
+        """
+        def validate() -> str:
+            msg_ = ""
+            return msg_
+
+        xOld = self.getMietobjektExt( x.mobj_id )
+        if x.equals( xOld ): return "" # keine Änderungen
+        msg = validate()
+        if msg: return msg # Fehler beim Validieren
+        # Validierung ok, jetzt Speichern:
+        self._data.updateMietobjekt1( x.mobj_id, x.whg_bez, x.container_nr, x.bemerkung_mietobjekt )
+        masterdata = MasterobjektData()
+        masterdata.updateMasterobjekt1( x.master_id, x.hauswart, x.hauswart_telefon, x.hauswart_mailto,
+                                        x.heizung, x.energieeffz, x.veraeussert_am, x.bemerkung_masterobjekt )
+        self._data.commit()
+        return ""
 
 def test():
     logic = MietobjektLogic()

@@ -112,6 +112,11 @@ class BaseComboBox( QComboBox, GetSetValue ):
     def getUserData( self ) -> Any:
         return self._userData
 
+class BaseBoldComboBox( BaseComboBox ):
+    def __init__( self, parent=None ):
+        BaseComboBox.__init__( self, parent )
+        self.setFont( FontArialBold12() )
+
 #####################   YearComboBox  #######################
 class YearComboBox( BaseComboBox ):
     year_changed = Signal( int ) # arg: the new year

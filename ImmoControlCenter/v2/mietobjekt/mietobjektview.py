@@ -5,7 +5,7 @@ from PySide2.QtGui import Qt, QFont
 from PySide2.QtWidgets import QWidget, QGridLayout, QHBoxLayout, QApplication
 
 from base.baseqtderivates import FatLabel, BaseBoldEdit, LabelTimesBold12, SmartDateEdit, MultiLineEdit, HLine, \
-    LabelTimes12, BaseLabel, EditIconButton, LabelArial12
+    LabelTimes12, BaseLabel, EditIconButton, LabelArial12, BaseBoldComboBox
 from generictable_stuff.okcanceldialog import OkDialog, OkCancelDialog
 from v2.icc.iccwidgets import IccTableView
 from v2.icc.interfaces import XMietobjektExt
@@ -42,6 +42,12 @@ class MietobjektView( QWidget ):
         self._bbeOrt = BaseBoldEdit()
         self._bbeAnzWhg = BaseBoldEdit()
         self._bbeGesamtWfl = BaseBoldEdit()
+        #self._bbeHeizung = BaseBoldEdit()
+        self._cboHeizung = BaseBoldComboBox()
+        self._cboHeizung.addItems( ("", "Gasetagenheizung", "Gaszentralheizung", "Ölzentralheizung", "Nachtspeicher") )
+        #self._bbeEnergieEffz = BaseBoldEdit()
+        self._cboEnergieEffz = BaseBoldComboBox()
+        self._cboEnergieEffz.addItems( ("", "A", "B", "C", "D", "E", "F", "G", "H") )
         self._lblVerwalter = FatLabel()
         self._lblWEG = FatLabel()
         self._sdVeraeussertAm = SmartDateEdit()
@@ -163,12 +169,22 @@ class MietobjektView( QWidget ):
             self._bbeAnzWhg.setMaximumWidth( 40 )
             l.addWidget( self._bbeAnzWhg, r, c )
             c = 4
-            lbl = BaseLabel( "Gesamt-Wfl.(qm):" )
+            lbl = BaseLabel( "Gesamt-Wfl.(qm): " )
             l.addWidget( lbl, r, c, 1, 1, alignment=Qt.AlignRight )
             c += 1
             self._bbeGesamtWfl.setEnabled( False )
             self._bbeGesamtWfl.setMaximumWidth( 40 )
             l.addWidget( self._bbeGesamtWfl, r, c )
+
+            r += 1
+            c = 0
+            l.addWidget( BaseLabel( "Heizung: " ), r, c )
+            c += 1
+            l.addWidget( self._cboHeizung, r, c, 1, 2 )
+            c = 4
+            l.addWidget( BaseLabel( "Energieeffz.klasse: " ), r, c )
+            c += 1
+            l.addWidget( self._cboEnergieEffz, r, c )
             return r
 
         def _createVerwalter( r:int ) -> int:
@@ -365,6 +381,10 @@ class MietobjektView( QWidget ):
         self._bbeOrt.setText( x.ort )
         self._bbeAnzWhg.setText( str( x.anz_whg ) )
         self._bbeGesamtWfl.setText( str( x.gesamt_wfl ) )
+        if x.heizung:
+            self._cboHeizung.setCurrentText( x.heizung )
+        if x.energieeffz:
+            self._cboEnergieEffz.setCurrentText( x.energieeffz )
         self._lblVerwalter.setText( x.verwalter )
         self._lblWEG.setText( x.weg_name )
         self._beHauswart.setText( x.hauswart )
@@ -399,6 +419,8 @@ class MietobjektView( QWidget ):
         x.ort = self._bbeOrt.text()
         x.verwalter = self._lblVerwalter.text()
         x.weg_name = self._lblWEG.text()
+        x.heizung = self._cboHeizung.currentText()
+        x.energieeffz = self._cboEnergieEffz.currentText()
         x.veraeussert_am = self._sdVeraeussertAm.getDate()
         x.hauswart = self._beHauswart.text()
         x.hauswart_telefon = self._beHauswartTelefon.text()
@@ -447,7 +469,7 @@ class MietobjektDialog( OkCancelDialog ):
 
 def test():
     def validate() -> bool:
-        print( "vasliddate")
+        print( "validate")
         print( "mobj_id: ", x.mobj_id )
         return True
 
