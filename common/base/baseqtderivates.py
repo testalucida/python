@@ -48,6 +48,15 @@ class BaseWidget( QWidget ):
         self._isChanged = False
         self.ident = None
 
+    def setStyleSheetOnlySelf( self, stylesheet: str ) -> None:
+        """
+        :param stylesheet: z.B. "background: lightgray;"
+        :return:
+        """
+        objectName = self.objectName() if self.objectName() != "" else str( id( self ) )
+        self.setObjectName( objectName )
+        self.setStyleSheet( "#%s {%s}" % (objectName, stylesheet) )
+
     def setChanged( self, changed:bool ) -> None:
         self._isChanged = changed
 
@@ -502,6 +511,16 @@ class BaseGridLayout( QGridLayout ):
             l.append( gli )
         return l
 
+    def createHLine( self, r: int, columns: int = -1 ):
+        line = HLine()
+        if columns < 0: columns = self.columnCount()
+        self.addWidget( line, r, 0, 1, columns )
+
+    def createVLine( self, c: int, rows: int = -1 ):
+        line = VLine()
+        if rows < 0: rows = self.rowCount()
+        self.addWidget( line, 0, c, rows, 1 )
+
 ##################  CalenderDialog   #####################
 class CalendarDialog( QDialog ):
     def __init__( self, parent ):
@@ -689,6 +708,13 @@ class BaseLabel( QLabel, AutoWidth, GetSetValue ):
         QLabel.__init__( self, parent )
         self.setValue( text )
 
+    # def mouseDoubleClickEvent( self, evt:QMouseEvent ):
+    #     self.setSelection( 0, len( self.text() ) )
+
+    # def mousePressEvent(self, ev:QMouseEvent ):
+    #     print( "mousePressed:", ev )
+    #     print( "fljds")
+
     def getValue( self ) -> str:
         return self.text()
 
@@ -706,6 +732,12 @@ class BaseLabel( QLabel, AutoWidth, GetSetValue ):
         w = self.getTextWidth( self.text() )
         self.setFixedWidth( w )
 
+def testBaseLabelMousePress():
+    app = QApplication()
+    lbl = BaseLabel()
+    lbl.setText( "Ich bin ein tooller Labbeltexxt" )
+    lbl.show()
+    app.exec_()
 
 ###################   BaseLink   ########################
 class BaseLink( BaseLabel ):

@@ -7,7 +7,7 @@ from v2.icc.constants import EinAusArt, Umlegbar
 
 from v2.icc.definitions import DATABASE
 from v2.icc.interfaces import XHandwerkerKurz, XEinAus, XMietverhaeltnisKurz, XVerwaltung, XMasterobjekt, XMietobjekt, \
-    XKreditorLeistung, XLeistung, XMtlHausgeld
+    XKreditorLeistung, XLeistung, XMtlHausgeld, XVerwalter
 
 
 class DbAction:
@@ -146,6 +146,18 @@ class IccData( DatabaseCommon ):
               "and vwg.von <= CURRENT_DATE " \
               "and (vwg.bis is NULL or vwg.bis = '' or vwg.bis >= CURRENT_DATE )" % master_name
         return self.readOneGetDict( sql )
+
+    def getVerwalterDetails( self, vw_id:str ) -> XVerwalter:
+        """
+        Liefert alle Daten zu Verwalter <vw_id>
+        :param vw_id:
+        :return:
+        """
+        sql = "select vw_id, name, strasse, plz_ort, telefon_1, telefon_2, mailto, ansprechpartner_1, ansprechpartner_2, " \
+              "bemerkung " \
+              "from verwalter " \
+              "where vw_id = '%s' " % vw_id
+        return self.readOneGetObject( sql, XVerwalter )
 
     def getAnschaffungsUndVerkaufsdatum( self, mobj_id:str ) -> [str, str]:
         sql = "select master.angeschafft_am, master.veraeussert_am " \

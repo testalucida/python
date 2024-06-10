@@ -1,14 +1,105 @@
 import copy
+from typing import Any
 
-from PySide2.QtCore import Signal
-from PySide2.QtGui import Qt, QFont
-from PySide2.QtWidgets import QWidget, QGridLayout, QHBoxLayout, QApplication
+from PySide2.QtCore import Signal, QSize
+from PySide2.QtGui import Qt, QFont, QPalette
+from PySide2.QtWidgets import QWidget, QGridLayout, QHBoxLayout, QApplication, QTextEdit, QFrame
 
 from base.baseqtderivates import FatLabel, BaseBoldEdit, LabelTimesBold12, SmartDateEdit, MultiLineEdit, HLine, \
-    LabelTimes12, BaseLabel, EditIconButton, LabelArial12, BaseBoldComboBox
+    LabelTimes12, BaseLabel, EditIconButton, LabelArial12, BaseBoldComboBox, BaseGridLayout, BaseWidget, BaseEdit, \
+    BaseComboBox, BaseButton
 from generictable_stuff.okcanceldialog import OkDialog, OkCancelDialog
+from v2.icc.constants import ValueMapperHelper, Heizung
 from v2.icc.iccwidgets import IccTableView
-from v2.icc.interfaces import XMietobjektExt
+from v2.icc.interfaces import XMietobjektExt, XMasterobjekt, XMieterUndMietobjekt, XMietobjekt, XHausgeld, XMieter
+
+############ TEST TEST TEST TEST  ###########################
+def createXMietobjektExt() -> XMietobjektExt:
+    x = XMietobjektExt()
+    x.master_id = 17
+    x.master_name = "NK-Kleist"
+    x.plz = "66538"
+    x.ort = "Neunkirchen"
+    x.strasse_hnr = "Klabautermannstraße 377"
+    x.anz_whg = 8
+    x.gesamt_wfl = 432
+    x.veraeussert_am = "2024-12-01"
+    x.heizung = "Gaszentralheizung"
+    x.energieeffz = "F"
+    x.verwalter = "Hausverwalter Kannundtunix, Neunkirchen"
+    x.verwalter_telefon = "06821 / 232333"
+    x.verwalter_mailto = "kannundtunix_hausverwaltung@kannundtunix.de"
+    x.hauswart = "Hans-Jürgen Müller-Westernhagen"
+    x.hauswart_telefon = "06821 / 123456"
+    x.hauswart_mailto = "mueller-hauswart@t-online.de"
+    x.bemerkung_masterobjekt = "Außen hui Innen pfui"
+    x.mobj_id = "kleist_11"
+    x.whg_bez = "1. OG links"
+    x.qm = 50
+    x.container_nr = "098765/11"
+    x.bemerkung_mietobjekt = "Wird unser HQ im Saarland"
+    x.mieter = "Graf von Strübel-Lakaiendorf, Christian-Eberhard"
+    x.telefon_mieter = "0171 / 11211345"
+    x.mailto_mieter = "grastruelakai@t-online.de"
+    x.nettomiete = 234.56
+    x.nkv = 87.69
+    x.weg_name = "WEG Beispielstraße 22, 55432 Mühlheim"
+    x.hgv_netto = 300.00
+    x.ruezufue = 67.89
+    x.hgv_brutto = 367.89
+    return x
+
+def createXMasterObjekt() -> XMasterobjekt:
+    x = XMasterobjekt()
+    x.master_id = 17
+    x.master_name = "NK-Kleist"
+    x.plz = "66538"
+    x.ort = "Neunkirchen"
+    x.strasse_hnr = "Kleiststr. 3"
+    x.veraeussert_am = "2023-05-08"
+    x.anz_whg = 8
+    x.gesamt_wfl = 400
+    x.heizung = "Gasetagenheizung"
+    x.energieeffz = "F"
+    x.verwalter = "GfH Häuserkacke und Versagen garantiert"
+    x.verwalter_telefon = "06821 / 22 34 55"
+    x.verwalter_mailto = "info@gfh-verwaltung.de"
+    x.hauswart = "Herr Falk Mäusegeier"
+    x.hauswart_telefon = "0681 / 1 11 33 44"
+    x.hauswart_mailto = "falk.maeusegeier@falknerei_saarbruecken.de"
+    x.bemerkung = "Sehr schlaue Bemerkung"
+    return x
+
+def createXMieter() -> XMieter:
+    x = XMieter()
+    x.mieter = "Graf von Streusel-Lakaiendorf, Wolf-Eberhard"
+    x.telefon = "0171 / 33 44 556"
+    x.mailto = "grafstruelakai@t-manchmalonline.de"
+    x.nettomiete = 1234.56
+    x.nkv = 354.18
+    x.bruttomiete = x.nettomiete + x.nkv
+    x.kaution = 2500
+    return x
+
+# def createXMietobjekt2() -> XMietobjekt2:
+#     x = XMietobjekt2()
+#     x.mobj_id = "remigius"
+#     x.whg_bez = "Whg. 91, 15. OG links"
+#     x.qm = 100
+#     x.container_nr = "ABX 333 JJF12"
+#     x.bemerkung = "Ganz hübsche Wohnung in Homburg"
+#     x.hgv_netto = 234.56
+#     x.ruezufue = 76.32
+#     x.hgv_brutto = x.hgv_netto + x.ruezufue
+#     return x
+
+# def createXMieterUndMietobjekt() -> XMieterUndMietobjekt:
+#     xmiumio = XMieterUndMietobjekt()
+#     xmiumio.mietobjekt = createXMietobjekt2()
+#     xmiumio.mieter = createXMieter()
+#     return xmiumio
+
+############ TEST ENDE   TEST ENDE   TEST ENDE  ###########################
 
 ######################   MietobjektAuswahlView   #############################
 class MietobjektAuswahlTableView( IccTableView ):
@@ -19,8 +110,265 @@ class MietobjektAuswahlTableView( IccTableView ):
         IccTableView.__init__( self )
         self.setAlternatingRowColors( True )
 
-######################   MietobjektView   #############################
-class MietobjektView( QWidget ):
+
+#########################  MasterView  ############################
+class MasterView( QFrame ):
+    show_verwalter = Signal( str )
+    #show_hauswart = Signal( str )
+    """
+    Enthält die Masterobjekt-Daten.
+    Besteht aus einer HeaderView im oberen Bereich und einer DataView im unteren Bereich.
+    """
+    ###########  MasterView.HeaderView  ################
+    class HeaderView( QFrame ):
+        def __init__( self, master_id: int, master_name: str, strasse_hnr: str, plz: str, ort: str,
+                      veraeussert_am: str = "" ):
+            QFrame.__init__( self )
+            self._master_id = master_id
+            self._master_name = master_name
+            self._strasse_hnr = strasse_hnr
+            self._plz = plz
+            self._ort = ort
+            self._veraeussert_am = veraeussert_am
+            self._layout = BaseGridLayout()
+            self.setLayout( self._layout )
+            self._mleMasterHeader = MultiLineEdit()
+            self._sdeVeraeussertAm = SmartDateEdit()
+            self._createGui()
+            self._dataToGui()
+
+        def _createGui( self ):
+            self.setStyleSheet( "HeaderView { background: lightgray; }" )
+            l = self._layout
+            e = self._mleMasterHeader
+            e.setStyleSheet( "background: lightgray;" )
+            e.setReadOnly( True )
+            e.setFrameStyle( QFrame.NoFrame )
+            e.setMaximumHeight( 70 )
+            r, c = 0, 0
+            l.addWidget( e, r, c, 1, 2 )
+            r += 1
+            vam = self._sdeVeraeussertAm
+            vam.setStyleSheet( "background: white;" )
+            vam.setMaximumWidth( 100 )
+            l.addWidget( BaseLabel( "veräußert am: " ), r, c, 1, 1, alignment=Qt.AlignRight )
+            c += 1
+            l.addWidget( vam, r, c, 1, 1, alignment=Qt.AlignLeft )
+
+        def _dataToGui( self ):
+            e = self._mleMasterHeader
+            html = 'Master-ID: <font size="+2"><b>' + str( self._master_id ) + '</font></b>' + \
+                   '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Master-Name: <font size="+2"><b>' + \
+                   self._master_name + '</font></b>'
+            e.setHtml( html )
+            e.setAlignment( Qt.AlignCenter )
+            e.append( " " )
+            e.append( "<b>" + self._strasse_hnr + "&nbsp;&nbsp;&nbsp;" + self._plz + "&nbsp;" + self._ort + "</b>" )
+            e.setAlignment( Qt.AlignCenter )
+            self._sdeVeraeussertAm.setValue( self._veraeussert_am )
+
+        def getVeraeussertAm( self ) -> str:
+            return self._sdeVeraeussertAm.getValue()
+
+    ############  MasterView.DataView  ##################
+    class DataView( QFrame ):
+        show_verwalter = Signal()
+        #show_hauswart = Signal()
+        def __init__( self, x:XMasterobjekt ):
+            QFrame.__init__( self )
+            self._x = x
+            self._layout = BaseGridLayout()
+            self.setLayout( self._layout )
+            self._lblAnzWhg = BaseEdit()
+            self._lblGesamtWfl = BaseEdit()
+            self._cboHeizung = BaseComboBox()
+            self._cboHeizung.addItems( ValueMapperHelper.getDisplayValues( Heizung, issorted=False ) )
+            self._cboEnergieEffz = BaseComboBox()
+            self._cboEnergieEffz.addItems( ("", "A", "B", "C", "D", "E", "F", "G", "H") )
+            self._mleVerwalter = MultiLineEdit()
+            self._lblVerwalterTelefon = BaseEdit()
+            self._lblVerwalterMailto = BaseEdit()
+            self._btnVerwalterDetail = BaseButton("🔍")
+            self._btnVerwalterDetail.clicked.connect( self.show_verwalter.emit )
+            self._lblWegName = BaseEdit()
+            self._mleHauswart = MultiLineEdit()
+            self._lblHauswartTelefon = BaseEdit()
+            self._lblHauswartMailto = BaseEdit()
+            #self._btnHauswartDetail = BaseButton( "🔍" )
+            #self._btnHauswartDetail.clicked.connect( self.show_hauswart.emit )
+            self._mleBemerkung = MultiLineEdit()
+            self._createGui()
+            self._dataToGui()
+
+        def _createGui( self ):
+            l = self._layout
+            l.setHorizontalSpacing( 20 )
+            anz_cols = 7
+            for c in range( 0, anz_cols-1 ):
+                l.setColumnStretch( c, 0 )
+            l.setColumnStretch( 1, 1 )
+            l.setColumnStretch( anz_cols-1, 1 )
+
+            r, c = 0, 0
+            ## Anzahl Wohnungen und Gesamt-Wfl.
+            l.addWidget( BaseLabel("Anzahl Wohnungen:"), r, c )
+            c += 1
+            self._lblAnzWhg.setFixedWidth( 50 )
+            self._lblAnzWhg.setReadOnly( True )
+            self._lblAnzWhg.setStyleSheet( "background: lightgray;" )
+            l.addWidget( self._lblAnzWhg, r, c, 1, 1, alignment=Qt.AlignLeft )
+            c += 2
+            l.addWidget( BaseLabel( "Gesamt-Wfl.(qm):" ), r, c )
+            c += 1
+            self._lblGesamtWfl.setFixedWidth( 50 )
+            self._lblGesamtWfl.setReadOnly( True )
+            self._lblGesamtWfl.setStyleSheet( "background: lightgray;" )
+            l.addWidget( self._lblGesamtWfl, r, c, 1, 1 )
+
+            r += 1
+            c = 0
+            ## Heizung und Energie-Effizienzklasse
+            l.addWidget( BaseLabel( "Heizung:" ), r, c )
+            c += 1
+            l.addWidget( self._cboHeizung, r, c, 1, 1 )
+            c += 2
+            l.addWidget( BaseLabel( "Energieeffz.klasse:" ), r, c )
+            c += 1
+            self._cboEnergieEffz.setFixedWidth( 50 )
+            l.addWidget( self._cboEnergieEffz, r, c, 1, 1 )
+
+            r += 1
+            c = 0
+            ## Verwalter
+            l.addWidget( BaseLabel( "Verwalter:"), r, c )
+            c += 1
+            self._mleVerwalter.setReadOnly( True )
+            self._mleVerwalter.setMaximumHeight( 50 )
+            self._mleVerwalter.setStyleSheet( "background: lightgray;" )
+            l.addWidget( self._mleVerwalter, r, c, 1, 2 )
+            c += 2
+            l.addWidget( BaseLabel( "Telefon:" ), r, c )
+            c += 1
+            l.addWidget( self._lblVerwalterTelefon, r, c )
+            c += 1
+            l.addWidget( BaseLabel( "mailto:" ), r, c )
+            c += 1
+            l.addWidget( self._lblVerwalterMailto, r, c, 1, 1 )
+            c += 1
+            self._btnVerwalterDetail.setFixedSize( QSize( 22, 22 ) )
+            self._btnVerwalterDetail.setToolTip( "Details zum Verwalter anzeigen")
+            l.addWidget( self._btnVerwalterDetail, r, c, 1, 1 )
+
+            r += 1
+            c = 0
+            ## WEG-Name
+            l.addWidget( BaseLabel( "WEG:" ), r, c )
+            c += 1
+            self._lblWegName.setReadOnly( True )
+            l.addWidget( self._lblWegName, r, c, 1, 4 )
+
+            r += 1
+            c = 0
+            ## Hauswart
+            l.addWidget( BaseLabel( "Hauswart:" ), r, c )
+            c += 1
+            self._mleHauswart.setMaximumHeight( 50 )
+            l.addWidget( self._mleHauswart, r, c, 1, 2 )
+            c += 2
+            l.addWidget( BaseLabel( "Telefon:" ), r, c )
+            c += 1
+            l.addWidget( self._lblHauswartTelefon, r, c, 1, 1 )
+            c += 1
+            l.addWidget( BaseLabel( "mailto:" ), r, c )
+            c += 1
+            l.addWidget( self._lblHauswartMailto, r, c, 1, 1 )
+
+            r += 1
+            c = 0
+            ## Bemerkung
+            self._mleBemerkung.setMaximumHeight( 60 )
+            self._mleBemerkung.setPlaceholderText( "Bemerkungen zum Masterobjekt" )
+            l.addWidget( self._mleBemerkung, r, c, 1, anz_cols )
+
+        def _dataToGui( self ):
+            x = self._x
+            self._lblAnzWhg.setValue( str( x.anz_whg ) )
+            self._lblGesamtWfl.setValue( str( x.gesamt_wfl ) )
+            items = [self._cboHeizung.itemText(i) for i in range( self._cboHeizung.count() )]
+            self._cboHeizung.setValue( x.heizung )
+
+            self._cboEnergieEffz.setValue( x.energieeffz )
+            self._mleVerwalter.setValue( x.verwalter )
+            self._lblVerwalterTelefon.setValue( x.verwalter_telefon )
+            self._lblVerwalterMailto.setValue( x.verwalter_mailto )
+            self._lblWegName.setValue( x.weg_name )
+            self._mleHauswart.setValue( x.hauswart )
+            self._lblHauswartTelefon.setValue( x.hauswart_telefon )
+            self._lblHauswartMailto.setValue( x.hauswart_mailto )
+            self._mleBemerkung.setValue( x.bemerkung )
+
+        def getChanges( self, xmaster:XMasterobjekt ):
+            """
+            Schreibt die Änderungen in <xmaster>
+            :param xmaster:
+            :return:
+            """
+            xmaster.heizung = self._cboHeizung.currentText()
+            xmaster.energieeffz = self._cboEnergieEffz.currentText()
+            xmaster.verwalter_telefon = self._lblVerwalterTelefon.getValue()
+            xmaster.verwalter_mailto = self._lblVerwalterMailto.getValue()
+            xmaster.hauswart = self._mleHauswart.getValue()
+            xmaster.hauswart_telefon = self._lblHauswartTelefon.getValue()
+            xmaster.hauswart_mailto = self._lblHauswartMailto.getValue()
+            xmaster.bemerkung = self._mleBemerkung.getValue()
+
+    #####################################################
+
+    def __init__( self, x:XMasterobjekt ):
+        QFrame.__init__( self )
+        self._x = x
+        self._layout = BaseGridLayout()
+        self.setLayout( self._layout )
+        self._headerView = MasterView.HeaderView( x.master_id, x.master_name, x.strasse_hnr, x.plz, x.ort, x.veraeussert_am )
+        self._dataView = MasterView.DataView( x )
+        self._createGui()
+
+    def _createGui( self ):
+        l = self._layout
+        anz_cols = 1
+        r, c = 0, 0
+        l.addWidget( self._headerView, r, c, 1, anz_cols )
+        r += 1
+        l.addWidget( self._dataView, r, c, 1, anz_cols )
+
+    def getMasterobjektCopyWithChanges( self ) -> XMasterobjekt:
+        xcopy: XMasterobjekt = copy.copy( self._x )
+        self._guiToData( xcopy )
+
+    def _guiToData( self, x:XMasterobjekt ):
+        x.veraeussert_am = self._headerView.getVeraeussertAm()
+        x.heizung =
+
+###########################################################################
+def testDataView():
+    app = QApplication()
+    x = createXMasterObjekt()
+    v = MasterView.DataView( x )
+    v.show()
+    app.exec_()
+
+def testMasterView():
+    app = QApplication()
+    x = createXMasterObjekt()
+    v = MasterView( x )
+    v.show()
+    sz:QSize = v.size()
+    sz.setWidth( 1200 )
+    v.resize( sz )
+    app.exec_()
+
+######################   MietobjektView  ALT #############################
+class MietobjektView_( QWidget ):
     # save = Signal()  # speichere Änderungen am Hauswart, der Masterobjekt-Bemerkung,
     # des Mietobjekt-Containers und der Mietobjekt-Bemerkung
     edit_mieter = Signal( str ) # mv_id
@@ -443,6 +791,339 @@ class MietobjektView( QWidget ):
     def getModel( self ):
         return self._mietobjekt
 
+##########################  MieterUndMietobjektView  #############################################
+class MieterUndMietobjektView( QFrame ):
+
+    ###################  MieterUndMietobjektView.MobjView  ###############################
+    class MobjView( QFrame ):
+        def __init__(self, xmobj: XMietobjekt, xhg:XHausgeld ):
+            QFrame.__init__( self )
+            self._xmobj:XMietobjekt = xmobj
+            self._xhg:XHausgeld = xhg
+            self._mleHeader = MultiLineEdit()
+            self._lblQm = BaseEdit()
+            self._eContainerNr = BaseEdit()
+            self._lblHgvNetto = BaseEdit()
+            self._lblRuezufue = BaseEdit()
+            self._lblHgvBrutto = BaseEdit()
+            self._mleBemerkung = MultiLineEdit()
+            self._layout = BaseGridLayout()
+            self.setLayout( self._layout )
+            self._createGui()
+            self._dataToGui()
+
+        def _createGui( self ):
+            wBetrag = 60
+            l = self._layout
+            l.setHorizontalSpacing( 25 )
+            anz_cols = 7
+            for c in range( 0, anz_cols-1 ):
+                l.setColumnStretch( c, 0 )
+            l.setColumnStretch( anz_cols-1, 1 )
+            e = self._mleHeader
+            e.setStyleSheet( "background: lightgray;" )
+            e.setReadOnly( True )
+            e.setFrameStyle( QFrame.NoFrame )
+            e.setMaximumHeight( 40 )
+            r, c = 0, 0
+            l.addWidget( e, r, c, 1, anz_cols )
+
+            r += 1
+            c = 0
+            l.addWidget( BaseLabel( "qm:"), r, c )
+            c += 1
+            self._lblQm.setFixedWidth( wBetrag )
+            self._lblQm.setReadOnly( True )
+            l.addWidget( self._lblQm, r, c )
+            c += 1
+            l.addWidget( BaseLabel( "Container-Nr.:" ), r, c )
+            c += 1
+            l.addWidget( self._eContainerNr, r, c )
+
+            r += 1
+            c = 0
+            l.addWidget( BaseLabel( "HGV netto:" ), r, c, 1, 1 )
+            c += 1
+            self._lblHgvNetto.setFixedWidth( wBetrag )
+            self._lblHgvNetto.setReadOnly( True )
+            l.addWidget( self._lblHgvNetto, r, c, 1, 1, alignment=Qt.AlignLeft )
+            c += 1
+            l.addWidget( BaseLabel( "RüZuFü:"), r, c, 1, 1 )
+            c += 1
+            self._lblRuezufue.setFixedWidth( wBetrag )
+            self._lblRuezufue.setReadOnly( True )
+            l.addWidget( self._lblRuezufue, r, c, 1, 1, alignment=Qt.AlignLeft )
+            c += 1
+            l.addWidget( BaseLabel( "HGV brutto:" ), r, c, 1, 1 )
+            c += 1
+            self._lblHgvBrutto.setFixedWidth( wBetrag )
+            self._lblHgvBrutto.setReadOnly( True )
+            l.addWidget( self._lblHgvBrutto, r, c, 1, 1, alignment=Qt.AlignLeft )
+
+            r += 1
+            c = 0
+            self._mleBemerkung.setPlaceholderText( "Bemerkungen zum Mietobjekt" )
+            self._mleBemerkung.setMaximumHeight( 60 )
+            l.addWidget( self._mleBemerkung, r, c, 1, anz_cols )
+
+        def _dataToGui( self ):
+            x = self._xmobj
+            e = self._mleHeader
+            html = 'Mietobjekt: <font size="+2"><b>' + x.mobj_id + '</font></b>' + \
+                   '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Bezeichnung: <font size="+2"><b>' + \
+                   x.whg_bez + '</font></b>'
+            e.setHtml( html )
+            e.setAlignment( Qt.AlignCenter )
+            self._lblQm.setValue( str(x.qm) )
+            self._eContainerNr.setValue( x.container_nr )
+            self._mleBemerkung.setValue( x.bemerkung )
+            xhg = self._xhg
+            self._lblHgvNetto.setValue( "%.2f" % xhg.hgv_netto )
+            self._lblRuezufue.setValue( "%.2f" % xhg.ruezufue )
+            self._lblHgvBrutto.setValue( "%.2f" % xhg.hgv_brutto )
+
+
+    #####################  MieterUndMietobjektView.MieterView  ####################################
+    class MieterView( QFrame ):
+        def __init__(self, x:XMieter):
+            QFrame.__init__( self )
+            self._xmieter = x
+            self._layout = BaseGridLayout()
+            self.setLayout( self._layout )
+            #self._mleHeader = MultiLineEdit()
+            self._mleHeader = MultiLineEdit()
+            self._eTelefon = BaseEdit()
+            self._eMailto = BaseEdit()
+            self._lblNettoMiete = BaseEdit()
+            self._lblNkv = BaseEdit()
+            self._lblBruttoMiete = BaseEdit()
+            self._lblKaution = BaseEdit()
+            self._mleBemerkung1 = MultiLineEdit()
+            self._mleBemerkung2 = MultiLineEdit()
+            self._createGui()
+            self._dataToGui()
+
+        def _createGui( self ):
+            wBetrag = 60
+            l = self._layout
+            l.setHorizontalSpacing( 20 )
+            anz_cols = 10
+            for c in range( 0, anz_cols - 1 ):
+                l.setColumnStretch( c, 0 )
+            l.setColumnStretch( anz_cols - 1, 1 )
+
+            r, c = 0, 0
+            self._mleHeader.setReadOnly( True )
+            self._mleHeader.setFrameStyle( QFrame.NoFrame )
+            self._mleHeader.setStyleSheet( "background: lightgray;" )
+            self._mleHeader.setFixedHeight( 40 )
+            l.addWidget( self._mleHeader, r, c, 1, anz_cols )
+
+            r += 1
+            c = 0
+            l.addWidget( BaseLabel("Telefon:"), r, c )
+            c += 1
+            self._eTelefon.setFixedWidth( 150 )
+            l.addWidget( self._eTelefon, r, c, 1, 2 )
+            c += 2
+            l.addWidget( BaseLabel( "mailto:" ), r, c )
+            c += 1
+            self._eMailto.setFixedWidth( 260 )
+            l.addWidget( self._eMailto, r, c, 1, 3 )
+
+
+            r += 1
+            c = 0
+            l.addWidget( BaseLabel("Netto-Miete:"), r, c )
+            c += 1
+            self._lblNettoMiete.setReadOnly( True )
+            self._lblNettoMiete.setFixedWidth( wBetrag )
+            l.addWidget( self._lblNettoMiete, r, c )
+            c += 2
+            l.addWidget( BaseLabel( "NKV:" ), r, c )
+            c += 1
+            self._lblNkv.setReadOnly( True )
+            self._lblNkv.setFixedWidth( wBetrag )
+            l.addWidget( self._lblNkv, r, c )
+            c += 1
+            l.addWidget( BaseLabel( "Brutto-Miete:" ), r, c )
+            c += 1
+            self._lblBruttoMiete.setReadOnly( True )
+            self._lblBruttoMiete.setFixedWidth( wBetrag )
+            l.addWidget( self._lblBruttoMiete, r, c )
+            c += 1
+            l.addWidget( BaseLabel( "Kaution:" ), r, c )
+            c += 1
+            self._lblKaution.setFixedWidth( wBetrag )
+            self._lblKaution.setReadOnly( True )
+            l.addWidget( self._lblKaution, r, c )
+
+            r += 1
+            c = 0
+            self._mleBemerkung1.setMaximumHeight( 80 )
+            self._mleBemerkung1.setPlaceholderText( "Bemerkungen zum Mieter" )
+            l.addWidget( self._mleBemerkung1, r, c, 1, 5 )
+            c += 5
+            self._mleBemerkung2.setMaximumHeight( 80 )
+            self._mleBemerkung2.setPlaceholderText( "Weitere Bemerkungen zum Mieter" )
+            l.addWidget( self._mleBemerkung2, r, c, 1, 5 )
+
+        def _dataToGui( self ):
+            x = self._xmieter
+            e = self._mleHeader
+            html = 'Mieter: <font size="+2"><b>' + x.mieter + '</font></b>'
+            e.setHtml( html )
+            e.setAlignment( Qt.AlignCenter )
+            self._eTelefon.setValue( x.telefon )
+            self._eMailto.setValue( x.mailto )
+            self._lblNettoMiete.setValue( "%.2f" % x.nettomiete )
+            self._lblNkv.setValue( "%.2f" % x.nkv )
+            self._lblBruttoMiete.setValue( "%.2f" % x.bruttomiete )
+            self._lblKaution.setValue( str( x.kaution ) )
+            self._mleBemerkung1.setValue( x.bemerkung1 )
+            self._mleBemerkung2.setValue( x.bemerkung2 )
+
+    #################################################
+    def __init__( self, xmiumo:XMieterUndMietobjekt ):
+        QFrame.__init__( self )
+        self._xmiumo = xmiumo
+        #self._mleHeader = MultiLineEdit()
+        self._layout = BaseGridLayout()
+        self.setLayout( self._layout )
+        self._mobjView = MieterUndMietobjektView.MobjView( xmiumo.mietobjekt, xmiumo.hausgeld )
+        self._mieterView = MieterUndMietobjektView.MieterView( xmiumo.mieter )
+        self._createGui()
+
+    def _createGui( self ):
+        l = self._layout
+        l.setHorizontalSpacing( 25 )
+
+        r, c = 0, 0
+        l.addWidget( self._mobjView, r, c )
+        r += 1
+        l.addWidget( self._mieterView, r, c )
+
+
+##############################################################
+def testMieterUndMietobjektView():
+    app = QApplication()
+    #x = createXMieterUndMietobjekt()
+    #v = MieterUndMietobjektView( x )
+    #v.show()
+    app.exec_()
+
+def testMieterView():
+    app = QApplication()
+    x = createXMieter()
+    v = MieterUndMietobjektView.MieterView( x )
+    v.show()
+    app.exec_()
+
+def testMobjView():
+    app = QApplication()
+    xmo = XMietobjekt()
+    xmo.mobj_id = "remigius"
+    xmo.whg_bez = "Whg 7, Haus A, 2. OG li"
+    xmo.qm = 100
+    xmo.container_nr = "A123 B16"
+    xmo.bemerkung = "Braucht unbedingt eine neue Wohnungstür"
+    xhg = XHausgeld()
+    xhg.hgv_netto = 312.90
+    xhg.ruezufue = 77.50
+    xhg.hgv_brutto = xhg.hgv_netto + xhg.ruezufue
+
+    v = MieterUndMietobjektView.MobjView( xmo, xhg )
+    v.show()
+    app.exec_()
+
+########   MietobjektView  ####################################
+class MietobjektView( QFrame ):
+    def __init__( self, x: XMietobjektExt ):
+        QFrame.__init__( self )
+        self._layout = BaseGridLayout()
+        self.setLayout( self._layout )
+        self._mietobjExt = x
+        self._masterView = MasterView( self._createXMasterobjekt() )
+        self._mieterUndMietobjView = MieterUndMietobjektView( self._createXMieterUndMietobjekt() )
+        self._createGui()
+
+    def _createXMasterobjekt( self ) -> XMasterobjekt:
+        ext = self._mietobjExt
+        x = XMasterobjekt()
+        x.master_id = ext.master_id
+        x.master_name = ext.master_name
+        x.strasse_hnr = ext.strasse_hnr
+        x.plz = ext.plz
+        x.ort = ext.ort
+        x.gesamt_wfl = ext.gesamt_wfl
+        x.anz_whg = ext.anz_whg
+        x.verwalter = ext.verwalter
+        x.verwalter_telefon = ext.verwalter_telefon
+        x.verwalter_mailto = ext.verwalter_mailto
+        x.weg_name = ext.weg_name
+        x.hauswart = ext.hauswart
+        x.hauswart_telefon = ext.hauswart_telefon
+        x.hauswart_mailto = ext.hauswart_mailto
+        x.veraeussert_am = ext.veraeussert_am
+        x.heizung = ext.heizung
+        x.energieeffz = ext.energieeffz
+        x.bemerkung = ext.bemerkung_masterobjekt
+        return x
+
+    def _createXMieterUndMietobjekt( self ) -> XMieterUndMietobjekt:
+        x = self._mietobjExt
+        xmum = XMieterUndMietobjekt()
+        xmo:XMietobjekt = xmum.mietobjekt
+        xmo.mobj_id = x.mobj_id
+        xmo.whg_bze = x.whg_bez
+        xmo.qm = x.qm
+        xmo.container_nr = x.container_nr
+        xmo.bemerkung = x.bemerkung_mietobjekt
+        xmi:XMieter = xmum.mieter
+        xmi.mieter = x.mieter
+        xmi.telefon = x.telefon_mieter
+        xmi.mailto = x.mailto_mieter
+        xmi.nettomiete = x.nettomiete
+        xmi.nkv = x.nkv
+        xmi.bruttomiete = xmi.nettomiete + xmi.nkv
+        xmi.kaution = x.kaution
+        xmi.bemerkung1 = x.bemerkung1_mieter
+        xmi.bemerkung2 = x.bemerkung2_mieter
+        xhg:XHausgeld = xmum.hausgeld
+        xhg.hgv_netto = x.hgv_netto
+        xhg.ruezufue = x.ruezufue
+        xhg.hgv_brutto = x.hgv_brutto
+        return xmum
+
+    def _createGui( self ):
+        l = self._layout
+        l.setVerticalSpacing( 15 )
+
+        r, c = 0, 0
+        l.addWidget( self._masterView, r, c )
+
+        r += 1
+        l.addWidget( self._mieterUndMietobjView, r, c )
+
+    def getMietobjektCopyWithChanges( self ) -> XMietobjektExt:
+        xcopy: XMietobjektExt = copy.copy( self._mietobjekt )
+        self._guiToData( xcopy )
+        return xcopy
+
+    def applyChanges( self ):
+        self._guiToData( self._mietobjExt )
+
+    def getModel( self ):
+        return self._mietobjExt
+
+    @staticmethod
+    def getPreferredWidth() -> int:
+        return 1350
+
+    @staticmethod
+    def getPreferredSize() -> QSize:
+        return QSize( MietobjektView.getPreferredWidth(), 786 )
+
 ##################   MietobjektDialog   ######################
 class MietobjektDialog( OkCancelDialog ):
     def __init__( self, view:MietobjektView, title:str="" ):
@@ -461,11 +1142,40 @@ class MietobjektDialog( OkCancelDialog ):
 
 
 ##################   TEST   TEST   TEST   #####################
-# def onSaveChanges():
-#     print( "onSaveChanges" )
-#
-# def onEditVerwaltung():
-#     print( "onEditVerwaltung" )
+
+def testMietobjektNeu():
+    app = QApplication()
+    x = createXMietobjektExt()
+    v = MietobjektView( x )
+    v.show()
+    # sz:QSize = v.size()
+    # print( sz.width(), " ", sz.height() )
+    # sz.setWidth(1350)
+    v.resize( v.getPreferredSize() )
+    app.exec_()
+
+def testHeader2():
+    app = QApplication()
+    w = BaseWidget()
+    w.setStyleSheet( "background: lightgray;" )
+    l = QGridLayout()
+    w.setLayout( l )
+    e = QTextEdit()
+    e.setReadOnly( True )
+    e.setFrameStyle( QFrame.NoFrame )
+    l.addWidget( e, 0, 0, 1, 1 )
+    id = "17"
+    stra = "Kleiststr. 2"
+    html = 'Master-ID: <font size="+2"><b>' + id + '</font></b>' + \
+           '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Master-Name: <font size="+2"><b>' + stra + '</font></b>'
+    e.setHtml( html )
+    e.setAlignment( Qt.AlignCenter )
+    e.append( " " )
+    e.append( "Kaiserstr. 252, <b>Saarbrücken</b>" )
+    e.setAlignment( Qt.AlignCenter )
+    w.show()
+    app.exec_()
+
 
 def test():
     def validate() -> bool:
@@ -473,41 +1183,68 @@ def test():
         print( "mobj_id: ", x.mobj_id )
         return True
 
+    x = createXMietobjektExt()
+    app = QApplication()
+    v = MietobjektView( x )
+    # v.save.connect( onSaveChanges )
+    # v.show()
+    dlg = MietobjektDialog( v, x.mobj_id )
+    dlg.setBeforeAcceptFunction( validate )
+    # dlg.exec_()
+    dlg.show()
+    app.exec_()
+
+def testBackground():
+    app = QApplication()
+    v = QWidget()
+    l = BaseGridLayout()
+    v.setLayout( l )
+
+    w = QWidget()
+    hbl = QHBoxLayout()
+    w.setLayout( hbl )
+    w.setStyleSheet( "background: green;" )
+    lbl = BaseLabel( "Ich bin ein Label" )
+    hbl.addWidget( lbl, alignment=Qt.AlignLeft )
+    lbl2 = FatLabel( "123" )
+    hbl.addWidget( lbl2, alignment=Qt.AlignLeft )
+
+    l.addWidget( w, 0, 0 )
+
+    v.show()
+    app.exec_()
+
+def testHeader():
+    app = QApplication()
+
     x = XMietobjektExt()
     x.master_id = 17
     x.master_name = "NK-Kleist"
     x.plz = "66538"
     x.ort = "Neunkirchen"
     x.strasse_hnr = "Klabautermannstraße 377"
-    x.anz_whg = 8
-    x.gesamt_wfl = 432
-    x.veraeussert_am = "2024-12-01"
-    x.hauswart = "Hans-Jürgen Müller-Westernhagen"
-    x.hauswart_telefon = "06821 / 123456"
-    x.hauswart_mailto = "mueller-hauswart@t-online.de"
-    x.bemerkung_masterobjekt = "Außen hui Innen pfui"
-    x.mobj_id = "kleist_11"
-    x.whg_bez = "1. OG links"
-    x.qm = 50
-    x.container_nr = "098765/11"
-    x.bemerkung_mietobjekt = "Wird unser HQ im Saarland"
-    x.mieter = "Graf von Strübel-Lakaiendorf, Christian-Eberhard"
-    x.telefon_mieter = "0171 / 11211345"
-    x.mailto_mieter = "grastruelakai@t-online.de"
-    x.nettomiete = 234.56
-    x.nkv = 87.69
-    x.verwalter = "GfH Häuserkacke und Versagen garantiert"
-    x.weg_name = "WEG Beispielstraße 22, 55432 Mühlheim"
-    x.hgv_netto = 300.00
-    x.ruezufue = 67.89
-    x.hgv_brutto = 367.89
 
-    app = QApplication()
-    v = MietobjektView( x )
-    #v.save.connect( onSaveChanges )
-    #v.show()
-    dlg = MietobjektDialog( v, x.mobj_id )
-    dlg.setBeforeAcceptFunction( validate )
-    #dlg.exec_()
-    dlg.show()
+    w = QWidget()
+    l = BaseGridLayout()
+    w.setLayout( l )
+    mle = MultiLineEdit()
+    mle.setReadOnly( True )
+    mle.setStyleSheet( "background: green;" )
+    txt = "Master-ID: " + str(x.master_id) + "\t" + "Master-Name: " + x.master_name
+    mle.append( txt )
+    mle.setAlignment( Qt.AlignCenter )
+    mle.append( " " )
+    txt = x.strasse_hnr + ", " + x.plz + " " + x.ort
+    mle.append( txt )
+    mle.setAlignment( Qt.AlignCenter )
+    l.addWidget( mle, 0, 0, 1, 1 )  #, alignment=Qt.AlignCenter )
+
+    mle2 = MultiLineEdit()
+    html = "<html>Eine <b>Testzeile</b></html>"
+    mle2.setHtml( html )
+    mle2.setAlignment( Qt.AlignCenter )
+    l.addWidget( mle2, 1, 0, 1, 1 )
+    w.show()
+
     app.exec_()
+

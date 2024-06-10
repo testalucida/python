@@ -132,9 +132,9 @@ class MietobjektController( IccController ):
                 return False
 
         v = MietobjektView( xmobj_ext )
-        v.edit_miete.connect( self.edit_miete.emit )  # weiterleiten
-        v.edit_mieter.connect( self.edit_mieter.emit )  # weiterleiten
-        v.edit_hausgeld.connect( self.onEditHausgeld )
+        # v.edit_miete.connect( self.edit_miete.emit )  # weiterleiten
+        # v.edit_mieter.connect( self.edit_mieter.emit )  # weiterleiten
+        # v.edit_hausgeld.connect( self.onEditHausgeld )
         dlg = MietobjektDialog( v, xmobj_ext.master_name + " / " + xmobj_ext.mobj_id )
         dlg.setBeforeAcceptFunction( trySave )
         dlg.show()
@@ -152,7 +152,7 @@ def test3():
     from PySide2.QtWidgets import QApplication
     app = QApplication()
     c = MietobjektController()
-    c.onShowObjekt( "kleist_11" )
+    c.onShowObjekt( "thomasmann" )
     app.exec_()
 
 def test():

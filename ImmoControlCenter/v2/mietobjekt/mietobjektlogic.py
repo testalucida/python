@@ -1,6 +1,8 @@
 from typing import Iterable, List
+
+from v2.icc.constants import ValueMapperHelper, Heizung
 from v2.icc.icclogic import IccLogic, IccTableModel
-from v2.icc.interfaces import XMietobjektAuswahl, XMietobjektExt, XMietverhaeltnis, XSollHausgeld
+from v2.icc.interfaces import XMietobjektAuswahl, XMietobjektExt, XMietverhaeltnis, XSollHausgeld, XVerwalter
 
 ##########################   MietobjektTableModel   ###################
 from v2.masterobjekt.masterobjektdata import MasterobjektData
@@ -33,19 +35,23 @@ class MietobjektLogic( IccLogic ):
 
     def getMietobjektExt( self, mobj_id: str ) -> XMietobjektExt:
         xmo: XMietobjektExt = self._data.getMietobjektExt( mobj_id )
-        dic = self._data.getVerwalterNameTelMailto( xmo.master_name )
-        if dic:
-            if xmo.weg_name and len( xmo.weg_name ) > 0:
-                # es ist eine echte Verwaltung
-                tel = "" if not dic["telefon_1"] else dic["telefon_1"]
-                xmo.verwalter = dic["name"] + " (" + tel + ") "
-                if dic["mailto"]:
-                    xmo.verwalter += ("\n" + dic["mailto"])
-            else:
-                # Kleiststr, Eich, Scheidt: ganzes Haus, es gibt nur einen Hauswart
-                xmo.hauswart = dic["name"]
-                xmo.hauswart_telefon = dic["telefon_1"]
-                xmo.hauswart_mailto = dic["mailto"]
+        xmo.heizung = ValueMapperHelper.getDisplay( Heizung, xmo.heizung )
+        xvw:XVerwalter = self._data.getVerwalterDetails( xmo.vw_id )
+        if xvw and xvw.vw_id:
+            # es gibt eine Verwaltung
+            xmo.verwalter_mailto = xvw.mailto
+            xmo.verwalter_telefon = xvw.telefon_1
+            if xvw.telefon_2:
+                if xmo.verwalter_telefon:
+                    xmo.verwalter_telefon += "\n"
+                xmo.verwalter_telefon += xvw.telefon_2
+            xmo.verwalter_bemerkung = xvw.bemerkung
+            xmo.verwalter_ap = xvw.ansprechpartner_1
+            if xvw.ansprechpartner_2:
+                if xmo.verwalter_ap:
+                    xmo.verwalter_ap += "\n"
+                xmo.verwalter_ap += xvw.ansprechpartner_2
+
         xmv: XMietverhaeltnis = MietverhaeltnisLogic().getAktuellesMietverhaeltnisByMietobjekt( xmo.mobj_id )
         if not xmv:
             xmv = XMietverhaeltnis()
@@ -72,6 +78,48 @@ class MietobjektLogic( IccLogic ):
             xmo.ruezufue = xsh.ruezufue
             xmo.hgv_brutto = xsh.brutto
         return xmo
+
+    # def getMietobjektExt( self, mobj_id: str ) -> XMietobjektExt:
+    #     xmo: XMietobjektExt = self._data.getMietobjektExt( mobj_id )
+    #     dic = self._data.getVerwalterNameTelMailto( xmo.master_name )
+    #     if dic:
+    #         if xmo.weg_name and len( xmo.weg_name ) > 0:
+    #             # es ist eine echte Verwaltung
+    #             tel = "" if not dic["telefon_1"] else dic["telefon_1"]
+    #             xmo.verwalter = dic["name"] + " (" + tel + ") "
+    #             if dic["mailto"]:
+    #                 xmo.verwalter += ("\n" + dic["mailto"])
+    #         else:
+    #             # Kleiststr, Eich, Scheidt: ganzes Haus, es gibt nur einen Hauswart
+    #             xmo.hauswart = dic["name"]
+    #             xmo.hauswart_telefon = dic["telefon_1"]
+    #             xmo.hauswart_mailto = dic["mailto"]
+    #     xmv: XMietverhaeltnis = MietverhaeltnisLogic().getAktuellesMietverhaeltnisByMietobjekt( xmo.mobj_id )
+    #     if not xmv:
+    #         xmv = XMietverhaeltnis()
+    #     else:
+    #         xmo.mv_id = xmv.mv_id
+    #         xmo.mieter = xmv.vorname + " " + xmv.name
+    #         if xmv.telefon:
+    #             xmo.telefon_mieter = xmv.telefon
+    #         if xmv.mobil:
+    #             if xmv.telefon:
+    #                 xmo.telefon_mieter += ", "
+    #             xmo.telefon_mieter += xmv.mobil
+    #         if xmv.mailto:
+    #             xmo.mailto_mieter = xmv.mailto
+    #
+    #         xmo.nettomiete = xmv.nettomiete
+    #         xmo.nkv = xmv.nkv
+    #         xmo.kaution = xmv.kaution
+    #     xsh: XSollHausgeld = SollHausgeldLogic().getCurrentSollHausgeld( xmo.mobj_id )
+    #     #xmo.verwalter = xsh.vw_id
+    #     #xmo.weg_name = xsh.weg_name
+    #     if xsh: # Wohnung könnte derzeit nicht vermietet sein, dann ist xsh None
+    #         xmo.hgv_netto = xsh.netto
+    #         xmo.ruezufue = xsh.ruezufue
+    #         xmo.hgv_brutto = xsh.brutto
+    #     return xmo
 
     def saveMietobjektExt( self, x:XMietobjektExt ) -> str:
         """

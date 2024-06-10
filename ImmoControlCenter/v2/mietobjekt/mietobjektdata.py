@@ -36,18 +36,20 @@ class MietobjektData( IccData ):
     def getMietobjektExt( self, mobj_id:str ) -> XMietobjektExt:
         """
         Liefert alle Daten zu einer mobj_id aus den Tabellen masterobjekt und mietobjekt.
-        Liefert keine Verwaltungs- bzw. Verwalterdaten.
+        Liefert aus Tabelle verwaltung die Spalten vw_id und weg_name.
         :param mobj_id:
         :return:
         """
         sql = "select m.master_id, m.master_name, m.strasse_hnr, m.plz, m.ort, m.gesamt_wfl, m.anz_whg, m.veraeussert_am," \
               "m.hauswart, m.hauswart_telefon, m.hauswart_mailto, m.heizung, m.energieeffz, m.bemerkung as bemerkung_masterobjekt, " \
               "o.mobj_id, o.whg_bez, o.qm, o.container_nr, o.bemerkung as bemerkung_mietobjekt," \
-              "vwg.vw_id as verwalter, vwg.weg_name " \
+              "vwg.vw_id as vw_id, vwg.vw_id as verwalter, vwg.vw_ap as verwalter_ap, vwg.weg_name " \
               "from mietobjekt o " \
               "inner join masterobjekt m on m.master_name = o.master_name " \
               "left outer join verwaltung vwg on vwg.master_name = o.master_name " \
-              "where o.mobj_id = '%s' " % mobj_id
+              "where o.mobj_id = '%s' " \
+              "and vwg.von <= CURRENT_DATE " \
+              "and (vwg.bis is NULL or vwg.bis = '' or vwg.bis >= CURRENT_DATE) " % mobj_id
         return self.readOneGetObject( sql, XMietobjektExt )
 
     def getMietobjektData1( self, mobj_id:str ) -> Dict:

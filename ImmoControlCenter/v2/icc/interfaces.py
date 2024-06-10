@@ -187,7 +187,7 @@ class XMietverhaeltnisKurz( XBase ):
         if valuedict:
             self.setFromDict( valuedict )
 
-#####################  WEG  ######################
+#####################  Verwaltung  ######################
 class XVerwaltung( XBase ):
     def __init__( self, valuedict: Dict = None ):
         XBase.__init__( self )
@@ -198,6 +198,22 @@ class XVerwaltung( XBase ):
         self.vw_id = ""
         self.von = ""
         self.bis = ""
+        if valuedict:
+            self.setFromDict( valuedict )
+
+###############  Verwalter  ################################
+class XVerwalter( XBase ):
+    def __init__( self,  valuedict: Dict = None ):
+        self.vw_id = ""
+        self.name = ""
+        self.strasse = ""
+        self.plz_ort = ""
+        self.telefon_1 = ""
+        self.telefon_2 = ""
+        self.mailto = ""
+        self.ansprechpartner_1 = ""
+        self.ansprechpartner_2 = ""
+        self.bemerkung = ""
         if valuedict:
             self.setFromDict( valuedict )
 
@@ -281,10 +297,16 @@ class XMasterobjekt( XBase ):
         self.afa_wie_vj = "X"
         self.afa = 0
         self.afa_proz = 0.0
+        self.verwalter = "" # Achtung, dieses Feld wird nur innerhalb der MietobjektView gefüllt, um eine MasterView
+                            # zu erzeugen!
+        self.verwalter_telefon = ""
+        self.verwalter_mailto = ""
+        self.weg_name = ""
         self.hauswart = ""
         self.hauswart_telefon = ""
         self.hauswart_mailto = ""
         self.heizung = ""
+        self.energieeffz = ""
         self.angeschafft_am = ""
         self.veraeussert_am = ""
         self.bemerkung = ""
@@ -301,6 +323,34 @@ class XMietobjekt( XBase ):
         self.bemerkung = ""
         if valuedict:
             self.setFromDict( valuedict )
+
+class XHausgeld( XBase ):
+    def __init__( self ):
+        XBase.__init__( self )
+        self.hgv_netto = 0.0
+        self.ruezufue = 0.0
+        self.hgv_brutto = 0.0
+
+class XMieter( XBase ):
+    def __init__( self ):
+        XBase.__init__( self )
+        self.mieter = ""
+        self.telefon = ""
+        self.mailto = ""
+        self.nettomiete = 0.0
+        self.nkv = 0.0
+        self.bruttomiete = 0.0
+        self.kaution = 0
+        self.bemerkung1 = ""
+        self.bemerkung2 = ""
+
+class XMieterUndMietobjekt( XBase ):
+    def __init__( self ):
+        XBase.__init__( self )
+        self.mietobjekt = XMietobjekt()
+        self.hausgeld = XHausgeld()
+        self.mieter = XMieter()
+
 
 #################  MietobjektExt  #############################
 class XMietobjektExt( XBase ):
@@ -338,8 +388,15 @@ class XMietobjektExt( XBase ):
         self.nettomiete:float = 0.0
         self.nkv:float = 0.0
         self.kaution:float = 0.0
+        self.bemerkung1_mieter = "" # todo: muss noch versorgt werden
+        self.bemerkung2_mieter = "" # todo: muss noch versorgt werden
         self.weg_name:str = ""
+        self.vw_id = ""
         self.verwalter:str = ""
+        self.verwalter_telefon = "" # todo: muss noch versorgt werden
+        self.verwalter_mailto = ""   # todo: muss  noch versorgt werden
+        self.verwalter_bemerkung = "" # todo: muss  noch versorgt werden
+        self.verwalter_ap = "" # Ansprechpartner # todo: muss  noch versorgt werden
         self.hgv_netto:float = 0.0
         self.ruezufue:float = 0.0
         self.hgv_brutto:float = 0.0

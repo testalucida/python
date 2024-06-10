@@ -43,11 +43,38 @@ class Action( IntEnum ):
     COPY_CELL = auto() # Kopiere nur den Wert der geklickten Zelle
     COPY_BETRAEGE = auto() # Kopiere die Beträge der markierten Zeilen
 
+
 class ValueMapper:
     def __init__( self, display, dbvalue ):
         self.display = display
         self.dbvalue = dbvalue
 
+class ValueMapperHelper:
+    @staticmethod
+    def getDisplayValues( T:type, issorted:bool = True ) -> List[str]:
+        l = list()
+        for attr in T.__dict__.values():
+            if isinstance( attr, ValueMapper ):
+                l.append( attr.display )
+        if issorted:
+            l = list( sort( l ) )
+        return l
+
+    @staticmethod
+    def getDisplay( T:type, dbvalue: str ) -> str:
+        for attr in T.__dict__.values():
+            if isinstance( attr, ValueMapper ):
+                if attr.dbvalue == dbvalue:
+                    return attr.display
+        raise Exception( "ValueMapperHelper.getDisplay():\nDB-Value '%s' nicht gefunden." % dbvalue )
+
+    @staticmethod
+    def getDbValue( T:type, display: str ) -> str:
+        for attr in T.__dict__.values():
+            if isinstance( attr, ValueMapper ):
+                if attr.display == display:
+                    return attr.dbvalue
+        raise Exception( "ValueMapperHelper.getDbValue():\nDisplay value '%s' nicht gefunden." % display )
 
 class Modus:
     NEW = "new"
@@ -58,6 +85,21 @@ class Umlegbar( Enum ):
     NEIN = "nein"
     JA = "ja"
     NONE = ""
+
+class Heizung:
+    NOT_SET = ValueMapper( "", "" )
+    GASZENTRAL = ValueMapper( "Gaszentralheizung", "GZH" )
+    OELZENTRAL = ValueMapper( "Ölzentralheizung", "ÖZH" )
+    GASETAGE = ValueMapper( "Gasetagenheizung", "GEH" )
+    NACHTSPEICHER = ValueMapper( "Nachtspeicheröfen", "NSÖ" )
+
+def test():
+    values = ValueMapperHelper.getDisplayValues( Heizung, issorted=False )
+    print( values )
+    dispval = ValueMapperHelper.getDisplay( Heizung, Heizung.GASZENTRAL.dbvalue )
+    print( dispval )
+    dbval = ValueMapperHelper.getDbValue( Heizung, Heizung.GASZENTRAL.display )
+    print( dbval )
 
 class EinAusArt: # EinAus-Arten, wie sie in die Tabelle einaus eingetragen werden.
     BRUTTOMIETE = ValueMapper( "Bruttomiete", "bruttomiete" )

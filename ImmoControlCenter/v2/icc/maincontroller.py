@@ -193,16 +193,16 @@ class MainController( IccController ):
     def getMenu( self ) -> QMenu:
         menu = QMenu( "ImmoCenter" )
         # Menü "Datenbank zum Server exportieren"
-        # action = BaseAction( "Datenbank zum Server exportieren", parent=menu )
-        # action.triggered.connect( self.onExportDatabase )
-        # menu.addAction( action )
+        action = BaseAction( "Datenbank zum Server exportieren", parent=menu )
+        action.triggered.connect( self.onExportDatabase )
+        menu.addAction( action )
         #
         # # Menü "Datenbank vom Server importieren"
         # action = BaseAction( "Datenbank vom Server importieren", parent=menu )
         # action.triggered.connect( self.onImportDatabase )
         # menu.addAction( action )
         #
-        # menu.addSeparator()
+        menu.addSeparator()
 
         # # Menüpunkt "Ende"
         action = BaseAction( "Ende", parent=menu )
@@ -265,16 +265,16 @@ class MainController( IccController ):
         """
         self._updateSummen( ea_art_display, betrag )
 
-    def onExportDatabase( self ):
-        try:
-            dic = self._win.getLetzteBuchung()
-            self._logic.saveLetzteBuchung( dic["datum"], dic["text"] )
-            self._logic.exportDatabaseToServer()
-            box = InfoBox( "Datenbank-Export", "Export der Datenbank abgeschlossen.", "", "OK" )
-            box.exec_()
-        except Exception as ex:
-            box = ErrorBox( "Datenbank-Export", "Export der Datenbank fehlgeschlagen.", str(ex) )
-            box.exec_()
+    # def onExportDatabase( self ):
+    #     try:
+    #         dic = self._win.getLetzteBuchung()
+    #         self._logic.saveLetzteBuchung( dic["datum"], dic["text"] )
+    #         self._logic.exportDatabaseToServer()
+    #         box = InfoBox( "Datenbank-Export", "Export der Datenbank abgeschlossen.", "", "OK" )
+    #         box.exec_()
+    #     except Exception as ex:
+    #         box = ErrorBox( "Datenbank-Export", "Export der Datenbank fehlgeschlagen.", str(ex) )
+    #         box.exec_()
 
     # def onImportDatabase( self ):
     #     dlg = QInputDialog()
@@ -297,9 +297,27 @@ class MainController( IccController ):
     def onExit( self ):
         self._win.close()
 
-    def onBeforeShutdown( self ) -> bool:
+    def onBeforeShutdown( self ):
         """
         "Letzte Buchung" speichern.
+        :return:
+        """
+        try:
+            self._saveLetzteBuchung()
+            return True
+        except Exception as ex:
+            box = WarningBox( "Speichern der letzten Buchung", "Speichern fehlgeschlagen: " + str( ex ),
+                              "Anwendung trotzdem schließen?", "Ja", "Nein" )
+            if box.exec_() == QMessageBox.Yes:
+                return True
+            return False
+
+    def _saveLetzteBuchung( self ):
+        dic = self._win.getLetzteBuchung()
+        self._logic.saveLetzteBuchung( dic["datum"], dic["text"] )
+
+    def onExportDatabase( self ):
+        """
         Datenbank zum Server hochladen.
         :return:
         """
@@ -315,15 +333,13 @@ class MainController( IccController ):
             self._rcFtpExportDatabase = False
 
         self._rcFtpExportDatabase = None
-        dic = self._win.getLetzteBuchung()
         try:
-            self._logic.saveLetzteBuchung( dic["datum"], dic["text"])
+            self._saveLetzteBuchung()
         except Exception as ex:
             box = WarningBox( "Speichern der letzten Buchung", "Speichern fehlgeschlagen: " + str(ex),
-                              "Anwendung trotzdem schließen?", "Ja", "Nein" )
-            if box.exec_() == QMessageBox.Yes:
-                return True
-            return False
+                              "Datenbank trotzdem exportieren?", "Ja", "Nein" )
+            if box.exec_() != QMessageBox.Yes:
+                return
 
         self._win.setCursor( Qt.WaitCursor )
         worker = Worker( self._logic.exportDatabaseToServer )
@@ -336,23 +352,7 @@ class MainController( IccController ):
         while self._rcFtpExportDatabase is None:
             QApplication.processEvents()
         infopanel.close()
-        return self._rcFtpExportDatabase
 
-        # try:
-        #     self._win.setCursor( Qt.WaitCursor)
-        #     worker = Worker( self._logic.exportDatabaseToServer() )
-        #     worker.signals.finished( onExported )
-        #     worker.signals.error.connect( onExportError )
-        #     self._threadpool.start( worker )
-        #     #self._logic.exportDatabaseToServer()
-        #     # box = InfoBox( "Datenbank-Export", "Datenbank exportiert.", "", "OK" )
-        #     # box.exec_()
-        #     return True
-        # except Exception as ex:
-        #     self._win.setCursor( Qt.ArrowCursor )
-        #     box = ErrorBox( "Datenbank-Export", "Export der Datenbank fehlgeschlagen.", str(ex) )
-        #     box.exec_()
-        #     return False
 
 ####################################################################################
 def testScreenSize( win:IccMainWindow ):

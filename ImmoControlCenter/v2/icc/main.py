@@ -29,7 +29,7 @@ class ShutDownFilter( QtCore.QObject ):
         return super( ShutDownFilter, self ).eventFilter( obj, event )
 
     def quit_app( self ):
-        saveDatabase()
+        #saveDatabase()
         geom = self._win.geometry()
         #print( 'CLEAN EXIT. x=%d - y=%d - w=%d - h=%d' % (geom.x(), geom.y(), geom.width(), geom.height()) )
         #writeGeometryOnShutdown( geom.x(), geom.y(), geom.width(), geom.height() )
