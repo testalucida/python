@@ -55,6 +55,7 @@ class FtpIni:
         user:bytes = crypt.getDecryptedFromFile( key, self._enc_user_file )
         pwd:bytes = crypt.getDecryptedFromFile( key, self._enc_pwd_file )
         return ( user.decode(), pwd.decode() )
+##########################################################################################
 
 class Ftp:
     def __init__( self, ftpIni:FtpIni ):
@@ -76,18 +77,6 @@ class Ftp:
         :return:
         """
         self._ftp.quit()
-
-    def existsFile( self, remotefilename:str ) -> bool:
-        """
-        Checks if <remotefilenname> exists on the remote path set in self._ftpIni.
-        Returns True if file exists else False
-        :param remotefilename:
-        :return:
-        """
-        path = self._ftpIni.getRemotePath()
-        self._ftp.cwd( self._ftpIni.getRemotePath() )
-        lst = self._ftp.nlst( )
-        return remotefilename in lst
 
     def upload( self, localfilename:str, remotefilename:str ) -> None:
         """
@@ -118,7 +107,12 @@ class Ftp:
             tmpfile = localpathnfile + ".tmp"
             savfile = localpathnfile + ".sav"
             # step 1:
-            self._ftp.retrbinary( "RETR " + remotepathnfile, open( tmpfile, 'wb' ).write )
+            try:
+                tmpfileIO = open( tmpfile, 'wb' )
+            except Exception as ex:
+                msg = "Can't open or create " + tmpfile + " for writing:\n\t" + str(ex)
+                raise Exception( msg ) from ex
+            self._ftp.retrbinary( cmd="RETR " + remotepathnfile, callback=tmpfileIO.write )
             # still here - download ok. Save the old file, rename the downloaded one.
             try:
                 # step 2:
@@ -145,20 +139,85 @@ class Ftp:
             raise( x )
             #raise( Exception( "ftp.download(): Download %s to %s failed:\n%s" % ( remotepathnfile, localpathnfile, str( x ) ) ) )
 
-    def deleteFile( self, remotefilename:str ):
-        self._ftp.cwd( self._ftpIni.getRemotePath() )
-        self._ftp.delete( remotefilename )
+    def exists(self, filename:str) -> bool:
+        """
+        checks if given filename exists in specified remotePath (see file ftpIni)
+        :param filename: filename to check
+        :return: true if filename exists on remotePath else False
+        """
+        # set remote path as current work directory
+        def check(entry):
+            nonlocal file_exists
+            if entry.endswith(filename):
+                file_exists = True
+        pwd = self._ftp.pwd()
+        self._ftp.cwd(self._ftpIni.getRemotePath())
+        file_exists = False
+        self._ftp.retrlines('LIST', check)
+        self._ftp.cwd( pwd )
+        return file_exists
+
+    def deleteFile(self, filename:str) -> None:
+        """
+        deletes file <filename> from remotePath (see file ftpIni).
+        Raises Exception if operation is not successful.
+        :param filename: name of the file to delete
+        :return: text of response
+        """
+        pathnfile = self._ftpIni.getRemotePath() + filename
+        self._ftp.delete( pathnfile )
+
+    def rename( self, from_name:str, to_name:str ) -> None:
+        """
+        renames a file on the server located on the specified remote path.
+        Throws an exception if operation is not successful.
+        :param from_name:
+        :param to_name:
+        :return: an empty string if successful, else an error message
+        """
+        from_pathnfile = self._ftpIni.getRemotePath() + from_name
+        to_pathnfile = self._ftpIni.getRemotePath() + to_name
+        self._ftp.rename( from_pathnfile, to_pathnfile )
+
+    def getFilenames( self ) -> List[str]:
+        """
+        Returns a list of filenames in specified remotePath (see file ftpIni).
+        No folder names are returned.
+        :return:
+        """
+        file_list = list()
+        pwd = self._ftp.pwd()
+        self._ftp.cwd( self._ftpIni.getRemotePath( ) )
+        gen_obj = self._ftp.mlsd( facts=["type"])
+        for tpl in gen_obj:
+            dic = tpl[1]
+            if dic["type"] not in ( "dir", "pdir", "cdir" ):
+                file_list.append( tpl[0] )
+        self._ftp.cwd( pwd )
+        return file_list
+###########################################################################
 
 
 def testUpAndDownload():
-    # ftpIni = FtpIni( "../ImmoControlCenter/v2/icc/ftp.ini" )
-    ftpIni = FtpIni( "../InvestMonitor/imon/ftp.ini" )
+    ftpIni = FtpIni( "../ImmoControlCenter/v2/icc/ftp.ini" )
     ftp = Ftp( ftpIni )
     ftp.connect()
-    rc = ftp.existsFile( "db_in_use" )
-    #ftp.deleteFile( "db_in_use" )
-    #ftp.upload( "db_in_use", "db_in_use" )
-    #ftp.upload( "immo.db", "immo.db" )
-    #ftp.download( "immo.db", "immo.db" )
+    files = ftp.getFilenames()
+    print( files )
+    # try:
+    #     ftp.delete("kannweg2")
+    # except Exception as ex:
+    #     print( str(ex) )
+    # exists = ftp.exists( "immo.db" )
+    # if exists:
+    #     msg = ftp.rename( "immo.db", "immo.db.locked" )str
+    # exists = ftp.exists( "immo.db.locked" )
+    # if exists:
+    #     msg = ftp.rename( "immo.db.locked", "immo.db"  )
+    # print(exists)
+    # # ftp.upload( "immokannweg", "immokannweg" )
+    # msg = ftp.delete( "immokannweg" )
+    # print( msg )
+    # ftp.download( "immo.db", "immokannweg" )
     ftp.quit()
 
