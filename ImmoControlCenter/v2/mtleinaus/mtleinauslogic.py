@@ -611,6 +611,14 @@ class AbschlagLogic( MtlEinAusLogic ):
         """
         return ""
 
+    def saveSollAbschlag( self, xsa:XSollAbschlag ) -> str:
+        """
+        Speichert einen neuen/geänderten SollAbschlag.
+        :param xsa: Daten des zu speichernden SollAbschlags
+        :return: Fehlermeldung bzw. "", wenn alles gut geganten ist.
+        """
+        return ""
+
 
 def test():
     logic = HausgeldLogic()

@@ -618,11 +618,11 @@ class AbschlagController( MtlEinAusController ):
         eatm.setKeyHeaderMappings2( keys, headers )
         return eatm
 
-    def onShowLeistungsvertrag( self, sab_id:int ):
+    def onShowAbschlagData( self, sab_id:int ):
         xsa = self._logic.getSollAbschlag( sab_id )
-        self.showVertragDialog( xsa, Modus.MODIFY )
+        self.showAbschlagDialog( xsa, Modus.MODIFY )
 
-    def showVertragDialog( self, xsa: XSollAbschlag, modus:Modus ):
+    def showAbschlagDialog( self, xsa: XSollAbschlag, modus:Modus ):
         """
         Zeigt die Details des Leistungsvertrags <xsa>
         :param xsa: XSollAbschlag-Objekt
@@ -632,11 +632,12 @@ class AbschlagController( MtlEinAusController ):
         def validate():
             v = dlg.getDynamicAttributeView()
             xcopy:XSollAbschlag = v.getModifiedXBaseCopy()
-            return self._logic.validateKuendigungDaten( xcopy )
+            msg = self._logic.validateSollAbschlag( xcopy )
+            return msg
         xui = XBaseUI( xsa )
         masternames = self._logic.getMasterNamen()
-        # if modus == Modus.NEW:
-        #     xsa.master_name = masternames[0]
+        if modus == Modus.NEW:
+            xsa.master_name = masternames[0]
         mietobjektenames = self._logic.getMietobjektNamen( xsa.master_name )
         ea_art_list = (EinAusArt.ALLGEMEINE_KOSTEN.display, EinAusArt.GRUNDSTEUER.display,
                        EinAusArt.SONSTIGE_KOSTEN.display, EinAusArt.VERSICHERUNG.display)
@@ -654,10 +655,9 @@ class AbschlagController( MtlEinAusController ):
             v.updateData()  # Validierung war ok, also Übernahme der Änderungen ins XBase-Objekt
             try:
                 # Logik-Aufruf zum Speichern
-                xbasecopy = print( v.getModifiedXBaseCopy() )
-                print( xbasecopy )
+                self._logic.saveSollAbschlag( xsa )
             except Exception as ex:
-                box = ErrorBox( "AbschlagController.onShowLeistungsvertrag():\n"
+                box = ErrorBox( "AbschlagController.onShowVertragDialog():\n"
                                 "Fehler beim Speichern des Vertrags", str( ex ), xsa.toString( True ) )
                 box.exec_()
                 return
@@ -710,7 +710,7 @@ class AbschlagController( MtlEinAusController ):
             sab_id, year, monthIdx = self._getSelection()
             actions = list()
             a = BaseAction( "Leistungsvertrag..." )
-            a.triggered.connect( lambda: self.onShowLeistungsvertrag( sab_id ) )
+            a.triggered.connect( lambda: self.onShowAbschlagData( sab_id ) )
             actions.append( a )
             return actions
         return None
@@ -747,5 +747,5 @@ def test():
     # xsa.betrag = -65.78
     # xsa.bemerkung = "Strom vom Stromlieferanten"
     ctrl = AbschlagController()
-    ctrl.onShowLeistungsvertrag( 3 )
+    ctrl.onShowAbschlagData( 3 )
 
