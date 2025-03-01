@@ -1,6 +1,6 @@
 from typing import List, Dict
 
-from v2.icc.iccdata import IccData
+from v2.icc.iccdata import IccData, DbAction
 from v2.icc.interfaces import XSollMiete, XSollAbschlag
 
 
@@ -17,7 +17,7 @@ class AbschlagData( IccData ):
         l:List[XSollAbschlag] = self.readAllGetObjectList( sql, XSollAbschlag )
         return l
 
-    def getSollabschlaege( self, jahr: int ) -> List[XSollAbschlag]:
+    def getSollabschlaege__Feb_2025( self, jahr: int ) -> List[XSollAbschlag]:
         minbis = "%d-%02d-%02d" % (jahr, 1, 1)
         maxvon = "%d-%02d-%02d" % (jahr, 12, 31)
         sql = "select sab_id, kreditor, vnr, leistung, ea_art, master_name, coalesce(mobj_id, '') as mobj_id, " \
@@ -30,17 +30,57 @@ class AbschlagData( IccData ):
         l:List[XSollAbschlag] = self.readAllGetObjectList( sql, XSollAbschlag )
         return l
 
-    def getSollAbschlag( self, sab_id:int ) -> XSollAbschlag:
+    def getSollabschlaege( self ) -> List[XSollAbschlag]:
+        sql = "select sab_id, kreditor, vnr, leistung, ea_art, master_name, coalesce(mobj_id, '') as mobj_id, " \
+              "betrag, umlegbar, coalesce(bemerkung, '') as bemerkung " \
+              "from sollabschlag " \
+              "order by kreditor, mobj_id "
+        l: List[XSollAbschlag] = self.readAllGetObjectList( sql, XSollAbschlag )
+        return l
+
+    def getSollAbschlag__Feb_2025( self, sab_id:int ) -> XSollAbschlag:
         sql = "select sab_id, kreditor, vnr, leistung, ea_art, master_name, mobj_id, von, coalesce(bis, '') as bis, " \
               "betrag, umlegbar, bemerkung " \
               "from sollabschlag " \
               "where sab_id = %d " % sab_id
         return self.readOneGetObject( sql, XSollAbschlag )
 
+    def getSollAbschlag( self, sab_id:int ) -> XSollAbschlag:
+        sql = "select sab_id, kreditor, vnr, leistung, ea_art, master_name, mobj_id, " \
+              "betrag, umlegbar, bemerkung " \
+              "from sollabschlag " \
+              "where sab_id = %d " % sab_id
+        return self.readOneGetObject( sql, XSollAbschlag )
+
+
     def getVnrUndEaArtUndUmlegbar( self, sab_id:int ) -> Dict:
         sql = "select vnr, ea_art, umlegbar from sollabschlag where sab_id = " + str( sab_id )
         dic = self.readOneGetDict( sql )
         return dic
+
+    def updateSollAbschlag( self, xsa:XSollAbschlag ) -> int:
+        oldX = self.getSollAbschlag( xsa.sab_id )
+        mobj_id = "NULL" if not xsa.mobj_id else ("'%s'" % xsa.mobj_id)
+        vnr = "NULL" if not xsa.vnr else ("'%s'" % xsa.vnr)
+        leistung = "NULL" if not xsa.leistung else ("'%s'" % xsa.leistung)
+        bemerkung = "NULL" if not xsa.bemerkung else ("'%s'" % xsa.bemerkung)
+        sql = "update sollabschlag " \
+              "set " \
+              "kreditor = '%s', " \
+              "vnr = %s, " \
+              "leistung = %s, " \
+              "ea_art = '%s', " \
+              "master_name = '%s', " \
+              "mobj_id = %s, " \
+              "betrag = %.2f," \
+              "umlegbar = '%s', " \
+              "bemerkung = %s " \
+              "where sab_id = %d " % (xsa.kreditor, vnr, leistung, xsa.ea_art, xsa.master_name, mobj_id, xsa.betrag,
+                                     xsa.umlegbar, bemerkung, xsa.sab_id )
+        rowsAffected = self.writeAndLog( sql, DbAction.UPDATE, "sollabschlag_update", "sab_id", xsa.sab_id,
+                                         newvalues=xsa.toString( True ), oldvalues=oldX.toString( True ) )
+        return rowsAffected
+
 
 
 ##################################################################################

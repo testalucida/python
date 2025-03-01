@@ -47,12 +47,6 @@ class EinAusLogic(IccLogic):
         tm = EinAusTableModel( l, jahr )
         return tm
 
-    def getZahlungenModel2( self, ea_art_display:str, jahr:int, monthIdx:int, mobj_id:str ) -> EinAusTableModel:
-        month_sss = iccMonthShortNames[monthIdx]
-        l: List[XEinAus] = self._einausData.getEinAuszahlungen2( ea_art_display, jahr, month_sss, mobj_id )
-        tm = EinAusTableModel( l, jahr )
-        return tm
-
     def getZahlungenModel3( self, ea_art_display, jahr:int, monthIdx:int, debikredi:str ) -> EinAusTableModel:
         """
         :param ea_art:

@@ -125,6 +125,7 @@ class EinAusArt: # EinAus-Arten, wie sie in die Tabelle einaus eingetragen werde
     DIENSTREISE = ValueMapper( "Dienstreise", "reise" )
     SONSTIGE_KOSTEN = ValueMapper( "Sonstige Kosten", "sonst" )
     VERSICHERUNG = ValueMapper( "Versicherung", "vers" )
+    UNKNOWN = ValueMapper( "Unbekannt", "unbekannt" )
 
     @staticmethod
     def getDisplayValues( issorted:bool = True ) -> List[str]:

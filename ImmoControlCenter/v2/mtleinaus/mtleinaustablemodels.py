@@ -40,6 +40,9 @@ class MtlEinAusTableModel( IccSumTableModel ):
         self.idxSumColumn = self.getColumnIndexByKey( "summe" )
 
     def getMtlZahlung( self, mobj_id:str, debi_kredi:str ) -> XMtlZahlung:
+        #todo: das ist wahrscheinlich falsch, da es zu einer mobj_id und einem debi_kredi mehrere Zahlungen geben kann.
+                # Testen: für *eine* Monatsmiete 2 Zahlungen anlegen. Eine davon über den Dialog löschen --> müsste
+                # Zufall sein, welche geliefert wird
         debi_kredi_key = self.getDebiKrediKey()
         for xmz in self.rowList:
             if xmz.mobj_id == mobj_id and xmz.__dict__[debi_kredi_key] == debi_kredi:
@@ -257,3 +260,18 @@ class AbschlagTableModel( MtlEinAusTableModel ):
     def getSab_id( self, row ) -> int:
         x = self.getElement( row )
         return x.sab_id
+
+    def getMtlAbschlag( self, sab_id:int ) -> XMtlAbschlag:
+        for xmz in self.rowList:
+            if xmz.mobj_id == sab_id:
+                return xmz
+
+    def getMtlZahlung2( self, master_name: str, debi_kredi:str, ea_art_display: str, leistung:str ) -> XMtlZahlung:
+        for xmz in self.rowList:
+            if xmz.master_name == master_name \
+            and xmz.kreditor == debi_kredi \
+            and xmz.ea_art == ea_art_display \
+            and xmz.leistung == leistung:
+                return xmz
+        return None
+

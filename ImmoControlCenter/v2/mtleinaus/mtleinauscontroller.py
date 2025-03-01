@@ -655,10 +655,18 @@ class AbschlagController( MtlEinAusController ):
             v.updateData()  # Validierung war ok, also Übernahme der Änderungen ins XBase-Objekt
             try:
                 # Logik-Aufruf zum Speichern
-                self._logic.saveSollAbschlag( xsa )
+                rowsAffected = self._logic.saveSollAbschlag( xsa )
+                if rowsAffected == 0:
+                    box = ErrorBox( "Datenbankfehler",
+                                    "Fehler in AbschlagController.onShowAbschlagDialog():\n",
+                                    "Zur angegebenen sab_id (%d) keinen Datensatz gefunden. " % xsa.sab_id )
+                    box.exec_()
+                    return
             except Exception as ex:
-                box = ErrorBox( "AbschlagController.onShowVertragDialog():\n"
-                                "Fehler beim Speichern des Vertrags", str( ex ), xsa.toString( True ) )
+                box = ErrorBox( "Datenbankfehler",
+                                "Fehler beim Speichern des Abschlags in AbschlagController.onShowAbschlagDialog():\n",
+                                "Fehler beim Speichern des Vertrags:\n" + str( ex ) + "\nSchnittstellendaten:\n" +
+                                xsa.toString( True ) )
                 box.exec_()
                 return
         else:
@@ -682,8 +690,9 @@ class AbschlagController( MtlEinAusController ):
                                      comboValues=ea_art_list ),
                    VisibleAttribute( "umlegbar", BaseComboBox, "umlegbar: ", widgetWidth=smallW,
                                      comboValues=[Umlegbar.JA.value, Umlegbar.NEIN.value], editable=True ),
-                   VisibleAttribute( "von", SmartDateEdit, "beginnt: ", widgetWidth=smallW ),
-                   VisibleAttribute( "bis", SmartDateEdit, "endet: ", widgetWidth=smallW ),
+                   #### Feb. 2025
+                   # VisibleAttribute( "von", SmartDateEdit, "beginnt: ", widgetWidth=smallW ),
+                   # VisibleAttribute( "bis", SmartDateEdit, "endet: ", widgetWidth=smallW ),
                    VisibleAttribute( "bemerkung", BaseEdit, "Bemerkung: ", columnspan=4, editable=True ))
         return vislist
 
@@ -709,7 +718,7 @@ class AbschlagController( MtlEinAusController ):
         if key in ( "kreditor", "leistung", "vnr", "soll" ):
             sab_id, year, monthIdx = self._getSelection()
             actions = list()
-            a = BaseAction( "Leistungsvertrag..." )
+            a = BaseAction( "Leistungsvertrag anschauen und ändern..." )
             a.triggered.connect( lambda: self.onShowAbschlagData( sab_id ) )
             actions.append( a )
             return actions

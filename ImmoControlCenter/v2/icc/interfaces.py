@@ -285,8 +285,8 @@ class XSollAbschlag( XBase ):
                           # geschrieben
         self.master_name = ""
         self.mobj_id = "" # nur erforderlich für eine Leerstehende Wohnung. Dann werden die Verträge auf mich abgeschlossen.
-        self.von = ""
-        self.bis = ""
+        # self.von = ""
+        # self.bis = ""
         self.betrag = 0.0
         self.umlegbar = 0
         self.bemerkung = ""

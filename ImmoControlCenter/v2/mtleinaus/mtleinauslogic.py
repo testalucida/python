@@ -92,10 +92,14 @@ class MtlEinAusLogic( IccLogic ):
         # alles ok
         delta = x.betrag - oldxea.betrag
         if delta != 0:
-            self._updateMonatswertAndSumme( tm, x.monat, x.mobj_id, x.debi_kredi, delta )
+            ## Feb. 2025## self._updateMonatswertAndSumme( tm, x.monat, x.mobj_id, x.master_name, x.debi_kredi, delta )
+            xmz: XMtlZahlung = self.getMtlZahlung( tm=tm, mobj_id=x.mobj_id, debi_kredi=x.debi_kredi )
+            self._updateMonatswertAndSumme( xmz, tm, x.monat, delta )
         return delta
 
     def getZahlungenModelObjektMonat( self, mobj_id, year:int, monthIdx:int ) -> EinAusTableModel:
+        #todo: offenbar gibt's die Methode getZahlungenModel2  nicht.
+        # Wer ruft diese Methode  getZahlungenModelObjektMonat  auf?
         ea_art_display = self.getEinAusArt()
         return self._ealogic.getZahlungenModel2( ea_art_display, year, monthIdx, mobj_id )
 
@@ -120,7 +124,7 @@ class MtlEinAusLogic( IccLogic ):
         :param ealist: enthält die XEinAus-Objekte, die gelöscht werden sollen.
                         NB: sie beziehen sich alle auf genau eine mobj_id, genau einen debikredi und genau einen Monat.
                         Sie betreffen also genau eine Row im MtlEinAusTableModel <model>.
-        :param model: das TableModel der monatlichen Zahlungen. In diesem muss der Monatswert, auf den sich
+        :param tm: das TableModel der monatlichen Zahlungen. In diesem muss der Monatswert, auf den sich
                     die Löschungen beziehen, aktualisiert werden.
         :return: das Delta, um das sich der betroffene Monatswert ändert.
         """
@@ -132,6 +136,7 @@ class MtlEinAusLogic( IccLogic ):
                              "Alle zu löschenden Zahlungen müssen von derselben ea_art sein." )
         monat = mobj_id = debi_kredi = ""
         delta = 0
+        master_name = ""
         for xea in ealist:
             if ( "" < mobj_id != xea.mobj_id) \
             or ( "" < debi_kredi != xea.debi_kredi ) \
@@ -141,19 +146,51 @@ class MtlEinAusLogic( IccLogic ):
                                 "Monate, Objekte oder Kreditoren bzw. Debitoren beziehen!")
             monat = xea.monat
             mobj_id = xea.mobj_id
+            master_name = xea.master_name
             debi_kredi = xea.debi_kredi
-            delta -= xea.betrag
+            delta -= xea.betrag  # brauchen wir, um das Summenfeld der Objekt-Spalte (mobj_id oder master_name) zu aktualisieren
         self._ealogic.deleteZahlungen( ealist )
         self._ealogic.commit()
         # wir sind noch hier, also hat die DB-Löschung der Einzelzahlungen funktioniert.
-        self._updateMonatswertAndSumme( tm, monat, mobj_id, debi_kredi, delta )
+        # wir lassen uns das geänderte MtlZahlung-Objekt geben und machen den Update von Monatswert und Summe.
+        # getMtlZahlung erhält alle Informationen, die wir hier haben.
+        # Nicht für jede Monatszahlungstabelle werden die gleichen Parameter benötigt.
+        # Siehe z.B. Soll-Abshläge vs. Nebenkosten
+        xmz:XMtlZahlung = self.getMtlZahlung( tm=tm, master_name=master_name, mobj_id = mobj_id, debi_kredi=debi_kredi,
+                                              ea_art_display = xea.ea_art, leistung=xea.leistung )
+        self._updateMonatswertAndSumme( xmz, tm, monat, delta )
         return delta
 
     @staticmethod
-    def _updateMonatswertAndSumme( tm:MtlEinAusTableModel,
-                                   monat:str, mobj_id:str, debi_kredi:str, delta:int or float ):
-        # aus <tm> das betroffene XMtlZahlung-Objekt finden:
+    def getMtlZahlung( **mtlz_parm ) -> XMtlZahlung:
+        """
+        :param mtlz_parm: expected keys: tm, mobj_id, debi_kredi
+        :return:
+        """
+        tm = mtlz_parm["tm"]
+        mobj_id = mtlz_parm["mobj_id"]
+        debi_kredi = mtlz_parm["debi_kredi"]
         xmz: XMtlZahlung = tm.getMtlZahlung( mobj_id, debi_kredi )
+        return xmz
+
+    @staticmethod
+    def _updateMonatswertAndSumme( xmz:XMtlZahlung, tm:MtlEinAusTableModel, monat:str, delta:int or float ):
+        monthIdx = iccMonthShortNames.index( monat )
+        oldMonthValue = xmz.getMonthValue( monthIdx )
+        newMonthValue = oldMonthValue + delta
+        xmz.setMonthValue( monthIdx, newMonthValue )
+        xmz.computeSum()
+        tm.objectUpdatedExternally( xmz )
+
+    @staticmethod
+    def _updateMonatswertAndSumme__( tm: MtlEinAusTableModel,
+                                   monat: str, mobj_id: str, master_name: str, debi_kredi: str,
+                                   delta: int or float ):
+        # aus <tm> das betroffene XMtlZahlung-Objekt finden:
+        if mobj_id:
+            xmz: XMtlZahlung = tm.getMtlZahlung( mobj_id, debi_kredi )
+        else:
+            xmz: XMtlZahlung = tm.getMtlZahlung2( master_name, debi_kredi )
         monthIdx = iccMonthShortNames.index( monat )
         oldMonthValue = xmz.getMonthValue( monthIdx )
         newMonthValue = oldMonthValue + delta
@@ -170,6 +207,7 @@ class MtlEinAusLogic( IccLogic ):
         zurückgegeben).
         Beispiel: isoVon = 2021-05-01, isoBis = NULL bzw. NONE, jahr = 2022.
                   Zurückgegeben wird ("jan", "dez")
+        :param jahr: das Jahr, gegen das isoVon und isoBis überprüft werden
         :param isoVon: Datum, ab wann ein MV existiert
         :param isoBis: Datum, bis wann ein MV existiert (hat) bzw. None
         :return: Tuple mit 2 Strings (Monatsnamen wie "jan", "dez",...)
@@ -487,13 +525,26 @@ class AbschlagLogic( MtlEinAusLogic ):
         self._abschlagData = AbschlagData()
 
     def createAbschlagzahlungenModel( self, jahr: int, checkmonatIdx:int=None ) -> AbschlagTableModel:
+        """
+        Feb. 2025:
+        <jahr> wird nur noch für die Ermittlung bereits erfolgter Zahlungen verwendet, nicht mehr für die Ermittlung
+        eines historisch korrekten Soll-Abschlags.
+        <checkmonatIdx> wird nur noch verwendet zur Konstruktion des AbschlagTableModel.
+        Die Soll-Abschläge werden nicht mehr historisiert. Das von- und das bis-Feld werden aus der Tabelle <Sollabschlag>
+        entfernt. Es gibt für jeden Abschlag (jeden Vertrag) nur noch genau einen DB-Satz.
+        Der dort hinterlegte Betrag dient nur noch als Eingabehilfe: wenn im GUI in das grüne Feld geklickt wird,
+        wird dieser Betrag in das durch den eingestellten Monat spezifizierte Betragsfeld geschrieben.
+        :param jahr: dient der Ermittlung bereits erfolgter Zahlungen
+        :param checkmonatIdx:  wird nur noch verwendet zur Konstruktion des AbschlagTableModel
+        :return:
+        """
         zlist_allg: List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.ALLGEMEINE_KOSTEN.display, jahr, "and sab_id > 0 " )
         zlist_sonst: List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.SONSTIGE_KOSTEN.display, jahr, "and sab_id > 0 " )
         zlist_vers: List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.VERSICHERUNG.display, jahr, "and sab_id > 0 " )
         zlist_gs: List[XEinAus] = self._ealogic.getZahlungen( EinAusArt.GRUNDSTEUER.display, jahr, "and sab_id > 0 " )
         zlist = zlist_allg + zlist_sonst + zlist_vers + zlist_gs
         zlist = self._getCondensedEinAusList( zlist ) # zlist enthält für jede sab_id und jeden Monat genau 1 XEinAus-Objekt
-        sollAbschlagList:List[XSollAbschlag] = self._abschlagData.getSollabschlaege( jahr )
+        sollAbschlagList:List[XSollAbschlag] = self._abschlagData.getSollabschlaege() #jahr )
         # die XEinAus-Liste in XMtlAbschlag-Liste umwandeln:
         xablist:List[XMtlAbschlag] = list()
         for sollabschlag in sollAbschlagList:
@@ -507,7 +558,9 @@ class AbschlagLogic( MtlEinAusLogic ):
             xab.soll = sollabschlag.betrag
             xab.vnr = sollabschlag.vnr
             xab.leistung = sollabschlag.leistung
-            xab.vonMonat, xab.bisMonat = self.getMonthIntervallForCurrentYear( jahr, sollabschlag.von, sollabschlag.bis )
+            #### Feb. 2025 ###
+            #xab.vonMonat, xab.bisMonat = self.getMonthIntervallForCurrentYear( jahr, sollabschlag.von, sollabschlag.bis )
+            xab.vonMonat, xab.bisMonat = "jan", "dez" ## Hack, damit die Monatsbetragsfelder nicht schraffiert erscheinen
             #self._completeData( xab, xab.sab_id, jahr, checkmonatIdx+1, sollAbschlagList )
             # dem XMtlAbschlag-Objekt die einzelnen Zahlungen zuordnen
             for xea in zlist:
@@ -604,11 +657,36 @@ class AbschlagLogic( MtlEinAusLogic ):
         # todo
         pass
 
-    def validateSollAbschlag( self, xsa:XSollAbschlag ) -> str:
+    @staticmethod
+    def getMtlZahlung( **mtlz_parm ) -> XMtlZahlung:
+        """
+        :param mtlz_parm: expected keys: tm, master_name, debi_kredi, ea_art_display, leistung
+        :return:
+        """
+        tm = mtlz_parm["tm"]
+        master_name = mtlz_parm["master_name"]
+        debi_kredi = mtlz_parm["debi_kredi"]
+        ea_art_displ = mtlz_parm["ea_art_display"]
+        leistung = mtlz_parm["leistung"]
+        xmz: XMtlZahlung = tm.getMtlZahlung2( master_name, debi_kredi, ea_art_displ, leistung )
+        return xmz
+
+    @staticmethod
+    def validateSollAbschlag( xsa:XSollAbschlag ) -> str:
         """
         :param xsa: das zu überprüfende Interface
         :return: Fehlermeldung bzw. "" wenn ohne Beanstandung
         """
+        if xsa.betrag == 0:
+            return "Betrag fehlt."
+        if not xsa.master_name:
+            return "Hauskennung (Mastername) fehlt."
+        if not xsa.kreditor:
+            return "Kreditor fehlt."
+        if not xsa.ea_art:
+            return "Ein-/Ausgabeart fehlt."
+        if not xsa.umlegbar:
+            return "Umlegbar ja/nein fehlt."
         return ""
 
     def saveSollAbschlag( self, xsa:XSollAbschlag ) -> str:
@@ -617,7 +695,10 @@ class AbschlagLogic( MtlEinAusLogic ):
         :param xsa: Daten des zu speichernden SollAbschlags
         :return: Fehlermeldung bzw. "", wenn alles gut geganten ist.
         """
-        return ""
+        xsa.ea_art = EinAusArt.getDbValue( xsa.ea_art )
+        rowsAffected = self._abschlagData.updateSollAbschlag( xsa )
+        self._abschlagData.commit()
+        return rowsAffected
 
 
 def test():
