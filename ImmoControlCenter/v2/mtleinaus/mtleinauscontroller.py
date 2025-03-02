@@ -60,6 +60,9 @@ class MtlEinAusController( IccController ):
         self._tv = tv
         return tvf
 
+    def getTableViewFrame( self ) -> IccCheckTableViewFrame:
+        return self._tableViewFrame
+
     def getMenu( self ) -> QMenu:
        return None
 
@@ -577,11 +580,10 @@ class AbschlagController( MtlEinAusController ):
     def __init__( self ):
         MtlEinAusController.__init__( self )
         self._logic = AbschlagLogic()
-        # self._tv: AbschlagTableView = None
-        # self._tvframe: AbschlagTableViewFrame = None
         self._cboMasternames: BaseComboBox = None
         self._cboMietobjekte: BaseComboBox = None
         self._cboEinAusArt: BaseComboBox = None
+        self._tvframe:AbschlagTableViewFrame = None
 
     def getTableView( self ) -> AbschlagTableView:
         return self._tv
@@ -594,6 +596,7 @@ class AbschlagController( MtlEinAusController ):
         tm = self.createModel( jahr, monat )
         self._tv.setModel( tm )
         self._tvframe = AbschlagTableViewFrame( self._tv )
+        self._tvframe.editItem.connect( self._onEditAbschlag )
         return self._tvframe
 
     def createModel( self, jahr:int, monat:int ) -> AbschlagTableModel:
@@ -654,7 +657,7 @@ class AbschlagController( MtlEinAusController ):
             v = dlg.getDynamicAttributeView()
             v.updateData()  # Validierung war ok, also Übernahme der Änderungen ins XBase-Objekt
             try:
-                # Logik-Aufruf zum Speichern
+                # Logik-Aufruf zum Speichern in Tabelle sollabschlag
                 rowsAffected = self._logic.saveSollAbschlag( xsa )
                 if rowsAffected == 0:
                     box = ErrorBox( "Datenbankfehler",
@@ -662,6 +665,11 @@ class AbschlagController( MtlEinAusController ):
                                     "Zur angegebenen sab_id (%d) keinen Datensatz gefunden. " % xsa.sab_id )
                     box.exec_()
                     return
+                else:
+                    tm:AbschlagTableModel = self._tv.model()
+                    xma:XMtlAbschlag = tm.getMtlAbschlag( xsa.sab_id )
+                    xma.soll = xsa.betrag
+                    tm.objectUpdatedExternally( xma )
             except Exception as ex:
                 box = ErrorBox( "Datenbankfehler",
                                 "Fehler beim Speichern des Abschlags in AbschlagController.onShowAbschlagDialog():\n",
@@ -706,6 +714,13 @@ class AbschlagController( MtlEinAusController ):
         self._year = newYear
         tm = self.createModel( newYear, self.getModel().getEditableMonthIdx() )
         self._tv.setModel( tm )
+
+    def _onEditAbschlag( self, row:int ):
+        print( row )
+        tm:AbschlagTableModel = self._tv.model()
+        xab:XMtlAbschlag = tm.getElement( row )
+        # print( xab.sab_id )
+        self.onShowAbschlagData( xab.sab_id )
 
     def provideContextMenuActions( self, model:AbschlagTableModel, row:int, key:str ) -> List[BaseAction]:
         """

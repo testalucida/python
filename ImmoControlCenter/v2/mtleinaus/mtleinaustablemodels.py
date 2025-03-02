@@ -262,9 +262,9 @@ class AbschlagTableModel( MtlEinAusTableModel ):
         return x.sab_id
 
     def getMtlAbschlag( self, sab_id:int ) -> XMtlAbschlag:
-        for xmz in self.rowList:
-            if xmz.mobj_id == sab_id:
-                return xmz
+        for xma in self.rowList:
+            if xma.sab_id == sab_id:
+                return xma
 
     def getMtlZahlung2( self, master_name: str, debi_kredi:str, ea_art_display: str, leistung:str ) -> XMtlZahlung:
         for xmz in self.rowList:

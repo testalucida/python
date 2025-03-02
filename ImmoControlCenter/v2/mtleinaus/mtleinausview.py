@@ -77,7 +77,25 @@ class AbschlagTableView( MtlEinAusTableView ):
 ###############  AbschlagTableViewFrame  #############
 class AbschlagTableViewFrame( IccCheckTableViewFrame ):
     def __init__( self, tableView:AbschlagTableView ):
-        IccCheckTableViewFrame.__init__( self, tableView )
+        IccCheckTableViewFrame.__init__( self, tableView, withEditButtons=True )
+        self.newItem.connect( self.onNewAbschlag )
+        #self.editItem.connect( self.onEditAbschlag )
+
+    def onNewAbschlag( self ):
+        print( "neuer Abschlag")
+
+    def _onEditItem( self ):
+        """
+        Der BaseTableViewFrame sendet sein edit-Signal nur, wenn die ganze Zeile selektiert ist.
+        Im AbschlagTableViewFrame sind allerdings einzelne Zellen auswählbar, und der Abschlag soll bearbeitet werden
+        können, egal ob die ganze Zeile oder nur eine einzelne Zelle selektiert ist.
+        Deshalb müssen wir _onEditItem überschreiben.
+        :return:
+        """
+        sel_indexes = self._tv.getSelectedIndexes()
+        if len( sel_indexes ) > 0:
+            row = sel_indexes[0].row()
+            self.editItem.emit( row )
 
 ###################  TEST   TEST   TEST   #################
 
