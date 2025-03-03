@@ -58,6 +58,21 @@ class AbschlagData( IccData ):
         dic = self.readOneGetDict( sql )
         return dic
 
+    def insertSollAbschlag( self, xsa: XSollAbschlag ) -> int:
+        mobj_id = "NULL" if not xsa.mobj_id else ("'%s'" % xsa.mobj_id)
+        vnr = "NULL" if not xsa.vnr else ("'%s'" % xsa.vnr)
+        leistung = "NULL" if not xsa.leistung else ("'%s'" % xsa.leistung)
+        bemerkung = "NULL" if not xsa.bemerkung else ("'%s'" % xsa.bemerkung)
+        sql = "insert into sollabschlag " \
+              "(master_name, mobj_id, kreditor, leistung, vnr, ea_art, betrag, umlegbar, bemerkung) " \
+              "values " \
+              "('%s',         %s,      '%s',     %s,      %s,    '%s',  %.2f,   '%s',      %s)" % \
+              (xsa.master_name, mobj_id, xsa.kreditor, leistung, vnr, xsa.ea_art, xsa.betrag, xsa.umlegbar, bemerkung)
+        inserted_id = self.writeAndLog( sql, DbAction.INSERT, "sollabschlag", "sab_id", 0,
+                                        newvalues=xsa.toString( printWithClassname=True ), oldvalues=None )
+        xsa.sab_id = inserted_id
+        return inserted_id
+
     def updateSollAbschlag( self, xsa:XSollAbschlag ) -> int:
         oldX = self.getSollAbschlag( xsa.sab_id )
         mobj_id = "NULL" if not xsa.mobj_id else ("'%s'" % xsa.mobj_id)
@@ -77,7 +92,7 @@ class AbschlagData( IccData ):
               "bemerkung = %s " \
               "where sab_id = %d " % (xsa.kreditor, vnr, leistung, xsa.ea_art, xsa.master_name, mobj_id, xsa.betrag,
                                      xsa.umlegbar, bemerkung, xsa.sab_id )
-        rowsAffected = self.writeAndLog( sql, DbAction.UPDATE, "sollabschlag_update", "sab_id", xsa.sab_id,
+        rowsAffected = self.writeAndLog( sql, DbAction.UPDATE, "sollabschlag", "sab_id", xsa.sab_id,
                                          newvalues=xsa.toString( True ), oldvalues=oldX.toString( True ) )
         return rowsAffected
 

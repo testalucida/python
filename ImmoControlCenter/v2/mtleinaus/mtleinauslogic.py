@@ -549,19 +549,7 @@ class AbschlagLogic( MtlEinAusLogic ):
         xablist:List[XMtlAbschlag] = list()
         for sollabschlag in sollAbschlagList:
             # aus jedem sollabschlag ein XMtlAbschlag-Objekt machen:
-            xab = XMtlAbschlag()
-            xab.sab_id = sollabschlag.sab_id
-            xab.ea_art = sollabschlag.ea_art
-            xab.master_name = sollabschlag.master_name
-            xab.mobj_id = sollabschlag.mobj_id
-            xab.kreditor = sollabschlag.kreditor
-            xab.soll = sollabschlag.betrag
-            xab.vnr = sollabschlag.vnr
-            xab.leistung = sollabschlag.leistung
-            #### Feb. 2025 ###
-            #xab.vonMonat, xab.bisMonat = self.getMonthIntervallForCurrentYear( jahr, sollabschlag.von, sollabschlag.bis )
-            xab.vonMonat, xab.bisMonat = "jan", "dez" ## Hack, damit die Monatsbetragsfelder nicht schraffiert erscheinen
-            #self._completeData( xab, xab.sab_id, jahr, checkmonatIdx+1, sollAbschlagList )
+            xab = self.createMtlAbschlagFromSollAbschlag( sollabschlag )
             # dem XMtlAbschlag-Objekt die einzelnen Zahlungen zuordnen
             for xea in zlist:
                 if xea.sab_id == xab.sab_id:
@@ -570,6 +558,22 @@ class AbschlagLogic( MtlEinAusLogic ):
             xablist.append( xab )
         tm = AbschlagTableModel( xablist, jahr, checkmonatIdx )
         return tm
+
+    @staticmethod
+    def createMtlAbschlagFromSollAbschlag( sollabschlag:XSollAbschlag ) -> XMtlAbschlag:
+        xab = XMtlAbschlag()
+        xab.sab_id = sollabschlag.sab_id
+        xab.ea_art = sollabschlag.ea_art
+        xab.master_name = sollabschlag.master_name
+        xab.mobj_id = sollabschlag.mobj_id
+        xab.kreditor = sollabschlag.kreditor
+        xab.soll = sollabschlag.betrag
+        xab.vnr = sollabschlag.vnr
+        xab.leistung = sollabschlag.leistung
+        #### Feb. 2025 ###
+        # xab.vonMonat, xab.bisMonat = self.getMonthIntervallForCurrentYear( jahr, sollabschlag.von, sollabschlag.bis )
+        xab.vonMonat, xab.bisMonat = "jan", "dez"  ## Hack, damit die Monatsbetragsfelder nicht schraffiert erscheinen
+        return xab
 
     @staticmethod
     def _getCondensedEinAusList( einausList: List[XEinAus] ) -> List[XEinAus]:
@@ -696,7 +700,11 @@ class AbschlagLogic( MtlEinAusLogic ):
         :return: Fehlermeldung bzw. "", wenn alles gut geganten ist.
         """
         xsa.ea_art = EinAusArt.getDbValue( xsa.ea_art )
-        rowsAffected = self._abschlagData.updateSollAbschlag( xsa )
+        if xsa.sab_id > 0:
+            rowsAffected = self._abschlagData.updateSollAbschlag( xsa )
+        else:
+            self._abschlagData.insertSollAbschlag( xsa )
+            rowsAffected = 1
         self._abschlagData.commit()
         return rowsAffected
 

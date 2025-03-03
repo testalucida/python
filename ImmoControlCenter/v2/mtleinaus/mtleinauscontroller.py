@@ -2,7 +2,7 @@ from abc import abstractmethod
 from typing import List, Iterable, Callable
 
 from PySide2.QtCore import QModelIndex, QSize, Signal, Slot
-from PySide2.QtGui import QCursor
+from PySide2.QtGui import QCursor, Qt
 from PySide2.QtWidgets import QAction, QDialog, QMenu, QApplication
 
 from base.baseqtderivates import BaseEdit, FloatEdit, IntEdit, MultiLineEdit, BaseAction, SumDialog, Separator, \
@@ -594,8 +594,10 @@ class AbschlagController( MtlEinAusController ):
     def createTableViewFrame( self, jahr:int, monat:int ) -> IccCheckTableViewFrame:
         self._tv = AbschlagTableView()
         tm = self.createModel( jahr, monat )
+        tm.sort( 0, Qt.SortOrder.DescendingOrder )
         self._tv.setModel( tm )
         self._tvframe = AbschlagTableViewFrame( self._tv )
+        self._tvframe.newItem.connect( self._onNewAbschlag )
         self._tvframe.editItem.connect( self._onEditAbschlag )
         return self._tvframe
 
@@ -666,10 +668,20 @@ class AbschlagController( MtlEinAusController ):
                     box.exec_()
                     return
                 else:
+                    # Das betroffene XMtlAbschlag-Objekt im Model ändern und das Model veranlassen, das entsprechende
+                    # Signal zu senden
                     tm:AbschlagTableModel = self._tv.model()
-                    xma:XMtlAbschlag = tm.getMtlAbschlag( xsa.sab_id )
-                    xma.soll = xsa.betrag
-                    tm.objectUpdatedExternally( xma )
+                    if modus == Modus.NEW:
+                        xma:XMtlAbschlag = self._logic.createMtlAbschlagFromSollAbschlag( xsa )
+                        tm.addObject( xma )
+                        # self._tv.repaint()
+                        # tm.objectUpdatedExternally( xma )
+                        # row = tm.getRow( xma )
+                        # tm.objectUpdatedExternally2(row)
+                    else:
+                        xma:XMtlAbschlag = tm.getMtlAbschlag( xsa.sab_id )
+                        xma.soll = xsa.betrag
+                        tm.objectUpdatedExternally( xma )
             except Exception as ex:
                 box = ErrorBox( "Datenbankfehler",
                                 "Fehler beim Speichern des Abschlags in AbschlagController.onShowAbschlagDialog():\n",
@@ -715,8 +727,12 @@ class AbschlagController( MtlEinAusController ):
         tm = self.createModel( newYear, self.getModel().getEditableMonthIdx() )
         self._tv.setModel( tm )
 
+    def _onNewAbschlag( self ):
+        xsa = XSollAbschlag()
+        self.showAbschlagDialog( xsa, Modus.NEW )
+
     def _onEditAbschlag( self, row:int ):
-        print( row )
+        #print( row )
         tm:AbschlagTableModel = self._tv.model()
         xab:XMtlAbschlag = tm.getElement( row )
         # print( xab.sab_id )

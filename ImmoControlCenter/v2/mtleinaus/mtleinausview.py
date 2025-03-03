@@ -78,11 +78,6 @@ class AbschlagTableView( MtlEinAusTableView ):
 class AbschlagTableViewFrame( IccCheckTableViewFrame ):
     def __init__( self, tableView:AbschlagTableView ):
         IccCheckTableViewFrame.__init__( self, tableView, withEditButtons=True )
-        self.newItem.connect( self.onNewAbschlag )
-        #self.editItem.connect( self.onEditAbschlag )
-
-    def onNewAbschlag( self ):
-        print( "neuer Abschlag")
 
     def _onEditItem( self ):
         """
