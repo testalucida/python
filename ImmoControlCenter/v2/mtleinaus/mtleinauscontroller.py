@@ -3,7 +3,7 @@ from typing import List, Iterable, Callable
 
 from PySide2.QtCore import QModelIndex, QSize, Signal, Slot
 from PySide2.QtGui import QCursor, Qt
-from PySide2.QtWidgets import QAction, QDialog, QMenu, QApplication
+from PySide2.QtWidgets import QAction, QDialog, QMenu, QApplication, QMessageBox
 
 from base.baseqtderivates import BaseEdit, FloatEdit, IntEdit, MultiLineEdit, BaseAction, SumDialog, Separator, \
     SmartDateEdit, BaseComboBox, SignedNumEdit
@@ -11,7 +11,7 @@ from base.basetablefunctions import BaseTableFunctions
 from base.basetableview import BaseTableView
 from base.dynamicattributeui import DynamicAttributeDialog
 from base.interfaces import XBaseUI, VisibleAttribute
-from base.messagebox import ErrorBox, InfoBox
+from base.messagebox import ErrorBox, InfoBox, WarningBox
 from generictable_stuff.okcanceldialog import OkCancelDialog
 from v2.einaus.einauslogic import EinAusTableModel
 from v2.einaus.einausview import EinAusTableView, TeilzahlungDialog, ValueDialog
@@ -743,6 +743,13 @@ class AbschlagController( MtlEinAusController ):
         tm:AbschlagTableModel = self._tv.model()
         xabList = list()
         sab_idList = list()
+        if len( rowlist ) > 0:
+            box = WarningBox( "Löschen von Soll-Abschlägen",
+                              warning="Wirklich die ausgewählten Abschläge löschen?", more="",
+                              yesText="Ja, löschen", noText="Nein, nicht löschen" )
+            rc = box.exec_()
+            if rc != QMessageBox.Yes:
+                return
         for row in rowlist:
             xab:XMtlAbschlag = tm.getElement( row )
             sab_idList.append( xab.sab_id ) # für den DB-Update
