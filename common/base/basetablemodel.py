@@ -51,6 +51,7 @@ class BaseTableModel( QAbstractTableModel ):
         self.rowList:List[XBase] = rowList
         self._visibleElements: List[XBase] = list() # per Default alle (==self.rowList). Kann durch Filterung eingeschränkt werden.
         #self._rowListUnfiltered:List[XBase] = None
+        self._rowCount = len( rowList )
         self._jahr:int = jahr # das Jahr ist bei manchen Models interessant, bei manchen nicht - kann also auf None stehen.
         self.headers:List = list()
         self.keys:List = list() # brauchen wir fürs Key-Header-Mapping
@@ -390,6 +391,7 @@ class BaseTableModel( QAbstractTableModel ):
             self.rowList.remove( x )
             # aus der Liste der _visibleElements löschen. Da muss es drin sein, sonst hätten wir die row gar nicht gefunden.
             self._visibleElements.remove( x )
+            self._rowCount -= 1
         except:
             # kann passieren wegen des EinAusWriteDispatcher.ea_deleted Signals.
             return

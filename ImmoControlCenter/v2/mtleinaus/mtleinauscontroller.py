@@ -599,6 +599,7 @@ class AbschlagController( MtlEinAusController ):
         self._tvframe = AbschlagTableViewFrame( self._tv )
         self._tvframe.newItem.connect( self._onNewAbschlag )
         self._tvframe.editItem.connect( self._onEditAbschlag )
+        self._tvframe.deleteItems.connect( self._onDeleteAbschlaege )
         return self._tvframe
 
     def createModel( self, jahr:int, monat:int ) -> AbschlagTableModel:
@@ -737,6 +738,25 @@ class AbschlagController( MtlEinAusController ):
         xab:XMtlAbschlag = tm.getElement( row )
         # print( xab.sab_id )
         self.onShowAbschlagData( xab.sab_id )
+
+    def _onDeleteAbschlaege( self, rowlist:List[int] ):
+        tm:AbschlagTableModel = self._tv.model()
+        xabList = list()
+        sab_idList = list()
+        for row in rowlist:
+            xab:XMtlAbschlag = tm.getElement( row )
+            sab_idList.append( xab.sab_id ) # für den DB-Update
+            xabList.append( xab ) # für die Bereinigung des AbschlagTableView
+        if len( sab_idList ) > 0:
+            try:
+                self._logic.deleteSollAbschlaege( sab_idList )
+            except Exception as ex:
+                box = ErrorBox( "Datenbankfehler",
+                                "Fehler beim Delete von Sollabschlägen \n",
+                                str(ex) )
+                box.exec_()
+            if len( xabList ) > 0:
+                tm.removeObjects( xabList )
 
     def provideContextMenuActions( self, model:AbschlagTableModel, row:int, key:str ) -> List[BaseAction]:
         """

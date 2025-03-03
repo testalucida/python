@@ -105,6 +105,18 @@ class EinAusData( IccData ):
         #self._dispatch.einaus_updated( x, oldX )
         return rowsAffected
 
+    def updateSab_idSetNull( self, sab_id:int ):
+        """
+        Macht einen Massenupdate auf alle Sätze in <einaus>, deren sab_id == <sab_id>
+        Setzt die sab_id dieser Sätze auf NULL
+        Achtung: es wird keine Log geschrieben.
+        :param sab_id:
+        :return:
+        """
+        sql = "update einaus set sab_id = NULL " \
+              "where sab_id = " + str(sab_id)
+        self.write( sql )
+
     def deleteEinAusZahlung( self, ea_id:int ):
         """
         Löscht eine Zahlung aus <einaus>.

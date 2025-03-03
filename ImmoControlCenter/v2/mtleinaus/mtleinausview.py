@@ -92,6 +92,22 @@ class AbschlagTableViewFrame( IccCheckTableViewFrame ):
             row = sel_indexes[0].row()
             self.editItem.emit( row )
 
+    def _onDeleteItems( self ):
+        """
+        Der BaseTableViewFrame sendet sein deleteItems-Signal nur, wenn die ganze Zeile selektiert ist.
+        Im AbschlagTableViewFrame sind allerdings einzelne Zellen auswählbar, und Abschläge sollen gelöscht werden
+        können, egal ob die ganze Zeile oder nur eine einzelne Zelle selektiert ist.
+        Deshalb müssen wir _onDeleteItems überschreiben.
+        :return:
+        """
+        sel_indexes = self._tv.getSelectedIndexes()
+        sel_rows = list()
+        for sel_idx in sel_indexes:
+            row = sel_idx.row()
+            sel_rows.append( row )
+        if len( sel_rows ) > 0:
+            self.deleteItems.emit( sel_rows )
+
 ###################  TEST   TEST   TEST   #################
 
 def test2():

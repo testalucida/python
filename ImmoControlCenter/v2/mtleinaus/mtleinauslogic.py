@@ -4,6 +4,7 @@ from typing import List, Any, Iterable
 from PySide2.QtGui import QBrush, Qt
 
 import datehelper
+from v2.einaus.einausdata import EinAusData
 from v2.einaus.einauslogic import EinAusTableModel, EinAusLogic
 from v2.icc import constants
 from v2.icc.constants import EinAusArt, iccMonthShortNames
@@ -708,6 +709,18 @@ class AbschlagLogic( MtlEinAusLogic ):
         self._abschlagData.commit()
         return rowsAffected
 
+    def deleteSollAbschlaege( self, sab_idList:List[int] ):
+        """
+        Löscht die Soll-Abschläge <sab_idList> aus Tabelle sollabschlag.
+        Vorher werden alle Referenzen der Tabelle <einaus> auf NULL gesetzt.
+        :param sab_idList: Liste der zu löschenden sab_id
+        :return:
+        """
+        eadata = EinAusData()
+        for sab_id in sab_idList:
+            eadata.updateSab_idSetNull( sab_id )
+            self._abschlagData.deleteSollAbschlag( sab_id )
+        self._abschlagData.commit()
 
 def test():
     logic = HausgeldLogic()

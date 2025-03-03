@@ -96,6 +96,14 @@ class AbschlagData( IccData ):
                                          newvalues=xsa.toString( True ), oldvalues=oldX.toString( True ) )
         return rowsAffected
 
+    def deleteSollAbschlag( self, sab_id:int ):
+        oldX = self.getSollAbschlag( sab_id )
+        sql = "delete from sollabschlag " \
+              "where sab_id = " + str(sab_id)
+        self.writeAndLog( sql, DbAction.DELETE, "sollabschlag", "sab_id", sab_id,
+                          newvalues=None, oldvalues=oldX.toString( printWithClassname=True ) )
+
+
 
 
 ##################################################################################
