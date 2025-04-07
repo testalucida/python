@@ -1,3 +1,4 @@
+import os
 import sys
 import traceback
 from typing import List, Iterable, Dict
@@ -16,6 +17,7 @@ from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
 from v2.extras.extrascontroller import ExtrasController
 from v2.geschaeftsreise.geschaeftsreisecontroller import GeschaeftsreiseController
 from v2.icc.constants import EinAusArt
+from v2.icc.definitions import ROOT_DIR
 from v2.icc.icccontroller import IccController
 from v2.icc.iccmainwindow import IccMainWindow, InfoPanel
 from v2.icc.iccwidgets import IccCheckTableViewFrame
@@ -130,7 +132,7 @@ class MainController( IccController ):
 
     def createGui( self ) -> IccMainWindow:
         self._win = IccMainWindow( self._env )
-        self._win.setShutdownCallback( self.onBeforeShutdown )
+        #self._win.setShutdownCallback( self.onBeforeShutdown )
         self._win.addMenu( self.getMenu() )
 
         menu = self._mietObjektCtrl.getMenu()
@@ -196,15 +198,20 @@ class MainController( IccController ):
     def getMenu( self ) -> QMenu:
         menu = QMenu( "ImmoCenter" )
         # Menü "Datenbank zum Server exportieren"
-        action = BaseAction( "Datenbank zum Server exportieren", parent=menu )
-        action.triggered.connect( self.onExportDatabase )
-        menu.addAction( action )
+        # action = BaseAction( "Datenbank zum Server exportieren", parent=menu )
+        # action.triggered.connect( self.onExportDatabase )
+        # menu.addAction( action )
         #
         # # Menü "Datenbank vom Server importieren"
         # action = BaseAction( "Datenbank vom Server importieren", parent=menu )
         # action.triggered.connect( self.onImportDatabase )
         # menu.addAction( action )
         #
+        # Menü "Datenbank vom Server importieren"
+        action = BaseAction( "Datenbank auf externe Festplatte sichern", parent=menu )
+        action.triggered.connect( self.onSaveDatabase )
+        menu.addAction( action )
+
         menu.addSeparator()
 
         # # Menüpunkt "Ende"
@@ -319,7 +326,30 @@ class MainController( IccController ):
         dic = self._win.getLetzteBuchung()
         self._logic.saveLetzteBuchung( dic["datum"], dic["text"] )
 
-    def onExportDatabase( self ):
+    def exportDatabaseOnClose( self ) -> bool:
+        """
+        Datenbank zum Server hochladen.
+        :return:
+        """
+        self._win.setCursor( Qt.WaitCursor )
+        try:
+            self._saveLetzteBuchung()
+        except Exception as ex:
+            box = WarningBox( "Speichern der letzten Buchung", "Speichern fehlgeschlagen: " + str(ex),
+                              "Anwendung trotzdem schließen?", "Ja", "Nein" )
+            if box.exec_() != QMessageBox.Yes:
+                self._win.setCursor( Qt.ArrowCursor )
+                return False
+            return True
+        try:
+            self._logic.exportDatabaseToServer()
+            self._win.setCursor( Qt.ArrowCursor )
+        except Exception as ex:
+            box = ErrorBox( "Export der Datenbank fehlgeschlagen", str(ex), "\nAnwendung wird beendet." )
+            box.exec_()
+        return True
+
+    def onExportDatabase___( self ):
         """
         Datenbank zum Server hochladen.
         :return:
@@ -343,7 +373,7 @@ class MainController( IccController ):
         finally:
             self._win.setCursor( Qt.ArrowCursor )
 
-    def onExportDatabase__( self ):
+    def onExportDatabase( self ):
         """
         Datenbank zum Server hochladen.
         Methode steigt manchmal mit Exception aus:
@@ -368,8 +398,8 @@ class MainController( IccController ):
                     msg += str(arg)
                     msg += "\n"
             self._win.setCursor( Qt.ArrowCursor )
-            box = ErrorBox( "Datenbank-Export", "Export der Datenbank fehlgeschlagen.", msg )
-            box.exec_()
+            box2 = ErrorBox( "Datenbank-Export", "Export der Datenbank fehlgeschlagen.", msg )
+            box2.exec_()
             self._rcFtpExportDatabase = False
 
         self._rcFtpExportDatabase = None
@@ -394,6 +424,42 @@ class MainController( IccController ):
             QApplication.processEvents()
         infopanel.close()
         self._win.setCursor( Qt.ArrowCursor )
+
+    @staticmethod
+    def onSaveDatabase() -> None:
+        def try_copyfile():
+            try:
+                copyfile( src, dest )
+            except Exception as ex:
+                box = WarningBox( "Datenbank auf lokalen Datenträger sichern",
+                                  "Sicherung nicht möglich:\n\n" + str( ex ),
+                                  "Ist der Datenträger eingehängt?", "Nochmal versuchen", "Beenden" )
+                rc = box.exec_()
+                if rc == QMessageBox.Yes:
+                    try_copyfile()
+
+        from shutil import copyfile
+        scriptdir = os.path.dirname( os.path.realpath( __file__ ) )
+        src = ROOT_DIR + "/immo.db"
+        if "Vermietung" in scriptdir:
+            print( "Running in REL; try to copy immo.db" )
+            dest = "/media/martin/Elements1/Vermietung_V2/ImmoControlCenter/v2/icc/immo.db"
+        elif "Projects/python" in scriptdir:
+            print( "Running in DEV; try to copy immo.db" )
+            dest = "/media/martin/Elements1/Projects/python/ImmoControlCenter/v2/icc/immo.db"
+        if os.path.isfile( src ):
+            box = QMessageBox()
+            box.setIcon( QMessageBox.Question )
+            box.setWindowTitle( "Sicherung der Datenbank" )
+            box.setText( "Datenbank\n\n   '%s'\n\nsichern in\n\n   '%s'?" % (scriptdir + "/immo.db", dest) )
+            box.setStandardButtons( QMessageBox.Save | QMessageBox.Cancel )
+            r = box.exec_()
+            if r == QMessageBox.Save:
+                try_copyfile()
+        else:
+            box = ErrorBox( "Datenbank auf lokalen Datenträger sichern", "Sicherung nicht möglich",
+                            "Es gibt keine Datenbank namens immo.db" )
+            box.exec_()
 
 
 ####################################################################################

@@ -14,7 +14,7 @@ class DatabaseTransfer:
     Bei Anwendungsende wird die Datenbank wieder auf den Server
     hochgeladen.
     Nach dem Download wird die serverseitige Datenbank umbenannt (es wird
-    der Download-Timestamp angehöngt),
+    der Download-Timestamp angehängt),
     was verhindert, dass sie versehentlich auf einen anderen Rechner
     heruntergeladen werden kann.
     Nach dem Upload bleibt die alte, umbenannte Datenbank bestehen.

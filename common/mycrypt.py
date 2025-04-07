@@ -33,6 +33,19 @@ class EncryptDecrypt:
         with open( pathnfile, "wb" ) as file_enc:
             file_enc.write( self.encrypt( key, strToEncrypt ) )
 
+    # def encryptAndStore(self, key: bytes, *strings2Encrypt, pathnfile: str):
+    #     """
+    #     Encrypts each string contained in <strings2Encrypt> using <key> and stores them to <pathnfile>
+    #     Each string will create a new line in <pathnfile>
+    #     :param key:
+    #     :param strings2Encrypt: Variable Argumentliste
+    #     :param pathnfile:
+    #     :return: None
+    #     """
+    #     with open(pathnfile, "wb") as file_enc:
+    #         for string in strings2Encrypt:
+    #             file_enc.write( self.encrypt(key, string ))
+
     def encrypt( self, key:bytes, strToEncrypt: str ) -> bytes:
         """
         Encrypts the given string <strToEncrypt> using  key and returns it encrypted
@@ -57,11 +70,22 @@ class EncryptDecrypt:
             encrypted = enc_file.read()
         return self.decryptEncrypted( key, encrypted )
 
-def testEncrypt():
-    key = b"_="
+
+def createEncryptAndSave():
     ed = EncryptDecrypt()
-    pwd_enc = ed.encrypt( key, "" )
-    print( pwd_enc.decode() )
+    path = "/home/martin/secrets/"
+    key = ed.getKey( path + "icc_ftp.key" )
+    # ed.encryptAndStore( key, "web27784572", pathnfile=path + "icc_ftpalfa_user.enc"  )
+    # ed.encryptAndStore( key, "Aaaa111#", pathnfile=path + "icc_ftpalfa_pwd.enc"  )
+    ed.encryptAndStore( key, "web27784572@alfa3074", pathnfile=path + "icc_sftpalfa_user.enc"  )
+    ed.encryptAndStore( key, "Aaaa111#", pathnfile=path + "icc_sftpalfa_pwd.enc"  )
+    # Kontrolle:
+    user = ed.getDecryptedFromFile(key, path + "icc_sftpalfa_user.enc").decode()
+    pwd = ed.getDecryptedFromFile(key, path + "icc_sftpalfa_pwd.enc").decode()
+    print(user, ": ", pwd)
+
+
+# createEncryptAndSave()
 
 def test():
     path = ""

@@ -325,11 +325,11 @@ class IccMainWindow( QMainWindow ):
         spacer.setMaximumWidth( width )
         return spacer
 
-    def canShutdown( self ) -> bool:
-        if self._shutdownCallback:
-            return self._shutdownCallback()
-        else:
-            return True
+    # def canShutdown( self ) -> bool:
+    #     if self._shutdownCallback:
+    #         return self._shutdownCallback()
+    #     else:
+    #         return True
 
     def setLetzteBuchung( self, datum:str, text:str ) -> None:
         self._sdLetzteBuchung.setDateFromIsoString( datum )

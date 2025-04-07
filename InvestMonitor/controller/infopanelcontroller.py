@@ -214,7 +214,7 @@ def test():
     from PySide2.QtWidgets import QApplication
     app = QApplication()
     ipc = InfoPanelController()
-    ticker = "GDIG.L" # "DBXS.DE" # "IEDY.L" #"H4ZJ.DE" #"XSMI.SW" #"EUNY.DE" # "IEDY.L"  #IEFV.L" #"HMWD.L"
+    ticker =  "HMWD.L" #"GDIG.L" # "DBXS.DE" # "IEDY.L" #"H4ZJ.DE" #"XSMI.SW" #"EUNY.DE" # "IEDY.L"  #IEFV.L" #"HMWD.L"
     #hist: Series = InvestMonitorLogic.getHistory( ticker, SeriesName.Close )
     log = InvestMonitorLogic( )
     pos:XDepotPosition = log.getDepotPosition( ticker )

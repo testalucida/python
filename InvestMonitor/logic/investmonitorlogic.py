@@ -424,15 +424,20 @@ class InvestMonitorLogic:
                 if not deppos.letzter_kauf:
                     deppos.letzter_kauf = delta.delta_datum
                 deppos.erster_kauf = delta.delta_datum
+                restbestand_stck = delta.delta_stck - delta.verkauft_stck
+                einstandswert_restbestand = restbestand_stck * delta.preis_stck
                 deppos.stueck += ( delta.delta_stck - delta.verkauft_stck )
-                deppos.einstandswert_restbestand += ( delta.delta_stck * delta.preis_stck )
+                ## 5.3.25 deppos.einstandswert_restbestand += ( delta.delta_stck * delta.preis_stck )
+                einstandswert_restbestand_falsch = delta.delta_stck * delta.preis_stck
+                deppos.einstandswert_restbestand += einstandswert_restbestand
                 deppos.maxKaufpreis = delta.preis_stck if delta.preis_stck > deppos.maxKaufpreis else deppos.maxKaufpreis
                 deppos.minKaufpreis = delta.preis_stck \
                     if delta.preis_stck < deppos.minKaufpreis or deppos.minKaufpreis == 0 \
                     else deppos.minKaufpreis
             else:
                 # Verkauf
-                deppos.einstandswert_restbestand += ( delta.delta_stck * delta.preis_stck ) # delta_stck < 0, deshalb "+"
+                # 5.3.25 deppos.einstandswert_restbestand += ( delta.delta_stck * delta.preis_stck ) # delta_stck < 0, deshalb "+"
+                pass # 5.3.25
         if deppos.stueck > 0: # es gibt noch einen Depot-Bestand
             deppos.preisprostueck = round( deppos.einstandswert_restbestand / deppos.stueck, 2 )
             deppos.einstandswert_restbestand = int( round( deppos.einstandswert_restbestand, 2 ) )

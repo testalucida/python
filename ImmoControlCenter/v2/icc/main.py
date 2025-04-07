@@ -5,6 +5,10 @@ from PySide2 import QtCore
 from PySide2.QtCore import QSize
 from PySide2.QtGui import QIcon
 from PySide2.QtWidgets import QApplication, QWidget, QMessageBox
+
+from v2.icc.definitions import ROOT_DIR
+from v2.icc.mainlogic import MainLogic
+
 sys.path.append( "../../../common" )
 sys.path.append( "../../" )
 print( "sys.path: ", sys.path )
@@ -15,57 +19,62 @@ from v2.icc.maincontroller import MainController
 
 
 class ShutDownFilter( QtCore.QObject ):
-    def __init__( self, win: QWidget, app: QApplication ):
+    def __init__( self, win: QWidget, mainCtrl:MainController, app: QApplication ):
         QtCore.QObject.__init__( self )
         self._win = win
+        self._mainCtrl = mainCtrl
         self._app = app
 
     def eventFilter( self, obj, event ) -> bool:
         if obj is self._win and event.type() == QtCore.QEvent.Close:
-            if self._win.canShutdown():
-                self.quit_app()
+            #if self._win.canShutdown():
+            if not self.quit_app():
+                return False
             event.ignore()
             return True
         return super( ShutDownFilter, self ).eventFilter( obj, event )
 
-    def quit_app( self ):
+    def quit_app( self ) -> bool:
         #saveDatabase()
+        if not self._mainCtrl.exportDatabaseOnClose():
+            return False
         geom = self._win.geometry()
         #print( 'CLEAN EXIT. x=%d - y=%d - w=%d - h=%d' % (geom.x(), geom.y(), geom.width(), geom.height()) )
         #writeGeometryOnShutdown( geom.x(), geom.y(), geom.width(), geom.height() )
         self._win.removeEventFilter( self )
         self._app.quit()
+        return True
 
-def saveDatabase() -> None:
-    def try_copyfile():
-        try:
-            copyfile( src, dest )
-        except Exception as ex:
-            box = WarningBox( "Datenbank auf lokalen Datenträger sichern", "Sicherung nicht möglich:\n\n" + str(ex),
-                              "Ist der Datenträger eingehängt?", "Nochmal versuchen", "Beenden" )
-            rc = box.exec_()
-            if rc == QMessageBox.Yes:
-                try_copyfile()
-    from shutil import copyfile
-    if runningInDev(): return
-    scriptdir = os.path.dirname( os.path.realpath( __file__ ) )
-    src = "./immo.db"
-    if "Vermietung" in scriptdir:
-        print( "Running in REL; try to copy immo.db" )
-        dest = "/media/martin/Elements1/Vermietung_V2/ImmoControlCenter/v2/icc/immo.db"
-        if os.path.isfile( src ):
-            box = QMessageBox()
-            box.setIcon( QMessageBox.Question )
-            box.setWindowTitle( "Sicherung der Datenbank" )
-            box.setText( "Datenbank\n\n   '%s'\n\nsichern in\n\n   '%s'?" % (scriptdir + "/immo.db", dest) )
-            box.setStandardButtons( QMessageBox.Save | QMessageBox.Cancel )
-            r = box.exec_()
-            if r == QMessageBox.Save:
-                try_copyfile()
-        else:
-            box = ErrorBox( "Datenbank auf lokalen Datenträger sichern", "Sicherung nicht möglich",
-                            "Es gibt keine Datenbank namens immo.db" )
-            box.exec_()
+# def saveDatabase() -> None:
+#     def try_copyfile():
+#         try:
+#             copyfile( src, dest )
+#         except Exception as ex:
+#             box = WarningBox( "Datenbank auf lokalen Datenträger sichern", "Sicherung nicht möglich:\n\n" + str(ex),
+#                               "Ist der Datenträger eingehängt?", "Nochmal versuchen", "Beenden" )
+#             rc = box.exec_()
+#             if rc == QMessageBox.Yes:
+#                 try_copyfile()
+#     from shutil import copyfile
+#     if runningInDev(): return
+#     scriptdir = os.path.dirname( os.path.realpath( __file__ ) )
+#     src = ROOT_DIR + "/immo.db"
+#     if "Vermietung" in scriptdir:
+#         print( "Running in REL; try to copy immo.db" )
+#         dest = "/media/martin/Elements1/Vermietung_V2/ImmoControlCenter/v2/icc/immo.db"
+#         if os.path.isfile( src ):
+#             box = QMessageBox()
+#             box.setIcon( QMessageBox.Question )
+#             box.setWindowTitle( "Sicherung der Datenbank" )
+#             box.setText( "Datenbank\n\n   '%s'\n\nsichern in\n\n   '%s'?" % (scriptdir + "/immo.db", dest) )
+#             box.setStandardButtons( QMessageBox.Save | QMessageBox.Cancel )
+#             r = box.exec_()
+#             if r == QMessageBox.Save:
+#                 try_copyfile()
+#         else:
+#             box = ErrorBox( "Datenbank auf lokalen Datenträger sichern", "Sicherung nicht möglich",
+#                             "Es gibt keine Datenbank namens immo.db" )
+#             box.exec_()
 
 
 # def createControlFile():
@@ -115,21 +124,44 @@ def main():
         #terminate_if_running()  # one instance only
         #createControlFile()  # flag file showing application is running
         env = "RELEASE"
-    # Die one-and-only-Instanz des EinAusWriteDispatchers erzeugen:
-    EinAusWriteDispatcher()
-    mainCtrl = MainController( env )
-    mainwin = mainCtrl.createGui()
-    shutDownFilter = ShutDownFilter( mainwin, app )
-    mainwin.installEventFilter( shutDownFilter )
-    mainwin.show()
-    # w = mainwin.getPreferredWidth()
-    # h = mainwin.getPreferredHeight()
-    mainwin.resize( QSize(1400, 800) )
+    # Die Datenbank vom Server holen:
+    try:
+        try:
+            MainLogic.importDatabaseFromServer()
+        except FileNotFoundError as err:
+            if MainLogic.checkDatabaseExistsLocal(): # die DB existiert lokal. Vermutlich ist die Anwendung beim
+                                                    # letzten Mal abgestürzt und konnte die DB nicht mehr zum
+                                                    # Server übertragen.
+                box = WarningBox( "Datenbank nicht auf dem Server", "Datenbank existiert nicht "
+                                                                    "auf dem Server,\naber im lokalen"
+                                                                    "Verzeichnis.",
+                                  "Soll die lokale Datenbank verwendet werden?\n\n"
+                                  "ACHTUNG: Läuft das ImmoControlCenter vielleicht auf einem anderen Rechner?\n"
+                                  "Dann sollte die Anwendung beendet werden!",
+                                  yesText="Ja, lokale DB verwenden", noText="Nein, lieber Anwendung beenden",
+                                  cancelText=None )
+                if box.exec_() != QMessageBox.Yes:
+                    return # Anwendung wird beendet
+            else: # auch lokal keine Datenbank vorhanden
+                return
+        # Die one-and-only-Instanz des EinAusWriteDispatchers erzeugen:
+        EinAusWriteDispatcher()
+        mainCtrl = MainController( env )
+        mainwin = mainCtrl.createGui()
+        shutDownFilter = ShutDownFilter( mainwin, mainCtrl, app )
+        mainwin.installEventFilter( shutDownFilter )
+        mainwin.show()
+        # w = mainwin.getPreferredWidth()
+        # h = mainwin.getPreferredHeight()
+        mainwin.resize( QSize(1400, 800) )
 
-    icon = QIcon( "./images/houses.png" )
-    app.setWindowIcon( icon )
+        icon = QIcon( "./images/houses.png" )
+        app.setWindowIcon( icon )
 
-    app.exec_()
+        app.exec_()
+    except Exception as ex:
+        box = ErrorBox( "Fehler beim Download der Datenbank", str( ex ), "Anwendung wird geschlossen." )
+        box.exec_()
 
     # if not runningInDev():
     #     deleteControlFile()

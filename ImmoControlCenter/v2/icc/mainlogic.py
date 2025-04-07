@@ -1,5 +1,8 @@
+import os
 
+import datehelper
 from ftp import FtpIni, Ftp
+from sftp import SFTP
 from v2.einaus.einauslogic import EinAusLogic
 from v2.icc.definitions import ROOT_DIR
 from v2.icc.iccdata import IccData
@@ -25,45 +28,69 @@ class MainLogic( IccLogic ):
         data.commit()
 
     @staticmethod
-    def exportDatabaseToServer():
+    def exportDatabaseToServer( deleteLocalDb:bool=True ):
         """
-        Speichert die immo-Datenbank auf dem Server.
+        Lädt die immo-Datenbank auf den Server.
+        Löscht die lokale Db, wenn <deleteLocalDb> == True
         :return:
         """
-        # import os
-        # import sys
-        # path = os.getcwd()
-        # print( "ROOT_DIR: ", ROOT_DIR )
-        # print( "current work directory: ", path )
-        # print( "location of this script: ", sys.argv[0])
-        # print( "os.path.dirname(): ", os.path.dirname(sys.argv[0] ) )
-        ftpini = FtpIni( ROOT_DIR + "/ftp.ini" )
-        ftp = Ftp( ftpini )
+        ######## ALT -- all-inkl
+        # ftpini = FtpIni( ROOT_DIR + "/ftp.ini" )
+        # ftp = Ftp( ftpini )
+        # try:
+        #     ftp.connect()
+        #     ftp.upload( "immo.db", "immo.db" )
+        ######## NEU -- alfa
+        ftpini = FtpIni( ROOT_DIR + "/ftp_ssl_alfa.ini" )
+        user, pwd = ftpini.getUserAndPwd()
+        remotepath = ftpini.getRemotePath()
+        localpath = ftpini.getLocalPath()
+        localdb = localpath + "immo.db"
+        remotedb = remotepath + "immo.db"
+        print( "Upload " + localdb + " to " + remotedb )
         try:
-            ftp.connect()
-            ftp.upload( "immo.db", "immo.db" )
+            sftp = SFTP( ftpini.getServer(), 22, user, pwd )
+            sftp.openConnection()
+            sftp.upload( localdb, remotedb )
+            sftp.closeConnection()
+            os.remove( localdb )
         except Exception as ex:
             raise ex
-        finally:
-            ftp.quit()
+
+    # @staticmethod
+    # def getFtpLocalPath() -> str:
+    #     ftpini = FtpIni( "ftp.ini" )
+    #     return ftpini.getLocalPath()
 
     @staticmethod
-    def getFtpLocalPath() -> str:
-        ftpini = FtpIni( "ftp.ini" )
-        return ftpini.getLocalPath()
-
-    @staticmethod
-    def importDatabaseFromServer( localname:str ):
-        # DERZEIT NICHT BENUTZT
-        ftpini = FtpIni( "ftp.ini" )
-        ftp = Ftp( ftpini )
+    def importDatabaseFromServer():
+        """
+        Lädt die Datenbank vom Server ins lokale Verzeichnis.
+        Benennt die remote Datenbank um in "immo.db_2025-04-05:12.34.56.123456" (Name + Timestamp)
+        :return:
+        """
+        ftpini = FtpIni( ROOT_DIR + "/ftp_ssl_alfa.ini" )
+        user, pwd = ftpini.getUserAndPwd()
+        remotepath = ftpini.getRemotePath()
+        localpath = ftpini.getLocalPath()
+        localdb = localpath + "immo.db"
+        remotedb = remotepath + "immo.db"
+        print( "Download " + remotedb + " to " + localdb )
         try:
-            ftp.connect()
-            ftp.download( "immo.db", localname )
+            sftp = SFTP( ftpini.getServer(), 22, user, pwd )
+            sftp.openConnection()
+            sftp.download( remotedb, localdb )
+            ts = datehelper.getCurrentTimestampIso()
+            sftp.rename(remotedb, remotedb + "_" + ts )
+            sftp.closeConnection()
         except Exception as ex:
+            sftp.closeConnection()
             raise ex
-        finally:
-            ftp.quit()
+
+    @staticmethod
+    def checkDatabaseExistsLocal() -> bool:
+        dbpathnfile = ROOT_DIR + "/immo.db"
+        return os.path.isfile( dbpathnfile )
 
     @staticmethod
     def getSummen( jahr:int ) -> XSummen:
