@@ -6,12 +6,13 @@ from PySide2.QtCore import QSize
 from PySide2.QtGui import QIcon
 from PySide2.QtWidgets import QApplication, QWidget, QMessageBox
 
-from v2.icc.definitions import ROOT_DIR
-from v2.icc.mainlogic import MainLogic
-
 sys.path.append( "../../../common" )
 sys.path.append( "../../" )
+sys.path.append( "../" )
+#sys.path.append( "/home/martin/Projects/python/ImmoControlCenter/v2" )
 print( "sys.path: ", sys.path )
+#from v2.icc.definitions import ROOT_DIR
+from v2.icc.mainlogic import MainLogic
 from base.messagebox import WarningBox, ErrorBox
 from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
 from v2.icc.login import login
