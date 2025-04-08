@@ -427,8 +427,16 @@ class MainController( IccController ):
         self._win.setCursor( Qt.ArrowCursor )
         return True
 
-    @staticmethod
-    def onSaveDatabase() -> None:
+    def onSaveDatabase( self ) -> None:
+        def try_saveLetzteBuchung() -> bool:
+            try:
+                self._saveLetzteBuchung()
+                return True
+            except Exception as ex:
+                box = ErrorBox( "Speichern der letzten Buchung", "Speichern fehlgeschlagen: " + str( ex ),
+                                  "Datenbank wird nicht auf externe Festplatte gesichert." )
+                box.exec_()
+                return False
         def try_copyfile():
             try:
                 copyfile( src, dest )
@@ -439,7 +447,9 @@ class MainController( IccController ):
                 rc = box.exec_()
                 if rc == QMessageBox.Yes:
                     try_copyfile()
-
+        # Zuerst die letzte Buchung speichern, dann auf Festplatte sichern
+        if not try_saveLetzteBuchung():
+            return
         from shutil import copyfile
         scriptdir = os.path.dirname( os.path.realpath( __file__ ) )
         src = ROOT_DIR + "/immo.db"
