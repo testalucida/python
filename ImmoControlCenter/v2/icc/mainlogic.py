@@ -84,6 +84,7 @@ class MainLogic( IccLogic ):
             sftp.rename(remotedb, remotedb + "_" + ts )
             sftp.closeConnection()
         except Exception as ex:
+            print( "MainLogic.importDatabaseFromServer(): \n" + str(ex) )
             sftp.closeConnection()
             raise ex
 

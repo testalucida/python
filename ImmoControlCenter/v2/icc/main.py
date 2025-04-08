@@ -144,6 +144,9 @@ def main():
                 if box.exec_() != QMessageBox.Yes:
                     return # Anwendung wird beendet
             else: # auch lokal keine Datenbank vorhanden
+                box = ErrorBox( "Keine Datenbank", "Datenbank weder auf dem Server noch lokal gefunden.",
+                                "Anwendung wird beendet." )
+                box.exec_()
                 return
         # Die one-and-only-Instanz des EinAusWriteDispatchers erzeugen:
         EinAusWriteDispatcher()

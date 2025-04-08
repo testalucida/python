@@ -419,6 +419,7 @@ class MainController( IccController ):
         infopanel = InfoPanel( "Bitte warten", "Datenbank wird zum Server exportiert..." )
         infopanel.moveToCursor()
         infopanel.show()
+        infopanel.raise_()
         self._threadpool.start( worker )
         while self._rcFtpExportDatabase is None:
             QApplication.processEvents()
