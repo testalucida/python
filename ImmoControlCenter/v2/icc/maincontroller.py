@@ -373,7 +373,7 @@ class MainController( IccController ):
         finally:
             self._win.setCursor( Qt.ArrowCursor )
 
-    def onExportDatabase( self ):
+    def exportDatabaseOnCloseWorker( self ) -> bool:
         """
         Datenbank zum Server hochladen.
         Methode steigt manchmal mit Exception aus:
@@ -387,7 +387,7 @@ class MainController( IccController ):
             self._rcFtpExportDatabase = True
 
         def onExportResult( obj ):
-            print( "Export Database dieses Mal gutgegangen. obj=" + str(obj) )
+            print( "Export Database dieses Mal gutgegangen." )
 
         def onExportError(args=None):
             print( "uups - something went wrong" )
@@ -409,7 +409,7 @@ class MainController( IccController ):
             box = WarningBox( "Speichern der letzten Buchung", "Speichern fehlgeschlagen: " + str(ex),
                               "Datenbank trotzdem exportieren?", "Ja", "Nein" )
             if box.exec_() != QMessageBox.Yes:
-                return
+                return False
 
         self._win.setCursor( Qt.WaitCursor )
         worker = Worker( self._logic.exportDatabaseToServer )
@@ -424,6 +424,7 @@ class MainController( IccController ):
             QApplication.processEvents()
         infopanel.close()
         self._win.setCursor( Qt.ArrowCursor )
+        return True
 
     @staticmethod
     def onSaveDatabase() -> None:

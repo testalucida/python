@@ -36,9 +36,9 @@ class ShutDownFilter( QtCore.QObject ):
         return super( ShutDownFilter, self ).eventFilter( obj, event )
 
     def quit_app( self ) -> bool:
-        #saveDatabase()
-        if not self._mainCtrl.exportDatabaseOnClose():
-            return False
+        # if not self._mainCtrl.exportDatabaseOnClose():
+        if not self._mainCtrl.exportDatabaseOnCloseWorker(): # Export der Db zum Server hat nicht geklappt
+            return False # Anwendung offen lassen - vllt passiert ein Wunder
         geom = self._win.geometry()
         #print( 'CLEAN EXIT. x=%d - y=%d - w=%d - h=%d' % (geom.x(), geom.y(), geom.width(), geom.height()) )
         #writeGeometryOnShutdown( geom.x(), geom.y(), geom.width(), geom.height() )
