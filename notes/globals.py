@@ -1,0 +1,3 @@
+
+FOLDER = 'folder'
+NOTE = 'note'
