@@ -455,10 +455,10 @@ class MainController( IccController ):
         src = ROOT_DIR + "/immo.db"
         if "Vermietung" in scriptdir:
             print( "Running in REL; try to copy immo.db" )
-            dest = "/media/martin/Elements1/Vermietung_V2/ImmoControlCenter/v2/icc/immo.db"
+            dest = "/media/martin/Elements/Vermietung_V2/ImmoControlCenter/v2/icc/immo.db"
         elif "Projects/python" in scriptdir:
             print( "Running in DEV; try to copy immo.db" )
-            dest = "/media/martin/Elements1/Projects/python/ImmoControlCenter/v2/icc/immo.db"
+            dest = "/media/martin/Elements/Projects/python/ImmoControlCenter/v2/icc/immo.db"
         if os.path.isfile( src ):
             box = QMessageBox()
             box.setIcon( QMessageBox.Question )
