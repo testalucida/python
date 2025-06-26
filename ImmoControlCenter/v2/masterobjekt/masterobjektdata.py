@@ -18,7 +18,7 @@ class MasterobjektData( IccData ):
 
     def getMasterData(self, mobj_id: str) -> XMasterobjekt:
         sql = "select m.master_id, m.master_name, m.strasse_hnr, m.plz, m.ort, m.gesamt_wfl, m.anz_whg, m.veraeussert_am," \
-              "m.hauswart, m.hauswart_telefon, m.hauswart_mailto, m.heizung, m.energieeffz, m.bemerkung, " \
+              "m.angeschafft_am, m.hauswart, m.hauswart_telefon, m.hauswart_mailto, m.heizung, m.energieeffz, m.bemerkung, " \
               "vwg.vw_id as vw_id, vwg.vw_id as verwalter, vwg.vw_ap as verwalter_ap, vwg.weg_name " \
               "from mietobjekt o " \
               "inner join masterobjekt m on m.master_name = o.master_name " \

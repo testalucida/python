@@ -78,7 +78,7 @@ class MasterMietobjektMieterView( QFrame ):
         ###########  MasterView.HeaderView  ################
         class HeaderView(QFrame):
             def __init__(self, master_id: int, master_name: str, strasse_hnr: str, plz: str, ort: str,
-                         veraeussert_am: str = ""):
+                         veraeussert_am: str = "", angeschafft_am:str = "" ):
                 QFrame.__init__(self)
                 self._master_id = master_id
                 self._master_name = master_name
@@ -86,10 +86,12 @@ class MasterMietobjektMieterView( QFrame ):
                 self._plz = plz
                 self._ort = ort
                 self._veraeussert_am = veraeussert_am
+                self._angeschafft_am = angeschafft_am
                 self._layout = BaseGridLayout()
                 self.setLayout(self._layout)
                 self._mleMasterHeader = MultiLineEdit()
                 self._sdeVeraeussertAm = SmartDateEdit()
+                self._sdeAngeschafftAm = SmartDateEdit()
                 self._createGui()
                 self._dataToGui()
 
@@ -99,17 +101,54 @@ class MasterMietobjektMieterView( QFrame ):
                 e = self._mleMasterHeader
                 e.setStyleSheet("background: lightgray;")
                 e.setReadOnly(True)
-                e.setFrameStyle(QFrame.NoFrame)
+                e.setFrameStyle(QFrame.Shape.NoFrame)
                 e.setMaximumHeight(70)
                 r, c = 0, 0
                 l.addWidget(e, r, c, 1, 2)
                 r += 1
+                lblAam = BaseLabel( "angeschafft am: " )
+                lblAam.setMaximumWidth( 120 )
+                aam = self._sdeAngeschafftAm
+                aam.setStyleSheet( "background: white;" )
+                aam.setMaximumWidth( 100 )
+                lblVam = BaseLabel("veräußert am: ")
+                lblVam.setMaximumWidth( 120 )
                 vam = self._sdeVeraeussertAm
                 vam.setStyleSheet("background: white;")
                 vam.setMaximumWidth(100)
-                l.addWidget(BaseLabel("veräußert am: "), r, c, 1, 1, alignment=Qt.AlignRight)
-                c += 1
-                l.addWidget(vam, r, c, 1, 1, alignment=Qt.AlignLeft)
+                ##############################
+                # l.addWidget( lblAam, r, c, 1, 1, alignment=Qt.AlignmentFlag.AlignCenter )
+                # c+=1
+                # l.addWidget( aam, r, c, 1, 1, alignment=Qt.AlignmentFlag.AlignCenter )
+                # c += 1
+                # l.addWidget( lblVam, r, c, 1, 1, alignment=Qt.AlignmentFlag.AlignCenter )
+                # c += 1
+                # l.addWidget( vam, r, c, 1, 1, alignment=Qt.AlignmentFlag.AlignCenter )
+                ###############################
+                layH = QHBoxLayout()
+                layH.addWidget( lblAam, stretch=0, alignment=Qt.AlignmentFlag.AlignCenter )
+                layH.addWidget( aam, stretch=0, alignment=Qt.AlignmentFlag.AlignCenter  )
+                layH.addWidget( BaseLabel( "\t" ), stretch=0, alignment=Qt.AlignmentFlag.AlignCenter )
+                layH.addWidget( lblVam, stretch=0, alignment=Qt.AlignmentFlag.AlignCenter  )
+                layH.addWidget( vam, stretch=0, alignment=Qt.AlignmentFlag.AlignCenter  )
+                layH.setContentsMargins( 400, 0, 0, 0)
+                l.addLayout( layH, r, c, alignment=Qt.AlignmentFlag.AlignCenter )
+                ######################################
+
+                # r += 1
+                # vam = self._sdeVeraeussertAm
+                # vam.setStyleSheet("background: white;")
+                # vam.setMaximumWidth(100)
+                # l.addWidget(BaseLabel("veräußert am: "), r, c, 1, 1, alignment=Qt.AlignRight)
+                # c += 1
+                # l.addWidget(vam, r, c, 1, 1, alignment=Qt.AlignLeft)
+                # aam = self._sdeAngeschafftAm
+                # aam.setStyleSheet( "background: white;" )
+                # aam.setMaximumWidth( 100 )
+                # c += 1
+                # l.addWidget( BaseLabel( "angeschafft am: " ), r, c, 1, 1, alignment=Qt.AlignLeft )
+                # c += 1
+                # l.addWidget( aam, r, c, 1, 1, alignment=Qt.AlignLeft )
 
             def _dataToGui(self):
                 e = self._mleMasterHeader
@@ -117,17 +156,24 @@ class MasterMietobjektMieterView( QFrame ):
                        '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Master-Name: <font size="+2"><b>' + \
                        self._master_name + '</font></b>'
                 e.setHtml(html)
-                e.setAlignment(Qt.AlignCenter)
+                e.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 e.append(" ")
                 e.append("<b>" + self._strasse_hnr + "&nbsp;&nbsp;&nbsp;" + self._plz + "&nbsp;" + self._ort + "</b>")
-                e.setAlignment(Qt.AlignCenter)
-                self._sdeVeraeussertAm.setValue(self._veraeussert_am)
+                e.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                self._sdeVeraeussertAm.setValue(self._veraeussert_am )
+                self._sdeAngeschafftAm.setValue( self._angeschafft_am )
 
             def getVeraeussertAm(self) -> str:
                 """
                 :return: den Wert aus dem GUI-Feld
                 """
                 return self._sdeVeraeussertAm.getValue()
+
+            def getAngeschafftAm( self ) -> str:
+                """
+                :return: den Wert aus dem GUI-Feld
+                """
+                return self._sdeAngeschafftAm.getValue()
 
         ############  MasterView.DataView  ##################
         class DataView(QFrame):
@@ -336,7 +382,7 @@ class MasterMietobjektMieterView( QFrame ):
             self._layout = BaseGridLayout()
             self.setLayout(self._layout)
             self._headerView = MasterMietobjektMieterView.MasterView.HeaderView(x.master_id, x.master_name, x.strasse_hnr, x.plz, x.ort,
-                                                     x.veraeussert_am)
+                                                     x.veraeussert_am, x.angeschafft_am)
             self._dataView = MasterMietobjektMieterView.MasterView.DataView(x)
             self._createGui()
 
@@ -653,6 +699,8 @@ class MietobjektDialog( OkCancelDialog ):
         self.addWidget( view, 0 )
         # self.setOkButtonText( "Schließen (derzeit ohne Speichern)" )
         self.setOkButtonText( "OK" )
+        view.getPreferredWidth()
+        view.setMinimumWidth( view.getPreferredWidth() )
 
     ######################   MietobjektAuswahlView   #############################
 
