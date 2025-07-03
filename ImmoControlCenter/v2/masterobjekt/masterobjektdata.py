@@ -29,7 +29,7 @@ class MasterobjektData( IccData ):
     def updateMasterobjekt1( self, master_id:int,
                              hauswart:str, hauswart_telefon:str, hauswart_mailto:str,
                              heizung_db:str, energieeffz:str,
-                             veraeussert_am, bemerkung:str  ) -> int:
+                             angeschafft_am, veraeussert_am, bemerkung:str  ) -> int:
         """
         Ändert die Attribute gem. Argumentliste in dem Maste: db-Value aus Heizung-Werten
         :param energieeffz:
@@ -37,20 +37,30 @@ class MasterobjektData( IccData ):
         :param bemerkung:
         :return: die Anzahl der betroffenen Rows. Sollte 1 oder, im Falle einer falschen master_id, 0 sein.
         """
+        #hauswart = "NULL" if not hauswart else hauswart = ("'" + hauswart + "'")
+        hauswart = "NULL" if not hauswart else "'%s'" % hauswart
+        hauswart_telefon = "NULL" if not hauswart_telefon else "'%s'" % hauswart_telefon
+        hauswart_mailto = "NULL" if not hauswart_mailto else "'%s'" % hauswart_mailto
+        heizung_db = "NULL" if not heizung_db else "'%s'" % heizung_db
+        energieeffz = "NULL" if not energieeffz else "'%s'" % energieeffz
+        angeschafft_am = "NULL" if not angeschafft_am else "'%s'" % angeschafft_am
+        veraeussert_am = "NULL" if not veraeussert_am else "'%s'" % veraeussert_am
+        bemerkung = "NULL" if not bemerkung else "'%s'" % bemerkung
         # aktuellen Satz holen wg WriteLog:
         oldD = self.getMasterObjektData1( master_id )
         sql = "update masterobjekt " \
-              "set hauswart = '%s', " \
-              "hauswart_telefon = '%s', " \
-              "hauswart_mailto = '%s', " \
-              "heizung = '%s', " \
-              "energieeffz = '%s', " \
-              "veraeussert_am = '%s', " \
-              "bemerkung = '%s' " \
+              "set hauswart = %s, " \
+              "hauswart_telefon = %s, " \
+              "hauswart_mailto = %s, " \
+              "heizung = %s, " \
+              "energieeffz = %s, " \
+              "angeschafft_am = %s, " \
+              "veraeussert_am = %s, " \
+              "bemerkung = %s " \
               "where master_id = %d " % ( hauswart, hauswart_telefon, hauswart_mailto,
-                                          heizung_db, energieeffz, veraeussert_am, bemerkung, master_id )
+                                          heizung_db, energieeffz, angeschafft_am, veraeussert_am, bemerkung, master_id )
         newD = { "hauswart": hauswart, "hauswart_telefon": hauswart_telefon, "hauswart_mailto": hauswart_mailto,
-                 "heizung": heizung_db, "energieeffz": energieeffz,
+                 "heizung": heizung_db, "energieeffz": energieeffz, "angeschafft_am": angeschafft_am,
                  "veraeussert_am": veraeussert_am, "bemerkung": bemerkung}
         rowsAffected = self.writeAndLog( sql, DbAction.UPDATE,
                                          table="masterobjekt", id_name="master_id", id_value=master_id,

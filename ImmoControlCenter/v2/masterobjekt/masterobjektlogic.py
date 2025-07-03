@@ -22,7 +22,7 @@ class MasterobjektLogic( IccLogic ):
             heizung_db = ""
         self._data.updateMasterobjekt1(xmaster.master_id,
                                        xmaster.hauswart, xmaster.hauswart_telefon, xmaster.hauswart_mailto,
-                                       heizung_db, xmaster.energieeffz,
+                                       heizung_db, xmaster.energieeffz, xmaster.angeschafft_am,
                                        xmaster.veraeussert_am, xmaster.bemerkung)
         if commit:
             self._data.commit()

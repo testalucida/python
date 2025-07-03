@@ -143,7 +143,7 @@ class EinAusDialogController( QObject ):
         oldx = copy.deepcopy( x )
         self._x = x
         dlg = self._createGui()
-        if dlg.exec_() == QDialog.Accepted:
+        if dlg.exec() == QDialog.Accepted:
             delta = self._x.betrag - oldx.betrag
             EinAusWriteDispatcher.inst().einaus_updated( self._x, delta )
 
@@ -215,6 +215,7 @@ class EinAusDialogController( QObject ):
         callback-fnc die vom EinAusDialog nach "OK" aufgerufen wird
         :return: None, wenn Validierung und Speichern geklappt hat, sonst eine Fehlermeldung
         """
+        #print( "OnOk" )
         return self.trySave()
 
     def onApply( self ) -> str:
@@ -222,6 +223,7 @@ class EinAusDialogController( QObject ):
         callback-fnc die vom EinAusDialog nach "Übernehmen" aufgerufen wird
         :return: :return: None, wenn Validierung und Speichern geklappt hat, sonst eine Fehlermeldung
         """
+        #print( "onApply")
         msg = self.trySave()
         if msg:
             return msg
@@ -230,6 +232,7 @@ class EinAusDialogController( QObject ):
             return  ""
 
     def onCancel( self ) -> str:
+        #print( "onCancel" )
         return "Wirklich abbrechen?"
 
     def trySave( self ) -> str:
@@ -300,4 +303,4 @@ def test():
     c.processNewEinAus()
 
 if __name__ == '__main__':
-    test3()
+    test()

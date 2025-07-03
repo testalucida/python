@@ -134,9 +134,19 @@ class MietobjektLogic( IccLogic ):
         :return: eine Nachricht, wenn die Validierung fehlgeschlagen ist bzw. ein Fehler beim
                 Speichern aufgetreten ist, sonst "".
         """
+        def getDifferences( xmaster1, xmaster2 ) -> Dict:
+            diffs = dict()
+            for key, value in xmaster1.__dict__.items():
+                otherval = xmaster2.__dict__[key]
+                if not value and not otherval: continue
+                if otherval != value:
+                    diffs[key] = otherval
+            return diffs
+
         masterChanged = vwChanged = vwApChanged = mobjChanged = mieterChanged = False
         if xmmmcopy.xmaster != xmmmorig.xmaster:
-            diffs:Dict = xmmmcopy.xmaster.getDifferences( xmmmorig.xmaster)
+            #diffs:Dict = xmmmcopy.xmaster.getDifferences( xmmmorig.xmaster)
+            diffs: Dict = getDifferences( xmmmcopy.xmaster, xmmmorig.xmaster )
             for k in diffs.keys():
                 if k in ("verwalter_telefon_1", "verwalter_telefon_2", "verwalter_mailto"):
                     vwChanged = True

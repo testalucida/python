@@ -122,7 +122,7 @@ class MietobjektController( IccController ):
                     if msg:
                         # Fehler beim Validieren/Speichern
                         box = ErrorBox( "Fehler beim Validieren/Speichern",
-                                        "Änderungen am Objekt '%s' sind nicht korrekt: " % x.mobj_id,
+                                        "Änderungen am Objekt '%s' sind nicht korrekt: " % xmmm.xmobj.mobj_id,
                                         msg )
                         box.exec_()
                         return False
@@ -132,7 +132,7 @@ class MietobjektController( IccController ):
                 except Exception as ex:
                     # Fehler beim Speichern
                     box = ErrorBox( "Datenbankfehler",
-                                    "Änderungen am Objekt '%s' konnten nicht gespeichert werden:" % x.mobj_id,
+                                    "Änderungen am Objekt '%s' konnten nicht gespeichert werden:" % xmmm.xmobj.mobj_id,
                                     str(ex) )
                     box.exec_()
                     return False
@@ -142,7 +142,7 @@ class MietobjektController( IccController ):
         # v.edit_miete.connect( self.edit_miete.emit )  # weiterleiten
         # v.edit_mieter.connect( self.edit_mieter.emit )  # weiterleiten
         # v.edit_hausgeld.connect( self.onEditHausgeld )
-        dlg = MietobjektDialog( v, xmmm.xmaster.master_name + " / " + xmmm.xmobj.mobj_id )
+        dlg = MietobjektDialog( v, xmmm.xmaster.master_name + " / " + str(xmmm.xmobj.mobj_id) )
         dlg.setBeforeAcceptFunction( trySave )
         dlg.show()
         self._dlg = dlg

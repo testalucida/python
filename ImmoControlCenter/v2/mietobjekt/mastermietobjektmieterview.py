@@ -336,16 +336,19 @@ class MasterMietobjektMieterView( QFrame ):
                 :param x:
                 :return:
                 """
-                x.heizung = self._cboHeizung.currentText()
-                x.energieeffz = self._cboEnergieEffz.currentText()
-                x.verwalter_telefon_1 = self._edVerwalterTelefon_1.getValue()
-                x.verwalter_telefon_2 = self._edVerwalterTelefon_2.getValue()
-                x.verwalter_mailto = self._edVerwalterMailto.getValue()
-                x.hauswart = self._mleHauswart.getValue()
-                x.hauswart_telefon = self._edHauswartTelefon.getValue()
-                x.hauswart_mailto = self._edHauswartMailto.getValue()
-                x.verwalter_ap = self._edVerwalterAp.getValue()
-                x.bemerkung = self._mleBemerkung.getValue()
+                def getNoneIfEmpty( guiContent:str ) -> None or str:
+                    if not guiContent : return None
+                    return guiContent
+                x.heizung = getNoneIfEmpty( self._cboHeizung.currentText() )
+                x.energieeffz = getNoneIfEmpty( self._cboEnergieEffz.currentText() )
+                x.verwalter_telefon_1 = getNoneIfEmpty( self._edVerwalterTelefon_1.getValue() )
+                x.verwalter_telefon_2 = getNoneIfEmpty( self._edVerwalterTelefon_2.getValue() )
+                x.verwalter_mailto = getNoneIfEmpty( self._edVerwalterMailto.getValue() )
+                x.hauswart = getNoneIfEmpty( self._mleHauswart.getValue() )
+                x.hauswart_telefon = getNoneIfEmpty( self._edHauswartTelefon.getValue() )
+                x.hauswart_mailto = getNoneIfEmpty( self._edHauswartMailto.getValue() )
+                x.verwalter_ap = getNoneIfEmpty( self._edVerwalterAp.getValue() )
+                x.bemerkung = getNoneIfEmpty( self._mleBemerkung.getValue() )
 
             def getHeizung(self) -> str:
                 """
@@ -357,10 +360,10 @@ class MasterMietobjektMieterView( QFrame ):
                 return self._cboEnergieEffz.currentText()
 
             def getVerwalterTelefon(self) -> str:
-                return self._edVerwalterTelefon_1
+                return self._edVerwalterTelefon_1.getValue()
 
             def getVerwalterMailto(self) -> str:
-                return self._edVerwalterMailto
+                return self._edVerwalterMailto.getValue()
 
             def getHauswart(self) -> str:
                 return self._mleHauswart.getValue()
@@ -397,6 +400,7 @@ class MasterMietobjektMieterView( QFrame ):
         # MasterView
         def guiToData(self, x:XMasterobjekt):
             x.veraeussert_am = self._headerView.getVeraeussertAm()
+            x.angeschafft_am = self._headerView.getAngeschafftAm()
             self._dataView.guiToData(x)
 
         # def getMasterobjektCopyWithChanges(self) -> XMasterobjekt:
@@ -406,6 +410,7 @@ class MasterMietobjektMieterView( QFrame ):
         #     return xcopy
 
         def applyChanges(self):
+            self._x.angeschafft_am = self._headerView.getAngeschafftAm()
             self._x.veraeussert_am = self._headerView.getVeraeussertAm()
             self._dataView.guiToData( self._x )
 

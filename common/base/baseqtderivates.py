@@ -331,7 +331,7 @@ class OkApplyCancelDialog( BaseDialogWithButtons ):
             msg = self._beforeRejectCallback()
         if msg:
             box = QuestionBox( "Bestätigung", msg, "Ja", "Nein" )
-            if box.exec_() == QMessageBox.StandardButton.Yes:
+            if box.exec_() == QMessageBox.Yes:
                 self.reject()
         else:
             self.reject()
