@@ -125,47 +125,62 @@ def main():
         #terminate_if_running()  # one instance only
         #createControlFile()  # flag file showing application is running
         env = "RELEASE"
-    # Die Datenbank vom Server holen:
-    try:
-        try:
-            MainLogic.importDatabaseFromServer()
-        except FileNotFoundError as err:
-            if MainLogic.checkDatabaseExistsLocal(): # die DB existiert lokal. Vermutlich ist die Anwendung beim
-                                                    # letzten Mal abgestürzt und konnte die DB nicht mehr zum
-                                                    # Server übertragen.
-                box = WarningBox( "Datenbank nicht auf dem Server", "Datenbank existiert nicht "
-                                                                    "auf dem Server,\naber im lokalen"
-                                                                    "Verzeichnis.",
-                                  "Soll die lokale Datenbank verwendet werden?\n\n"
-                                  "ACHTUNG: Läuft das ImmoControlCenter vielleicht auf einem anderen Rechner?\n"
-                                  "Dann sollte die Anwendung beendet werden!",
-                                  yesText="Ja, lokale DB verwenden", noText="Nein, lieber Anwendung beenden",
-                                  cancelText=None )
-                if box.exec_() != QMessageBox.Yes:
-                    return # Anwendung wird beendet
-            else: # auch lokal keine Datenbank vorhanden
-                box = ErrorBox( "Keine Datenbank", "Datenbank weder auf dem Server noch lokal gefunden.",
-                                "Anwendung wird beendet." )
-                box.exec_()
-                return
-        # Die one-and-only-Instanz des EinAusWriteDispatchers erzeugen:
-        EinAusWriteDispatcher()
-        mainCtrl = MainController( env )
-        mainwin = mainCtrl.createGui()
-        shutDownFilter = ShutDownFilter( mainwin, mainCtrl, app )
-        mainwin.installEventFilter( shutDownFilter )
-        mainwin.show()
-        # w = mainwin.getPreferredWidth()
-        # h = mainwin.getPreferredHeight()
-        mainwin.resize( QSize(1400, 800) )
 
-        icon = QIcon( "./images/houses.png" )
-        app.setWindowIcon( icon )
+    # Die one-and-only-Instanz des EinAusWriteDispatchers erzeugen:
+    EinAusWriteDispatcher()
+    mainCtrl = MainController( env )
+    mainwin = mainCtrl.createGui()
+    # shutDownFilter = ShutDownFilter( mainwin, mainCtrl, app )
+    # mainwin.installEventFilter( shutDownFilter )
+    mainwin.show()
+    # w = mainwin.getPreferredWidth()
+    # h = mainwin.getPreferredHeight()
+    mainwin.resize( QSize( 1400, 800 ) )
+    icon = QIcon( "./images/houses.png" )
+    app.setWindowIcon( icon )
+    app.exec()
 
-        app.exec()
-    except Exception as ex:
-        box = ErrorBox( "Fehler beim Download der Datenbank", str( ex ), "Anwendung wird geschlossen." )
-        box.exec_()
+    # # Die Datenbank vom Server holen:
+    # try:
+    #     try:
+    #         MainLogic.importDatabaseFromServer()
+    #     except FileNotFoundError as err:
+    #         if MainLogic.checkDatabaseExistsLocal(): # die DB existiert lokal. Vermutlich ist die Anwendung beim
+    #                                                 # letzten Mal abgestürzt und konnte die DB nicht mehr zum
+    #                                                 # Server übertragen.
+    #             box = WarningBox( "Datenbank nicht auf dem Server", "Datenbank existiert nicht "
+    #                                                                 "auf dem Server,\naber im lokalen"
+    #                                                                 "Verzeichnis.",
+    #                               "Soll die lokale Datenbank verwendet werden?\n\n"
+    #                               "ACHTUNG: Läuft das ImmoControlCenter vielleicht auf einem anderen Rechner?\n"
+    #                               "Dann sollte die Anwendung beendet werden!",
+    #                               yesText="Ja, lokale DB verwenden", noText="Nein, lieber Anwendung beenden",
+    #                               cancelText=None )
+    #             if box.exec_() != QMessageBox.Yes:
+    #                 return # Anwendung wird beendet
+    #         else: # auch lokal keine Datenbank vorhanden
+    #             box = ErrorBox( "Keine Datenbank", "Datenbank weder auf dem Server noch lokal gefunden.",
+    #                             "Anwendung wird beendet." )
+    #             box.exec_()
+    #             return
+    #     # Die one-and-only-Instanz des EinAusWriteDispatchers erzeugen:
+    #     EinAusWriteDispatcher()
+    #     mainCtrl = MainController( env )
+    #     mainwin = mainCtrl.createGui()
+    #     shutDownFilter = ShutDownFilter( mainwin, mainCtrl, app )
+    #     mainwin.installEventFilter( shutDownFilter )
+    #     mainwin.show()
+    #     # w = mainwin.getPreferredWidth()
+    #     # h = mainwin.getPreferredHeight()
+    #     mainwin.resize( QSize(1400, 800) )
+    #
+    #     icon = QIcon( "./images/houses.png" )
+    #     app.setWindowIcon( icon )
+    #
+    #     app.exec()
+    # except Exception as ex:
+    #     box = ErrorBox( "Fehler beim Download der Datenbank", str( ex ), "Anwendung wird geschlossen." )
+    #     box.exec_()
 
     # if not runningInDev():
     #     deleteControlFile()

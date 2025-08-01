@@ -36,9 +36,9 @@ class DynamicAttributeView( BaseWidget ):
             if attr.trailingButton:
                 btn = self._createButton( attr.trailingButton )
                 boxlayout = QHBoxLayout()
-                boxlayout.addWidget( w, alignment=Qt.AlignLeft )
-                boxlayout.addWidget( btn, alignment=Qt.AlignLeft )
-                self._layout.addLayout( boxlayout, row, col, alignment=Qt.AlignLeft )
+                boxlayout.addWidget( w, alignment=Qt.AlignmentFlag.AlignLeft )
+                boxlayout.addWidget( btn, alignment=Qt.AlignmentFlag.AlignLeft )
+                self._layout.addLayout( boxlayout, row, col, alignment=Qt.AlignmentFlag.AlignLeft )
             else:
                 self._layout.addWidget( w, row, col, 1, attr.columnspan )
             comboValues = attr.getComboValues()

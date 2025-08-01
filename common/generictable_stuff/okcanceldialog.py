@@ -22,7 +22,7 @@ class OkCancelDialog( QDialog ):
         hbox.addWidget( self._okButton )
         hbox.addWidget( self._cancelButton )
 
-        self._layout.addLayout( hbox, 3, 0, alignment=Qt.AlignLeft | Qt.AlignBottom )
+        self._layout.addLayout( hbox, 3, 0, alignment=Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom )
 
         self._okButton.setDefault( True )
 
@@ -53,7 +53,10 @@ class OkCancelDialog( QDialog ):
 
     def addWidget( self, w:QWidget, row:int ) -> None:
         if row > 2: raise Exception( "OkCancelDialog.addWidget() -- invalid row index: %d" % ( row ) )
-        self._layout.addWidget( w, row, 0 )
+        self._layout.addWidget( w, row, 0, 1, 1, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft )
+        #self._layout.setSpacing( 0 )
+        #self._layout.setRowStretch( row, 0 )
+        #self._layout.setColumnStretch( 0, 0 )
 
     def setBeforeAcceptFunction( self, fnc ):
         self._beforeAcceptFnc = fnc
@@ -96,7 +99,7 @@ class OkCancelDialog2( QDialog ):
         margins = hbox.contentsMargins()
         margins.setLeft( 10 )
         hbox.setContentsMargins( margins )
-        self._layout.addLayout( hbox, 3, 0, alignment=Qt.AlignLeft | Qt.AlignBottom )
+        self._layout.addLayout( hbox, 3, 0, alignment=Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom )
 
         self._okButton.setDefault( True )
 
@@ -131,7 +134,7 @@ class OkDialog( QDialog ):
 
     def _createGui( self ):
         self.setLayout( self._layout )
-        self._layout.addWidget( self._okButton, 3, 0, alignment=Qt.AlignLeft | Qt.AlignBottom )
+        self._layout.addWidget( self._okButton, 3, 0, alignment=Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom )
         self._okButton.clicked.connect( self.accept )
         self._okButton.setDefault( True )
         if self.title:

@@ -700,7 +700,8 @@ class AutoWidth:
         # ps = font.pixelSize()  # --> -1
         font.setPixelSize( 0 )
         fm = QFontMetrics( font )
-        width = fm.width( text )
+        #width = fm.width( text )
+        width = fm.horizontalAdvance( text )
         return width
 
 ######################  BaseLabel ##################################

@@ -38,7 +38,7 @@ class SollMieteEditView( QWidget ):
         r = 0
         lblSmId = BaseLabel( "<neu>" if self._x.sm_id < 1 else str( self._x.sm_id ) )
         lblSmId.setMaximumWidth( W )
-        lblSmId.setAlignment( Qt.AlignRight )
+        lblSmId.setAlignment( Qt.AlignmentFlag.AlignRight )
         self._layout.addPair( "Sollmiete-ID: ", lblSmId, r, 0 )
         r += 1
         hline = HLine()
@@ -60,7 +60,7 @@ class SollMieteEditView( QWidget ):
         self._layout.addPair( "NKV: ", self._feNkv, r, 0 )
         r += 1
         self._lblBrutto.setMaximumWidth( W )
-        self._lblBrutto.setAlignment( Qt.AlignRight )
+        self._lblBrutto.setAlignment( Qt.AlignmentFlag.AlignRight )
         font = QFont( self._feNkv.font() )
         font.setBold( True )
         font.setPixelSize( 16 )
@@ -132,7 +132,8 @@ class SollMieteEditDialog( OkCancelDialog ):
     def __init__( self, v:SollMieteEditView, parent=None ):
         OkCancelDialog.__init__( self, v.getTitle(), parent )
         self.addWidget( v, 0 )
-
+        self.setMaximumWidth( 500 )
+        self.setMaximumHeight( 200 )
 
 def test():
     def onOk():
@@ -154,5 +155,10 @@ def test():
     v = SollMieteEditView( x )
     #v.ok_clicked.connect( onOk )
     #v.edit_clicked.connect( onEdit )
-    v.show()
-    app.exec_()
+    #v.show()
+    dlg = SollMieteEditDialog( v )
+    dlg.exec_()
+    #app.exec_()
+
+if __name__ == "__main__":
+    test()

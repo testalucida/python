@@ -2,7 +2,7 @@ import copy
 
 from PySide6.QtCore import Signal, QSize
 from PySide6.QtGui import QFont, Qt
-from PySide6.QtWidgets import QWidget, QApplication
+from PySide6.QtWidgets import QWidget, QApplication, QLabel
 
 from base.baseqtderivates import SmartDateEdit, FloatEdit, BaseLabel, BaseGridLayout, MultiLineEdit, BaseButton, HLine, \
     BaseEdit, SignedNumEdit
@@ -43,7 +43,7 @@ class SollHausgeldEditView( QWidget ):
         r = 0
         lblSmId = BaseLabel( "<neu>" if self._x.shg_id < 1 else str( self._x.shg_id ) )
         lblSmId.setMaximumWidth( W )
-        lblSmId.setAlignment( Qt.AlignRight )
+        lblSmId.setAlignment( Qt.AlignmentFlag.AlignRight )
         self._layout.addPair( "Soll-Hausgeld-ID: ", lblSmId, r, 0 )
         r += 1
         hline = HLine()
@@ -64,7 +64,7 @@ class SollHausgeldEditView( QWidget ):
         self._layout.addPair( "Rücklagenzuführg: ", self._feRueZuFue, r, 0 )
         r += 1
         self._lblBrutto.setMaximumWidth( W )
-        self._lblBrutto.setAlignment( Qt.AlignRight )
+        self._lblBrutto.setAlignment( Qt.AlignmentFlag.AlignRight )
         font = QFont( self._feRueZuFue.font() )
         font.setBold( True )
         font.setPixelSize( 16 )
@@ -137,7 +137,11 @@ class SollHausgeldEditDialog( OkCancelDialog ):
     def __init__( self, v:SollHausgeldEditView, parent=None ):
         OkCancelDialog.__init__( self, v.getTitle(), parent )
         self.addWidget( v, 0 )
-
+        self.setMaximumWidth( 500 )
+        self.setMaximumHeight( 200 ) ## frag mich nicht, warum das funktioniert
+        #self.setFixedSize( v.getPreferredSize() )
+        # dummy = QLabel()
+        # self.addWidget( dummy, 1 )
 
 def test():
     def onOk():
@@ -159,5 +163,16 @@ def test():
     v = SollHausgeldEditView( x )
     #v.ok_clicked.connect( onOk )
     #v.edit_clicked.connect( onEdit )
-    v.show()
-    app.exec_()
+    #v.show()
+    dlg = SollHausgeldEditDialog( v )
+    sz = dlg.size()
+    print( sz )
+    #dlg.setBaseSize( 600, 100 )
+    #dlg.setMaximumHeight( 100 )
+    #sz = dlg.size()
+    #print( sz )
+    dlg.exec_()
+    #app.exec_()
+
+if __name__ == "__main__":
+    test()

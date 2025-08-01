@@ -11,7 +11,7 @@ from base.basetablefunctions import BaseTableFunctions
 from base.basetableview import BaseTableView
 from base.dynamicattributeui import DynamicAttributeDialog
 from base.interfaces import XBaseUI, VisibleAttribute
-from base.messagebox import ErrorBox, InfoBox, WarningBox
+from base.messagebox import ErrorBox, WarningBox
 from generictable_stuff.okcanceldialog import OkCancelDialog
 from v2.einaus.einauslogic import EinAusTableModel
 from v2.einaus.einausview import EinAusTableView, TeilzahlungDialog, ValueDialog
@@ -237,7 +237,7 @@ class MtlEinAusController( IccController ):
                         VisibleAttribute( "write_time", BaseEdit, "gebucht am: ", editable=False, columnspan=2 ) )
             xui.addVisibleAttributes( vislist )
             dyndlg = DynamicAttributeDialog( xui, "Ändern einer Monatszahlung" )
-            if dyndlg.exec_() == QDialog.Accepted:
+            if dyndlg.exec_() == QDialog.DialogCode.Accepted:
                 v = dyndlg.getDynamicAttributeView()
                 xcopy = v.getModifiedXBaseCopy()
                 msg = self.getLogic().validateMonatsZahlung( xcopy )
@@ -652,11 +652,12 @@ class AbschlagController( MtlEinAusController ):
         dlg = DynamicAttributeDialog( xui, "Anzeige Leistungsvertrag" )
         dlg.getApplyButton().setEnabled( False )
         dlg.setCallbacks( beforeAcceptCallback=validate )
+        dlg.setMaximumHeight( 100 )  # keine Ahnung warum das quasi als "pack()"-Methode funktioniert (die es leider nicht gibt)
         v = dlg.getDynamicAttributeView()
         self._cboMasternames: BaseComboBox = v.getWidget( "master_name" )
         self._cboMietobjekte: BaseComboBox = v.getWidget( "mobj_id" )
         self._cboEinAusArt: BaseComboBox = v.getWidget( "ea_art" )
-        if dlg.exec_() == QDialog.Accepted:
+        if dlg.exec_() == QDialog.DialogCode.Accepted:
             v = dlg.getDynamicAttributeView()
             v.updateData()  # Validierung war ok, also Übernahme der Änderungen ins XBase-Objekt
             try:
@@ -691,6 +692,48 @@ class AbschlagController( MtlEinAusController ):
                 box.exec_()
                 return
         else:
+            # cancelled
+            return
+
+    @staticmethod
+    def showAbschlagDialogTEST( xsa: XSollAbschlag, modus:Modus ):
+        """
+        Zeigt die Details des Leistungsvertrags <xsa>
+        :param xsa: XSollAbschlag-Objekt
+        :param modus: NEW oder MODIFY
+        :return:
+        """
+        def onMasterChanged( master ):
+            print( "Neuer Master: ", master )
+
+        def validate():
+            v = dlg.getDynamicAttributeView()
+            xcopy:XSollAbschlag = v.getModifiedXBaseCopy()
+            msg = ""
+            return msg
+        xui = XBaseUI( xsa )
+        masternames = ["N-Stadtpark", "ER-Heuschlag", "SB-Kaiser"]
+        if modus == Modus.NEW:
+            xsa.master_name = masternames[0]
+        mietobjektenames = ["stadtpark", "heuschlag", "kaiser"]
+        ea_art_list = (EinAusArt.ALLGEMEINE_KOSTEN.display, EinAusArt.GRUNDSTEUER.display,
+                       EinAusArt.SONSTIGE_KOSTEN.display, EinAusArt.VERSICHERUNG.display)
+        vislist = AbschlagController._createVisibleAttributesList( masternames, mietobjektenames, ea_art_list, onMasterChanged )
+        xui.addVisibleAttributes( vislist )
+        dlg = DynamicAttributeDialog( xui, "Anzeige Leistungsvertrag" )
+        dlg.getApplyButton().setEnabled( False )
+        dlg.setCallbacks( beforeAcceptCallback=validate )
+        dlg.setMaximumHeight( 100 ) # keine Ahnung warum das quasi als "pack()"-Methode funktioniert (die es leider nicht gibt)
+        v = dlg.getDynamicAttributeView()
+        print( "size dynamicAttributeView: ", v.size() )
+        dlg.setBaseSize( v.size() )
+        print( "size dialog: ", dlg.size() )
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            print( "ACCEPTED" )
+            v = dlg.getDynamicAttributeView()
+            v.updateData()  # Validierung war ok, also Übernahme der Änderungen ins XBase-Objekt
+        else:
+            print( "CANCELLED" )
             # cancelled
             return
 
@@ -800,19 +843,21 @@ class AbschlagController( MtlEinAusController ):
 
 def test():
     app = QApplication()
-    # xsa = XSollAbschlag()
-    # xsa.sab_id = 1234
-    # xsa.master_name = "SB_Kaiser"
-    # xsa.mobj_id = ""
-    # xsa.kreditor = "energis"
-    # xsa.vnr = "GGPP 12345/54321 Kd.Nr. 3345"
-    # xsa.leistung = "Hausratversichterung"
-    # xsa.ea_art = EinAusArt.VERSICHERUNG.display
-    # xsa.umlegbar = "nein"
-    # xsa.von = "2022-05-01"
-    # xsa.bis = ""
-    # xsa.betrag = -65.78
-    # xsa.bemerkung = "Strom vom Stromlieferanten"
-    ctrl = AbschlagController()
-    ctrl.onShowAbschlagData( 3 )
+    xsa = XSollAbschlag()
+    xsa.sab_id = 1234
+    xsa.master_name = "SB_Kaiser"
+    xsa.mobj_id = ""
+    xsa.kreditor = "energis"
+    xsa.vnr = "GGPP 12345/54321 Kd.Nr. 3345"
+    xsa.leistung = "Hausratversichterung"
+    xsa.ea_art = EinAusArt.VERSICHERUNG.display
+    xsa.umlegbar = "nein"
+    xsa.von = "2022-05-01"
+    xsa.bis = ""
+    xsa.betrag = -65.78
+    xsa.bemerkung = "Strom vom Stromlieferanten"
+    xui = XBaseUI( xsa )
+    AbschlagController.showAbschlagDialogTEST( xsa, Modus.MODIFY)
 
+if __name__ == "__main__":
+    test()
