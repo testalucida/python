@@ -71,7 +71,7 @@ class MietverhaeltnisController( IccController ):
                                                                    vormieterBis=xmvVormieter.bis )
         dlg = MietverhaeltnisDialog( v, "Neues Mietverhältnis anlegen für Wohnung '%s'" % mobj_id )
         dlg.setBeforeAcceptFunction( validateNewMv )
-        if dlg.exec_() == QDialog.Accepted:
+        if dlg.exec_() == QDialog.DialogCode.Accepted:
             try:
                 v.applyChanges()
                 vormieterBis = v.getVormieterMvBis()
@@ -107,7 +107,7 @@ class MietverhaeltnisController( IccController ):
         v = self._view
         dlg = MietverhaeltnisDialog( v )
         dlg.setBeforeAcceptFunction( validateEditedMv )
-        if dlg.exec_() == QDialog.Accepted:
+        if dlg.exec_() == QDialog.DialogCode.Accepted:
             try:
                 xmv_orig = v.getMietverhaeltnis()
                 xmv_copy = v.getMietverhaeltnisCopyWithChanges()
@@ -286,7 +286,8 @@ class MietverhaeltnisKuendigenController:
         dlg = DynamicAttributeDialog( xui, "Kündigen eines Mietverhältnisses" )
         dlg.getApplyButton().setEnabled( False )
         dlg.setCallbacks( beforeAcceptCallback=validate )
-        if dlg.exec_() == QDialog.Accepted:
+        dlg.setMaximumHeight( 100 )
+        if dlg.exec() == QDialog.DialogCode.Accepted:
             v = dlg.getDynamicAttributeView()
             v.updateData()  # Validierung war ok, also Übernahme der Änderungen ins XBase-Objekt
             try:
@@ -317,5 +318,5 @@ def test():
     c.onMietverhaeltnisNeu( "bueb" )
     app.exec_()
 #
-# if __name__ == "__main__":
-#     test()
+if __name__ == "__main__":
+    testKuendigen()
