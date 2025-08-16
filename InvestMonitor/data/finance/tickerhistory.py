@@ -275,7 +275,7 @@ def testDividend():
     print( dividends.index[0] )
 
 def test():
-    ticker = "EUNY.DE" #"IEDY.L" #"ISPA.DE" #"SEDY.L"
+    ticker = "EGV2.DE"  #"EUNY.DE" #"IEDY.L" #"ISPA.DE" #"SEDY.L"
     tick_hist = TickerHistory()
     df = tick_hist.getTickerHistoryByPeriod( ticker, Period.oneYear, Interval.oneWeek )
     series:Series = df["Close"]
@@ -347,4 +347,5 @@ def testFMP():
 
 
 if __name__ == "__main__":
-    test3( saveDf=True, testMultiIndex=True )
+    #test3( saveDf=True, testMultiIndex=True )
+    test()

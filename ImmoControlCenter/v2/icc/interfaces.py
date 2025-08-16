@@ -542,6 +542,8 @@ class XHGAbrechnung( XAbrechnung ):
         self.vwg_von = "" # Beginn der Verwaltung durch diesen Verwalter
         self.vwg_bis = "" # Ende der Verwaltung durch diesen Verwalter
         self.entnahme_rue = 0.0
+        self.verteilt_auf = 0 # steuerl. Aspekt, wichtig für Anlage V: auf wieviele Jahre die Entnahme aus d. Rücklage
+                                 # verteilt wird
         if valuedict:
             self.setFromDict( valuedict )
 
@@ -603,7 +605,19 @@ class XMasterEinAus( XBase ):
         self.rep_kosten = 0 # nicht verteilte und verteilte
         self.sonst_kosten = 0 # Kostenart s
         self.ertrag = 0
+        if valuedict:
+            self.setFromDict( valuedict )
 
+################### XRueEntn #########################################
+class XRueEntn( XBase ):
+    def __init__( self, valuedict: Dict=None ):
+        XBase.__init__( self, valuedict )
+        self.master_name = ""
+        self.jahr = 0
+        self.betrag = 0
+        self.verteilt_auf = 0
+        if valuedict:
+            self.setFromDict( valuedict )
 
 
 #####################################################################################################################

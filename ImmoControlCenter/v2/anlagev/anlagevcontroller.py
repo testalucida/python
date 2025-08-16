@@ -157,3 +157,6 @@ def test():
     avTabs.setPreferredSize()
     avTabs.show()
     app.exec_()
+
+if __name__ == "__main__":
+    test2()

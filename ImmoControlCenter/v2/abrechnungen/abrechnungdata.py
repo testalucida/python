@@ -43,11 +43,12 @@ class HGAbrechnungData( AbrechnungData ):
         vwg_id = "NULL" if not xhga.vwg_id else str(xhga.vwg_id)
         bemerkung = "NULL" if not xhga.bemerkung else ("'%s'" % xhga.bemerkung)
         sql = "insert into hg_abrechnung " \
-              "(mobj_id, ab_jahr, vwg_id, forderung, entnahme_rue, ab_datum, bemerkung) " \
+              "(mobj_id, ab_jahr, vwg_id, forderung, entnahme_rue, verteilt_auf, ab_datum, bemerkung) " \
               "values " \
-              "( '%s',    %d,     %s,      %.2f,      %.2f,         '%s',     %s )" % \
+              "( '%s',    %d,     %s,      %.2f,      %.2f,        %d,           '%s',     %s )" % \
                                                                                 (xhga.mobj_id, xhga.ab_jahr, vwg_id,
                                                                                  xhga.forderung, xhga.entnahme_rue,
+                                                                                 xhga.verteilt_auf,
                                                                                  xhga.ab_datum, bemerkung)
         inserted_id = self.writeAndLog( sql, DbAction.INSERT, "hg_abrechnung", "hga_id", 0,
                                         newvalues=xhga.toString( printWithClassname=True ), oldvalues=None )
@@ -61,6 +62,7 @@ class HGAbrechnungData( AbrechnungData ):
         and oldX.vwg_id == xhga.vwg_id \
         and oldX.forderung == xhga.forderung \
         and oldX.entnahme_rue == xhga.entnahme_rue \
+        and oldX.verteilt_auf == xhga.verteilt_auf \
         and oldX.ab_datum == xhga.ab_datum \
         and oldX.bemerkung == xhga.bemerkung:
             return 0
@@ -72,9 +74,11 @@ class HGAbrechnungData( AbrechnungData ):
                   "vwg_id = %d, " \
                   "forderung = %.2f, " \
                   "entnahme_rue = %.2f, " \
+                  "verteilt_auf = %d, " \
                   "ab_datum = '%s', " \
                   "bemerkung = %s " \
-                  "where hga_id = %d " % (xhga.mobj_id, xhga.ab_jahr, xhga.vwg_id, xhga.forderung, xhga.entnahme_rue,
+                  "where hga_id = %d " % (xhga.mobj_id, xhga.ab_jahr, xhga.vwg_id, xhga.forderung,
+                                          xhga.entnahme_rue, xhga.verteilt_auf,
                                           xhga.ab_datum, bemerkung, xhga.abr_id)
             rowsAffected = self.writeAndLog( sql, DbAction.UPDATE, "hg_abrechnung", "hga_id", xhga.abr_id,
                                              newvalues=xhga.toString( True ), oldvalues=oldX.toString( True ) )
@@ -113,6 +117,7 @@ class HGAbrechnungData( AbrechnungData ):
               "coalesce(hga.ab_datum, '') as ab_datum, " \
               "coalesce(hga.forderung, 0) as forderung, " \
               "coalesce(hga.entnahme_rue, 0) as entnahme_rue, " \
+              "coalesce(hga.verteilt_auf, 0) as verteilt_auf, " \
               "coalesce(hga.bemerkung, '') as bemerkung " \
               "from mietobjekt mo " \
               "inner join verwaltung vwg on vwg.master_name = mo.master_name " \

@@ -22,10 +22,10 @@ class HGAbrechnungTableModel( AbrechnungTableModel ):
     def __init__(self, rowlist:List[XHGAbrechnung], jahr ):
         AbrechnungTableModel.__init__( self, rowlist, jahr )
         self.setKeyHeaderMappings2(
-            ("master_name", "mobj_id", "weg_name", "vw_id", "vwg_von", "vwg_bis", "ab_datum", "forderung", "entnahme_rue",
-             "bemerkung", "zahlung" ),
-            ( "Haus", "Wohnung", "WEG", "Verwalter", "Vwtg. von", "Vwtg. bis", "abgerechnet am", "Forderung", "Entn.Rü.",
-              "Bemerkung", "Zahlung" )
+            ("master_name", "mobj_id", "weg_name", "vw_id", "vwg_von", "vwg_bis", "ab_datum", "forderung",
+             "entnahme_rue", "verteilt_auf", "bemerkung", "zahlung" ),
+            ( "Haus", "Wohnung", "WEG", "Verwalter", "Vwtg. von", "Vwtg. bis", "abgerechnet am", "Forderung",
+              "Entn.Rü.", "vJ", "Bemerkung", "Zahlung" )
         )
 
 ################   NKAbrechnungTableModel   ####################

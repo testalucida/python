@@ -35,15 +35,20 @@ class AbrechnungDialogController:
     def processAbrechnung( self ):
         if self._isNka:
             vislist = self._createVisibleAttributeListNKA()
+            abrArt = "Nebenkostenabrechnung "
         else:
             vislist = self._createVisibleAttributeListHGA()
+            abrArt = "Hausgeldabrechnung "
         self._xui.addVisibleAttributes( vislist )
-        title = "Hausgeldabrechnung eintragen/ändern für Objekt '%s'" % self._xabr.master_name
+        title = abrArt + " eintragen/ändern für Objekt '%s'" % self._xabr.master_name
         self._dlg = dlg = DynamicAttributeDialog( self._xui, title )
         btnApply = dlg.getButton( ButtonIdent.IDENT_APPLY )
         btnApply.setEnabled( False )
         dlg.setCallbacks( self.onOk, None, self.onCancel )
-        dlg.setMinimumWidth( 500 )
+        #dlg.setMinimumWidth( 300 )
+        #dlg.setMaximumWidth( 400 )
+        dlg.setFixedWidth( 500 )
+        dlg.setMaximumHeight( 100 )
         v = dlg.getDynamicAttributeView()
         w = v.getWidget( "forderung" )
         w.setFocus()
@@ -138,6 +143,7 @@ class AbrechnungDialogController:
             VisibleAttribute( "ab_datum", SmartDateEdit, "abgerechnet am: ", widgetWidth=smallW ),
             VisibleAttribute( "forderung", SignedNumEdit, "Forderung (€): ", widgetWidth=smallW ),
             VisibleAttribute( "entnahme_rue", SignedNumEdit, "Entnahme aus Rückl. (€): ", widgetWidth=smallW ),
+            VisibleAttribute( "verteilt_auf", IntEdit, "auf Jahre verteilen: ", widgetWidth=25 ),
             VisibleAttribute( "bemerkung", MultiLineEdit, "Bemerkung: ", widgetHeight=55 ),
             VisibleAttribute( "zahlung", FloatEdit, "Zahlung (€): ", widgetWidth=smallW, editable=False,
                               trailingButton=ButtonDefinition(

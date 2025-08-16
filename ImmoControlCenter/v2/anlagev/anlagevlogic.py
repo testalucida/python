@@ -9,7 +9,7 @@ from v2.extras.ertrag.ertraglogic import ErtragLogic
 from v2.geschaeftsreise.geschaeftsreiselogic import GeschaeftsreiseLogic
 from v2.icc.constants import EinAusArt
 from v2.icc.interfaces import XMasterobjekt, XMietobjekt, XEinAus, XSollMiete, XNKAbrechnung, XSollHausgeld, \
-    XGeschaeftsreise
+    XGeschaeftsreise, XRueEntn
 from v2.sollhausgeld.sollhausgelddata import SollHausgeldData
 from v2.sollmiete.sollmietedata import SollmieteData
 
@@ -83,8 +83,9 @@ class AnlageVLogic:
         xealist = self._eadata.getEinAusZahlungen( EinAusArt.REPARATUR.display, self._vj,
                                                    "and master_name = '%s' and verteilt_auf = 1 " % master_name )
         x.erhaltg_voll = int( round( sum( [xea.betrag for xea in xealist] ), 0 ) )
+        # Rü.-Entnahmen, die im Veranlagungsjahr komplett abgesetzt werden:
         x.entnahme_rue = self._avdata.getEntnahmeRuecklagen( master_name, self._vj )
-        # zu verteilende Erhaltungsaufwände:
+        # zu verteilende Erhaltungsaufwände und Rücklagen-Entnahmen:
         self.provideVerteilteAufwaende( master_name, x )
         self.provideAllgemeineHauskosten( master_name, x )
         x.reisekosten = self._avdata.getReisekosten( master_name, self._vj )
@@ -113,7 +114,7 @@ class AnlageVLogic:
 
     def provideVerteilteAufwaende( self, master_name:str, xav:XAnlageV ):
         """
-        # Versorgt xav mit *allen* zu verteilenden Aufwänden.
+        # Versorgt xav mit *allen* zu verteilenden Aufwänden und zu verteilenden Entnahmen aus den Rücklagen.
         # Das sind sowohl die, die aus Vj stammen, als auch die, die aus den Vj-Vorjahren kommen.
         :param master_name:
         :param xav:
@@ -121,6 +122,12 @@ class AnlageVLogic:
         """
         #vertAufwDictList: List[Dict] = self._avdata.getVerteilteAufwaende( master_name )
         vertAufwaende: List[XEinAus] = self._avdata.getVerteilteAufwaende( master_name )
+        vertEntnahmen: List[XRueEntn] = self._avdata.getVerteilteRuecklagenEntnahmen( master_name )
+        # Pfui Deifi:
+        if vertEntnahmen and len(vertEntnahmen) > 0:
+            vertAufwaende.extend( vertEntnahmen )
+            # sortieren nach jahr:
+            vertAufwaende = sorted( vertAufwaende, key=lambda aufwand: aufwand.jahr, reverse=True )
         # Achtung:
         # da sind auch Aufwände dabei,
         #    - die aus einem Jahr > Vj stammen, die erst nächstes Vj berücksichtigt werden dürfen
@@ -342,12 +349,16 @@ class AnlageVLogic:
         :return:
         """
         vertAufwaende: List[XEinAus] = self._avdata.getVerteilteAufwaende( master_name )
+        vertEntnahmenRuecklagen: List[XRueEntn] = self._avdata.getVerteilteRuecklagenEntnahmen( master_name )
+        if vertEntnahmenRuecklagen and len( vertEntnahmenRuecklagen ) > 0:
+            vertAufwaende.extend( vertEntnahmenRuecklagen )
+            vertAufwaende = sorted( vertAufwaende, key=lambda aufw: aufw.jahr, reverse=True )
         # Achtung:
         # da sind auch Aufwände dabei,
         #    - die aus einem Jahr > Vj stammen, die erst nächstes Vj berücksichtigt werden dürfen
         #    - die aus einem ganz alten Jahr stammen, die nicht mehr berücksichtigt werden dürfen
         if vertAufwaende and len( vertAufwaende ) > 0:
-            ealist = [ea for ea in vertAufwaende if ea.jahr < self._vj <= ea.jahr + 4]
+            ealist = [ea for ea in vertAufwaende if ea.jahr <= self._vj <= ea.jahr + 4]
             if ealist and len( ealist ) > 0:
                 # den anteiligen Jahresbetrag ausrechnen und XEinAus-Objekte vergewaltigen:
                 for ea in ealist:
@@ -362,6 +373,9 @@ class AnlageVLogic:
 
 ################################################################################
 def test():
-    log = AnlageVLogic( 2022 )
-    tm:AnlageVTableModel = log.getAnlageVTableModel( "NK_Kleist" )
+    log = AnlageVLogic( 2024 )
+    tm:AnlageVTableModel = log.getAnlageVTableModel( "BUEB_Saargemuend" )
     print( tm )
+
+if __name__ == "__main__":
+    test()

@@ -2,7 +2,7 @@ from typing import List, Dict
 
 from v2.icc.constants import EinAusArt
 from v2.icc.iccdata import IccData
-from v2.icc.interfaces import XEinAus
+from v2.icc.interfaces import XEinAus, XRueEntn
 
 
 class AnlageVData( IccData ):
@@ -15,23 +15,36 @@ class AnlageVData( IccData ):
         return tuplelist[0][0]
 
     def getEntnahmeRuecklagen( self, master_name, vj:int ) -> int:
+        """ Methode liefert nur die Entnahmen, die in <vj> komplett angesetzt werden, also verteilt_auf = 1 """
         sql = "select sum( entnahme_rue ) " \
               "from hg_abrechnung hga " \
               "inner join mietobjekt mo on mo.mobj_id = hga.mobj_id " \
               "where mo.master_name = '%s' " \
-              "and hga.ab_jahr = %d " % (master_name, vj)
+              "and hga.ab_jahr = %d and verteilt_auf = 1 " % (master_name, vj)
         tuplelist = self.read( sql )
         if tuplelist and tuplelist[0][0] is not None:
             return int( round( tuplelist[0][0], 0 ) )
         return 0
 
-    # def getVerteilteAufwaende( self, master_name ) -> List[Dict]:
+    def getVerteilteRuecklagenEntnahmen( self, master_name:str ) -> List[XRueEntn]:
+        """
+        Ermittelt aus Tabelle <hg_abrechnung> alle Sätze für <master_name>, wo hg_abrechnung.entnahme_rue > 0
+        und hg_abrechnung.verteilt_auf > 1.
+        :param master_name:
+        :return: eine Liste von XRueEntn-Objekten
+        """
+        sql = "select mo.master_name, hga.entnahme_rue as betrag, hga.ab_jahr as jahr, hga.verteilt_auf " \
+              "from hg_abrechnung hga " \
+              "inner join mietobjekt mo on mo.mobj_id = hga.mobj_id " \
+              "where mo.master_name = '%s' " \
+              "and verteilt_auf > 1 order by jahr desc " % master_name
+        objlist = self.readAllGetObjectList( sql, XRueEntn )
+        return objlist
+
     def getVerteilteAufwaende( self, master_name ) -> List[XEinAus]:
         """
         Ermittelt aus Tabelle <einaus> alle Sätze für master_name, wo ea_art == "rep" und verteilt_auf > 1
         :param master_name:
-        # :return: eine Liste von Dictionaries mit den keys
-        #                 jahr, betrag, verteilt_auf, mobj_id, debi_kredi, leistung, buchungsdatum, buchungstext
         :return: eine Liste von XEinAus-Objekten
         """
         ea_art = EinAusArt.REPARATUR.dbvalue
