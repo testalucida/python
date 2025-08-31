@@ -255,6 +255,9 @@ class BaseTableView( QTableView ):
             w += self.columnWidth( col )
         return w + 25
 
+    def sizeHint( self ) -> QSize:
+        return QSize( self.getPreferredWidth(), self.getPreferredHeight() )
+
     def getSelectedRows( self ) -> List[int]:
         return BaseTableFunctions.getSelectedRows( self )
 

@@ -117,10 +117,9 @@ class ErtragController( IccController ):
             title = "Sonstige Kosten '%s' " % x.master_name + "im Detail"
         detail_tv.setModel( tm )
         dlg = BaseDialogWithButtons( title, getCloseButtonDefinition( onClose ) )
-        #dlg.setMainWidget( detail_tv )
         dlg.setMainWidget( tvframe )
         dlg.resize( detail_tv.getPreferredWidth()+25, detail_tv.getPreferredHeight() + 50 )
-        dlg.exec_()
+        dlg.exec()
 
 
 def test():

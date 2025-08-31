@@ -135,7 +135,7 @@ class EinAusDialogController( QObject ):
         self._x.umlegbar = UMLEGBAR_DEFAULT
         dlg = self._createGui()
         rc = dlg.exec_()
-        if rc == QDialog.Accepted:
+        if rc == QDialog.DialogCode.Accepted:
             EinAusWriteDispatcher.inst().einaus_inserted( self._x )
 
     def processEinAusModification( self, x:XEinAus ):
@@ -143,7 +143,7 @@ class EinAusDialogController( QObject ):
         oldx = copy.deepcopy( x )
         self._x = x
         dlg = self._createGui()
-        if dlg.exec() == QDialog.Accepted:
+        if dlg.exec() == QDialog.DialogCode.Accepted:
             delta = self._x.betrag - oldx.betrag
             EinAusWriteDispatcher.inst().einaus_updated( self._x, delta )
 

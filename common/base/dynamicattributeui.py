@@ -1,7 +1,8 @@
 import copy
 from typing import Type, List, Any
 
-from PySide6.QtCore import Qt, Signal
+from PySide6 import QtWidgets, QtCore
+from PySide6.QtCore import Qt, Signal, QSize
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QWidget, QDialog, QHBoxLayout, QSizePolicy
 
@@ -30,6 +31,7 @@ class DynamicAttributeView( BaseWidget ):
             self._layout.addWidget( lbl, row, col )
             col += 1
             w = self._createWidget( attr.key, attr.type, attr.editable, attr.getWidgetWidth(), attr.getWidgetHeight() )
+            print( "w preferred size: ", w.sizeHint() )
             if attr.tooltip:
                 w.setToolTip( attr.tooltip )
             self._widgets.append( w )
@@ -53,10 +55,12 @@ class DynamicAttributeView( BaseWidget ):
                 # das Signal darf erst mit der Callback-Funktion verknüpft werden, wenn der Wert zugewiesen ist.
                 w.currentTextChanged.connect( attr.comboCallback )
             if attr.nextRow:
+                #minH = self._layout.rowMinimumHeight( row )
                 row += 1
                 col = 0
             else:
                 col += attr.columnspan
+        print( "DynamicAttributeView: preferred size: ", self.sizeHint() )
 
     def _createWidget( self, key:str, type_:Type, editable:bool, widgetWidth:int=-1, widgetHeight=-1 ) -> QWidget:
         w:QWidget = type_()
@@ -167,7 +171,12 @@ class DynamicAttributeDialog( OkApplyCancelDialog ):
     def __init__(self,  xbaseui:XBaseUI, title="Ändern eines Datensatzes", okButton=True, applyButton=True, cancelButton=True ):
         OkApplyCancelDialog.__init__( self, title, okButton=okButton, applyButton=applyButton, cancelButton=cancelButton )
         self._view = DynamicAttributeView( xbaseui )
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding,
+            QtWidgets.QSizePolicy.Policy.MinimumExpanding )
+
         self.setMainWidget( self._view )
+        self.resize( self.sizeHint() )
         self._view.setFocusToFirstEditableWidget()
 
     def getDynamicAttributeView( self ) -> DynamicAttributeView:
@@ -214,7 +223,10 @@ def test():
     from PySide6.QtWidgets import QApplication
     app = QApplication()
     d = DynamicAttributeDialog( xui )
-    if d.exec_() == QDialog.Accepted:
+    prefSize = d.sizeHint()
+    print( "DynamicAttributeDialog: preferred size ", prefSize )
+    #d.resize( prefSize )
+    if d.exec() == QDialog.DialogCode.Accepted:
         onOk()
     else:
         print( "Cancelled" )
@@ -230,3 +242,6 @@ def test2():
     type_ = BaseComboBox
     inst = type_()
     print( inst )
+
+if __name__ == "__main__":
+    test()

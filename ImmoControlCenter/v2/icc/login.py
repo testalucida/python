@@ -67,7 +67,7 @@ def login() -> bool:
     dlg.cancel_pressed.connect( onCancel )
     rc = dlg.exec_()
 
-    return True if rc == QDialog.Accepted else False
+    return True if rc == QDialog.DialogCode.Accepted else False
 
 if __name__ == "__main__":
     import sys

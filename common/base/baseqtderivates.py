@@ -172,8 +172,8 @@ class EditableComboBox( BaseComboBox, GetSetValue ):
 
 #################  BaseDialog  ########################
 class BaseDialog( QDialog ):
-    def __init__(self, parent=None, flags=Qt.WindowFlags() ):
-        QDialog.__init__( self, parent, flags )
+    def __init__(self, parent=None, flags=None ):
+        QDialog.__init__( self, parent ) #, flags )
 
 class ButtonIdent( Enum ):
     IDENT_OK = enum.auto()

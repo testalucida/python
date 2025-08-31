@@ -121,7 +121,7 @@ def testEditDialog():
     x = XGeschaeftsreise()
     dlg = GeschaeftsreiseEditDialog( masterlist, x )
     dlg.setOkButtonText( "Speichern" )
-    if dlg.exec_() == QDialog.Accepted:
+    if dlg.exec_() == QDialog.DialogCode.Accepted:
         x.print()
     else:
         print( "Cancelled" )

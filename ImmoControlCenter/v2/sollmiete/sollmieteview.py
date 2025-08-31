@@ -143,7 +143,7 @@ class SollMieteDialog( OkCancelDialog ):
         self.setWindowTitle( v.getTitle() )
         self.addWidget( v, 0 )
         v.edit_clicked.connect( self.edit_clicked.emit )
-
+        self.resize( self.sizeHint() )
 
 ###############################   TEST   TEST   TEST   #######################
 def test():

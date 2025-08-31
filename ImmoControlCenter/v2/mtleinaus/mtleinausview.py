@@ -117,5 +117,5 @@ def test2():
 
     app = QApplication()
     dlg = TeilzahlungDialog( EinAusTableView() )
-    if dlg.exec_() == QDialog.Accepted:
+    if dlg.exec_() == QDialog.DialogCode.Accepted:
         print( "storing modifications")

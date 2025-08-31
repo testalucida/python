@@ -98,6 +98,7 @@ class ValueDialog( QDialog ):
 
         layout.addLayout( self._hboxLayout, row, 0 )
         self.setLayout( layout )
+        self.resize( self.sizeHint() )
 
     def setSignPlus( self ):
         self._numEntry.setPlus()
@@ -272,7 +273,7 @@ def test():
               )
     xui.addVisibleAttributes( vislist )
     dlg = EinAusDialog( xui )
-    if dlg.exec_() == QDialog.Accepted:
+    if dlg.exec_() == QDialog.DialogCode.Accepted:
         print( "accepted" )
         dynattrview = dlg.getDynamicAttributeView()
         x = dynattrview.getXBase()
