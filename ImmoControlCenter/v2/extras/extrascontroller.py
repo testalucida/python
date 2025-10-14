@@ -3,6 +3,7 @@ from PySide6.QtWidgets import QMenu
 
 from base.baseqtderivates import BaseAction
 from v2.anlagev.anlagevcontroller import AnlageVController
+from v2.extras.cashflow.cashflowcontroller import CashflowController
 from v2.extras.ertrag.ertragcontroller import ErtragController
 from v2.icc.icccontroller import IccController
 
@@ -11,6 +12,7 @@ class ExtrasController( IccController ):
     def __init__( self ):
         IccController.__init__( self )
         self._ertragCtrl = None
+        self._cashflowCtrl = None
         self._anlageVCtrl = None
 
     def getMenu( self ) -> QMenu or None:
@@ -22,7 +24,13 @@ class ExtrasController( IccController ):
         action = BaseAction( "Ertragsübersicht...", parent=menu )
         action.triggered.connect( self.onErtragsuebersicht )
         menu.addAction( action )
+
+        action = BaseAction( "Cashflow...", parent=menu )
+        action.triggered.connect( self.onCashflow )
+        menu.addAction( action )
+
         menu.addSeparator()
+
         action = BaseAction( "Anlagen V...", parent=menu )
         action.triggered.connect( self.onAnlagenV )
         menu.addAction( action )
@@ -32,6 +40,11 @@ class ExtrasController( IccController ):
         if not self._ertragCtrl:
             self._ertragCtrl = ErtragController()
         self._ertragCtrl.showErtraege()
+
+    def onCashflow( self ):
+        if not self._cashflowCtrl:
+            self._cashflowCtrl = CashflowController()
+        self._cashflowCtrl.showCashflow()
 
     def onAnlagenV( self ):
         if not self._anlageVCtrl:

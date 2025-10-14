@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Any
 from base.interfaces import XBase
 from v2.icc.constants import iccMonthIdxToShortName, iccMonthShortNames, Umlegbar
 
@@ -290,6 +290,14 @@ class XSollAbschlag( XBase ):
         self.betrag = 0.0
         self.umlegbar = 0
         self.bemerkung = ""
+        if valuedict:
+            self.setFromDict( valuedict )
+
+class XMasterobjektKurz( XBase ):
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self )
+        self.master_id = 0
+        self.master_name = ""
         if valuedict:
             self.setFromDict( valuedict )
 
@@ -618,6 +626,39 @@ class XRueEntn( XBase ):
         self.verteilt_auf = 0
         if valuedict:
             self.setFromDict( valuedict )
+
+
+#####################################################################################################################
+# class XCashflow( XBase ):
+#     def __init__( self, valuedict: Dict=None ):
+#         XBase.__init__( self, valuedict )
+#         self.master_id = 0
+#         self.master_name = ""
+#         self.jahr = 0
+#         self.einzahlungen = 0
+#         self.auszahlungen = 0
+#         self.saldo = 0
+#         if valuedict:
+#             self.setFromDict( valuedict )
+#
+#     def getValue( self, key:str ) -> Any:
+#         if "Einz" in key:
+#             return self.__dict__["einzahlungen"]
+#         elif "Ausz" in key:
+#             return self.__dict__["auszahlungen"]
+#         else:
+#             return self.__dict__["saldo"]
+
+class XCashflow( XBase ):
+    def __init__( self ):
+        XBase.__init__( self )
+        self.master_id = 0
+        self.master_name = ""
+
+    def getValue( self, key:str ) -> Any:
+        l = self.getKeys()
+        val = self.__dict__[key]
+        return val
 
 
 #####################################################################################################################

@@ -6,7 +6,7 @@ from v2.icc.constants import EinAusArt, Umlegbar
 
 from v2.icc.definitions import DATABASE
 from v2.icc.interfaces import XHandwerkerKurz, XMietverhaeltnisKurz, XVerwaltung, XMasterobjekt, XMietobjekt, \
-    XKreditorLeistung, XLeistung, XVerwalter, XVerwalter2
+    XKreditorLeistung, XLeistung, XVerwalter, XVerwalter2, XMasterobjektKurz
 
 
 class DbAction:
@@ -112,6 +112,14 @@ class IccData( DatabaseCommon ):
               "where aktiv = 1 " \
               "order by master_name asc "
         xlist = self.readAllGetObjectList( sql, XMasterobjekt )
+        return xlist
+
+    def getMasterobjekteKurz( self ) -> List[XMasterobjektKurz]:
+        sql = "select master_id, master_name " \
+              "from masterobjekt " \
+              "where aktiv = 1 " \
+              "order by master_name asc "
+        xlist = self.readAllGetObjectList( sql, XMasterobjektKurz )
         return xlist
 
     def getMastername( self, mobj_id:str ) -> str:

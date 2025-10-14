@@ -659,7 +659,7 @@ class SumTableModel( BaseTableModel ):
     A BaseTableModel displaying a sum row below all other rows
     """
     def __init__( self, objectList:List[XBase], jahr:int, colsToSum:Iterable[str] ):
-        BaseTableModel.__init__( self, objectList, jahr )
+        BaseTableModel.__init__( self, objectList, jahr if jahr > 0 else None )
         if not objectList or len(objectList) == 0:
             raise Exception( "SumTableModel: Construction needs an objectList with at least one element." )
         self._colsToSum = colsToSum # Liste mit den keys (Attributnamen des XBase-Objekts) der Spalten,

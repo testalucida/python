@@ -128,3 +128,6 @@ def test():
     v = c.createView()
     v.show()
     app.exec_()
+
+if __name__ == "__main__":
+    test()
