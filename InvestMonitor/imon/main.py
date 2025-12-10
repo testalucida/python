@@ -60,7 +60,7 @@ class ShutDownFilter( QObject ):
         self._app = app
 
     def eventFilter( self, obj, event ) -> bool:
-        if obj is self._win and event.type() == QEvent.Close:
+        if obj is self._win and event.type() == QEvent.Type.Close:
             self.quit_app()
             event.ignore()
             return True
@@ -83,7 +83,7 @@ class ShutDownFilter( QObject ):
 def main():
     app = QApplication( sys.argv )
     splash = showSplash( app )
-    splash.setCursor( Qt.WaitCursor )
+    splash.setCursor( Qt.CursorShape.WaitCursor )
     # try:
     #     app.processEvents()
     #     downloadDatabase()

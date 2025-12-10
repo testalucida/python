@@ -3,12 +3,15 @@ import decimal
 import numbers
 import sys
 from functools import cmp_to_key
+
+from PySide6 import QtCore, QtGui
 from PySide6.QtCore import QAbstractTableModel, SIGNAL, Qt, QModelIndex, QSize, Signal
 from typing import Any, List, Dict, Tuple, Iterator, Iterable, Type
-from PySide6.QtGui import QColor, QBrush, QFont, QPixmap
+from PySide6.QtGui import QColor, QBrush, QFont, QPixmap, QColorConstants
 from pandas import Series
 
 from base.interfaces import XBase, Action, XSeriesItem
+from interface.interfaces import XDateValueItem
 
 
 ####################   FilterCondition   ###############
@@ -57,13 +60,13 @@ class BaseTableModel( QAbstractTableModel ):
         self.keys:List = list() # brauchen wir fürs Key-Header-Mapping
         self.headerColor = QColor( "#FDBC6A" )
         self.headerBrush = QBrush( self.headerColor )
-        self.negNumberBrush = QBrush( Qt.red )
-        self.darkRedBrush = QBrush( Qt.darkRed )
-        self.greyBrush = QBrush( Qt.lightGray )
-        self.darkGreyBrush = QBrush( Qt.darkGray )
-        self.inactiveBrush = QBrush( Qt.black )
-        self.inactiveBrush.setStyle( Qt.BDiagPattern )
-        self.boldFont = QFont( "Arial", 11, QFont.Bold )
+        self.negNumberBrush = QBrush( Qt.GlobalColor.red )
+        self.darkRedBrush = QBrush( Qt.GlobalColor.darkRed )
+        self.greyBrush = QBrush( Qt.GlobalColor.lightGray )
+        self.darkGreyBrush = QBrush( Qt.GlobalColor.darkGray )
+        self.inactiveBrush = QBrush( Qt.GlobalColor.black )
+        self.inactiveBrush.setStyle( Qt.BrushStyle.BDiagPattern )
+        self.boldFont = QFont( "Arial", 11, QFont.Weight.Bold )
         self.yellow = QColor( "yellow" )
         self.yellowBrush = QBrush( self.yellow )
         self.sortable = True
@@ -155,7 +158,7 @@ class BaseTableModel( QAbstractTableModel ):
         return self.sort_col
 
     def getSortOrder( self ) -> Qt.SortOrder:
-        return Qt.DescendingOrder if self.sort_descending else Qt.AscendingOrder
+        return Qt.SortOrder.DescendingOrder if self.sort_descending else Qt.SortOrder.AscendingOrder
 
     def getColumnIndex( self, header ) -> int:
         return self.headers.index( header )
@@ -167,7 +170,7 @@ class BaseTableModel( QAbstractTableModel ):
         return self.headers
 
     def getHeader( self, col:int ) -> Any:
-        return self.headerData( col, orientation=Qt.Horizontal, role=Qt.DisplayRole )
+        return self.headerData( col, orientation=Qt.Orientation.Horizontal, role=Qt.ItemDataRole.DisplayRole )
 
     def getKeyByHeader( self, header:Any ) -> Any:
         headerIndex = self.headers.index( header )
@@ -304,7 +307,7 @@ class BaseTableModel( QAbstractTableModel ):
         key = self.keys[indexcolumn]
         e.setValue( key, value )
         index = self.createIndex( indexrow, indexcolumn )
-        self.dataChanged.emit( index, index, [Qt.DisplayRole] )
+        self.dataChanged.emit( index, index, [Qt.ItemDataRole.DisplayRole] )
 
     def objectUpdatedExternally( self, x:XBase ):
         """
@@ -314,7 +317,7 @@ class BaseTableModel( QAbstractTableModel ):
         row = self.getRow( x ) # hier kann es eine Exception geben, wenn x nicht unter den sichtbaren Elementen ist
         indexA = self.createIndex( row, 0 )
         indexZ = self.createIndex( row, self.columnCount() - 1 )
-        self.dataChanged.emit( indexA, indexZ, [Qt.DisplayRole] )
+        self.dataChanged.emit( indexA, indexZ, [Qt.ItemDataRole.DisplayRole] )
 
     def objectUpdatedExternally2( self, row:int ):
         """
@@ -322,7 +325,7 @@ class BaseTableModel( QAbstractTableModel ):
         """
         indexA = self.createIndex( row, 0 )
         indexZ = self.createIndex( row, self.columnCount() - 1 )
-        self.dataChanged.emit( indexA, indexZ, [Qt.DisplayRole] )
+        self.dataChanged.emit( indexA, indexZ, [Qt.ItemDataRole.DisplayRole] )
 
     def addObject( self, x:XBase ):
         """
@@ -352,7 +355,7 @@ class BaseTableModel( QAbstractTableModel ):
             row = self.rowCount() - 1
         indexA = self.createIndex( row, 0 )
         indexZ = self.createIndex( row, self.columnCount()-1 )
-        self.dataChanged.emit( indexA, indexZ, [Qt.DisplayRole] )
+        self.dataChanged.emit( indexA, indexZ, [Qt.ItemDataRole.DisplayRole] )
 
         self.layoutChanged.emit() # muss hier aufgerufen werden, damit in der View eine neue Row angezeigt wird.
         self.rowsAddedSignal.emit() # muss aufgerufen werden, damit die View die Zeilenhöhe anpasst. Das passiert
@@ -397,7 +400,7 @@ class BaseTableModel( QAbstractTableModel ):
             return
         indexA = self.createIndex( row, 0 )
         indexZ = self.createIndex( row, self.columnCount()-1 )
-        self.dataChanged.emit( indexA, indexZ, [Qt.DisplayRole] )
+        self.dataChanged.emit( indexA, indexZ, [Qt.ItemDataRole.DisplayRole] )
         # method = sys._getframe().f_code.co_name
         self.layoutChanged.emit() # muss hier aufgerufen werden, damit in der View eine Zeile weniger angezeigt wird.
 
@@ -430,49 +433,51 @@ class BaseTableModel( QAbstractTableModel ):
     def data( self, index: QModelIndex, role: int = None ):
         if not index.isValid():
             return None
-        if role == Qt.DisplayRole:
+        if role == Qt.ItemDataRole.DisplayRole:
             val = self.getValue( index.row(), index.column() )
             if isinstance( val, float ):
                 return "%.2f" % val
                 #return '{:.2f}'.format( round( val, 2 ) )
             return val
-        elif role == Qt.TextAlignmentRole:
+        elif role == Qt.ItemDataRole.TextAlignmentRole:
             return self.getAlignment( index.row(), index.column() )
             # v = self.getValue( index.row(), index.column() )
             # if isinstance( v, numbers.Number ): return int( Qt.AlignRight | Qt.AlignVCenter )
-        elif role == Qt.BackgroundRole:
+        elif role == Qt.ItemDataRole.BackgroundRole:
             return self.getBackgroundBrush( index.row(), index.column() )
-        elif role == Qt.ForegroundRole:
+        elif role == Qt.ItemDataRole.ForegroundRole:
             return self.getForegroundBrush( index.row(), index.column() )
-        elif role == Qt.FontRole:
+        elif role == Qt.ItemDataRole.FontRole:
             return self.getFont( index.row(), index.column() )
-        elif role == Qt.DecorationRole:
+        elif role == Qt.ItemDataRole.DecorationRole:
             return self.getDecoration( index.row(), index.column() )
-        elif role == Qt.SizeHintRole:
+        elif role == Qt.ItemDataRole.SizeHintRole:
             return self.getSizeHint( index.row(), index.column() )
         return None
 
     def headerData(self, col, orientation, role=None):
-        if orientation == Qt.Horizontal:
-            if role == Qt.DisplayRole:
+        if orientation == Qt.Orientation.Horizontal:
+            if role == Qt.ItemDataRole.DisplayRole:
                 return self.headers[col]
-            if role == Qt.BackgroundRole:
+            if role == Qt.ItemDataRole.BackgroundRole:
                 if self.headerBrush:
                     return self.headerBrush
         return None
 
-    def getAlignment( self, indexrow:int, indexcolumn:int ) -> Qt.Alignment or None:
+    def getAlignment( self, indexrow:int, indexcolumn:int ) -> Qt.AlignmentFlag or None:
         v = self.getValue( indexrow, indexcolumn )
-        if isinstance( v, numbers.Number ): return int( Qt.AlignRight | Qt.AlignVCenter )
+        if isinstance( v, numbers.Number ):
+            return int( Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter )
+        return None
 
     def getBackgroundBrush( self, indexrow: int, indexcolumn: int ) -> QBrush or None:
         return None
 
     def getForegroundBrush( self, indexrow: int, indexcolumn: int ) -> QBrush or None:
         if self.negNumberBrush:
-            val = self.getValue( indexrow, indexcolumn )
-            if isinstance( val, numbers.Number ) and val < 0:
-                return QBrush( Qt.red )
+            value = self.getValue( indexrow, indexcolumn )
+            if isinstance( value, numbers.Number ) and value < 0:
+                return QBrush( Qt.GlobalColor.red )
         return None
 
     def getFont( self, indexrow: int, indexcolumn: int ) -> QFont or None:
@@ -489,7 +494,7 @@ class BaseTableModel( QAbstractTableModel ):
 
     def displayNegNumbersRed( self, on:bool=False ):
         if on:
-            self.negNumberBrush = QBrush( Qt.red )
+            self.negNumberBrush = QBrush( Qt.GlobalColor.red )
         else:
             self.negNumberBrush = None
 
@@ -584,7 +589,7 @@ class BaseTableModel( QAbstractTableModel ):
             self.row = row
             self.x = x
 
-    def sortMultipleColumns( self, keys:Iterable[str], order:Qt.SortOrder=None ) -> List[int]:
+    def sortMultipleColumns( self, keys:Iterable[str], order:Qt.SortOrder=None ) -> List:
         """
         Sortiert die Elemente in der _visibleElements-List.
         :param keys:
@@ -601,6 +606,7 @@ class BaseTableModel( QAbstractTableModel ):
         self._visibleElements = sorted( self._visibleElements, key=cmp_to_key( self._compareMultiple ) )
         self.layoutChanged.emit()
         self.multi_sorting_finished.emit()
+        return self._visibleElements
 
     def _compareMultiple( self, x1:XBase, x2:XBase ):
         for key in self._sortkeys:
@@ -659,7 +665,7 @@ class SumTableModel( BaseTableModel ):
     A BaseTableModel displaying a sum row below all other rows
     """
     def __init__( self, objectList:List[XBase], jahr:int, colsToSum:Iterable[str] ):
-        BaseTableModel.__init__( self, objectList, jahr if jahr > 0 else None )
+        BaseTableModel.__init__( self, objectList, jahr if jahr and jahr > 0 else None )
         if not objectList or len(objectList) == 0:
             raise Exception( "SumTableModel: Construction needs an objectList with at least one element." )
         self._colsToSum = colsToSum # Liste mit den keys (Attributnamen des XBase-Objekts) der Spalten,
@@ -677,6 +683,14 @@ class SumTableModel( BaseTableModel ):
     def fromSeries( cls, series:Series, indexLen:int, jahr:int, colsToSum:Iterable[str] ):
         itemlist = BaseTableModel.createRowListFromSeries( series, indexLen )
         return cls( itemlist, jahr, colsToSum )
+
+    # @classmethod
+    # def fromDateValueList( cls, values: List[Any], jahr: int, colsToSum:Iterable[str] ):
+    #     """
+    #     Erzeugt ein BaseTableModel-Objekt aus einer Liste von float Values
+    #     """
+    #     items = [XDateValueItem( dateIso, value ) for str(dt) val in floatValues]
+    #     return cls( floatObjects, jahr, colsToSum )
 
     def rowCount( self, parent: QModelIndex = None ) -> int:
         return self._rowCount
@@ -712,8 +726,7 @@ class SumTableModel( BaseTableModel ):
             key = self.keys[indexcolumn]
             if key in self._colsToSum:
                 return self._fontSumme
-            else:
-                return None
+        return None
 
 ################################################################
 

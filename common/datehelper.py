@@ -381,13 +381,20 @@ def addDaysToIsoString( isostring:str, cntDays:int ) -> str:
     d = addDays( d, cntDays )
     return getIsoStringFromDate( d )
 
+def isWeekend( isostring:str ) -> bool:
+    """
+    return True if weekday of the given date is Samday or Sunday
+    """
+    dt = getDateFromIsoString( isostring )
+    return dt.weekday() in (5, 6)
+
 def getCurrentDate() -> date:
     now = date.today()
     return now
 
 def test4():
-    today = datehelper.getCurrentDate()
-    oneyearago = datehelper.addYears( today, -1 )
+    today = getCurrentDate()
+    oneyearago = addYears( today, -1 )
     print( oneyearago )
 
 def test2():

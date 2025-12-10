@@ -19,7 +19,8 @@ from gui.mainwindow import MainWindow
 from imon.definitions import DEFAULT_PERIOD, DEFAULT_INTERVAL, DEFAULT_INFOPANEL_ORDER
 from imon.enums import InfoPanelOrder, Period, Interval, SortDirection
 from interface.interfaces import XDepotPosition, XDelta
-from logic.investmonitorlogic import InvestMonitorLogic
+from logic.imonlogic import ImonLogic
+#from logic.investmonitorlogic import InvestMonitorLogic
 from utfsymbols import symDELTA, symAVG
 
 
@@ -30,18 +31,20 @@ class WorkerSignals( QObject ):
 
 ##############################################################
 class Worker( QRunnable ):
-    def __init__( self, fn, wkn_ticker_list:List[Dict], allOrders:List[XDelta] ):
+    # def __init__( self, fn, wkn_ticker_list:List[Dict], allOrders:List[XDelta] ):
+    def __init__( self, fn, allOrders: List[XDelta] ):
         super( Worker, self ).__init__()
         # Store constructor arguments (re-used for processing)
         self.fn = fn
-        self._wkn_ticker_list = wkn_ticker_list
+        #self._wkn_ticker_list = wkn_ticker_list
         self._allOrders = allOrders
         self.signals = WorkerSignals()
 
     @Slot()
     def run( self ):
         try:
-            result = self.fn( self._wkn_ticker_list, self._allOrders )
+            #result = self.fn( self._wkn_ticker_list, self._allOrders )
+            result = self.fn( self._allOrders )
         except:
             traceback.print_exc()
             exctype, value = sys.exc_info()[:2]
@@ -123,8 +126,9 @@ class GenericDetailsDialog( OkDialog ):
             # aktuellen Kurs ermitteln, dazu brauchen wir erst den Ticker:
             colIdx = self._tm.getColumnIndexByKey( "ticker" )
             ticker = self._tm.getValue( selRow, colIdx )
-            logic = InvestMonitorLogic()
-            kurs, currency = logic.getKursAktuellInEuro( ticker )
+            #logic = InvestMonitorLogic()
+            logic = ImonLogic()
+            kurs, currency = logic.getKursAktuellInEuro( ticker ) # todo: currency ermitteln für Methodenaufruf
             box = InfoBox( "Aktueller Kurs", "Der aktuelle Kurs von '" + ticker + "' liegt bei\n",
                            str( round( kurs, 2 ) ) + " EUR" )
             box.exec_()
@@ -134,7 +138,8 @@ class MainController( QObject ):
     IS_TEST = False
     def __init__( self ):
         QObject.__init__( self )
-        self._logic: InvestMonitorLogic = InvestMonitorLogic()
+        #self._logic: InvestMonitorLogic = InvestMonitorLogic()
+        self._logic:ImonLogic = ImonLogic()
         self._mainWin:MainWindow = None
         self._infoPanelCtrlList:List[InfoPanelController] = list()
         self._selectedInfoPanel:InfoPanel = None
@@ -259,7 +264,7 @@ class MainController( QObject ):
             win.show()
 
     def onShowOrders( self ):
-        tmOrders:SumTableModel = self._logic.getAllOrders()
+        tmOrders:SumTableModel = self._logic.getAllOrdersTableModel()
         self._dlgGenericDetails = GenericDetailsDialog( title="Orderhistorie", tm=tmOrders, summableColumnIdx=9 )
         self._dlgGenericDetails.show()
 
@@ -303,20 +308,22 @@ class MainController( QObject ):
         # Die InvestMonitorLogic kann im Thread keinen Datenbankzugriff machen.
         # Deshalb ermitteln wir die Deltas und die WKN/Ticker hier und übergeben sie
         # der Worker-Methode computeSumDividendsCurrentYear.
-        wkn_ticker_list = self._logic.getAllWknTickersForDividendComputation()
-        if len( wkn_ticker_list ) < 1:
-            return
-        allOrders:List[XDelta] = self._logic.getAllOrdersList()
-        worker = Worker( self.computeSumDividendsCurrentYear, wkn_ticker_list, allOrders )
+        # wkn_ticker_list = self._logic.getAllWknTickersForDividendComputation()
+        # if len( wkn_ticker_list ) < 1:
+        #     return
+        allOrders:List[XDelta] = self._logic.getAllOrders()
+        #worker = Worker( self.computeSumDividendsCurrentYear, wkn_ticker_list, allOrders )
+        worker = Worker( self.computeSumDividendsCurrentYear, allOrders )
         worker.signals.result.connect( self.onWorkerResult )
         worker.signals.finished.connect( self.onWorkerComplete )
         worker.signals.error.connect( self.onWorkerError )
         self._threadpool.start( worker )
 
-    def computeSumDividendsCurrentYear( self, wkn_ticker_list:List[Dict], allOrders:List[XDelta] ):
+    # def computeSumDividendsCurrentYear( self, wkn_ticker_list:List[Dict], allOrders:List[XDelta] ):
+    def computeSumDividendsCurrentYear( self, allOrders: List[XDelta] ):
         #print( "computeSumDividendsCurrentYear - called with %d Orders" % len(allOrders) )
         try:
-            self._sumDividendPaidCurrentYear = self._logic.getSumDividendsCurrentYear( wkn_ticker_list, allOrders )
+            self._sumDividendPaidCurrentYear = self._logic.getSumDividendsCurrentYear()
         except Exception as ex:
             box = ErrorBox("Exception in MainController.computeSumDividendsCurrentYear()", str(ex))
             box.exec_()
@@ -473,8 +480,8 @@ class MainController( QObject ):
             sortfieldInfo = "Diff. Div.Rend. und " + symDELTA + " Wert: " + str( diff )
             self._sortDirection = SortDirection.DESC
         elif order == InfoPanelOrder.DeltaKursAsc:
-            sortfield = x.delta_kurs_1_percent
-            sortfieldInfo = symDELTA + " Kurs seit letztem Close: %.2f" % x.delta_kurs_1_percent
+            sortfield = x.delta_kurs_percent
+            sortfieldInfo = symDELTA + " Kurs seit letztem Close: %.2f" % x.delta_kurs_percent
             sortfieldInfo += "%"
             self._sortDirection = SortDirection.ASC
         elif order == InfoPanelOrder.RelKursAvgKp:
@@ -513,6 +520,14 @@ class MainController( QObject ):
 
 
 ###############################################################################
+
+def testOnPeriodIntervalChanged():
+    from PySide6.QtWidgets import QApplication
+    app = QApplication()
+    ctrl = MainController()
+    ctrl.onPeriodIntervalChanged( period=Period.oneYear, interval=Interval.oneWeek)
+
+
 def test():
     from PySide6.QtWidgets import QApplication
     app = QApplication()
@@ -552,3 +567,6 @@ def outerFunc(sample_text):
 def testOuterFunc():
     # Calling the outer Function by passing some random name
     outerFunc('Hello tutorialspoint python')
+
+if __name__ == "__main__":
+    testOnPeriodIntervalChanged()

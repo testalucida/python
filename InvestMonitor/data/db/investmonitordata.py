@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 from base.databasecommon2 import DatabaseCommon
 from interface.interfaces import XDepotPosition, XDelta
@@ -48,7 +48,7 @@ class InvestMonitorData( DatabaseCommon ):
         deltalist = self.readAllGetObjectList( sql, XDelta )
         return deltalist
 
-    def getAllDeltas( self, distributingOnly=False, flag_displ=1 ) -> List[XDelta]:
+    def getAllDeltas( self, distributingOnly=False, flag_displ=1, sort_order="desc" ) -> List[XDelta]:
         sql = "select delta.id, delta.delta_stck, delta.delta_datum, delta.preis_stck, " \
               "delta.verkauft_stck, delta.verkaufskosten, " \
               "delta.bemerkung, delta_stck*preis_stck as order_summe, " \
@@ -58,7 +58,7 @@ class InvestMonitorData( DatabaseCommon ):
               "where dp.flag_displ = %d " % flag_displ
         if distributingOnly:
             sql += " and dp.flag_acc = 0 "
-        sql += "order by delta.delta_datum desc, delta.id desc "
+        sql += "order by delta.delta_datum %s, delta.id %s " % (sort_order, sort_order)
         deltalist = self.readAllGetObjectList( sql, XDelta )
         return deltalist
 
@@ -115,6 +115,38 @@ class InvestMonitorData( DatabaseCommon ):
               "where id = %d " % (verkauft_stck, delta_id)
         self.write( sql )
 
+    def insertExchangeRate( self, yyyy_mm_dd:str, base:str, target:str, rate:float ):
+        sql = "insert into exchangerates (date, base, target, rate) " \
+            "VALUES " \
+            "('%s', '%s', '%s', %.6f) " % (yyyy_mm_dd, base, target, rate)
+        self.write( sql )
+
+    def getAllExchangeRates( self ) -> List[Tuple]:
+        sql = "select date, base, target, rate from exchangerates order by date desc "
+        allrows = self.read( sql )
+        return allrows
+
+    def getLatestDate( self ) -> str or None:
+        sql = "select max(date) from exchangerates "
+        latestRow = self.read( sql )
+        #if len(latestRow) > 0:
+        ret = latestRow[0][0]
+        return "" if not ret else ret
+
+    def existRates( self, day:str ) -> bool:
+        sql = ("select count(*) as cnt from exchangerates "
+               "where date = '%s' " % day )
+        tupleList = self.read( sql )
+        return tupleList[0][0] > 0
+
+
+def test2():
+    data = InvestMonitorData()
+    yesno = data.existRates( "2025-10-22" )
+    latest = data.getLatestDate()
+    allrows = data.getAllExchangeRates()
+    print( data )
+
 def test():
     data = InvestMonitorData()
     li = data.getAllWknAndTickers( distributingOnly=True )
@@ -126,3 +158,6 @@ def test():
     print( strlist )
     deltalist = data.getDeltas( "WTEM.DE" )
     print( deltalist )
+
+if __name__ == "__main__":
+    test2()

@@ -1,5 +1,6 @@
 import enum
 import math
+import time
 from datetime import date
 from enum import Enum
 from typing import List, Dict
@@ -21,11 +22,13 @@ def getOneYearAgo() -> str:
     oneyearago = datehelper.addYears( currentDate, -1 )
     return datehelper.getIsoStringFromDate( oneyearago )
 
+
 ######################################################################
 import requests
 import json
 class CurrencyConverter:
     url = "https://api.exchangerate-api.com/v4/latest/USD"
+    url2 = "https://v6.exchangerate-api.com/v6/0a0eb5cb6e62d6fba70d772a/"
     rel_keys = "EUR, GBP, CHF"
     one_dollar_conversions:Dict = None
 
@@ -102,14 +105,16 @@ class TickerHistory:
         :return:
         """
         yf_ticker = yfinance.Ticker( ticker )
-        df = yf_ticker.history( period.value, interval.value )
+        df = yf_ticker.history( period.value, interval.value, auto_adjust=False )
+        #df.to_pickle( ticker + ".df" )
         return df
 
     @staticmethod
-    def getTickerHistoryByDates( ticker: str, interval:Interval = default_interval,
+    def getTickerHistoryByDates( ticker: str, period:Period=default_period, interval:Interval = default_interval,
                                  start: str = oneYearAgo, end: str = currentDate ) -> DataFrame:
         """
         :param ticker: Ticker like "goog", "SEDM.L", ...
+        :param period: siehe enum Period
         :param interval: Valid intervals: 1m,2m,5m,15m,30m,60m,90m,1h,1d,5d,1wk,1mo,3mo
                 Intraday data cannot extend last 60 days
         :param start: Download start date string (YYYY-MM-DD) or _datetime.
@@ -118,8 +123,11 @@ class TickerHistory:
                 Default is now
         :return:
         """
+        t_start = time.time()
         yf_ticker = yfinance.Ticker( ticker )
-        df = yf_ticker.history( interval.value, start, end )
+        df = yf_ticker.history( period, interval.value, start, end )
+        t_end = time.time()
+        print( "TickerHistory.getTickerHistoriyByDates(): time consumed for getting history: ", t_end - t_start, " sec" )
         return df
 
     @staticmethod
@@ -136,8 +144,11 @@ class TickerHistory:
             #return TickerHistory.getTickerHistoryByPeriod( tickers[0], period, interval )
             df = TickerHistory.getTickerHistoryByPeriod( tickers[0], period, interval )
         else:
+            start = time.time()
             yf_tickers = yfinance.Tickers( tickers )
             df = yf_tickers.history( period.value, interval.value )
+            end = time.time()
+            print( "TickerHistory.getTickerHistoriesByPeriod(): time consumed for getting Histories: ", end-start, " sec" )
         if df.empty:
             msg = "Es konnten keine TickerHistories ermittelt werden.\nTickers:\n" + str( tickers ) + "\n"
             msg += "Period: " + str(period) + "\n"
@@ -176,6 +187,7 @@ class TickerHistory:
 
 def test4():
     tick = TickerHistory()
+    tick.getTickerHistoryByPeriod("ISPA.DE", Period.oneYear, Interval.oneWeek)
     fi = tick.getFastInfo( "VJPN.SW" )
     print( fi )
 
@@ -275,7 +287,7 @@ def testDividend():
     print( dividends.index[0] )
 
 def test():
-    ticker = "EGV2.DE"  #"EUNY.DE" #"IEDY.L" #"ISPA.DE" #"SEDY.L"
+    ticker = "IBGS.AS"  #"VDPX.L"   #"SPYY.DE"   #"HMWD.L"   #"VDJP.L" #"EGV2.DE"  #"EUNY.DE" #"IEDY.L" #"ISPA.DE" #"SEDY.L"
     tick_hist = TickerHistory()
     df = tick_hist.getTickerHistoryByPeriod( ticker, Period.oneYear, Interval.oneWeek )
     series:Series = df["Close"]
@@ -299,6 +311,11 @@ def testDf():
             break
     print( len(df) )
 
+def testGetTickerHistoryByDate():
+    tick_hist = TickerHistory()
+    df = tick_hist.getTickerHistoryByDates( "LQDE.L", interval=Interval.oneDay, start="2025-10-31", end="2025-10-31" )
+    print( df )
+
 def testGetTickerHistoriesByDates():
     import pandas as pd
     tick_hist = TickerHistory()
@@ -310,6 +327,17 @@ def testGetTickerHistoriesByDates():
     fast_info = tick_hist.getFastInfo( "IEDY.L" )
     print( df )
 
+def getTickerHistories( tickerlist:list, period, interval ) -> DataFrame:
+    import pandas as pd
+    tick_hist = TickerHistory()
+    df = tick_hist.getTickerHistoriesByPeriod( tickerlist, period, interval )
+    fastInfo = tick_hist.getFastInfo(tickerlist[0])
+    last_price = fastInfo.last_price
+    currency = fastInfo.currency
+    print(last_price)
+    print(df)
+    return df
+
 def testFastInfo():
     ticker = "SEDM.L"
     tick = TickerHistory()
@@ -318,6 +346,37 @@ def testFastInfo():
     fast_info = tick.getFastInfo( ticker )
     euro = tick.convertToEuro( fast_info.last_price, str( fast_info.currency ) )
     print( "currency: ", fast_info.currency, " last_price: ", fast_info.last_price, " in Euro: ", euro )
+
+def testFastInfo2():
+    tickerlist:List[str] = [
+        "VDJP.L",
+        "ISPA.DE",
+        "VDPX.L",
+        "TDIV.AS",
+        "QDVX.DE",
+        "SEDM.L",
+        "DBXS.DE",
+        "GLDV.L",
+        "IEDY.L",
+        "LQDE.L",
+        "IBTS.SW",
+        "IEAC.L",
+        "IBGS.AS",
+        "UKG5.L",
+        "CSH2.PA",
+        "EUNW.DE",
+        "OM3F.DE",
+        "EUHI.DE",
+        "EGV2.DE"]
+
+    tick = TickerHistory()
+    ticker_curr_list = list()
+    for ticker in tickerlist:
+        fast_info = tick.getFastInfo( ticker )
+        curr = fast_info.currency
+        ticker_curr_list.append((ticker, curr))
+        print( ticker, ": ", curr )
+    print( ticker_curr_list )
 
 def testGetMethods():
     import yfinance as yf
@@ -345,7 +404,17 @@ def testFMP():
         print( ticker, " last_price in ", fastinfo.currency, ": ", fastinfo.last_price, " in EURO: ", last_price )
         series.plot()
 
+####################################################################
 
 if __name__ == "__main__":
+    th = TickerHistory()
+    df = th.getTickerHistoryByPeriod("VDJP.L", Period.oneYear, Interval.oneWeek)
+    print(df)
+    # df = getTickerHistories(["CSH2.PA", "EGV2.DE"], Period.fiveYears, Interval.oneDay)
+    #df = getTickerHistories( ["UKG5.L",], Period.oneYear, Interval.oneDay )
+    #testFastInfo2()
+    #testGetTickerHistoryByDate()
     #test3( saveDf=True, testMultiIndex=True )
-    test()
+    #test()
+    #rates_ = getRates2()
+    #print( rates_ )

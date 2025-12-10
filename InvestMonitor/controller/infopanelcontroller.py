@@ -16,7 +16,10 @@ from data.finance.tickerhistory import Period, Interval, SeriesName
 from generictable_stuff.okcanceldialog import OkDialog, OkCancelDialog
 from gui.infopanel import InfoPanel, AbgeltungssteuerDlg
 from interface.interfaces import XDepotPosition, XDelta, XDetail
-from logic.investmonitorlogic import InvestMonitorLogic
+from logic.imonlogic import ImonLogic
+
+
+#from logic.investmonitorlogic import InvestMonitorLogic
 
 
 class InfoPanelController( QObject ):
@@ -25,7 +28,8 @@ class InfoPanelController( QObject ):
     def __init__( self ):
         QObject.__init__( self )
         self._x:XDepotPosition = None
-        self._logic:InvestMonitorLogic = InvestMonitorLogic()
+        #self._logic:InvestMonitorLogic = InvestMonitorLogic()
+        self._logic:ImonLogic = ImonLogic()
         self._infoPanel:InfoPanel = None
         self._detailDlg:DynamicAttributeDialog = None
         self._computeAbgeltSteuerDlg:AbgeltungssteuerDlg = None
@@ -74,9 +78,10 @@ class InfoPanelController( QObject ):
         self._detailDlg.show()
 
     def onShowDividendPayments( self ):
-        divs:Series = self._x.dividends
-        tm = SumTableModel.fromSeries( divs, indexLen=10, jahr=0, colsToSum=("value",) )
-        tm.setKeyHeaderMappings2( ("index", "value"), ("Datum", "Dividende") )
+        """
+        Zeige Dividendenzahlungen pro Stück *im gewählten Zeitraum* (period)
+        """
+        tm = self._logic.getDividendPaymentsInPeriodSumTableModel(self._x)
         tv = BaseTableView()
         tv.setModel( tm )
         tv.setAlternatingRowColors( True )
@@ -90,10 +95,15 @@ class InfoPanelController( QObject ):
         Dividendenzahlungen in der eingestellten Periode angezeigt wird.
         :return: None
         """
-        divyield:float = self._logic.getSimulatedDividendYield( self._x.kurs_aktuell, self._x.dividends )
+        try:
+            divyield:float = self._logic.getSimulatedDividendYield( self._x )
+        except Exception as ex:
+            box = ErrorBox(str(ex))
+            box.show()
+            return
         self._theoretischeRenditeBox = \
               InfoBox( title="Theoretische Rendite " + self._x.wkn,
-                       info="Auf Basis in der Vergangenheit (eingestellte Periode) gezahlter Dividenden "
+                       info="Auf Basis der in den letzten 12 Monaten gezahlten Dividenden "
                             "und des aktuellen Kurses\nergibt sich für das kommende Jahr rechnerisch eine Rendite von",
                        more=str(divyield) + "%" )
         self._theoretischeRenditeBox.show()
@@ -122,6 +132,7 @@ class InfoPanelController( QObject ):
             if view.getWidget( "delta_stck" ).getValue() < 0 and view.getWidget( "verkaufskosten" ).getValue() == 0:
                return "Bei einem Verkauf müssen die Kosten des Verkaufs angegeben werden." \
                       "\nAndernfalls wird ein zu hoher Veräußerungsgewinn berechnet."
+            return ""
 
         delta = XDelta()
         delta.wkn = self._x.wkn
@@ -181,7 +192,7 @@ class InfoPanelController( QObject ):
         self._infoPanel.updateAnteilAnSummeGesamtwerte()
 
     def onShowKaufHistorie( self ):
-        tm:BaseTableModel = self._logic.getOrders( self._x.wkn )
+        tm:BaseTableModel = self._logic.getOrdersTableModel( self._x.wkn )
         tv = BaseTableView()
         tv.setModel( tm )
         w = tv.getPreferredWidth()
@@ -199,28 +210,15 @@ class InfoPanelController( QObject ):
     def isInfoPanelSelected( self ) -> bool:
         return self._infoPanel.isSelected()
 
-def test2():
-    from PySide6.QtWidgets import QApplication
-    app = QApplication()
-    ipc = InfoPanelController()
-    logic = InvestMonitorLogic()
-    ticker = "GLDV.L"
-    deppos = logic.getDepotPosition( ticker, Period.oneYear, Interval.oneWeek )
-    ipanel = ipc.createInfoPanel( deppos )
-    ipanel.show()
-    app.exec_()
-
 def test():
     from PySide6.QtWidgets import QApplication
     app = QApplication()
     ipc = InfoPanelController()
-    ticker =  "HMWD.L" #"GDIG.L" # "DBXS.DE" # "IEDY.L" #"H4ZJ.DE" #"XSMI.SW" #"EUNY.DE" # "IEDY.L"  #IEFV.L" #"HMWD.L"
-    #hist: Series = InvestMonitorLogic.getHistory( ticker, SeriesName.Close )
-    log = InvestMonitorLogic( )
-    pos:XDepotPosition = log.getDepotPosition( ticker )
-    ip = ipc.createInfoPanel( pos )
-    ip.show()
-    app.exec_()
+    logic = InvestMonitorLogic()
+    poslist = logic.getDepotPositions( Period.oneYear, Interval.oneWeek )
+    ipanel = ipc.createInfoPanel( poslist[0] )
+    ipanel.show()
+    app.exec()
 
-
-
+if __name__ == "__main__":
+    test()

@@ -1,8 +1,14 @@
-from typing import List, Callable
+import datetime
+import math
+import time
+from typing import List, Callable, Any
 
 import matplotlib
+import matplotlib.pyplot as plt
+import pandas
 from PySide6.QtCore import QSize, Signal, Qt
 from PySide6.QtGui import QFont
+from pandas import Series
 
 from base.baseqtderivates import BaseGridLayout, BaseLabel, BaseEdit, IntEdit, FloatEdit, HLine, \
     BaseButton, BaseComboBox, HistoryButton, BaseDialogWithButtons, BaseButtonDefinition, ButtonIdent
@@ -11,9 +17,10 @@ from data.finance.tickerhistory import TickerHistory, Period, Interval
 from utfsymbols import symDELTA, symREFRESH, symZOOM, symBORDER, symINFO, symBINOC, symSUM, symAVG
 from interface.interfaces import XDepotPosition
 
-matplotlib.use('Qt5Agg')
+#matplotlib.use('Qt5Agg')
+matplotlib.use("qtagg")
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QFrame, QWidget
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT #as NavigationToolbar
 from matplotlib.figure import Figure
 #import pandas as pd
@@ -143,26 +150,57 @@ class NavigationToolbar(NavigationToolbar2QT):
 
 ##############################################################
 class MplCanvas(FigureCanvasQTAgg):
+    # def __init__(self, width=5, height=4, dpi=100):
+    #     self._width = width
+    #     self._height = height
+    #     self._dpi = dpi
+    #     self._figure = Figure(figsize=(width, height), dpi=dpi)
+    #     # https://www.geeksforgeeks.org/python/plot-multiple-plots-in-matplotlib/
+    #     #self.axes = self._figure.add_subplot(111)
+    #     self.axes = self._figure.subplots( 2 )
+    #     # self.ax1 = self._figure.add_subplot( 1, 1, 1 )
+    #     # self.ax2 = self._figure.add_subplot( 2, 1, 2 )
+    #     #self.axes.grid()
+    #     super(MplCanvas, self).__init__( self._figure )
+    #
+    #     self.toolbar = NavigationToolbar( self, self )
     def __init__(self, width=5, height=4, dpi=100):
         self._width = width
         self._height = height
         self._dpi = dpi
-        self._figure = Figure(figsize=(width, height), dpi=dpi)
-        self.axes = self._figure.add_subplot(111)
-        super(MplCanvas, self).__init__( self._figure )
-
+        self.figure = plt.figure( figsize=(width, height), dpi=dpi )
+        # https://www.geeksforgeeks.org/python/plot-multiple-plots-in-matplotlib/
+        self.ax1 = self.figure.add_subplot( 111 )
+        # self.ax1 = self._figure.add_subplot(plt.subplot2grid( (4, 1), (0, 0), rowspan=1 ))
+        # self.ax2 = self._figure.add_subplot(plt.subplot2grid( (4, 1), (1, 0), rowspan=3 ))
+        super( MplCanvas, self ).__init__( self.figure )
         self.toolbar = NavigationToolbar( self, self )
+        #plt.tight_layout()
+        #self._figure.subplots_adjust( top=0.9 )
+        # plt.setp( self.ax2.get_xticklabels(), fontsize=8 )
+        # plt.setp( self.ax2.get_yticklabels(), fontsize=8 )
+        #plt.setp( self.ax1.get_xticklabels(), fontsize=6 )
+        #plt.setp( self.ax1.get_yticklabels(), fontsize=6 )
+
 
     def clear( self ):
-        self._figure.clear()
-        self._figure = Figure( figsize=(self._width, self._height), dpi=self._dpi )
-        self.figure = self._figure
-        self.axes = self._figure.add_subplot( 111 )
+        # da gibt es bessere Lösungen, z.B.:
+        # https://stackoverflow.com/questions/19569052/matplotlib-how-to-remove-a-specific-line-or-curve
+        # oder https://stackabuse.com/bytes/using-cla-clf-and-close-to-clear-a-plot-in-matplotlib/
+        # self._figure.clear()
+        # self._figure = Figure( figsize=(self._width, self._height), dpi=self._dpi )
+        # self.figure = self._figure
+        # self.axes = self._figure.add_subplot( 111 )
+        # self.axes.grid()
+        self.ax1.clear()
+        # self.ax1.clear()
+        # self.ax2.clear()
+        self.draw()
 
-    def draw( self ):
-        super().draw()
-        rend = self.get_renderer()
-        self._figure.draw( rend )
+    # def draw( self ):
+    #     super().draw()
+    #     rend = self.get_renderer()
+    #     self._figure.draw( rend )
 
     def refresh( self ):
         super().resize( self._width, self._height )
@@ -534,12 +572,12 @@ class InfoPanel( QFrame ):
         self._mplCanvas.clear()
         self._plot()
         self._mplCanvas.draw()
-        self._mplCanvas.refresh()
+        #self._mplCanvas.refresh()
 
     def _dataToGui( self ):
         x = self._x
-        self._cboPeriod.setCurrentText( x.history_period.value )
-        self._cboInterval.setCurrentText( x.history_interval.value )
+        self._cboPeriod.setCurrentText( x.period.value )
+        self._cboInterval.setCurrentText( x.interval.value )
         self._lblName.setValue( x.name )
         self._lblIsin.setValue( x.isin )
         self._lblAnteilUSA.setValue( str(x.anteil_usa ) )
@@ -626,11 +664,75 @@ class InfoPanel( QFrame ):
         #self._lblSortItems.setValue( items )
         self._lblSortValues.setValue( values )
 
+    # def _plot( self ):
+    #     try:
+    #         # kann schiefgehen im TEST-Betrieb und kann dann ignoriert werden
+    #         #self._x.history.plot( ax=self._mplCanvas.axes, grid=True )
+    #         #self._mplCanvas.axes.plot( self._x.history, label="Kurs in EUR" )
+    #         curr = self._x.waehrung
+    #         # self._mplCanvas.axes.plot( self._x.history["Close"], color="black", label="Kurs in %s" % curr )
+    #         # self._mplCanvas.axes.plot( self._x.history["CloseEUR"], color="blue", label="Kurs in EUR" )
+    #         self._mplCanvas.axes[0].plot( self._x.history["Close"], color="black", label="Kurs in %s" % curr )
+    #         self._mplCanvas.axes[0].plot( self._x.history["CloseEUR"], color="blue", label="Kurs in EUR" )
+    #         if self._x.purchases_period.shape > (0, 0):
+    #             self._mplCanvas.axes[0].plot( self._x.purchases_period, "go", linestyle="none", label="Käufe in EUR" )
+    #         if self._x.sales_period.shape > (0, 0):
+    #             self._mplCanvas.axes[0].plot( self._x.sales_period, "ro", linestyle="none", label="Verkäufe in EUR" )
+    #         if self._x.dividendsEUR.shape > (0, 0):
+    #             self._mplCanvas.axes[1].plot( self._x.dividendsEUR, "ro", linestyle="none", label="Dividenden in EUR" )
+    #         self._mplCanvas.axes[0].legend()
+    #         self._mplCanvas.axes[0].grid()
+    #         self._mplCanvas.axes[1].legend()
+    #         self._mplCanvas.axes[1].grid()
+    #     except Exception as ex:
+    #         print( ex )
+    #         pass
+
+    # def _plot( self ):
+    #     try:
+    #         # kann schiefgehen im TEST-Betrieb und kann dann ignoriert werden
+    #         #self._x.history.plot( ax=self._mplCanvas.axes, grid=True )
+    #         #self._mplCanvas.axes.plot( self._x.history, label="Kurs in EUR" )
+    #         curr = self._x.waehrung
+    #         self._mplCanvas.ax2.plot( self._x.history["Close"], color="black", label="Kurs in %s" % curr )
+    #         self._mplCanvas.ax2.plot( self._x.history["CloseEUR"], color="blue", label="Kurs in EUR" )
+    #         if self._x.kaeufe.shape > (0, 0):
+    #             self._mplCanvas.ax2.plot( self._x.kaeufe, "go", linestyle="none", label="Käufe in EUR" )
+    #         if self._x.verkaeufe.shape > (0, 0):
+    #             self._mplCanvas.ax2.plot( self._x.verkaeufe, "ro", linestyle="none", label="Verkäufe in EUR" )
+    #         if self._x.dividendsEUR.shape > (0, 0):
+    #             self._mplCanvas.ax1.plot( self._x.dividendsEUR, "ro", linestyle="none", label="Dividenden in EUR" )
+    #         self._mplCanvas.ax2.legend(fontsize=8)
+    #         self._mplCanvas.ax2.grid()
+    #         self._mplCanvas.ax1.legend(fontsize=8)
+    #         self._mplCanvas.ax1.grid()
+    #     except Exception as ex:
+    #         print( ex )
+    #         pass
+
     def _plot( self ):
+        plt.tight_layout()
+        self._mplCanvas.figure.subplots_adjust( top=0.9 )
+        plt.setp( self._mplCanvas.ax1.get_xticklabels(), fontsize=6 )
+        plt.setp( self._mplCanvas.ax1.get_yticklabels(), fontsize=6 )
+
         try:
             # kann schiefgehen im TEST-Betrieb und kann dann ignoriert werden
-            self._x.history.plot( ax=self._mplCanvas.axes, grid=True )
-        except:
+            curr = self._x.waehrung
+            days = self._x.tradingDaysPeriod
+            if curr != "EUR":
+                self._mplCanvas.ax1.plot( days, self._x.closePricesPeriod, color="black", label="Kurs in %s" % curr )
+            self._mplCanvas.ax1.plot( days, self._x.closePricesEURPeriod, color="blue", label="Kurs in EUR" )
+            if len(self._x.kauf_dtix) > 0:
+                self._mplCanvas.ax1.plot( self._x.kauf_dtix, self._x.kaufKurse, "go", linestyle="none",
+                                          label="Käufe in EUR" )
+            if len(self._x.verkauf_dtix) > 0:
+                self._mplCanvas.ax1.plot( self._x.verkauf_dtix, self._x.verkaufKurse, "ro", linestyle="none",
+                                          label="Verkäufe in EUR" )
+            self._mplCanvas.ax1.legend(fontsize=8)
+            self._mplCanvas.ax1.grid()
+        except Exception as ex:
+            print( ex )
             pass
 
     def onPeriodIntervalChanged( self, arg ):
@@ -650,9 +752,26 @@ class InfoPanel( QFrame ):
         return self._row, self._col
 
 ##########  TEST ###  TEST  ###################################################
+def createFatDatetimeIndexedSeries(startday:str, cnt) -> Series:
+    #dtidx = pandas.DatetimeIndex(start="2024-11-29", freq="M", periods=cnt)
+    dtidx = pandas.date_range(start=startday, periods=cnt, freq="D")
+    values = [v/8 for v in range(cnt)]
+    ser = Series(values, index=dtidx)
+    return ser
+
+def createFatDayAndValueList(startday, cnt) -> (pandas.DatetimeIndex, list):
+    l = list()
+    dtidx = pandas.date_range( start=startday, periods=cnt, freq="D" )
+    daylist = [str(d)[:10] for d in dtidx]
+    # daylist = [str(d)]
+    values = [v/8 for v in range( cnt )]
+    #return daylist, values
+    return dtidx, values
+
+
 def test():
     app = QApplication()
-    ip = InfoPanel()
+    # ip = InfoPanel()
     #ip.setFrameRect()
     #ip.setContentsMargins( 5, 5, 5, 5 )
     # pal = ip.palette()
@@ -675,7 +794,10 @@ def test():
     x.flag_acc = True
     x.ter = 0.12
     x.beschreibung = "The WisdomTree Global Quality Dividend Growth UCITS ETF USD Acc seeks to track the WisdomTree Global Developed Quality Dividend Growth index. The WisdomTree Global Developed Quality Dividend Growth index tracks dividend-paying developed markets stocks with growth characteristics. The index is a fundamentally weighted index."
-    x.history = TickerHistory.getTickerHistoryByPeriod( x.ticker )
+    cnt = 500
+    startday = "2024-11-29"
+    x.testseries = createFatDatetimeIndexedSeries(startday, cnt)
+    x.testdays, x.testlist = createFatDayAndValueList(startday, cnt)
     x.stueck = 445
     #x.gesamtkaufpreis = 13461
     x.einstandswert_restbestand = 13461
@@ -691,12 +813,12 @@ def test():
     x.bank = "Ing DiBa"
     x.depot_nr = 4242424256
     x.depot_vrrkto = "FR55 0098 9907 6676 9912 12"
-    # df = pd.DataFrame( [
-    #     [0, 10], [5, 15], [2, 20], [15, 25], [4, 10],
-    # ], columns=['A', 'B'] )
+
+    ip = InfoPanel()
     ip.setDepotPosition( x )
-    #ip.setSelected2()
     ip.show()
+
+
     app.exec()
 
 if __name__ == '__main__':

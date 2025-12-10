@@ -1,12 +1,12 @@
 import numbers
-from abc import abstractmethod, ABC
 from datetime import datetime
 from functools import cmp_to_key
-from PySide6.QtCore import QAbstractTableModel, SIGNAL, Qt, QModelIndex, QSize
-from typing import Any, List, Dict, Tuple
+from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex, QSize
+from typing import Any, List, Tuple
 from PySide6.QtGui import QColor, QBrush, QFont, QPixmap
 
-from interfaces import XBase
+from base.interfaces import XBase
+
 
 ####################  Change  #######################
 class Change:
@@ -25,8 +25,6 @@ class ChangeLog:
     def addChange( self, x:XBase, key, oldval, newval ) -> None:
         """
         Schreibt das Änderungslogbuch
-        :param indexrow:  Zeile, in der die Änderung stattgefunden hat
-        :param indexcolumn:  Spalte, in der sich der Wert geändert hat
         :param x: von der Änderung betroffenes XBase-Objekt
         :param key: Attributname (Key im XBase.__dict__)
         :param oldval: Wert vor der Änderung
@@ -82,11 +80,11 @@ class XBaseTableModel( QAbstractTableModel ):
         self.keys:List = list()
         self.headerColor = QColor( "#FDBC6A" )
         self.headerBrush = QBrush( self.headerColor )
-        self.negNumberBrush = QBrush( Qt.red )
-        self.greyBrush = QBrush( Qt.lightGray )
-        self.inactiveBrush = QBrush( Qt.black )
-        self.inactiveBrush.setStyle( Qt.BDiagPattern )
-        self.boldFont = QFont( "Arial", 11, QFont.Bold )
+        self.negNumberBrush = QBrush( Qt.GlobalColor.red )
+        self.greyBrush = QBrush( Qt.GlobalColor.lightGray )
+        self.inactiveBrush = QBrush( Qt.GlobalColor.black )
+        self.inactiveBrush.setStyle( Qt.BrushStyle.BDiagPattern )
+        self.boldFont = QFont( "Arial", 11, QFont.Weight.Bold )
         self.yellow = QColor( "yellow" )
         self.yellowBrush = QBrush( self.yellow )
         self.sortable = False
@@ -122,7 +120,7 @@ class XBaseTableModel( QAbstractTableModel ):
         return self.headers
 
     def getHeader( self, col:int ) -> Any:
-        return self.headerData( col, orientation=Qt.Horizontal, role=Qt.DisplayRole )
+        return self.headerData( col, orientation=Qt.Orientation.Horizontal, role=Qt.ItemDataRole.DisplayRole )
 
     def getKeyByHeader( self, header:Any ) -> Any:
         headerIndex = self.headers.index( header )
@@ -202,28 +200,28 @@ class XBaseTableModel( QAbstractTableModel ):
     def data( self, index: QModelIndex, role: int = None ):
         if not index.isValid():
             return None
-        if role == Qt.DisplayRole:
+        if role == Qt.ItemDataRole.DisplayRole:
             return self.getValue( index.row(), index.column() )
-        elif role == Qt.TextAlignmentRole:
+        elif role == Qt.ItemDataRole.TextAlignmentRole:
             v = self.getValue( index.row(), index.column() )
-            if isinstance( v, numbers.Number ): return int( Qt.AlignRight | Qt.AlignVCenter )
-        elif role == Qt.BackgroundRole:
+            if isinstance( v, numbers.Number ): return int( Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter )
+        elif role == Qt.ItemDataRole.BackgroundRole:
             return self.getBackgroundBrush( index.row(), index.column() )
-        elif role == Qt.ForegroundRole:
+        elif role == Qt.ItemDataRole.ForegroundRole:
             return self.getForegroundBrush( index.row(), index.column() )
-        elif role == Qt.FontRole:
+        elif role == Qt.ItemDataRole.FontRole:
             return self.getFont( index.row(), index.column() )
-        elif role == Qt.DecorationRole:
+        elif role == Qt.ItemDataRole.DecorationRole:
             return self.getDecoration( index.row(), index.column() )
-        elif role == Qt.SizeHintRole:
+        elif role == Qt.ItemDataRole.SizeHintRole:
             return self.getSizeHint( index.row(), index.column() )
         return None
 
     def headerData(self, col, orientation, role=None):
         if orientation == Qt.Horizontal:
-            if role == Qt.DisplayRole:
+            if role == Qt.ItemDataRole.DisplayRole:
                 return self.headers[col]
-            if role == Qt.BackgroundRole:
+            if role == Qt.ItemDataRole.BackgroundRole:
                 if self.headerBrush:
                     return self.headerBrush
         return None
