@@ -166,6 +166,7 @@ class ImonLogic:
 
     def _provideDepposListWithPeriodIndependentData( self, alltickershistories:DataFrame ):
         """
+        Dies ist die Methode, die nach dem Holen der yfinance-Daten ("_ensureDataLoaded") als erste aufgerufen wird.
         Versorgen derjenigen Felder einer jeden Depotposition, die **unabhängig von der gewählten period** sind.
         """
         class XOrderData:
@@ -177,7 +178,17 @@ class ImonLogic:
                 self.erster_kauf = ""
                 self.letzter_kauf = ""
                 self.preisprostueck = 0
+
         ########  start subfunctions  #############
+        def replaceNan(l:list):
+            """
+            Überschreiben von nan-Werten durch den Wert mit dem nächstniedrigeren Index.
+            Funktioniert nur, wenn dieser Wert nicht auch nan ist.
+            """
+            for pos, val in enumerate(l):
+                if isnan(val) and pos > 0:
+                    l[pos] = l[pos-1]
+
         def getOrderData( wkn:str ) -> XOrderData:
             """
             Trägt Kaufdaten in <deppos> ein.
@@ -234,6 +245,10 @@ class ImonLogic:
                 # es ist nur 1 Ticker in alltickershistories, dann sind die Spalten nicht multiindexed
                 deppos.closePrices = alltickershistories["Close"].tolist()  # alle Daten 5 Jahre, täglich
                 deppos.dividends = alltickershistories["Dividends"].tolist()
+            # Eliminieren der nan-Werte, indem sie durch die values des Vortags überschrieben werden
+            replaceNan(deppos.closePrices)
+            replaceNan(deppos.dividends)
+
             # Sonderbehandlung britische pence:
             if deppos.waehrung == "GBp":
                 deppos.closePrices = convertGBpToGBP( deppos.closePrices )

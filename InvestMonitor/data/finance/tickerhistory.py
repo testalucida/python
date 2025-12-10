@@ -125,7 +125,7 @@ class TickerHistory:
         """
         t_start = time.time()
         yf_ticker = yfinance.Ticker( ticker )
-        df = yf_ticker.history( period, interval.value, start, end )
+        df = yf_ticker.history( period, interval.value, start, end, auto_adjust=False )
         t_end = time.time()
         print( "TickerHistory.getTickerHistoriyByDates(): time consumed for getting history: ", t_end - t_start, " sec" )
         return df
@@ -146,7 +146,7 @@ class TickerHistory:
         else:
             start = time.time()
             yf_tickers = yfinance.Tickers( tickers )
-            df = yf_tickers.history( period.value, interval.value )
+            df = yf_tickers.history( period.value, interval.value, auto_adjust=False )
             end = time.time()
             print( "TickerHistory.getTickerHistoriesByPeriod(): time consumed for getting Histories: ", end-start, " sec" )
         if df.empty:
@@ -407,9 +407,15 @@ def testFMP():
 ####################################################################
 
 if __name__ == "__main__":
+    ticker = "DBXS.DE"
     th = TickerHistory()
-    df = th.getTickerHistoryByPeriod("VDJP.L", Period.oneYear, Interval.oneWeek)
+    df = th.getTickerHistoryByPeriod(ticker, Period.oneYear, Interval.oneWeek)
     print(df)
+    fi = th.getFastInfo(ticker)
+    cu = fi.currency
+    print(cu)
+    lp = fi.last_price
+    print(lp)
     # df = getTickerHistories(["CSH2.PA", "EGV2.DE"], Period.fiveYears, Interval.oneDay)
     #df = getTickerHistories( ["UKG5.L",], Period.oneYear, Interval.oneDay )
     #testFastInfo2()
