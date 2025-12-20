@@ -331,19 +331,19 @@ class MainController( IccController ):
         Datenbank zum Server hochladen.
         :return:
         """
-        self._win.setCursor( Qt.WaitCursor )
+        self._win.setCursor( Qt.CursorShape.WaitCursor )
         try:
             self._saveLetzteBuchung()
         except Exception as ex:
             box = WarningBox( "Speichern der letzten Buchung", "Speichern fehlgeschlagen: " + str(ex),
                               "Anwendung trotzdem schließen?", "Ja", "Nein" )
             if box.exec_() != QMessageBox.Yes:
-                self._win.setCursor( Qt.ArrowCursor )
+                self._win.setCursor( Qt.CursorShape.ArrowCursor )
                 return False
             return True
         try:
             self._logic.exportDatabaseToServer()
-            self._win.setCursor( Qt.ArrowCursor )
+            self._win.setCursor( Qt.CursorShape.ArrowCursor )
         except Exception as ex:
             box = ErrorBox( "Export der Datenbank fehlgeschlagen", str(ex), "\nAnwendung wird beendet." )
             box.exec_()
@@ -354,14 +354,14 @@ class MainController( IccController ):
         Datenbank zum Server hochladen.
         :return:
         """
-        self._win.setCursor( Qt.WaitCursor )
+        self._win.setCursor( Qt.CursorShape.WaitCursor )
         try:
             self._saveLetzteBuchung()
         except Exception as ex:
             box = WarningBox( "Speichern der letzten Buchung", "Speichern fehlgeschlagen: " + str(ex),
                               "Datenbank trotzdem exportieren?", "Ja", "Nein" )
             if box.exec_() != QMessageBox.Yes:
-                self._win.setCursor( Qt.ArrowCursor )
+                self._win.setCursor( Qt.CursorShape.ArrowCursor )
                 return
         try:
             self._logic.exportDatabaseToServer()
@@ -371,7 +371,7 @@ class MainController( IccController ):
             box = ErrorBox( "Export der Datenbank fehlgeschlagen:\nException:\n" + str(ex) )
             box.exec_()
         finally:
-            self._win.setCursor( Qt.ArrowCursor )
+            self._win.setCursor( Qt.CursorShape.ArrowCursor )
 
     def exportDatabaseOnCloseWorker( self ) -> bool:
         """
@@ -397,7 +397,7 @@ class MainController( IccController ):
                     print( arg )
                     msg += str(arg)
                     msg += "\n"
-            self._win.setCursor( Qt.ArrowCursor )
+            self._win.setCursor( Qt.CursorShape.ArrowCursor )
             box2 = ErrorBox( "Datenbank-Export", "Export der Datenbank fehlgeschlagen.", msg )
             box2.exec_()
             self._rcFtpExportDatabase = False
@@ -411,7 +411,7 @@ class MainController( IccController ):
             if box.exec_() != QMessageBox.Yes:
                 return False
 
-        self._win.setCursor( Qt.WaitCursor )
+        self._win.setCursor( Qt.CursorShape.WaitCursor )
         worker = Worker( self._logic.exportDatabaseToServer )
         worker.signals.finished.connect( onExported )
         worker.signals.error.connect( onExportError )
@@ -424,7 +424,7 @@ class MainController( IccController ):
         while self._rcFtpExportDatabase is None:
             QApplication.processEvents()
         infopanel.close()
-        self._win.setCursor( Qt.ArrowCursor )
+        self._win.setCursor( Qt.CursorShape.ArrowCursor )
         return True
 
     def onSaveDatabase( self ) -> None:

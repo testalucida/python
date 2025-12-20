@@ -22,6 +22,7 @@ class DynamicAttributeView( BaseWidget ):
         self._widgets:List[BaseWidget] = list()
         self._firstEditableWidget:QWidget = None
         self._createUI()
+        self.resize(self.sizeHint())
 
     def _createUI( self ):
         row, col = 0, 0
@@ -31,7 +32,6 @@ class DynamicAttributeView( BaseWidget ):
             self._layout.addWidget( lbl, row, col )
             col += 1
             w = self._createWidget( attr.key, attr.type, attr.editable, attr.getWidgetWidth(), attr.getWidgetHeight() )
-            print( "w preferred size: ", w.sizeHint() )
             if attr.tooltip:
                 w.setToolTip( attr.tooltip )
             self._widgets.append( w )
@@ -60,7 +60,6 @@ class DynamicAttributeView( BaseWidget ):
                 col = 0
             else:
                 col += attr.columnspan
-        print( "DynamicAttributeView: preferred size: ", self.sizeHint() )
 
     def _createWidget( self, key:str, type_:Type, editable:bool, widgetWidth:int=-1, widgetHeight=-1 ) -> QWidget:
         w:QWidget = type_()

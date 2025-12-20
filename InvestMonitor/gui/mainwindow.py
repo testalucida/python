@@ -1,6 +1,6 @@
 from typing import List
 
-from PySide6.QtCore import Signal, QSize, QPoint
+from PySide6.QtCore import Signal, QSize, QPoint, QObject
 from PySide6.QtGui import Qt, QScreen
 from PySide6.QtWidgets import QMainWindow, QScrollArea, QWidget, QApplication, QHBoxLayout, QMenu, QMenuBar
 
@@ -12,31 +12,6 @@ from gui.infopanel import InfoPanel
 from imon.definitions import DEFAULT_PERIOD, DEFAULT_INTERVAL
 from imon.enums import InfoPanelOrder, Period, Interval
 from utfsymbols import symSUM, symDELTA
-
-#
-# class AllInfoPanel___( QWidget ):
-#     def __init__( self ):
-#         QWidget.__init__( self )
-#         self._layout = BaseGridLayout()
-#         self.setLayout( self._layout )
-#         self._row = 0
-#         self._col = 0
-#         self._maxCols = 3
-#
-#     def addInfoPanel( self, infopanel: InfoPanel ):
-#         self._layout.addWidget( infopanel, self._row, self._col )
-#         self._col += 1
-#         if self._col == self._maxCols:
-#             self._row += 1
-#             self._col = 0
-#
-#     def removeInfoPanel( self, ip:InfoPanel ):
-#         self._layout.removeWidget( ip )
-#
-#     def clear( self ) -> None:
-#         self.children().clear()
-#         self._row = 0
-#         self._col = 0
 
 ############################################################
 class AllInfoPanel( DragWidgetsContainer ):
@@ -165,6 +140,11 @@ class IMonToolBar( BaseToolBar ):
         self.addWidget( self._periodAndIntervalWidget )
 
     def setSummen( self, sumEinstand:int, sumWert:int, delta:float ):
+        """
+        @param sumEinstand: Summe der Kaufpreise aller Wertpapiere
+        @param sumWert: Summe der derzeitigen Werte aller Wertpapiere
+        @param delta: Verhältnis von sumEinstand und sumWert in Prozent
+        """
         self._summeKaeufe.setValue( sumEinstand )
         self._summeAktuelleWerte.setValue( sumWert )
         self._delta.setValue( delta )
@@ -204,12 +184,18 @@ class IMonToolBar( BaseToolBar ):
         self._lblDividendPaidLfdJahr.setValue( val )
 
 ############################################################
+## TEST: kann man Signals außerhalb der Window-Klassen definieren?
+class ImonSignals(QObject):
+    show_currencies_history = Signal()
+############################################################
 class IMonMenuBar( QMenuBar ):
     export_database = Signal()
     undock_infopanel = Signal()
     show_orders = Signal()
     show_dividends_period = Signal()
     show_dividends_curr_year = Signal()
+    show_currencies_history = Signal()
+
     def __init__(self):
         QMenuBar.__init__( self )
         self._menuIMon = QMenu( "InvestMonitor" )
@@ -234,6 +220,10 @@ class IMonMenuBar( QMenuBar ):
         self._menuExtras.addSeparator()
         self._actionShowOrders = self._menuExtras.addAction( "Alle Orders anzeigen..." )
         self._actionShowOrders.triggered.connect( self.show_orders.emit )
+        self._menuExtras.addSeparator()
+        self._actionShowCurrenciesHistory = self._menuExtras.addAction( "Währungsverläufe anzeigen..." )
+        self._actionShowCurrenciesHistory.triggered.connect( self.show_currencies_history.emit )
+
         self.addMenu( self._menuExtras )
         #---
 
@@ -247,6 +237,8 @@ class MainWindow( QMainWindow ):
     show_orders = Signal()
     show_dividends_period = Signal()
     show_dividends_curr_year = Signal()
+    show_currencies_history = Signal()
+
     def __init__( self ):
         QMainWindow.__init__( self )
         self._menuBar = IMonMenuBar()
@@ -255,6 +247,7 @@ class MainWindow( QMainWindow ):
         self._menuBar.show_orders.connect( self.show_orders.emit )
         self._menuBar.show_dividends_period.connect( self.show_dividends_period.emit )
         self._menuBar.show_dividends_curr_year.connect( self.show_dividends_curr_year.emit )
+        self._menuBar.show_currencies_history.connect(self.show_currencies_history.emit)
         self.setMenuBar( self._menuBar )
         self._toolBar = IMonToolBar()
         self.addToolBar( self._toolBar )
@@ -311,4 +304,7 @@ def test():
     # #w = rect.topRight().x() - rect.topLeft().x() - 100
     # h = rect.bottom() - rect.top()
     # win.resize( QSize( w, h ) )
-    app.exec_()
+    app.exec()
+
+if __name__ == "__main__":
+    test()

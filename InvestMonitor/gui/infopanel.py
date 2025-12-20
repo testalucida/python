@@ -13,7 +13,8 @@ from pandas import Series
 from base.baseqtderivates import BaseGridLayout, BaseLabel, BaseEdit, IntEdit, FloatEdit, HLine, \
     BaseButton, BaseComboBox, HistoryButton, BaseDialogWithButtons, BaseButtonDefinition, ButtonIdent
 from base.enumhelper import getEnumFromValue
-from data.finance.tickerhistory import TickerHistory, Period, Interval
+from data.finance.tickerhistory import Period, Interval
+from gui.mplcanvas import MplCanvas
 from utfsymbols import symDELTA, symREFRESH, symZOOM, symBORDER, symINFO, symBINOC, symSUM, symAVG
 from interface.interfaces import XDepotPosition
 
@@ -53,6 +54,7 @@ class AbgeltungssteuerDlg( BaseDialogWithButtons ):
         self._dataToGui()
         self.setMainWidget( self._mainWidget )
         #self.setFixedWidth( 500 )
+        self.resize(self.sizeHint())
 
     def _createMainWidget( self ):
         l = BaseGridLayout()
@@ -97,50 +99,6 @@ def testAbgeltungssteuerDlg():
     dlg = AbgeltungssteuerDlg( wkn="ABCDEF", kurs=30.90, max_stck=30 )
     dlg.exec_()
 
-# ########### TEST TEST TEST TEST TEST
-# class InfoPanel_( QFrame ):
-#     update_graph = Signal( Period, Interval )
-#     enter_bestand_delta = Signal()
-#     compute_abgeltungssteuer = Signal()
-#     show_kauf_historie = Signal()
-#     update_kurs = Signal()
-#     show_details = Signal()
-#     show_div_payments = Signal()
-#     show_simul_yield = Signal()
-#     nr = 0
-#     labelfont = QFont( "Ubuntu", 16 )
-#     def __init__( self ):
-#         QFrame.__init__( self )
-#         self._nr = str( self.nr )
-#         #borderstyle = "#" + self._nr + " {border: 5px solid darkblue; }"
-#         borderstyle = "border: 2px solid darkblue;"
-#         self.setStyleSheet( borderstyle )
-#         self.setFixedSize( QSize(400, 400) )
-#         self._lbl = BaseLabel( self._nr )
-#         self._lbl.setFont( self.labelfont )
-#         self._lbl.setFixedWidth( 50 )
-#         self._lbl.setFixedHeight( 50 )
-#         self._lbl.setAlignment( Qt.AlignCenter )
-#         labelstyle = "border: 1px solid red;"
-#         self._lbl.setStyleSheet( labelstyle )
-#         self.nr += 1
-#         self._layout = BaseGridLayout()
-#         self.setLayout( self._layout )
-#         self._layout.addWidget( self._lbl, 0, 0, 1, 1, alignment=Qt.AlignVCenter | Qt.AlignHCenter )
-#
-#     def getLabel( self ) -> str:
-#         return self._nr
-#
-#     def setDepotPosition( self, x: XDepotPosition ):
-#         pass
-#
-#     def setPeriodAndInterval( self, period: Period, interval: Interval ):
-#         pass
-#
-#     def setSortInfo( self, values: str ):
-#         pass
-####################################
-
 
 ############################################################
 class NavigationToolbar(NavigationToolbar2QT):
@@ -149,61 +107,61 @@ class NavigationToolbar(NavigationToolbar2QT):
                  t[0] in ('Home', 'Pan', 'Zoom', None)]
 
 ##############################################################
-class MplCanvas(FigureCanvasQTAgg):
-    # def __init__(self, width=5, height=4, dpi=100):
-    #     self._width = width
-    #     self._height = height
-    #     self._dpi = dpi
-    #     self._figure = Figure(figsize=(width, height), dpi=dpi)
-    #     # https://www.geeksforgeeks.org/python/plot-multiple-plots-in-matplotlib/
-    #     #self.axes = self._figure.add_subplot(111)
-    #     self.axes = self._figure.subplots( 2 )
-    #     # self.ax1 = self._figure.add_subplot( 1, 1, 1 )
-    #     # self.ax2 = self._figure.add_subplot( 2, 1, 2 )
-    #     #self.axes.grid()
-    #     super(MplCanvas, self).__init__( self._figure )
-    #
-    #     self.toolbar = NavigationToolbar( self, self )
-    def __init__(self, width=5, height=4, dpi=100):
-        self._width = width
-        self._height = height
-        self._dpi = dpi
-        self.figure = plt.figure( figsize=(width, height), dpi=dpi )
-        # https://www.geeksforgeeks.org/python/plot-multiple-plots-in-matplotlib/
-        self.ax1 = self.figure.add_subplot( 111 )
-        # self.ax1 = self._figure.add_subplot(plt.subplot2grid( (4, 1), (0, 0), rowspan=1 ))
-        # self.ax2 = self._figure.add_subplot(plt.subplot2grid( (4, 1), (1, 0), rowspan=3 ))
-        super( MplCanvas, self ).__init__( self.figure )
-        self.toolbar = NavigationToolbar( self, self )
-        #plt.tight_layout()
-        #self._figure.subplots_adjust( top=0.9 )
-        # plt.setp( self.ax2.get_xticklabels(), fontsize=8 )
-        # plt.setp( self.ax2.get_yticklabels(), fontsize=8 )
-        #plt.setp( self.ax1.get_xticklabels(), fontsize=6 )
-        #plt.setp( self.ax1.get_yticklabels(), fontsize=6 )
-
-
-    def clear( self ):
-        # da gibt es bessere Lösungen, z.B.:
-        # https://stackoverflow.com/questions/19569052/matplotlib-how-to-remove-a-specific-line-or-curve
-        # oder https://stackabuse.com/bytes/using-cla-clf-and-close-to-clear-a-plot-in-matplotlib/
-        # self._figure.clear()
-        # self._figure = Figure( figsize=(self._width, self._height), dpi=self._dpi )
-        # self.figure = self._figure
-        # self.axes = self._figure.add_subplot( 111 )
-        # self.axes.grid()
-        self.ax1.clear()
-        # self.ax1.clear()
-        # self.ax2.clear()
-        self.draw()
-
-    # def draw( self ):
-    #     super().draw()
-    #     rend = self.get_renderer()
-    #     self._figure.draw( rend )
-
-    def refresh( self ):
-        super().resize( self._width, self._height )
+# class MplCanvas(FigureCanvasQTAgg):
+#     # def __init__(self, width=5, height=4, dpi=100):
+#     #     self._width = width
+#     #     self._height = height
+#     #     self._dpi = dpi
+#     #     self._figure = Figure(figsize=(width, height), dpi=dpi)
+#     #     # https://www.geeksforgeeks.org/python/plot-multiple-plots-in-matplotlib/
+#     #     #self.axes = self._figure.add_subplot(111)
+#     #     self.axes = self._figure.subplots( 2 )
+#     #     # self.ax1 = self._figure.add_subplot( 1, 1, 1 )
+#     #     # self.ax2 = self._figure.add_subplot( 2, 1, 2 )
+#     #     #self.axes.grid()
+#     #     super(MplCanvas, self).__init__( self._figure )
+#     #
+#     #     self.toolbar = NavigationToolbar( self, self )
+#     def __init__(self, width=5, height=4, dpi=100):
+#         self._width = width
+#         self._height = height
+#         self._dpi = dpi
+#         self.figure = plt.figure( figsize=(width, height), dpi=dpi )
+#         # https://www.geeksforgeeks.org/python/plot-multiple-plots-in-matplotlib/
+#         self.ax1 = self.figure.add_subplot( 111 )
+#         # self.ax1 = self._figure.add_subplot(plt.subplot2grid( (4, 1), (0, 0), rowspan=1 ))
+#         # self.ax2 = self._figure.add_subplot(plt.subplot2grid( (4, 1), (1, 0), rowspan=3 ))
+#         super( MplCanvas, self ).__init__( self.figure )
+#         self.toolbar = NavigationToolbar( self, self )
+#         #plt.tight_layout()
+#         #self._figure.subplots_adjust( top=0.9 )
+#         # plt.setp( self.ax2.get_xticklabels(), fontsize=8 )
+#         # plt.setp( self.ax2.get_yticklabels(), fontsize=8 )
+#         #plt.setp( self.ax1.get_xticklabels(), fontsize=6 )
+#         #plt.setp( self.ax1.get_yticklabels(), fontsize=6 )
+#
+#
+#     def clear( self ):
+#         # da gibt es bessere Lösungen, z.B.:
+#         # https://stackoverflow.com/questions/19569052/matplotlib-how-to-remove-a-specific-line-or-curve
+#         # oder https://stackabuse.com/bytes/using-cla-clf-and-close-to-clear-a-plot-in-matplotlib/
+#         # self._figure.clear()
+#         # self._figure = Figure( figsize=(self._width, self._height), dpi=self._dpi )
+#         # self.figure = self._figure
+#         # self.axes = self._figure.add_subplot( 111 )
+#         # self.axes.grid()
+#         self.ax1.clear()
+#         # self.ax1.clear()
+#         # self.ax2.clear()
+#         self.draw()
+#
+#     # def draw( self ):
+#     #     super().draw()
+#     #     rend = self.get_renderer()
+#     #     self._figure.draw( rend )
+#
+#     def refresh( self ):
+#         super().resize( self._width, self._height )
 
 
 #############################################################
@@ -393,7 +351,7 @@ class InfoPanel( QFrame ):
         lblTer = BaseLabel( "TER" )
         lblTer.setFixedWidth( 30 )
         lay.addWidget( lblTer )
-        l.addLayout( lay, r, c, 1, 1, alignment=Qt.AlignLeft )
+        l.addLayout( lay, r, c, 1, 1, alignment=Qt.AlignmentFlag.AlignLeft )
         c = 2
         lay = QHBoxLayout()
         lay.setSpacing( 1 )
@@ -416,9 +374,9 @@ class InfoPanel( QFrame ):
         lay.setSpacing( 1 )
         ## PySide6 issue: lay.setMargin( 0 )
         self._btnStueckDelta.setToolTip( "Bestandsveränderung eintragen (Kauf/Verkauf)" )
-        lay.addWidget( self._btnStueckDelta, stretch=0, alignment=Qt.AlignLeft )
+        lay.addWidget( self._btnStueckDelta, stretch=0, alignment=Qt.AlignmentFlag.AlignLeft )
         self._btnAbgeltungssteuer.setToolTip( "Abgeltungssteuer auf zu verkaufende Stückzahl errechnen" )
-        lay.addWidget( self._btnAbgeltungssteuer, stretch=0, alignment=Qt.AlignLeft )
+        lay.addWidget( self._btnAbgeltungssteuer, stretch=0, alignment=Qt.AlignmentFlag.AlignLeft )
         l.addLayout( lay, r, c )
 
         r += 1
@@ -439,7 +397,7 @@ class InfoPanel( QFrame ):
         c = 2
         l.addWidget( BaseLabel( "€" ), r, c )
         c = 3
-        l.addWidget( self._btnKaufHistorie, r, c, 1, 1, Qt.AlignLeft )
+        l.addWidget( self._btnKaufHistorie, r, c, 1, 1, Qt.AlignmentFlag.AlignLeft )
 
         r += 1
         c = 0
@@ -483,7 +441,7 @@ class InfoPanel( QFrame ):
         l.addWidget( BaseLabel( "€" ), r, c )
         c = 3
         self._btnKursAktualisieren.setToolTip( "Kurs aktualisieren")
-        l.addWidget( self._btnKursAktualisieren, r, c, 1, 1, Qt.AlignLeft )
+        l.addWidget( self._btnKursAktualisieren, r, c, 1, 1, Qt.AlignmentFlag.AlignLeft )
         r += 1
         c = 0
         l.addWidget( BaseLabel( "Div./Stck" ), r, c )
@@ -494,7 +452,7 @@ class InfoPanel( QFrame ):
         l.addWidget( BaseLabel( "€" ) )
         c = 3
         self._btnDividendPayments.setToolTip( "Dividendenzahlungen im gewählten Zeitraum in EUR" )
-        l.addWidget( self._btnDividendPayments, r, c, 1, 1, Qt.AlignLeft )
+        l.addWidget( self._btnDividendPayments, r, c, 1, 1, Qt.AlignmentFlag.AlignLeft )
 
         r += 1
         c = 0

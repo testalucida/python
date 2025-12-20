@@ -12,8 +12,10 @@ from base.basetablefunctions import BaseTableFunctions
 from base.basetablemodel import SumTableModel, BaseTableModel
 from base.basetableview import BaseTableView
 from base.messagebox import InfoBox, ErrorBox
+from controller.currencyhistorycontroller import CurrencyHistoryController
 from controller.infopanelcontroller import InfoPanelController
 from generictable_stuff.okcanceldialog import OkDialog, OkCancelDialog
+from gui.currenciespanel import CurrenciesPanel
 from gui.infopanel import InfoPanel
 from gui.mainwindow import MainWindow
 from imon.definitions import DEFAULT_PERIOD, DEFAULT_INTERVAL, DEFAULT_INFOPANEL_ORDER
@@ -154,6 +156,7 @@ class MainController( QObject ):
         self._sumDividendPaidCurrentYear = 0
         self._threadpool = QThreadPool()
         self._dlgDividenden:OkCancelDialog = None
+        self._currHistCtrl:CurrencyHistoryController = None
 
     def createMainWindow( self ) -> MainWindow:
         self._mainWin = MainWindow()
@@ -168,6 +171,7 @@ class MainController( QObject ):
         self._mainWin.show_orders.connect( self.onShowOrders )
         self._mainWin.show_dividends_period.connect( lambda: self.onShowDividends( self._mainWin.getToolBar().getPeriod() ) )
         self._mainWin.show_dividends_curr_year.connect( lambda: self.onShowDividends( Period.currentYear ) )
+        self._mainWin.show_currencies_history.connect(self.onShowCurrenciesHistory)
         try:
             poslist = self._logic.getDepotPositions( DEFAULT_PERIOD, DEFAULT_INTERVAL, MainController.IS_TEST )
             for xdepotpos in poslist:
@@ -204,8 +208,16 @@ class MainController( QObject ):
         return self._mainWin
 
     def onSummeGesamtwerteChanged( self, delta:int ):
+        """
+        @param delta: das Produkt aus ge-(ver-)kauften Stück * Preis pro Stück
+        """
+        self._summeKaeufe += delta
         self._summeGesamtwerte += delta
-        self._mainWin.getToolBar().setSummen( self._summeGesamtwerte )
+        if self._summeKaeufe != 0:
+            vhKaeufeWert = round( (self._summeGesamtwerte - self._summeKaeufe) / self._summeKaeufe * 100, 1 )
+        else:
+            vhKaeufeWert = 0.0
+        self._mainWin.getToolBar().setSummen( self._summeKaeufe, self._summeGesamtwerte, vhKaeufeWert )
         for ipc in self._infoPanelCtrlList:
             deppos = ipc.getModel()
             anteil = self._computeAnteilAnSummeGesamtwerte( deppos )
@@ -300,6 +312,11 @@ class MainController( QObject ):
         self._dlgDividenden.resize( QSize(w+50, h+50) )
         self._dlgDividenden.show()
 
+    def onShowCurrenciesHistory(self):
+        from controller.currencyhistorycontroller import CurrencyHistoryController
+        self._currHistCtrl = CurrencyHistoryController()
+        self._currHistCtrl.showCurrencyHistory()
+
         ###################  Wenn das MainWindow aufgemacht wurde, ermitteln wir in einem separaten Thread
         ###################  die Summe der im laufenden Jahr gezahlten Dividenden  #######################
     def onMainWindowShowing( self ):
@@ -353,7 +370,7 @@ class MainController( QObject ):
         ########################################################################################
 
     def onPeriodIntervalChanged( self, period:Period, interval:Interval ):
-        self._mainWin.setCursor( Qt.WaitCursor )
+        self._mainWin.setCursor( Qt.CursorShape.WaitCursor )
         poslist: List[XDepotPosition] = [ctrl.getModel() for ctrl in self._infoPanelCtrlList]
         try:
             self._logic.provideTickerHistories( poslist, period, interval )
@@ -369,7 +386,7 @@ class MainController( QObject ):
             deppos = ctrl.getModel()
             self._summeDividendPaid += deppos.dividend_paid_period
         self._mainWin.getToolBar().setDividendPaid( self._summeDividendPaid )
-        self._mainWin.setCursor( Qt.ArrowCursor )
+        self._mainWin.setCursor( Qt.CursorShape.ArrowCursor )
 
     def onChangeSortOrder( self, order:InfoPanelOrder ):
         self._sortOrder = order
@@ -527,6 +544,12 @@ def testOnPeriodIntervalChanged():
     ctrl = MainController()
     ctrl.onPeriodIntervalChanged( period=Period.oneYear, interval=Interval.oneWeek)
 
+def testOnShowCurrenciesHistory():
+    from PySide6.QtWidgets import QApplication
+    app = QApplication()
+    ctrl = MainController()
+    ctrl.onShowCurrenciesHistory()
+
 
 def test():
     from PySide6.QtWidgets import QApplication
@@ -569,4 +592,6 @@ def testOuterFunc():
     outerFunc('Hello tutorialspoint python')
 
 if __name__ == "__main__":
-    testOnPeriodIntervalChanged()
+    pass
+    #testOnShowCurrenciesHistory()
+    #testOnPeriodIntervalChanged()

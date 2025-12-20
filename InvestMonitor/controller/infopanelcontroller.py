@@ -214,7 +214,7 @@ def test():
     from PySide6.QtWidgets import QApplication
     app = QApplication()
     ipc = InfoPanelController()
-    logic = InvestMonitorLogic()
+    logic = ImonLogic()
     poslist = logic.getDepotPositions( Period.oneYear, Interval.oneWeek )
     ipanel = ipc.createInfoPanel( poslist[0] )
     ipanel.show()

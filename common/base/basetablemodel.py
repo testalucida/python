@@ -11,7 +11,8 @@ from PySide6.QtGui import QColor, QBrush, QFont, QPixmap, QColorConstants
 from pandas import Series
 
 from base.interfaces import XBase, Action, XSeriesItem
-from interface.interfaces import XDateValueItem
+#from interface.interfaces import XDateValueItem
+
 
 
 ####################   FilterCondition   ###############

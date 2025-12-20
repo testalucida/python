@@ -19,6 +19,16 @@ from interface.interfaces import XDepotPosition, XDelta, XDateValueItem, XDetail
 from logic.exchangerates import ExchangeRates
 
 
+class XOrderData:
+    def __init__( self ):
+        self.stueck = 0
+        self.einstandswert_restbestand = 0
+        self.maxKaufpreis = 0
+        self.minKaufpreis = 0
+        self.erster_kauf = ""
+        self.letzter_kauf = ""
+        self.preisprostueck = 0
+
 class ImonLogic:
     tradingDaysASC:pandas.DatetimeIndex = None
     tradingDaysIsoASC:List[str] = None
@@ -164,21 +174,54 @@ class ImonLogic:
             print( "Ticker '%s':\nNo FastInfo available" % ticker )
             return 0, ""
 
+    def _getOrderData( self, wkn: str ) -> XOrderData:
+        """
+        Füllt ein Schnittstellenobjekt XOrderData für das Wertpapier <wkn>.
+        :param wkn:
+        :return gefülltes Schnittstellenobjekt XOrderData
+        """
+        orderData = XOrderData()
+        kaeufelist: List[XDelta] = self.getKaeufe( wkn )  # sortiert nach delta_datum aufsteigend
+        if len( kaeufelist ) > 0:
+            orderData.erster_kauf = kaeufelist[0].delta_datum
+            orderData.letzter_kauf = kaeufelist[-1].delta_datum
+
+        for kauf_ in kaeufelist:
+            restbestand_stck = kauf_.delta_stck - kauf_.verkauft_stck
+            einstandswert_restbestand = restbestand_stck * kauf_.preis_stck
+            orderData.einstandswert_restbestand += einstandswert_restbestand
+            orderData.stueck += (kauf_.delta_stck - kauf_.verkauft_stck)
+            if kauf_.preis_stck > orderData.maxKaufpreis:
+                orderData.maxKaufpreis = kauf_.preis_stck
+            if kauf_.preis_stck < orderData.minKaufpreis or orderData.minKaufpreis == 0:
+                orderData.minKaufpreis = kauf_.preis_stck
+
+        if orderData.stueck > 0:  # es gibt noch einen Depot-Bestand
+            orderData.preisprostueck = round( orderData.einstandswert_restbestand / orderData.stueck, 2 )
+            orderData.einstandswert_restbestand = int( round( orderData.einstandswert_restbestand, 2 ) )
+
+        return orderData
+
+    def _provideOrderData( self, deppos:XDepotPosition ):
+        orderData: XOrderData = self._getOrderData( deppos.wkn )
+        deppos.einstandswert_restbestand = orderData.einstandswert_restbestand
+        deppos.stueck = orderData.stueck
+        deppos.minKaufpreis = orderData.minKaufpreis
+        deppos.maxKaufpreis = orderData.maxKaufpreis
+        deppos.erster_kauf = orderData.erster_kauf
+        deppos.letzter_kauf = orderData.letzter_kauf
+        deppos.preisprostueck = orderData.preisprostueck
+        deppos.gesamtwert_aktuell = int( round( deppos.stueck * deppos.kurs_aktuell, 2 ) )
+        # print(deppos.ticker, ": stueck= ", deppos.stueck, " kurs_aktuell = ", deppos.kurs_aktuell,
+        #       " gesamtwert_aktuell = ", deppos.gesamtwert_aktuell)
+        if deppos.einstandswert_restbestand > 0:
+            deppos.delta_proz = round( (deppos.gesamtwert_aktuell / deppos.einstandswert_restbestand - 1) * 100, 2 )
+
     def _provideDepposListWithPeriodIndependentData( self, alltickershistories:DataFrame ):
         """
         Dies ist die Methode, die nach dem Holen der yfinance-Daten ("_ensureDataLoaded") als erste aufgerufen wird.
         Versorgen derjenigen Felder einer jeden Depotposition, die **unabhängig von der gewählten period** sind.
         """
-        class XOrderData:
-            def __init__( self ):
-                self.stueck = 0
-                self.einstandswert_restbestand = 0
-                self.maxKaufpreis = 0
-                self.minKaufpreis = 0
-                self.erster_kauf = ""
-                self.letzter_kauf = ""
-                self.preisprostueck = 0
-
         ########  start subfunctions  #############
         def replaceNan(l:list):
             """
@@ -188,37 +231,6 @@ class ImonLogic:
             for pos, val in enumerate(l):
                 if isnan(val) and pos > 0:
                     l[pos] = l[pos-1]
-
-        def getOrderData( wkn:str ) -> XOrderData:
-            """
-            Trägt Kaufdaten in <deppos> ein.
-            Versorgt werden folgende deppos-Felder:
-                .stueck, .erster_kauf, .letzter_kauf, .einstandswert_restbestand, .maxKaufpreis, .minKaufpreis,
-                .preisprostck
-            :param wkn:
-            :return gefülltes Schnittstellenobjekt XOrderData
-            """
-            orderData = XOrderData()
-            kaeufelist: List[XDelta] = self.getKaeufe(wkn)  # sortiert nach delta_datum aufsteigend
-            if len(kaeufelist) > 0:
-                orderData.erster_kauf = kaeufelist[0].delta_datum
-                orderData.letzter_kauf = kaeufelist[-1].delta_datum
-
-            for kauf_ in kaeufelist:
-                restbestand_stck = kauf_.delta_stck - kauf_.verkauft_stck
-                einstandswert_restbestand = restbestand_stck * kauf_.preis_stck
-                orderData.einstandswert_restbestand += einstandswert_restbestand
-                orderData.stueck += (kauf_.delta_stck - kauf_.verkauft_stck)
-                if kauf_.preis_stck > orderData.maxKaufpreis:
-                    orderData.maxKaufpreis = kauf_.preis_stck
-                if kauf_.preis_stck < orderData.minKaufpreis or orderData.minKaufpreis == 0:
-                    orderData.minKaufpreis = kauf_.preis_stck
-
-            if orderData.stueck > 0:  # es gibt noch einen Depot-Bestand
-                orderData.preisprostueck = round( orderData.einstandswert_restbestand / orderData.stueck, 2 )
-                orderData.einstandswert_restbestand = int( round( orderData.einstandswert_restbestand, 2 ) )
-
-            return orderData
 
         def convertGBpToGBP(pence_values:list) -> list:
             pound_values = [val/100 for val in pence_values]
@@ -263,22 +275,10 @@ class ImonLogic:
                                  % (deppos.ticker, curr, deppos.waehrung))
             # Versorgung Feld delta_kurs_percent
             ImonLogic._provideDeltaKursPercent( deppos )
-            #deppos.kaeufe = list([0] * len(ImonLogic.tradingDaysIsoASC)) # leere Liste anlegen, in der Länge von tradingDays
+            # Versorgung der Felder .stueck, .erster_kauf, .letzter_kauf, .einstandswert_restbestand,
+            #                       .maxKaufpreis, .minKaufpreis, .preisprostck, .gesamtwert_aktuell
+            self._provideOrderData(deppos)
 
-
-            orderData_:XOrderData = getOrderData(deppos.wkn)
-            deppos.einstandswert_restbestand = orderData_.einstandswert_restbestand
-            deppos.stueck = orderData_.stueck
-            deppos.minKaufpreis = orderData_.minKaufpreis
-            deppos.maxKaufpreis = orderData_.maxKaufpreis
-            deppos.erster_kauf = orderData_.erster_kauf
-            deppos.letzter_kauf = orderData_.letzter_kauf
-            deppos.preisprostueck = orderData_.preisprostueck
-            deppos.gesamtwert_aktuell = int( round( deppos.stueck * deppos.kurs_aktuell, 2 ) )
-            # print(deppos.ticker, ": stueck= ", deppos.stueck, " kurs_aktuell = ", deppos.kurs_aktuell,
-            #       " gesamtwert_aktuell = ", deppos.gesamtwert_aktuell)
-            if deppos.einstandswert_restbestand > 0:
-                deppos.delta_proz = round( (deppos.gesamtwert_aktuell / deppos.einstandswert_restbestand - 1) * 100, 2 )
 
     def provideTickerHistories( self, depposList:List[XDepotPosition], period: Period, interval: Interval ):
         """
@@ -790,6 +790,67 @@ class ImonLogic:
         x.depot_nr = deppos.depot_nr
         x.depot_vrrkto = deppos.depot_vrrkto
         return x
+
+    def insertOrderAndUpdateDepotData( self, delta:XDelta, deppos:XDepotPosition ):
+        """
+        Fügt eine Order (Kauf oder Verkauf) in Tabelle delta ein.
+        Danach werden die deppos-Attribute stueck, gesamtkaufpreis, preisprostueck und ggf. maxKaufpreis oder minKaufpreis
+        geändert. Außerdem werden gesamtwert_aktuell und delta_proz neu berechnet.
+        :param delta: die Daten der neuen Order
+        :param deppos: die Depotposition, die sich durch die Order verändert
+        :return:
+        """
+        delta.order_summe = abs( round( delta.preis_stck * delta.delta_stck, 2 ) )
+        self._db.insertDelta( delta )
+        if delta.delta_stck < 0:
+            # es ist ein Verkauf, jetzt muss die verkaufte Stückzahl in einen oder mehrere Kauf-Sätze
+            # gebucht werden
+            self._bookShareSale( delta, deppos )
+        self._db.commit()
+        self._provideOrderData( deppos )
+        #self._provideGesamtwertAndDelta( deppos ) brauchen wir vermutlich nicht mehr, wird in _provideOrderData erledigt
+
+    def _bookShareSale( self, verkauf:XDelta, deppos:XDepotPosition ):
+        """
+        nach einem Anteilsverkauf muss zur späteren Berechnung der Abgeltungssteuer die Anzahl der verkauften Stücke
+        auf die vorherigen Käufe verteilt werden.
+        Beispiel:
+        Verkauft wurden 100 Stück.
+        Es gibt 2 Käufe, der ältere mit 80 Stück, der jüngere mit 40 Stück.
+        Gem FIFO-Prinzip müssen nun im älteren Kauf 80 verkaufte Stück eingetragen werden und im neueren Kauf
+        20 Stück.
+        Nach diesen Datenbank-Updates müssen in der Schnittstelle <deppos> die Felder stueck und einstandswert_restbestand
+        neu berechnet werden.
+        :param verkauf:
+        :param deppos:
+        :return:
+        """
+        # Zuerst die Kauf-Orders dieses Wertpapiers holen:
+        deltas:List[XDelta] = self._db.getKaeufe( verkauf.wkn ) # sortiert nach Kaufdatum aufsteigend, also ältester Kauf oben
+        verkaufte_stuecke = verkauf.delta_stck * -1
+        rest = verkaufte_stuecke
+        deppos.stueck = 0
+        deppos.einstandswert_restbestand = 0
+        for delta in deltas:
+            vfgbar = delta.delta_stck - delta.verkauft_stck
+            if vfgbar >= rest:
+                # es gibt in diesem Satz (Kauf) soviele verfügbare Stücke, dass der Verkauf aus ihnen bedient
+                # werden kann
+                delta.verkauft_stck += rest
+                rest = 0
+            else:
+                # nicht genügend Stücke für den Verkauf vorhanden. Die vorhandenen in verkauft_stck eintragen.
+                delta.verkauft_stck += vfgbar
+                rest -= vfgbar
+            self._db.updateDeltaVerkaufteStuecke( delta.id, delta.verkauft_stck )
+            deppos.stueck += rest
+            deppos.einstandswert_restbestand += (rest * delta.preis_stck)
+            if rest == 0:
+                break
+        if deppos.stueck > 0:
+            # Durchschnittl. Preis pro Stück:
+            deppos.preisprostueck = round( deppos.einstandswert_restbestand / deppos.stueck, 2 )
+
 
 ##########################################################################################
 

@@ -191,3 +191,13 @@ class XDetail(XBase):
         self.bank = ""
         self.depot_nr = ""
         self.depot_vrrkto = ""
+
+class XExchangeRate(XBase):
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self )
+        self.date:str = ""
+        self.base:str = ""
+        self.target:str = ""
+        self.rate:float = 0.0
+        if valuedict:
+            self.setFromDict( valuedict )
