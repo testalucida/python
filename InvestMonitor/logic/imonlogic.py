@@ -458,8 +458,7 @@ class ImonLogic:
         for day in deppos.tradingDaysPeriod:
             for i in range( ix, len_ ):
                 tradeday:Timestamp = ImonLogic.tradingDaysASC[i]
-                if tradeday == day: # day war ein trading day...
-                    # ...also die Close-Werte ermitteln
+                if tradeday == day: # day war ein trading day, also die Close-Werte ermitteln
                     deppos.closePricesPeriod.append( deppos.closePrices[i] )
                     deppos.closePricesEURPeriod.append( deppos.closePricesEUR[i] )
                     break
@@ -482,6 +481,10 @@ class ImonLogic:
         # Versorgung dividend_paid_period: die Summe der Dividenden, die für deppos in period bezahlt wurde:
         days = ImonLogic.tradingDaysIsoASC[startIdxPeriod:]
         deppos.dividend_paid_period = self._getPaidDividends(deppos.wkn, days, divs)
+
+        # Versorgung dividend_days: die Tage, an denen Ausschüttungen erfolgten (während deppos.period)
+        datesAndValues:List[XDateValueItem] = ImonLogic.getDividendPaymentsInPeriod(deppos)
+        deppos.dividend_days = [dv.getDatetime() for dv in datesAndValues]
 
         # Die Listen für Käufe und Verkäufe versorgen:
         deppos.kaufKurse = list()
@@ -579,14 +582,26 @@ class ImonLogic:
         return int( round( summe_stck * dividend, 2 ) )
 
     @staticmethod
-    def getDividendPaymentsInPeriodSumTableModel( deppos:XDepotPosition ) -> SumTableModel:
+    def getDividendPaymentsInPeriod( deppos: XDepotPosition ) -> List[XDateValueItem]:
         divs = deppos.dividendsEUR[deppos.startIdxPeriod:]
         days = ImonLogic.tradingDaysIsoASC[deppos.startIdxPeriod:]
-        dateValueItemList:List[XDateValueItem] = list()
-        for idx, val in enumerate(divs):
+        dateValueItemList: List[XDateValueItem] = list()
+        for idx, val in enumerate( divs ):
             if val > 0:
                 dateIso = days[idx]
-                dateValueItemList.append(XDateValueItem(dateIso, val))
+                dateValueItemList.append( XDateValueItem( dateIso, val ) )
+        return dateValueItemList
+
+    @staticmethod
+    def getDividendPaymentsInPeriodSumTableModel( deppos:XDepotPosition ) -> SumTableModel:
+        # divs = deppos.dividendsEUR[deppos.startIdxPeriod:]
+        # days = ImonLogic.tradingDaysIsoASC[deppos.startIdxPeriod:]
+        # dateValueItemList:List[XDateValueItem] = list()
+        # for idx, val in enumerate(divs):
+        #     if val > 0:
+        #         dateIso = days[idx]
+        #         dateValueItemList.append(XDateValueItem(dateIso, val))
+        dateValueItemList = ImonLogic.getDividendPaymentsInPeriod(deppos)
         tm = SumTableModel(dateValueItemList, jahr=0, colsToSum=("value",))
         tm.setKeyHeaderMappings2(("dateIso", "value"), ("Datum", "Dividende"))
         return tm

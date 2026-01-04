@@ -687,6 +687,12 @@ class InfoPanel( QFrame ):
             if len(self._x.verkauf_dtix) > 0:
                 self._mplCanvas.ax1.plot( self._x.verkauf_dtix, self._x.verkaufKurse, "ro", linestyle="none",
                                           label="Verkäufe in EUR" )
+
+            if self._x.dividend_period > 0:
+                ylim = self._mplCanvas.ax1.get_ylim() # min- u. max- y values
+                for day in self._x.dividend_days:
+                    self._mplCanvas.ax1.plot((day, day), (ylim[0], ylim[1]), color="brown", linestyle="dotted" )
+
             self._mplCanvas.ax1.legend(fontsize=8)
             self._mplCanvas.ax1.grid()
         except Exception as ex:

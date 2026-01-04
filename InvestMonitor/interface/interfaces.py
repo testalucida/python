@@ -5,6 +5,7 @@ import pandas
 from pandas import DataFrame, Series
 from yfinance.scrapers.quote import FastInfo
 
+import datehelper
 from base.interfaces import XBase
 from imon.enums import Period, Interval
 
@@ -75,6 +76,9 @@ class XDateValueItem( XBase ):
         self.dateIso = dateIso
         self.value:Any = value
 
+    def getDatetime( self ) -> datetime.date:
+        return datehelper.getDateFromIsoString(self.dateIso)
+
 class XWpGattung(XBase):
     def __init__( self, valuedict:Dict=None ):
         XBase.__init__( self )
@@ -120,6 +124,7 @@ class XDepotPosition( XBase ):
                                   # Summe der Dividenden in der gewählten Periode / Kurs am ersten Tag der Periode
         self.dividend_paid_period = 0  # Die Summe der Dividenden, die für diese Depotposition in der eingestellten
                                        # Periode ausbezahlt wurde
+        self.dividend_days:List[datetime.date] = None # die Tage, an denen in period die Ausschüttungen erfolgten
         self.stueck = 0 # Restbestand (Käufe und Verkäufe saldiert)
         self.einstandswert_restbestand = 0 # Einstandswert des (Rest-)Bestandes, ermittelt nach der Formel:
                                       # Stückzahl * durchschnittlicher Stück-Kaufpreis
