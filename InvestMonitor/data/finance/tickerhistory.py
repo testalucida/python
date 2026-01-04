@@ -407,7 +407,7 @@ def testFMP():
 ####################################################################
 
 if __name__ == "__main__":
-    ticker = "DBXS.DE"
+    ticker = "LQDE.L"  #"DBXS.DE"
     th = TickerHistory()
     df = th.getTickerHistoryByPeriod(ticker, Period.oneYear, Interval.oneWeek)
     print(df)

@@ -1196,6 +1196,7 @@ class SumDialog( QDialog ):
         layout.addWidget( self._btnClose, 1, 1 )
         self._btnClose.clicked.connect( self._onClose )
         self.setLayout( layout )
+        self.resize(self.sizeHint())
 
     def _copy2clipboard( self ):
         """

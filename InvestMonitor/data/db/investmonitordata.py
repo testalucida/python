@@ -1,7 +1,7 @@
 from typing import List, Dict, Tuple
 
 from base.databasecommon2 import DatabaseCommon
-from interface.interfaces import XDepotPosition, XDelta
+from interface.interfaces import XDepotPosition, XDelta, XWpGattung
 from imon.definitions import DATABASE
 
 
@@ -78,6 +78,12 @@ class InvestMonitorData( DatabaseCommon ):
             sql += " and flag_acc = 0 "
         dictlist = self.readAllGetDict( sql )
         return dictlist
+
+    def getGattungen( self, flag_displ=1 ) -> List[XWpGattung]:
+        sql = ("select distinct gattung from depotposition "
+               "where flag_displ = %d " % flag_displ)
+        gattunglist = self.readAllGetObjectList( sql, XWpGattung )
+        return gattunglist
 
     def insertDelta( self, delta:XDelta ):
         """

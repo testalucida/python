@@ -78,10 +78,11 @@ class GenericDetailsDialog( OkDialog ):
         self._tv.setAlternatingRowColors( True )
         self._tv.setModel( tm, selectRows=True, singleSelection=False )
         self._tv.setContextMenuCallbacks( self.provideMenuItems, self.onContextMenuSelected )
-        w = self._tv.getPreferredWidth()
-        h = self._tv.getPreferredHeight()
+        # w = self._tv.getPreferredWidth()
+        # h = self._tv.getPreferredHeight()
         self.addWidget( self._tv, 0 )
-        self.resize( QSize( w + 25, h + 35 ) )
+        #self.resize( QSize( w + 25, h + 35 ) )
+        self.resize( self.sizeHint() )
 
     def provideMenuItems( self, index, point, selectedIndexes ) -> List[QAction]:
         l = list()
@@ -157,6 +158,7 @@ class MainController( QObject ):
         self._threadpool = QThreadPool()
         self._dlgDividenden:OkCancelDialog = None
         self._currHistCtrl:CurrencyHistoryController = None
+        self._dlgGattungen:OkCancelDialog = None
 
     def createMainWindow( self ) -> MainWindow:
         self._mainWin = MainWindow()
@@ -172,6 +174,7 @@ class MainController( QObject ):
         self._mainWin.show_dividends_period.connect( lambda: self.onShowDividends( self._mainWin.getToolBar().getPeriod() ) )
         self._mainWin.show_dividends_curr_year.connect( lambda: self.onShowDividends( Period.currentYear ) )
         self._mainWin.show_currencies_history.connect(self.onShowCurrenciesHistory)
+        self._mainWin.show_sum_categories.connect(self.onShowSumCategories)
         try:
             poslist = self._logic.getDepotPositions( DEFAULT_PERIOD, DEFAULT_INTERVAL, MainController.IS_TEST )
             for xdepotpos in poslist:
@@ -307,15 +310,26 @@ class MainController( QObject ):
         tv.setAlternatingRowColors( True )
         self._dlgDividenden = OkCancelDialog( title=dialogTitle )
         self._dlgDividenden.addWidget( tv, 0 )
-        w = tv.getPreferredWidth()
-        h = tv.getPreferredHeight()
-        self._dlgDividenden.resize( QSize(w+50, h+50) )
+        # w = tv.getPreferredWidth()
+        # h = tv.getPreferredHeight()
+        # self._dlgDividenden.resize( QSize(w+50, h+50) )
+        self._dlgDividenden.resize(self._dlgDividenden.sizeHint())
         self._dlgDividenden.show()
 
     def onShowCurrenciesHistory(self):
         from controller.currencyhistorycontroller import CurrencyHistoryController
         self._currHistCtrl = CurrencyHistoryController()
         self._currHistCtrl.showCurrencyHistory()
+
+    def onShowSumCategories( self ):
+        tm = self._logic.getSumCategoriesTableModel()
+        tv = BaseTableView()
+        tv.setModel(tm)
+        self._dlgGattungen = OkCancelDialog(title="Depotsummen nach Gattungen")
+        self._dlgGattungen.addWidget(tv,0)
+        self._dlgGattungen.resize( self._dlgGattungen.sizeHint() )
+        self._dlgGattungen.show()
+
 
         ###################  Wenn das MainWindow aufgemacht wurde, ermitteln wir in einem separaten Thread
         ###################  die Summe der im laufenden Jahr gezahlten Dividenden  #######################

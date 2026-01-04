@@ -44,7 +44,7 @@ class BaseTableFunctions:
         summe = "%.2f" % summe
         dlg = SumDialog( title=dlg_title )
         dlg.setSum( summe )
-        dlg.exec_()
+        dlg.exec()
 
     @staticmethod
     def copyCellValueToClipboard( tv:QTableView, rowIdx:int, colIdx:int ):

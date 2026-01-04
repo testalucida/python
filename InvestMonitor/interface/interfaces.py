@@ -75,6 +75,15 @@ class XDateValueItem( XBase ):
         self.dateIso = dateIso
         self.value:Any = value
 
+class XWpGattung(XBase):
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self )
+        self.gattung = "" # Fond, ETF, Anleihe etc.
+        self.summe = 0 # Summe in Euro für diese Gattung
+        self.prozent = 0.0 # Anteil dieser Gattung am (beobachteten) Depot
+        if valuedict:
+            self.setFromDict( valuedict )
+
 class XDepotPosition( XBase ):
     def __init__( self, valuedict:Dict=None ):
         XBase.__init__( self )

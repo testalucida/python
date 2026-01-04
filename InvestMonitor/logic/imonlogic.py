@@ -2,6 +2,7 @@ import datetime
 import glob
 import math
 import os
+import time
 from math import isnan
 from operator import attrgetter
 from typing import List, Dict, Tuple
@@ -15,7 +16,7 @@ from base.basetablemodel import SumTableModel
 from data.db.investmonitordata import InvestMonitorData
 from data.finance.tickerhistory import TickerHistory
 from imon.enums import Period, Interval
-from interface.interfaces import XDepotPosition, XDelta, XDateValueItem, XDetail, XDividend
+from interface.interfaces import XDepotPosition, XDelta, XDateValueItem, XDetail, XDividend, XWpGattung
 from logic.exchangerates import ExchangeRates
 
 
@@ -45,6 +46,7 @@ class ImonLogic:
 
     def _ensureDataLoaded(self):
         if not ImonLogic.all_deppos:
+            start = time.time()
             ImonLogic.all_deppos = self._db.getDepotPositions()
             ImonLogic.ticker_wkn_curr_list = [(pos.ticker, pos.wkn, pos.waehrung) for pos  in ImonLogic.all_deppos]
             tickerlist = [item[0] for item in ImonLogic.ticker_wkn_curr_list]
@@ -57,6 +59,8 @@ class ImonLogic:
             ImonLogic.tradingDaysASC = alltickershistories.index
             ImonLogic.tradingDaysIsoASC = [str(dtix)[:10] for dtix in ImonLogic.tradingDaysASC]
             self._provideDepposListWithPeriodIndependentData( alltickershistories )
+            end = time.time()
+            print("ImonLogic._ensureDataLoaded(): ", end-start, " sec elapsed time")
 
     @staticmethod
     def _getLastTradingDayIso() -> str:
@@ -120,19 +124,27 @@ class ImonLogic:
         dev_path = "/home/martin/Projects/python/InvestMonitor/logic/"
 
         try:
+            start = time.time()
             if dev_path.lower() in __file__.lower():  # wir sind in der Entwicklungsumgebung
                 today = datehelper.getTodayAsIsoString()
                 file_path = dev_path + "tickerhistories_" + today + ".txt"
                 if not os.path.exists( file_path ):
+                    # heute wurden noch keine Ticker Histories abgerufen, also müssen wir
+                    # die yfinance-Schnittstelle bemühen
                     deleteOlderTickerHistories()
                     tickHists: DataFrame = self._tickerHist.getTickerHistoriesByPeriod( tickers, Period.fiveYears,
                                                                                         Interval.oneDay )
                     tickHists.to_pickle( file_path )
                 else:
+                    # wir haben heute schon die Ticker Histories abgerufen, sie sind lokal in der
+                    # tickerhistories_yyyy-mm-dd.txt - Datei gespeichert. Diese lesen wir jetzt ein:
                     tickHists: DataFrame = pandas.read_pickle( file_path )
             else:
                 tickHists: DataFrame = self._tickerHist.getTickerHistoriesByPeriod( tickers, Period.fiveYears,
                                                                                     Interval.oneDay )
+            end = time.time()
+            print("ImonLogic._getHistoriesFromApi(): ", end-start, " sec. time elapsed for fetching data")
+            start = time.time()
             # Spalten rauswerfen, die wir nicht brauchen (wir brauchen nur Close und Dividends):
             tickHists.drop( ["Capital Gains", "High", "Low", "Open", "Stock Splits", "Volume"],
                             axis=1, inplace=True )
@@ -140,6 +152,8 @@ class ImonLogic:
             if len(tickers) > 1:
                 tickHists.columns = tickHists.columns.swaplevel( 0, 1 )
                 tickHists.sort_index( axis=1, level=0, inplace=True )
+            end = time.time()
+            print("ImonLogic._getHistoriesFromApi(): ", end-start, " sec. time elapsed for preparing DataFrame")
         except Exception as ex:
             raise ex
 
@@ -248,8 +262,8 @@ class ImonLogic:
                                         in zip( ImonLogic.tradingDaysIsoASC, deppos_.dividends )]
 
         ########### end of subfunctions ##################
-
         for deppos in ImonLogic.all_deppos:
+            start = time.time()
             try:
                 deppos.closePrices = alltickershistories[(deppos.ticker, "Close")].tolist() # alle Daten 5 Jahre, täglich
                 deppos.dividends = alltickershistories[(deppos.ticker, "Dividends")].tolist()
@@ -257,18 +271,33 @@ class ImonLogic:
                 # es ist nur 1 Ticker in alltickershistories, dann sind die Spalten nicht multiindexed
                 deppos.closePrices = alltickershistories["Close"].tolist()  # alle Daten 5 Jahre, täglich
                 deppos.dividends = alltickershistories["Dividends"].tolist()
+            end = time.time()
+            print( "ImonLogic._provideDepposListWithPeriodIndependentData('%s') -- create lists from DataFrames: "
+                   % deppos.ticker, end - start, " sec. elapsed time" )
             # Eliminieren der nan-Werte, indem sie durch die values des Vortags überschrieben werden
+            start = time.time()
             replaceNan(deppos.closePrices)
             replaceNan(deppos.dividends)
+            end = time.time()
+            print( "ImonLogic._provideDepposListWithPeriodIndependentData('%s') -- replaceNan: " % deppos.ticker,
+                   end - start, " sec. elapsed time" )
 
             # Sonderbehandlung britische pence:
             if deppos.waehrung == "GBp":
+                start = time.time()
                 deppos.closePrices = convertGBpToGBP( deppos.closePrices )
                 deppos.dividends = convertGBpToGBP(deppos.dividends)
                 deppos.waehrung = "GBP"
+                end = time.time()
+                print( "ImonLogic._provideDepposListWithPeriodIndependentData('%s') -- convert pence to pound: "
+                       % deppos.ticker, end - start, " sec. elapsed time" )
             # die Felder .closePricesEUR und .dividendsEUR versorgen:
+            start = time.time()
             provideCloseEURandDividendsEUR( deppos )
             deppos.kurs_aktuell, curr = self.getKursAktuellInEuro(deppos.ticker)
+            end = time.time()
+            print( "ImonLogic._provideDepposListWithPeriodIndependentData('%s') -- get current price in Euro: "
+                   % deppos.ticker, end - start, " sec. elapsed time" )
             if curr != deppos.waehrung:
                 raise ValueError("ImonLogic._provideDepposListWith...:\nFür Ticker '%s' stimmt Währungsinfo aus "
                                  "FastInfo ('%s') und deppos.waehrung ('%s') nicht überein. "
@@ -277,8 +306,11 @@ class ImonLogic:
             ImonLogic._provideDeltaKursPercent( deppos )
             # Versorgung der Felder .stueck, .erster_kauf, .letzter_kauf, .einstandswert_restbestand,
             #                       .maxKaufpreis, .minKaufpreis, .preisprostck, .gesamtwert_aktuell
+            start = time.time()
             self._provideOrderData(deppos)
-
+            end = time.time()
+            print( "ImonLogic._provideDepposListWithPeriodIndependentData('%s') -- provide order data: "
+                   % deppos.ticker, end - start, " sec. elapsed time" )
 
     def provideTickerHistories( self, depposList:List[XDepotPosition], period: Period, interval: Interval ):
         """
@@ -351,7 +383,7 @@ class ImonLogic:
             return DatetimeIndex(tradingDaysPeriod)
 
         #################   end of subfunctions  ######################
-
+        start_ = time.time()
         startIdxPeriod = -1
         dtix:DatetimeIndex = None
 
@@ -370,6 +402,8 @@ class ImonLogic:
             deppos.startIdxPeriod = startIdxPeriod # brauchen wir das überhaupt nach u.a. Änderung?
 
             self._provideDepposWithPeriodDependingData(deppos)
+        end_ = time.time()
+        print("ImonLogic._provideDepposListWithPeriodDependingData(): ", end_-start_, " sec. elapsed time")
 
     def _provideDepposWithPeriodDependingData(self, deppos:XDepotPosition):
         """
@@ -611,6 +645,20 @@ class ImonLogic:
                                   ( "Name", "WKN", "Ticker", "Zahltag", "Dividende\nje Stck", "Dividende" ) )
         return tm
         # return None # test
+
+    def getSumCategoriesTableModel( self ) -> SumTableModel:
+        gattungen:List[XWpGattung] = self._db.getGattungen(flag_displ=1)
+        summe_gesamt = 0
+        for deppos in ImonLogic.all_deppos:
+            for gattung in gattungen:
+                if gattung.gattung == deppos.gattung:
+                    gattung.summe += deppos.gesamtwert_aktuell
+                    summe_gesamt += deppos.gesamtwert_aktuell
+        for gattung in gattungen:
+            gattung.prozent = round(int((gattung.summe / summe_gesamt) * 100), 2)
+        tm = SumTableModel(gattungen, None, ("summe", "prozent"))
+        tm.setKeyHeaderMappings2(("gattung", "summe", "prozent"), ("Gattung", "Summe", "Anteil in %"))
+        return tm
 
     @staticmethod
     def _getStartAndCurrentDatetime( period: Period ) -> (datetime.datetime, datetime.datetime):
