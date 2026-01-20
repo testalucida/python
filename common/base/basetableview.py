@@ -173,7 +173,7 @@ class BaseTableView( QTableView ):
 
     def mouseMoveEvent(self, event:QMouseEvent):
         super().mouseMoveEvent( event )
-        # p = event.pos()
+        # p = event.position()
         # col = self.columnAt( p.x() )
         # row = self.rowAt( p.y() )
         # if row != self._mouseOverRow or col != self._mouseOverCol:
@@ -193,7 +193,7 @@ class BaseTableView( QTableView ):
 
     def onMouseMoveOutside( self, event:QMouseEvent ):
         if self._mouseOverRow > -1 and self._mouseOverCol > -1:
-            p = event.pos()
+            p = event.position()
             self.btvCellLeave.emit( CellEvent( p.x(), p.y(), self._mouseOverRow, self._mouseOverCol ) )
             self._mouseOverRow = -1
             self._mouseOverCol = -1

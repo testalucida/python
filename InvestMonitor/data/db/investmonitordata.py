@@ -1,7 +1,7 @@
 from typing import List, Dict, Tuple
 
 from base.databasecommon2 import DatabaseCommon
-from interface.interfaces import XDepotPosition, XDelta, XWpGattung
+from interface.interfaces import XDepotPosition, XDelta, XWpGattung, XAllocation
 from imon.definitions import DATABASE
 
 
@@ -20,15 +20,17 @@ class InvestMonitorData( DatabaseCommon ):
         xlist = self.readAllGetObjectList( sql, XDepotPosition )
         return xlist
 
-    def getDepotPosition( self, ticker:str ) -> XDepotPosition:
-        sql = "select pos.id, isin, ticker, wkn, basic_index, name, gattung, ter, waehrung, flag_acc, beschreibung, " \
-              "toplaender, topsektoren, topfirmen, anteil_usa, " \
-              "dep.id as depot_id, dep.bank, dep.nr as depot_nr, dep.vrrkto as depot_vrrkto " \
-              "from depotposition pos " \
-              "inner join depot dep on dep.id = pos.depot_id " \
-              "where ticker = '%s' " % ticker
-        x = self.readOneGetObject( sql, XDepotPosition )
-        return x
+
+
+    # def getDepotPosition( self, ticker:str ) -> XDepotPosition:
+    #     sql = "select pos.id, isin, ticker, wkn, basic_index, name, gattung, ter, waehrung, flag_acc, beschreibung, " \
+    #           "toplaender, topsektoren, topfirmen, anteil_usa, " \
+    #           "dep.id as depot_id, dep.bank, dep.nr as depot_nr, dep.vrrkto as depot_vrrkto " \
+    #           "from depotposition pos " \
+    #           "inner join depot dep on dep.id = pos.depot_id " \
+    #           "where ticker = '%s' " % ticker
+    #     x = self.readOneGetObject( sql, XDepotPosition )
+    #     return x
 
     def getDeltas( self, wkn:str ) -> List[XDelta]:
         sql = "select id, wkn, delta_stck, delta_datum, preis_stck, verkauft_stck, verkaufskosten, bemerkung, " \
@@ -145,6 +147,34 @@ class InvestMonitorData( DatabaseCommon ):
         tupleList = self.read( sql )
         return tupleList[0][0] > 0
 
+    def getAllocations( self, wkn:str ) -> List[XAllocation]:
+        sql = ("select id, wkn, typ, name, prozent "
+               "from allokation "
+               "where wkn = '%s' "
+               "order by typ, prozent desc " % wkn)
+        alloclist = self.readAllGetObjectList( sql, XAllocation )
+        return alloclist
+
+    def insertAllocation( self, wkn:str, typ:str, name:str, prozent:float ):
+        if prozent == 0:
+            sProz = "NULL"
+        else:
+            sProz = "'" + str(prozent) + "'"
+        sql = ("insert into allokation "
+               "(wkn, typ, name, prozent) "
+               "values "
+               "('%s', '%s', '%s', %s) " % (wkn, typ, name, sProz))
+        self.write( sql )
+
+    def deleteAllocations( self, wkn:str ):
+        sql = ("delete from allokation "
+               "Where wkn = '%s' " %wkn)
+        self.write(sql)
+
+def test3():
+    data = InvestMonitorData()
+    alloclist = data.getAllocations("A1T8FU")
+    print(alloclist)
 
 def test2():
     data = InvestMonitorData()
@@ -166,4 +196,4 @@ def test():
     print( deltalist )
 
 if __name__ == "__main__":
-    test2()
+    test3()

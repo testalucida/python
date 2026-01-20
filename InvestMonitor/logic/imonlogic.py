@@ -9,6 +9,7 @@ from typing import List, Dict, Tuple
 
 import pandas
 from pandas import DataFrame, Timestamp, DatetimeIndex
+from pygments.lexers.csound import newline
 from yfinance.scrapers.quote import FastInfo
 
 import datehelper
@@ -16,7 +17,7 @@ from base.basetablemodel import SumTableModel
 from data.db.investmonitordata import InvestMonitorData
 from data.finance.tickerhistory import TickerHistory
 from imon.enums import Period, Interval
-from interface.interfaces import XDepotPosition, XDelta, XDateValueItem, XDetail, XDividend, XWpGattung
+from interface.interfaces import XDepotPosition, XDelta, XDateValueItem, XDetail, XDividend, XWpGattung, XAllocation
 from logic.exchangerates import ExchangeRates
 
 
@@ -48,6 +49,8 @@ class ImonLogic:
         if not ImonLogic.all_deppos:
             start = time.time()
             ImonLogic.all_deppos = self._db.getDepotPositions()
+            for deppos in ImonLogic.all_deppos:
+                deppos.allokationen = self._db.getAllocations( deppos.wkn )
             ImonLogic.ticker_wkn_curr_list = [(pos.ticker, pos.wkn, pos.waehrung) for pos  in ImonLogic.all_deppos]
             tickerlist = [item[0] for item in ImonLogic.ticker_wkn_curr_list]
             ImonLogic.all_orders = self._db.getAllDeltas(sort_order="asc") # Alle deltas delta_datum ASC !!WICHTIG!!
@@ -61,6 +64,96 @@ class ImonLogic:
             self._provideDepposListWithPeriodIndependentData( alltickershistories )
             end = time.time()
             print("ImonLogic._ensureDataLoaded(): ", end-start, " sec elapsed time")
+
+    def _saveAllocations( self, allocList:List[XAllocation] ):
+        for alloc in allocList:
+            self._db.insertAllocation(alloc.wkn, alloc.typ, alloc.name, alloc.prozent)
+
+    def saveAllocations( self, deppos:XDepotPosition, detail:XDetail ):
+        """
+        @param deppos: Depot-Position, deren Allokationen geändert wurden
+        @param detail: Enthält die Änderungen
+        Geändert werden können nur die Felder toplaender, topsektoren, topfirmen.
+        Diese werden im Dialog in Textfeldern geändert, sodass z.B. toplaender so aussieht:
+            Japan 50%
+            GB  30%
+            Frankreich 10%
+            ...
+        Jede Zeile soll in der Tabelle allokation einem Eintrag entsprechen.
+        Jede Zeile wird in ein XAllokation-Objekt umgewandelt, dann
+        werden alle alten Allokationen des deppos.wkn aus der Tab. allokation gelöscht und für jedes XAllokation-
+        Objekt ein neuer Eintrag angelegt. Es gibt also keine Updates in dieser Tabelle, nur Deletes und Inserts.
+        """
+        self._db.deleteAllocations(deppos.wkn)
+        self._saveAllocations( ImonLogic._getAllocationList( deppos.wkn, "Land", detail.toplaender ) )
+        self._saveAllocations( ImonLogic._getAllocationList( deppos.wkn, "Sektor", detail.topsektoren ) )
+        self._saveAllocations( ImonLogic._getAllocationList( deppos.wkn, "Firma", detail.topfirmen ) )
+        self._db.commit()
+        deppos.allokationen = self._db.getAllocations(deppos.wkn)
+
+    @staticmethod
+    def _getAllocationList( wkn:str, typ:str, alloctext: str ) -> List[XAllocation]:
+        """
+        Wandelt die Allokationen, die im Textfeld so aussehen...
+            Industrials 22.0%
+            Consumer Discretionary 19.0%
+            Technology 12.0%
+            Financials 12.0%
+        ... in Wirklichkeit aber nur *1* String sind:
+            Industrials 22.0%\nConsumer Discretionary 19.0%\nTechnology 12.0%\nFinancials 12.0%\n
+        ...in XAllocation-Objekte um.
+        Achtung: die Prozent-Angabe kann auch fehlen - dann wird ein ValueError geworfen.
+        Achtung: der letzte Zeilentrenner auch fehlen!
+        @param alloctext: Allokationen, wie im Textfeld vom User erfasst.
+                          Die Allokationen müssen durch "\n" getrennt sein.
+        @return: Eine Liste mit XAllocation-Objekten; für jede Zeile von <alloctext> ein XAllocation-Objekt.
+        """
+        # alloctext in Zeilen splitten. Jede Zeile entspricht einer Allokation.
+        alloclist:List[XAllocation] = list()
+        numbers = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
+        dec_signs = [",", "."]
+        alloctext = alloctext.strip()
+        allocs = alloctext.split("\n")
+        if len(allocs) > 0:
+            for oneAlloc in allocs:
+                # Allokationen zeilenweise abarbeiten
+                cnt_proz = 0
+                l = len(oneAlloc)
+                if l < 1: continue # wenn die letzte Allokation vom User mit "\n" abgeschlossen wurde
+                                    # oder eine Leerzeile in der alloctext erfasst wurde,
+                                    # ist der letzte Eintrag ein Leerstring.
+                xalloc = XAllocation()
+                xalloc.wkn = wkn
+                xalloc.typ = typ
+                # die Allokation von hinten nach vorn abarbeiten. Nach einem "%"-Zeichen folgt eine Zahl
+                i = l-1
+                while i > -1:
+                    ch = oneAlloc[i]
+                    if ch == "%":
+                        proz_str = ""
+                        if cnt_proz == 0: # es folgt die Prozentzahl:
+                            i -= 1 # das Prozentzeichen wollen wir nicht
+                            while i > -1:
+                                # die Prozentzahl in proz_str übertragen - die steht danach falsch rum drin!
+                                ch = oneAlloc[i]
+                                if ch in numbers or ch in dec_signs:
+                                    if ch == ",": ch = "."
+                                    proz_str += ch
+                                    i -= 1
+                                else:
+                                    xalloc.prozent = float(proz_str[::-1])
+                                    i -= 1
+                                    break
+                            cnt_proz += 1
+                    else: # ein Zeichen, das zum Allok.-Namen gehört
+                        xalloc.name += ch
+                        i -= 1
+                if cnt_proz == 0:
+                    raise ValueError("ImonLogic._getAllocationList():\n"
+                                     "Für wkn '%s' fehlt die Prozentangabe bei einer Allokation vom Typ '%s'." % (wkn, typ) )
+                xalloc.name = xalloc.name[::-1]
+                alloclist.append(xalloc)
+        return alloclist
 
     @staticmethod
     def _getLastTradingDayIso() -> str:
@@ -843,12 +936,21 @@ class ImonLogic:
         :param deppos:
         :return:
         """
+        def provideAllocations():
+            def getAllocString( name: str, prozent: float ) -> str:
+                return name + " " + str( prozent ) + "%" + "\n"
+
+            for alloc in deppos.allokationen:
+                if alloc.typ == "Land":
+                    x.toplaender += getAllocString( alloc.name, alloc.prozent )
+                if alloc.typ == "Sektor":
+                    x.topsektoren += getAllocString( alloc.name, alloc.prozent )
+                if alloc.typ == "Firma":
+                    x.topfirmen += getAllocString( alloc.name, alloc.prozent )
         x = XDetail()
         x.basic_index = deppos.basic_index
         x.beschreibung = deppos.beschreibung
-        x.topfirmen = deppos.topfirmen
-        x.toplaender = deppos.toplaender
-        x.topsektoren = deppos.topsektoren
+        provideAllocations()
         x.bank = deppos.bank
         x.depot_nr = deppos.depot_nr
         x.depot_vrrkto = deppos.depot_vrrkto
@@ -919,6 +1021,12 @@ class ImonLogic:
 
 
 ###################    T E S T   ##########################################################
+def testGetAllocations():
+    logic = ImonLogic()
+    alloctext = "Japan 90.1%" + "\n" + "Grönland 9,2%" + "\n" + " "
+    alloclist = logic._getAllocationList("A1B2C3", "Land", alloctext)
+    print(alloclist)
+
 def test():
     logic = ImonLogic()
     poslist = logic.getDepotPositions(Period.oneYear, Interval.oneWeek)
@@ -960,4 +1068,5 @@ if __name__ == "__main__":
     #fridays = allfridays2()
     # print(fridays)
     #testDatetime()
-    test()
+    # test()
+    testGetAllocations()

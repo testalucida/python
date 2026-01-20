@@ -251,6 +251,8 @@ class BaseDialogWithButtons( BaseDialog ):
                 btn.setFixedWidth( defi.width )
             if defi.height > -1:
                 btn.setFixedHeight( defi.height )
+            # if defi.width <= -1 and defi.height <= -1:
+            #     btn.setFixedSize(btn.sizeHint())
             if defi.callback:
                 btn.setCallback( defi.callback, defi.callbackData )
             self._layout.addWidget( btn, self._buttonrow, col )
@@ -311,7 +313,7 @@ class OkApplyCancelDialog( BaseDialogWithButtons ):
         msg = ""
         if self._beforeAcceptCallback:
             msg = self._beforeAcceptCallback()
-        if msg:
+        if msg > "":
             box = ErrorBox( "Validierungsfehler", msg, "" )
             box.exec_()
         else:
@@ -321,7 +323,7 @@ class OkApplyCancelDialog( BaseDialogWithButtons ):
         msg = ""
         if self._applyCallback:
             msg = self._applyCallback()
-        if msg:
+        if msg > "":
             box = ErrorBox( "Validierungsfehler", msg, "" )
             box.exec_()
 
@@ -329,7 +331,7 @@ class OkApplyCancelDialog( BaseDialogWithButtons ):
         msg = ""
         if self._beforeRejectCallback:
             msg = self._beforeRejectCallback()
-        if msg:
+        if msg > "":
             box = QuestionBox( "Bestätigung", msg, "Ja", "Nein" )
             if box.exec_() == QMessageBox.Yes:
                 self.reject()
@@ -554,7 +556,7 @@ class CalendarDialog( QDialog ):
         self.setLayout(vbox)
 
         self._buttonBox = QtWidgets.QDialogButtonBox( self )
-        self._buttonBox.setOrientation( QtCore.Qt.Horizontal )
+        self._buttonBox.setOrientation( QtCore.Qt.Orientation.Horizontal )
         self._buttonBox.setStandardButtons( QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel )
         self._buttonBox.layout().setDirection( QBoxLayout.RightToLeft )
         self._buttonBox.button( QtWidgets.QDialogButtonBox.Ok ).clicked.connect( self._onOk )
@@ -602,7 +604,7 @@ class SmartDateEdit( QLineEdit, GetSetValue ):
         self._defaultDate = ""
 
     def mouseDoubleClickEvent( self, event ):
-        #print( "Double Click SmartDateEdit at pos: ", event.pos() )
+        #print( "Double Click SmartDateEdit at pos: ", event.position() )
         if not self.isReadOnly():
             self.showCalendar()
 

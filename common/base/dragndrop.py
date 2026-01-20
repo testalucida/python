@@ -46,7 +46,7 @@ class DragWidgetsContainer( QWidget ):
 
     def mousePressEvent( self, event ):
         self._itemList = self._layout.getAddedItems() # Reihenfolge VOR Drag-Vorgang
-        widget = self.childAt( event.pos() )
+        widget = self.childAt( event.position() )
         self._dragWidget = widget
         self._dragWidgetIndex = self._layout.indexOf( widget )
         self._dragWidgetPositon = self._layout.getItemPosition( self._dragWidgetIndex )
@@ -56,7 +56,7 @@ class DragWidgetsContainer( QWidget ):
         for other in others:
             if other.item == widget: continue
             other.item.stackUnder( widget )
-        self._lastPos = event.pos()
+        self._lastPos = event.position()
         self._mouseRelToLeft = self._lastPos.x() - widget.x()
         self._mouseRelToTop = self._lastPos.y() - widget.y()
         self._dragWidget.setCursor( Qt.DragMoveCursor )
@@ -81,10 +81,10 @@ class DragWidgetsContainer( QWidget ):
     def mouseMoveEvent( self, event ):
         if self._lastPos:
             widget = self._dragWidget
-            x = event.pos().x() - self._mouseRelToLeft
-            y = event.pos().y() - self._mouseRelToTop
+            x = event.position().x() - self._mouseRelToLeft
+            y = event.position().y() - self._mouseRelToTop
             widget.move( x, y )
-            self._lastPos = event.pos()
+            self._lastPos = event.position()
 
     def _findIntersectedItem( self, minOverlap=0.5 ) -> GridLayoutItem or None:
         """

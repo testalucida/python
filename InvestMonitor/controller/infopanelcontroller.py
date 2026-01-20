@@ -6,11 +6,11 @@ from pandas import Series
 
 import datehelper
 from base.baseqtderivates import BaseEdit, MultiLineEdit, SmartDateEdit, IntEdit, FloatEdit, SignedNumEdit, \
-    PositiveSignedFloatEdit, FixedNegativeSignedFloatEdit
+    PositiveSignedFloatEdit, FixedNegativeSignedFloatEdit, BaseLabel, BaseButton
 from base.basetablemodel import BaseTableModel, SumTableModel
 from base.basetableview import BaseTableView
 from base.dynamicattributeui import DynamicAttributeView, DynamicAttributeDialog
-from base.interfaces import XBaseUI, VisibleAttribute
+from base.interfaces import XBaseUI, VisibleAttribute, ButtonDefinition
 from base.messagebox import ErrorBox, InfoBox
 from data.finance.tickerhistory import Period, Interval, SeriesName
 from generictable_stuff.okcanceldialog import OkDialog, OkCancelDialog
@@ -64,18 +64,65 @@ class InfoPanelController( QObject ):
         vislist = (
             VisibleAttribute( "basic_index", BaseEdit, "Index: ", editable=False, nextRow=True ),
             VisibleAttribute( "beschreibung", MultiLineEdit, "", editable=False, nextRow=True ),
-            VisibleAttribute( "toplaender", MultiLineEdit, "Top-Länder: ", widgetHeight=55, editable=False, nextRow=True ),
-            VisibleAttribute( "topsektoren", MultiLineEdit, "Top-Sektoren: ", widgetHeight=55, editable=False, nextRow=True ),
-            VisibleAttribute( "topfirmen", MultiLineEdit, "Top-Firmen: ", widgetHeight=55, editable=False, nextRow=True ),
+            VisibleAttribute( "toplaender", MultiLineEdit, "Top-Länder: ", editable=True, nextRow=True ),
+            VisibleAttribute( "topsektoren", MultiLineEdit, "Top-Sektoren: ", editable=True, nextRow=True ),
+            VisibleAttribute( "topfirmen", MultiLineEdit, "Top-Firmen: ", editable=True, nextRow=True ),
+            # VisibleAttribute( "edit_allocations", BaseButton, "Allokationen speichern",
+            #                   callback=self.onEditAllocations, nextRow=True),
             VisibleAttribute( "bank", BaseEdit, "Bank: ", editable=False, nextRow=True ),
             VisibleAttribute( "depot_nr", BaseEdit, "Depot-Nr.: ", editable=False, nextRow=True ),
             VisibleAttribute( "depot_vrrkto", BaseEdit, "Vrr.-Konto: ", editable=False, nextRow=True )
         )
         detailsUI.addVisibleAttributes( vislist )
         self._detailDlg = DynamicAttributeDialog( detailsUI, title="Details zur Depotposition '%s'" % self._x.name,
-                                                  okButton=False, applyButton=False )
-        self._detailDlg.resize( QSize(500, 500) )
+                                                  okButton=True, applyButton=False, cancelButton=True )
+        self._detailDlg.setCallbacks( beforeAcceptCallback=self.onSaveAllocations,
+                                      applyCallback=None,
+                                      beforeRejectCallback=self.onBeforeRejectAllocations )
+        #view = self._detailDlg.getDynamicAttributeView()
+        size = QSize(600, 800)
+        self._detailDlg.resize( size )
         self._detailDlg.show()
+
+    def onSaveAllocations( self ):
+        view = self._detailDlg.getDynamicAttributeView()
+        x = view.getXBase()
+        xcopy = view.getModifiedXBaseCopy()
+        if x.equals(xcopy):
+            return ""
+        else:
+            try:
+                self._logic.saveAllocations(self._x, xcopy)
+                view.updateData()
+                return ""
+            except ValueError as ex:
+                box = ErrorBox("Fehler beim Speichern der Details", str(ex),
+                               "\nAufgetreten in InfoPanelController.onSaveAllocations()")
+                box.exec()
+                return "Daten wurden nicht gespeichert."
+
+
+    def onBeforeRejectAllocations( self ):
+        view = self._detailDlg.getDynamicAttributeView()
+        x = view.getXBase()
+        xcopy = view.getModifiedXBaseCopy()
+        if x.equals(xcopy):
+            return ""
+        return "Schließen ohne Änderungen zu speichern?"
+
+    def onEditAllocations( self ):
+        view = self._detailDlg.getDynamicAttributeView()
+        xdetail:XDetail = view.getXBase()
+        print(xdetail.toplaender)
+        print(xdetail.topsektoren)
+        print(xdetail.topfirmen)
+        modifiedCopy = view.getModifiedXBaseCopy()
+        if xdetail.toplaender != modifiedCopy.toplaneder:
+            print("Allokation Topländer geändert")
+        if xdetail.topsektoren != modifiedCopy.topsektoren:
+            print("Allokation Topsektoren geändert")
+        if xdetail.topfirmen != modifiedCopy.topfirmen:
+            print("Allokation Topfirmen geändert")
 
     def onShowDividendPayments( self ):
         """
@@ -166,6 +213,9 @@ class InfoPanelController( QObject ):
             except Exception as ex:
                 box = ErrorBox( "Fehler beim Insert in die Datenbank", str( ex ) )
                 box.exec_()
+
+    def onCallbackTEST( self ):
+        print("onCallbackTEST")
 
     def onComputeAbgeltungssteuer( self ):
         """

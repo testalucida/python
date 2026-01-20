@@ -80,7 +80,7 @@ class CustomTableView( QTableView ):
         model.layoutChanged.emit()
 
     def mouseMoveEvent(self, event:QMouseEvent):
-        p = event.pos()
+        p = event.position()
         col = self.columnAt( p.x() )
         row = self.rowAt( p.y() )
         if row != self._mouseOverRow or col != self._mouseOverCol:
@@ -100,7 +100,7 @@ class CustomTableView( QTableView ):
 
     def onMouseMoveOutside( self, event:QMouseEvent ):
         if self._mouseOverRow > -1 and self._mouseOverCol > -1:
-            p = event.pos()
+            p = event.position()
             self.ctvCellLeave.emit( CellEvent( p.x(), p.y(), self._mouseOverRow, self._mouseOverCol ) )
             self._mouseOverRow = -1
             self._mouseOverCol = -1
@@ -435,15 +435,15 @@ def test():
         def data( self, index, role=None ):
             if not index.isValid():
                 return None
-            if role == Qt.DisplayRole:
+            if role == Qt.ItemDataRole.DisplayRole:
                 return self._rows[index.row()][index.column()]
             return None
 
         def headerData( self, col, orientation, role=None ):
-            if orientation == Qt.Horizontal:
-                if role == Qt.DisplayRole:
+            if orientation == Qt.Orientation.Horizontal:
+                if role == Qt.ItemDataRole.DisplayRole:
                     return "Spalte %d" % col
-                if role == Qt.BackgroundRole:
+                if role == Qt.ItemDataRole.BackgroundRole:
                     pass
                     # if self.headerBrush:
                     #     return self.headerBrush

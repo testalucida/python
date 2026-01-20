@@ -407,9 +407,9 @@ def testFMP():
 ####################################################################
 
 if __name__ == "__main__":
-    ticker = "LQDE.L"  #"DBXS.DE"
+    ticker = "EGV2.DE"  #"LQDE.L"  #"DBXS.DE"
     th = TickerHistory()
-    df = th.getTickerHistoryByPeriod(ticker, Period.oneYear, Interval.oneWeek)
+    df = th.getTickerHistoryByPeriod(ticker, Period.oneYear, Interval.oneDay)
     print(df)
     fi = th.getFastInfo(ticker)
     cu = fi.currency

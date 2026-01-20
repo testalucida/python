@@ -88,6 +88,17 @@ class XWpGattung(XBase):
         if valuedict:
             self.setFromDict( valuedict )
 
+class XAllocation(XBase):
+    def __init__( self, valuedict: Dict = None ):
+        XBase.__init__( self )
+        self.id = 0
+        self.wkn = ""
+        self.typ = "" # Land, Sektor, Firma
+        self.name = "" # z.B. "Japan", "Technology", "Sony"
+        self.prozent = 0.0  # Anteil dieser Allokation an wkn
+        if valuedict:
+            self.setFromDict( valuedict )
+
 class XDepotPosition( XBase ):
     def __init__( self, valuedict:Dict=None ):
         XBase.__init__( self )
@@ -102,9 +113,10 @@ class XDepotPosition( XBase ):
         self.waehrung = "" # EUR, USD, etc.
         self.flag_acc = False
         self.beschreibung = ""
-        self.toplaender = ""
-        self.topfirmen = ""
-        self.topsektoren = ""
+        # self.toplaender = "" # deprecated
+        # self.topfirmen = ""  # deprecated
+        # self.topsektoren = "" # deprecated
+        self.allokationen:List[XAllocation] = None # neu: Liste der Allokationen (Länder, Sektoren, Firmen)
         self.anteil_usa = 0  # Anteil von US-Firmen
         self.period = Period.unknown
         self.interval = Interval.unknown
@@ -213,5 +225,16 @@ class XExchangeRate(XBase):
         self.base:str = ""
         self.target:str = ""
         self.rate:float = 0.0
+        if valuedict:
+            self.setFromDict( valuedict )
+
+class XAllokation(XBase):
+    def __init__( self, valuedict:Dict=None ):
+        XBase.__init__( self )
+        self.id:int = 0 # DB-ID
+        self.wkn:str = ""
+        self.typ:str = "" # "Land", "Sektor", "Firma"
+        self.name:str = ""
+        self.prozent:float = 0.0
         if valuedict:
             self.setFromDict( valuedict )

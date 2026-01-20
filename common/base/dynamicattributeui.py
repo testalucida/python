@@ -28,10 +28,17 @@ class DynamicAttributeView( BaseWidget ):
         row, col = 0, 0
         attrlist = self._xbaseui.getVisibleAttributes()
         for attr in attrlist:
-            lbl = BaseLabel( attr.label )
-            self._layout.addWidget( lbl, row, col )
+            # Achtung - wenn ein BaseButton eingefügt wird, gibt es noch irgendwo einen Fehler -
+            # soweit ich mich erinnere, beim Aufruf der getValue()-Methode (aufgerufen in einer update..-Methode
+            # dieser Klasse), über die der BaseButton nicht verfügt.
+            lbltext = attr.label if attr.type != BaseButton else ""
+            lbl = BaseLabel( lbltext )
+            lbl.setFixedSize(lbl.sizeHint())
+            self._layout.addWidget( lbl, row, col, 1, 1, alignment=Qt.AlignmentFlag.AlignLeft )
             col += 1
             w = self._createWidget( attr.key, attr.type, attr.editable, attr.getWidgetWidth(), attr.getWidgetHeight() )
+            if isinstance(w, BaseButton):
+                w.setText(attr.label)
             if attr.tooltip:
                 w.setToolTip( attr.tooltip )
             self._widgets.append( w )
@@ -48,12 +55,18 @@ class DynamicAttributeView( BaseWidget ):
                 comboValues = list( comboValues )
                 if len( comboValues ) > 0:
                     w.addItems( comboValues )
-            value = self._xbaseui.getXBase().getValue( attr.key )
-            if value:
-                w.setValue( value )
-            if isinstance( w, BaseComboBox ) and attr.comboCallback:
+            try:
+                value = self._xbaseui.getXBase().getValue( attr.key )
+                if value:
+                    w.setValue( value )
+            except:
+                # passiert, wenn es sich z.B. um einen Button handelt, der nicht im XBase-Objekt definiert ist
+                pass
+            if isinstance( w, BaseComboBox ) and attr.callback:
                 # das Signal darf erst mit der Callback-Funktion verknüpft werden, wenn der Wert zugewiesen ist.
-                w.currentTextChanged.connect( attr.comboCallback )
+                w.currentTextChanged.connect( attr.callback )
+            if isinstance(w, BaseButton) and attr.callback:
+                w.clicked.connect(attr.callback)
             if attr.nextRow:
                 #minH = self._layout.rowMinimumHeight( row )
                 row += 1
@@ -76,15 +89,16 @@ class DynamicAttributeView( BaseWidget ):
                 pass
         if editable and self._firstEditableWidget is None:
             self._firstEditableWidget = w
-        hsizePolicy = QSizePolicy.Policy.Preferred
-        vsizePolicy = QSizePolicy.Policy.Preferred
+        # hsizePolicy = QSizePolicy.Policy.Preferred
+        # vsizePolicy = QSizePolicy.Policy.Preferred
+        # print( hsizePolicy, "", vsizePolicy)
         if widgetWidth > 0:
             w.setFixedWidth( widgetWidth )
-            hsizePolicy = QSizePolicy.Policy.Fixed
+            #hsizePolicy = QSizePolicy.Policy.Fixed
         if widgetHeight > 0:
             w.setFixedHeight( widgetHeight )
-            vsizePolicy = QSizePolicy.Policy.Fixed
-        w.setSizePolicy( hsizePolicy, vsizePolicy )
+            #vsizePolicy = QSizePolicy.Policy.Fixed
+        # w.setSizePolicy( hsizePolicy, vsizePolicy )
         return w
 
     @staticmethod
@@ -110,6 +124,7 @@ class DynamicAttributeView( BaseWidget ):
         for w in self._widgets:
             if isinstance( w, BaseButton ) and w.getIdent() == ident:
                 return w
+        return None
 
     def getWidget( self, key:str ) -> BaseWidget:
         for w in self._widgets:
@@ -150,7 +165,9 @@ class DynamicAttributeView( BaseWidget ):
             self.updateUI( key )
 
     def updateData( self ):
-        # übernimmt die vom User im View geänderten Werte ins Datenmodell (xbase)
+        """
+        übernimmt die vom User im View geänderten Werte ins Datenmodell (xbase)
+        """
         xbase = self._xbaseui.getXBase()
         self._updateData( xbase )
 
