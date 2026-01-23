@@ -731,8 +731,6 @@ class SumTableModel( BaseTableModel ):
 
 ################################################################
 
-def test2():
-    tm = SumTableModel
 
 def test():
     class X(XBase):
@@ -774,15 +772,5 @@ def test():
         e:X = tm.getElement( r )
         print( e.var1 )
 
-    # from PySide6.QtWidgets import QApplication
-    # from base.basetableview import BaseTableView
-    # from base.basetableviewframe import BaseTableViewFrame
-    # app = QApplication()
-    # v = BaseTableView()
-    # v.setModel( tm )
-    # frame = BaseTableViewFrame( v, True )
-    # frame.newItem.connect( onNewItem )
-    # frame.editItem.connect( onEditItem )
-    # frame.deleteItems.connect( onDeleteItem )
-    # frame.show()
-    # app.exec_()
+if __name__ == "__main__":
+    test2()

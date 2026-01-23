@@ -58,6 +58,9 @@ class InfoPanelController( QObject ):
     def getModel( self ) -> XDepotPosition:
         return self._x
 
+    def getWkn( self ) -> str:
+        return self._x.wkn
+
     def onShowDetails( self ):
         details:XDetail = self._logic.getDetails( self._x )
         detailsUI = XBaseUI( details )
@@ -67,6 +70,7 @@ class InfoPanelController( QObject ):
             VisibleAttribute( "toplaender", MultiLineEdit, "Top-Länder: ", editable=True, nextRow=True ),
             VisibleAttribute( "topsektoren", MultiLineEdit, "Top-Sektoren: ", editable=True, nextRow=True ),
             VisibleAttribute( "topfirmen", MultiLineEdit, "Top-Firmen: ", editable=True, nextRow=True ),
+            VisibleAttribute( "letzte_aktualisierung", BaseEdit, "aktual. am: ", editable=False, widgetWidth=75, nextRow=True),
             # VisibleAttribute( "edit_allocations", BaseButton, "Allokationen speichern",
             #                   callback=self.onEditAllocations, nextRow=True),
             VisibleAttribute( "bank", BaseEdit, "Bank: ", editable=False, nextRow=True ),
@@ -94,13 +98,13 @@ class InfoPanelController( QObject ):
             try:
                 self._logic.saveAllocations(self._x, xcopy)
                 view.updateData()
+                self._infoPanel.setAnteilUSA(self._x.anteil_usa)
                 return ""
             except ValueError as ex:
                 box = ErrorBox("Fehler beim Speichern der Details", str(ex),
                                "\nAufgetreten in InfoPanelController.onSaveAllocations()")
                 box.exec()
                 return "Daten wurden nicht gespeichert."
-
 
     def onBeforeRejectAllocations( self ):
         view = self._detailDlg.getDynamicAttributeView()
@@ -109,20 +113,6 @@ class InfoPanelController( QObject ):
         if x.equals(xcopy):
             return ""
         return "Schließen ohne Änderungen zu speichern?"
-
-    def onEditAllocations( self ):
-        view = self._detailDlg.getDynamicAttributeView()
-        xdetail:XDetail = view.getXBase()
-        print(xdetail.toplaender)
-        print(xdetail.topsektoren)
-        print(xdetail.topfirmen)
-        modifiedCopy = view.getModifiedXBaseCopy()
-        if xdetail.toplaender != modifiedCopy.toplaneder:
-            print("Allokation Topländer geändert")
-        if xdetail.topsektoren != modifiedCopy.topsektoren:
-            print("Allokation Topsektoren geändert")
-        if xdetail.topfirmen != modifiedCopy.topfirmen:
-            print("Allokation Topfirmen geändert")
 
     def onShowDividendPayments( self ):
         """

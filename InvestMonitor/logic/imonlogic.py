@@ -8,16 +8,17 @@ from operator import attrgetter
 from typing import List, Dict, Tuple
 
 import pandas
+from PySide6.QtCore import QThreadPool
 from pandas import DataFrame, Timestamp, DatetimeIndex
-from pygments.lexers.csound import newline
 from yfinance.scrapers.quote import FastInfo
 
 import datehelper
-from base.basetablemodel import SumTableModel
+from base.basetablemodel import SumTableModel, BaseTableModel
 from data.db.investmonitordata import InvestMonitorData
-from data.finance.tickerhistory import TickerHistory
+from data.finance.tickerhistory import TickerHistory, PriceInfo
 from imon.enums import Period, Interval
-from interface.interfaces import XDepotPosition, XDelta, XDateValueItem, XDetail, XDividend, XWpGattung, XAllocation
+from interface.interfaces import XDepotPosition, XDelta, XDateValueItem, XDetail, XDividend, XWpGattung, XAllocation, \
+    XMatch
 from logic.exchangerates import ExchangeRates
 
 
@@ -44,6 +45,7 @@ class ImonLogic:
         self._db = InvestMonitorData()
         self._exchangeRates = ExchangeRates( self._db )
         self._tickerHist = TickerHistory()  # Wrapper um die yfinance-Schnittstelle
+        self._threadpool = QThreadPool()
 
     def _ensureDataLoaded(self):
         if not ImonLogic.all_deppos:
@@ -69,6 +71,16 @@ class ImonLogic:
         for alloc in allocList:
             self._db.insertAllocation(alloc.wkn, alloc.typ, alloc.name, alloc.prozent)
 
+    @staticmethod
+    def _getAnteilUSA( allocList:List[XAllocation] ) -> int:
+        anteil = 0.0
+        toplaender = (alloc for alloc in allocList if alloc.typ == "Land")
+        for land in toplaender:
+            if "US" in land.name and land.prozent > anteil:
+                anteil = land.prozent
+                break
+        return round(anteil)
+
     def saveAllocations( self, deppos:XDepotPosition, detail:XDetail ):
         """
         @param deppos: Depot-Position, deren Allokationen geändert wurden
@@ -88,8 +100,17 @@ class ImonLogic:
         self._saveAllocations( ImonLogic._getAllocationList( deppos.wkn, "Land", detail.toplaender ) )
         self._saveAllocations( ImonLogic._getAllocationList( deppos.wkn, "Sektor", detail.topsektoren ) )
         self._saveAllocations( ImonLogic._getAllocationList( deppos.wkn, "Firma", detail.topfirmen ) )
+        # nach dem Speichern neu aus der DB holen:
+        deppos.allokationen = self._db.getAllocations( deppos.wkn )
+        # und dann den neuen USA-Anteil ausrechnen...
+        deppos.anteil_usa = self._getAnteilUSA( deppos.allokationen )
+        # ...und speichern:
+        self._db.updateAnteilUSA( deppos.wkn, deppos.anteil_usa )
+        # Das Datum dieser Änderungen (heute) als "Letzte Aktualisierung" speichern:
+        today = datehelper.getTodayAsIsoString()
+        self._db.updateLetzteAktualisierung( deppos.wkn, today )
+        deppos.letzte_aktualisierung = today
         self._db.commit()
-        deppos.allokationen = self._db.getAllocations(deppos.wkn)
 
     @staticmethod
     def _getAllocationList( wkn:str, typ:str, alloctext: str ) -> List[XAllocation]:
@@ -217,7 +238,6 @@ class ImonLogic:
         dev_path = "/home/martin/Projects/python/InvestMonitor/logic/"
 
         try:
-            start = time.time()
             if dev_path.lower() in __file__.lower():  # wir sind in der Entwicklungsumgebung
                 today = datehelper.getTodayAsIsoString()
                 file_path = dev_path + "tickerhistories_" + today + ".txt"
@@ -235,9 +255,7 @@ class ImonLogic:
             else:
                 tickHists: DataFrame = self._tickerHist.getTickerHistoriesByPeriod( tickers, Period.fiveYears,
                                                                                     Interval.oneDay )
-            end = time.time()
-            print("ImonLogic._getHistoriesFromApi(): ", end-start, " sec. time elapsed for fetching data")
-            start = time.time()
+
             # Spalten rauswerfen, die wir nicht brauchen (wir brauchen nur Close und Dividends):
             tickHists.drop( ["Capital Gains", "High", "Low", "Open", "Stock Splits", "Volume"],
                             axis=1, inplace=True )
@@ -245,41 +263,49 @@ class ImonLogic:
             if len(tickers) > 1:
                 tickHists.columns = tickHists.columns.swaplevel( 0, 1 )
                 tickHists.sort_index( axis=1, level=0, inplace=True )
-            end = time.time()
-            print("ImonLogic._getHistoriesFromApi(): ", end-start, " sec. time elapsed for preparing DataFrame")
         except Exception as ex:
             raise ex
 
         return tickHists
 
     def getKursAktuellInEuro( self, ticker: str ) -> (float, str):
+        kurs = 0
+        for deppos in ImonLogic.all_deppos:
+            if deppos.ticker == ticker:
+                self._provideKurseAktuellInEuro([deppos,])
+                kurs = deppos.kurs_aktuell
+                break
+        return kurs, "EUR"
+
+    def _provideKurseAktuellInEuro( self, depposList:List[XDepotPosition] ):
         """
-        Ermittelt aus der TickerHistory.FastInfo den letzten Kurs des Wertpapiers in Euro.
+        Ermittelt den letzten Kurs der übergebenen Depot-Positionen in Euro.
         Transformiert ihn in EUR, wenn er nicht in EUR geliefert wird.
-        :param ticker:
-        :param currency:
-        :return: den letzten Kurs in Euro, gerundet auf 3 Stellen hinter dem Komma
-                 UND die ursprüngliche Währung (EUR oder Fremdwährung, die konvertiert wurde)
+        Trägt ihn in die übergebenen Depot-Positionen ein
+        :param depposList: Liste der Depot-Positionen, für die der aktuelle Kurs und die Währung in Euro ermittelt
+                           werden soll
         """
-        fastInfo = self._tickerHist.getFastInfo( ticker )
-        if fastInfo:
-            last_price = fastInfo.last_price
-            currency = fastInfo.currency
-            if currency != "EUR":
-                try:
-                    today = datehelper.getTodayAsIsoString()
-                    if currency == "GBp":
-                        last_price = last_price/100
-                        currency = "GBP"
-                    last_price = self._exchangeRates.convert(currency, "EUR", today, last_price)
-                except ValueError:
-                    # Wochenende, letzten TradingDay holen und nochmal versuchen
-                    lastTradingDay = ImonLogic._getLastTradingDayIso()
-                    last_price = self._exchangeRates.convert(currency, "EUR", lastTradingDay, last_price)
-            return round( last_price, 3 ), currency
-        else:
-            print( "Ticker '%s':\nNo FastInfo available" % ticker )
-            return 0, ""
+        tickerlist = [deppos.ticker for deppos in depposList]
+        priceInfoList:List[PriceInfo] = self._tickerHist.getPriceAndCurrency(tickerlist)
+        for deppos in depposList:
+            priceInfo = [pi for pi in priceInfoList if pi.ticker == deppos.ticker]
+            if priceInfo:
+                last_price = priceInfo[0].regularMarketPrice
+                currency = priceInfo[0].currency
+                if currency != "EUR":
+                    try:
+                        today = datehelper.getTodayAsIsoString()
+                        if currency == "GBp":
+                            last_price = last_price/100
+                            currency = "GBP"
+                        last_price = self._exchangeRates.convert(currency, "EUR", today, last_price)
+                    except ValueError:
+                        # Wochenende, letzten TradingDay holen und nochmal versuchen
+                        lastTradingDay = ImonLogic._getLastTradingDayIso()
+                        last_price = self._exchangeRates.convert(currency, "EUR", lastTradingDay, last_price)
+                deppos.kurs_aktuell = last_price
+            else:
+                print( "Ticker '%s':\nNo info available" % deppos.ticker )
 
     def _getOrderData( self, wkn: str ) -> XOrderData:
         """
@@ -355,8 +381,14 @@ class ImonLogic:
                                         in zip( ImonLogic.tradingDaysIsoASC, deppos_.dividends )]
 
         ########### end of subfunctions ##################
+
+        start = time.time()
+        self._provideKurseAktuellInEuro( ImonLogic.all_deppos )
+        end = time.time()
+        print( "ImonLogic._provideDepposListWithPeriodIndependentData() - call _provideKurseAktuellInEuro(): ",
+               end - start, " sec" )
+
         for deppos in ImonLogic.all_deppos:
-            start = time.time()
             try:
                 deppos.closePrices = alltickershistories[(deppos.ticker, "Close")].tolist() # alle Daten 5 Jahre, täglich
                 deppos.dividends = alltickershistories[(deppos.ticker, "Dividends")].tolist()
@@ -364,46 +396,24 @@ class ImonLogic:
                 # es ist nur 1 Ticker in alltickershistories, dann sind die Spalten nicht multiindexed
                 deppos.closePrices = alltickershistories["Close"].tolist()  # alle Daten 5 Jahre, täglich
                 deppos.dividends = alltickershistories["Dividends"].tolist()
-            end = time.time()
-            print( "ImonLogic._provideDepposListWithPeriodIndependentData('%s') -- create lists from DataFrames: "
-                   % deppos.ticker, end - start, " sec. elapsed time" )
+
             # Eliminieren der nan-Werte, indem sie durch die values des Vortags überschrieben werden
-            start = time.time()
             replaceNan(deppos.closePrices)
             replaceNan(deppos.dividends)
-            end = time.time()
-            print( "ImonLogic._provideDepposListWithPeriodIndependentData('%s') -- replaceNan: " % deppos.ticker,
-                   end - start, " sec. elapsed time" )
 
             # Sonderbehandlung britische pence:
             if deppos.waehrung == "GBp":
-                start = time.time()
                 deppos.closePrices = convertGBpToGBP( deppos.closePrices )
                 deppos.dividends = convertGBpToGBP(deppos.dividends)
                 deppos.waehrung = "GBP"
-                end = time.time()
-                print( "ImonLogic._provideDepposListWithPeriodIndependentData('%s') -- convert pence to pound: "
-                       % deppos.ticker, end - start, " sec. elapsed time" )
+
             # die Felder .closePricesEUR und .dividendsEUR versorgen:
-            start = time.time()
             provideCloseEURandDividendsEUR( deppos )
-            deppos.kurs_aktuell, curr = self.getKursAktuellInEuro(deppos.ticker)
-            end = time.time()
-            print( "ImonLogic._provideDepposListWithPeriodIndependentData('%s') -- get current price in Euro: "
-                   % deppos.ticker, end - start, " sec. elapsed time" )
-            if curr != deppos.waehrung:
-                raise ValueError("ImonLogic._provideDepposListWith...:\nFür Ticker '%s' stimmt Währungsinfo aus "
-                                 "FastInfo ('%s') und deppos.waehrung ('%s') nicht überein. "
-                                 % (deppos.ticker, curr, deppos.waehrung))
             # Versorgung Feld delta_kurs_percent
             ImonLogic._provideDeltaKursPercent( deppos )
             # Versorgung der Felder .stueck, .erster_kauf, .letzter_kauf, .einstandswert_restbestand,
             #                       .maxKaufpreis, .minKaufpreis, .preisprostck, .gesamtwert_aktuell
-            start = time.time()
             self._provideOrderData(deppos)
-            end = time.time()
-            print( "ImonLogic._provideDepposListWithPeriodIndependentData('%s') -- provide order data: "
-                   % deppos.ticker, end - start, " sec. elapsed time" )
 
     def provideTickerHistories( self, depposList:List[XDepotPosition], period: Period, interval: Interval ):
         """
@@ -476,7 +486,7 @@ class ImonLogic:
             return DatetimeIndex(tradingDaysPeriod)
 
         #################   end of subfunctions  ######################
-        start_ = time.time()
+
         startIdxPeriod = -1
         dtix:DatetimeIndex = None
 
@@ -495,8 +505,6 @@ class ImonLogic:
             deppos.startIdxPeriod = startIdxPeriod # brauchen wir das überhaupt nach u.a. Änderung?
 
             self._provideDepposWithPeriodDependingData(deppos)
-        end_ = time.time()
-        print("ImonLogic._provideDepposListWithPeriodDependingData(): ", end_-start_, " sec. elapsed time")
 
     def _provideDepposWithPeriodDependingData(self, deppos:XDepotPosition):
         """
@@ -727,11 +735,9 @@ class ImonLogic:
         :param period: Gibt die Periode an, für die die Dividendenzahlungen ermittelt werden sollen
         :return:
         """
-        #todo
-
         def createXDividendAndAddToList( pay_day, div_pro_stck, div ):
             #print( pay_day, div_pro_stck, div )
-            if div > 0:
+            if div > 0 and pay_day >= stichtag:
                 xdiv = XDividend()
                 xdiv.wkn = deppos.wkn
                 xdiv.name = deppos.name
@@ -741,9 +747,18 @@ class ImonLogic:
                 xdiv.div_summe = div
                 xdiv_list.append( xdiv )
 
+        #todo: das ist nur eine Schweinelösung. Besser wäre es, wenn period == current year, den richtigen Index
+        #      in tradingDaysIsoASC zu finden und mit diesem self._getPaidDividends aufzurufen.
+        if period == Period.currentYear:
+            today = datehelper.getTodayAsIsoString()
+            stichtag = today[:4] + "-01-01"
+        else:
+            stichtag = "1900-01-01"
+
         xdiv_list:List[XDividend] = list()
 
         for deppos in ImonLogic.all_deppos:
+            # todo: Aufrufparameter period berücksichtigen. Die Div. werden immer nur für die eingestellte Periode ermittelt.
             self._getPaidDividends( deppos.wkn, ImonLogic.tradingDaysIsoASC[deppos.startIdxPeriod:],
                                     deppos.dividendsEUR[deppos.startIdxPeriod:],
                                     callback=createXDividendAndAddToList )
@@ -864,13 +879,6 @@ class ImonLogic:
                 # wegen des lazy loading der fast_info geht das hin und wieder schief
                 previous_close = fastInfo.previous_close
                 deppos.delta_kurs_percent = self._getDeltaKursPercent( fastInfo.last_price, previous_close )
-                # if previous_close:
-                #     deltaPrice = fastInfo.last_price - previous_close
-                #     # Verhältnis des akt. Kurses zum Schlusskurs des Vortages:
-                #     deppos.delta_kurs_1_percent = round( deltaPrice / previous_close * 100, 2 )
-                # else:
-                #     deppos.delta_kurs_1_percent = 0
-                #     print( deppos.ticker, ": fastInfo.previous_close is None." )
             except Exception as ex:
                 print( deppos.ticker, ": Zugriff auf Feld previous_close nicht möglich." )
         else:
@@ -951,6 +959,7 @@ class ImonLogic:
         x.basic_index = deppos.basic_index
         x.beschreibung = deppos.beschreibung
         provideAllocations()
+        x.letzte_aktualisierung = deppos.letzte_aktualisierung
         x.bank = deppos.bank
         x.depot_nr = deppos.depot_nr
         x.depot_vrrkto = deppos.depot_vrrkto
@@ -1015,6 +1024,25 @@ class ImonLogic:
         if deppos.stueck > 0:
             # Durchschnittl. Preis pro Stück:
             deppos.preisprostueck = round( deppos.einstandswert_restbestand / deppos.stueck, 2 )
+
+    @staticmethod
+    def getMatchTableModel( searchFor:str ) -> BaseTableModel:
+        def appendDeppos():
+            matchlist.append( XMatch( deppos.wkn, deppos.isin, deppos.ticker, deppos.name ) )
+
+        searchFor = searchFor.upper()
+        matchlist:List[XMatch] = list()
+        for deppos in ImonLogic.all_deppos:
+            if (searchFor in deppos.wkn or searchFor in deppos.isin or searchFor in deppos.ticker or
+                searchFor in deppos.name.upper()):
+                appendDeppos()
+        if len(matchlist) > 0:
+            tm = BaseTableModel(matchlist)
+            tm.setKeyHeaderMappings2(("wkn", "isin", "ticker", "name"), ("WKN", "ISIN", "Ticker","Name des ETF"))
+        else:
+            tm = BaseTableModel()
+        return tm
+
 
 
 ##########################################################################################

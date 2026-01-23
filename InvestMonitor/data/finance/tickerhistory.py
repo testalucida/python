@@ -1,5 +1,6 @@
 import enum
 import math
+import sys
 import time
 from datetime import date
 from enum import Enum
@@ -64,6 +65,12 @@ def testRequests():
 
 
 ######################################################################
+class PriceInfo:
+    def __init__(self, ticker:str):
+        self.ticker = ticker
+        self.regularMarketPrice = 0.0
+        self.currency = ""
+
 class TickerHistory:
     currentDate = datehelper.getIsoStringFromDate( datehelper.getCurrentDate() )
     oneYearAgo = getOneYearAgo()
@@ -79,6 +86,22 @@ class TickerHistory:
         # while fast_info is None:
         #     fast_info = yf_ticker.fast_info
         return fast_info
+
+    @staticmethod
+    def getPriceAndCurrency(tickerlist:List[str]) -> List[PriceInfo]:
+        from yahooquery import Ticker
+        # siehe @properties in class Ticker in ticker.py
+        tickers = " ".join( tickerlist )
+        infos = Ticker( tickers )
+        priceAndCurrencyList = list()
+        prices:Dict = infos.price
+        for tickr in tickerlist:
+            pi = PriceInfo(tickr)
+            pi.regularMarketPrice = prices[tickr]["regularMarketPrice"]
+            pi.currency = prices[tickr]["currency"]
+            priceAndCurrencyList.append(pi)
+        return priceAndCurrencyList
+
 
     @staticmethod
     def getCurrency( ticker:str ) -> str:
@@ -184,6 +207,10 @@ class TickerHistory:
 # def test5():
 #     l = TickerHistory.getFastInfoList( ("IEDY.L", "ISPA.DE") )
 #     print( l )
+
+def test5():
+    tick = TickerHistory()
+    tick.getPriceAndCurrency(["VDJP.L", "ISPA.DE", "VDPX.L", "TDIV.AS", "QDVX.DE", "SEDM.L", "DBXS.DE", "GLDV.L"])
 
 def test4():
     tick = TickerHistory()
@@ -407,7 +434,9 @@ def testFMP():
 ####################################################################
 
 if __name__ == "__main__":
-    ticker = "EGV2.DE"  #"LQDE.L"  #"DBXS.DE"
+    #test5()
+    #sys.exit()
+    ticker = "LYOR.DE"  #"EGV2.DE"  #"LQDE.L"  #"DBXS.DE"
     th = TickerHistory()
     df = th.getTickerHistoryByPeriod(ticker, Period.oneYear, Interval.oneDay)
     print(df)

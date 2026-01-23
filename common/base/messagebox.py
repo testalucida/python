@@ -120,6 +120,9 @@ class MessageBox( QMessageBox ):
             import sys
             sys.exit()
 
+    def exec( self ):
+        return self.exec_()
+
 ########################################################################
 class MessageBoxT( QMessageBox ):
     """

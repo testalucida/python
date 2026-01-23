@@ -189,11 +189,11 @@ class InfoPanel( QFrame ):
     def __init__(self):
         QFrame.__init__( self )
         self._borderstyle = None
-        self._bordercolorAnleihe = "white"
-        self._bordercolorFonds = "darkblue"
+        self._bordercolorAnleihe = "green"
+        self._bordercolorFonds = "blue"
         self._bordercolorGeldmarkt = "yellow"
         self._borderthicknessNormal = "2px"
-        self._borderthicknessSelected = "5px"
+        self._borderthicknessSelected = "6px"
         #self._borderstyle = "InfoPanel {border: 2px solid darkblue; }"
         #self.setStyleSheet( self._borderstyle )
         self._row = -1 # row im MainWindow
@@ -531,6 +531,9 @@ class InfoPanel( QFrame ):
         self._plot()
         self._mplCanvas.draw()
         #self._mplCanvas.refresh()
+
+    def setAnteilUSA( self, value:int ):
+        self._lblAnteilUSA.setValue(str(value))
 
     def _dataToGui( self ):
         x = self._x

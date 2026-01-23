@@ -11,7 +11,7 @@ class InvestMonitorData( DatabaseCommon ):
 
     def getDepotPositions( self ) -> List[XDepotPosition]:
         sql = "select pos.id, isin, ticker, wkn, basic_index, name, gattung, ter, waehrung, flag_acc, beschreibung, " \
-              "toplaender, topsektoren, topfirmen, anteil_usa, " \
+              "toplaender, topsektoren, topfirmen, anteil_usa, letzte_aktualisierung, " \
               "dep.id as depot_id, dep.bank, dep.nr as depot_nr, dep.vrrkto as depot_vrrkto " \
               "from depotposition pos " \
               "inner join depot dep on dep.id = pos.depot_id " \
@@ -123,6 +123,12 @@ class InvestMonitorData( DatabaseCommon ):
               "where id = %d " % (verkauft_stck, delta_id)
         self.write( sql )
 
+    def updateAnteilUSA( self, wkn:str, anteil:float ):
+        sql = ("update depotposition "
+               "set anteil_usa = %.2f "
+               "where wkn = '%s' " % (anteil, wkn))
+        self.write(sql)
+
     def insertExchangeRate( self, yyyy_mm_dd:str, base:str, target:str, rate:float ):
         sql = "insert into exchangerates (date, base, target, rate) " \
             "VALUES " \
@@ -169,6 +175,12 @@ class InvestMonitorData( DatabaseCommon ):
     def deleteAllocations( self, wkn:str ):
         sql = ("delete from allokation "
                "Where wkn = '%s' " %wkn)
+        self.write(sql)
+
+    def updateLetzteAktualisierung( self, wkn:str, datum:str ):
+        sql = ("update depotposition "
+               "set letzte_aktualisierung = '%s' "
+               "where wkn = '%s' " % (datum, wkn))
         self.write(sql)
 
 def test3():

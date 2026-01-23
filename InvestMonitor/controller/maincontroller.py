@@ -5,13 +5,14 @@ from typing import List, Any, Dict
 
 from PySide6.QtCore import QSize, QObject, Signal, QRunnable, Slot, QThreadPool, Qt
 from PySide6.QtGui import QAction, QScreen
+from PySide6.QtWidgets import QMessageBox
 
 # from PySide6.QtGui import QScreen
 
 from base.basetablefunctions import BaseTableFunctions
 from base.basetablemodel import SumTableModel, BaseTableModel
 from base.basetableview import BaseTableView
-from base.messagebox import InfoBox, ErrorBox
+from base.messagebox import InfoBox, ErrorBox, QuestionBox
 from controller.currencyhistorycontroller import CurrencyHistoryController
 from controller.infopanelcontroller import InfoPanelController
 from generictable_stuff.okcanceldialog import OkDialog, OkCancelDialog
@@ -20,7 +21,7 @@ from gui.infopanel import InfoPanel
 from gui.mainwindow import MainWindow
 from imon.definitions import DEFAULT_PERIOD, DEFAULT_INTERVAL, DEFAULT_INFOPANEL_ORDER
 from imon.enums import InfoPanelOrder, Period, Interval, SortDirection
-from interface.interfaces import XDepotPosition, XDelta
+from interface.interfaces import XDepotPosition, XDelta, XMatch
 from logic.imonlogic import ImonLogic
 #from logic.investmonitorlogic import InvestMonitorLogic
 from utfsymbols import symDELTA, symAVG
@@ -131,7 +132,7 @@ class GenericDetailsDialog( OkDialog ):
             ticker = self._tm.getValue( selRow, colIdx )
             #logic = InvestMonitorLogic()
             logic = ImonLogic()
-            kurs, currency = logic.getKursAktuellInEuro( ticker ) # todo: currency ermitteln für Methodenaufruf
+            kurs, currency = logic.getKursAktuellInEuro( ticker )
             box = InfoBox( "Aktueller Kurs", "Der aktuelle Kurs von '" + ticker + "' liegt bei\n",
                            str( round( kurs, 2 ) ) + " EUR" )
             box.exec_()
@@ -159,6 +160,7 @@ class MainController( QObject ):
         self._dlgDividenden:OkCancelDialog = None
         self._currHistCtrl:CurrencyHistoryController = None
         self._dlgGattungen:OkCancelDialog = None
+        self._dlgMatches:OkCancelDialog = None
 
     def createMainWindow( self ) -> MainWindow:
         self._mainWin = MainWindow()
@@ -238,19 +240,55 @@ class MainController( QObject ):
         :param wknOrIsinOrTicker:
         :return:
         """
-        #print( "MainController.onSearchInfoPanel(). Suche nach ", wknOrIsinOrTicker )
-        wknOrIsinOrTicker = wknOrIsinOrTicker.upper()
+        def onMatchSelected():
+            selrows = tv.getSelectedRows()
+            if len(selrows) > 0: # Auswahl wurde getroffen
+                selrow = selrows[0]
+                match_:XMatch = tm.getElement(selrow)
+                infopanel = getInfoPanel(match_.wkn)
+                selectInfoPanel(infopanel)
+                return "can close"
+            else: # keine Zeile selektiert
+                box = QuestionBox("Keine Auswahl getroffen.", "Auswahl schließen?", "Ja", "Nein")
+                rc = box.exec()
+                if rc == QMessageBox.Yes: # Auswahldialog zumachen
+                    return "can close"
+                else:
+                    return ""
+
+        def getInfoPanel(wkn:str) -> InfoPanel or None:
+            for infopanelctrl_ in self._infoPanelCtrlList:
+                infopanel_ = infopanelctrl_.getInfoPanel()
+                model_:XDepotPosition = infopanel_.getModel()
+                if model_.wkn == wkn:
+                    return infopanel_
+            return None
+
+        def selectInfoPanel(infopanel:InfoPanel):
+            infopanel.setSelected( True )
+            self._mainWin.ensureVisible( infopanel )
+            self._selectedInfoPanel = infopanel
+
+        # Evtl. selektiertes Panel "deselektieren"
         if self._selectedInfoPanel:
             self._selectedInfoPanel.setSelected( False )
             self._selectedInfoPanel = None
-        for infopanelctrl in self._infoPanelCtrlList:
-            infopanel = infopanelctrl.getInfoPanel()
-            model = infopanel.getModel()
-            if wknOrIsinOrTicker in (model.wkn, model.isin, model.ticker):
-                infopanel.setSelected( True )
-                self._mainWin.ensureVisible( infopanel )
-                self._selectedInfoPanel = infopanel
-                break
+        tm = ImonLogic.getMatchTableModel(wknOrIsinOrTicker)
+        if tm.rowCount() == 0:
+            box = ErrorBox("Kein Treffer", "Suchtext '%s' nicht gefunden." % wknOrIsinOrTicker)
+            box.exec()
+        elif tm.rowCount() == 1:
+            match:XMatch = tm.getElement(0)
+            infoPanel = getInfoPanel(match.wkn)
+            selectInfoPanel(infoPanel)
+        else: # mehrere Matches zur Auswahl
+            tv = BaseTableView()
+            tv.setModel(tm)
+            self._dlgMatches = OkCancelDialog( title="Auswahl aus mehreren Treffern" )
+            self._dlgMatches.addWidget( tv, 0 )
+            self._dlgMatches.resize( self._dlgMatches.sizeHint() )
+            self._dlgMatches.setBeforeAcceptFunction(onMatchSelected)
+            self._dlgMatches.show()
 
     def getAllDepotPositions( self ) -> List[XDepotPosition]:
         l = list()
@@ -439,6 +477,8 @@ class MainController( QObject ):
 
         self._mainWin.clear()
         for ip in infopanels:
+            dp = ip.getModel()
+            print(dp.wkn, ": ", dp.anteil_usa, " -- sortfield: ", dp.__dict__["__sortfield__"])
             self._mainWin.addInfoPanel( ip )
 
     def _setSortKeyAndDirection( self, x:XDepotPosition, order:InfoPanelOrder ) -> str:
@@ -474,7 +514,7 @@ class MainController( QObject ):
             sortfieldInfo = "Anteil: " + str( x.anteil_an_summe_gesamtwerte )
             self._sortDirection = SortDirection.DESC
         elif order == InfoPanelOrder.Anteil_USA:
-            sortfield = x.anteil_usa
+            sortfield = 0 if x.anteil_usa is None else x.anteil_usa
             sortfieldInfo = "USA-Firmen (%): " + str( x.anteil_usa )
             self._sortDirection = SortDirection.DESC
         elif order == InfoPanelOrder.AccLast:

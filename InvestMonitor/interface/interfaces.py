@@ -9,66 +9,13 @@ import datehelper
 from base.interfaces import XBase
 from imon.enums import Period, Interval
 
-class XDepotPosition______( XBase ):
-    def __init__( self, valuedict:Dict=None ):
-        XBase.__init__( self )
-        self.id = 0 # Primärschlüssel in Tabelle depotposition
-        self.isin = ""
-        self.ticker = ""
-        self.wkn = ""
-        self.basic_index = ""
-        self.name = ""
-        self.gattung = ""
-        self.ter = 0.0  # annual total expense ratio
-        self.waehrung = "" # EUR, USD, etc.
-        self.flag_acc = False
-        self.beschreibung = ""
-        self.toplaender = ""
-        self.topfirmen = ""
-        self.topsektoren = ""
-        self.anteil_usa = 0  # Anteil von US-Firmen
-        #self.history:DataFrame = None  # Enthält die Spalten (Series) Close, Dividends,
-                                       # SalesEUR, PurchasesEUR DIESES Wertpapiers
-                                       # Wenn Währung != EUR, zusätzlich die Spalten CloseEUR, DividendsEUR
-                                       # Access: closeSeries = history["Close"]
-        self.period = Period.unknown
-        self.interval = Interval.unknown
-        self.closePrices: Series = None
-        self.closePricesEUR: Series = None
-        self.dividendsEUR:Series = None # Dividenden in EUR, die im Lauf von <period> ausgeschüttet wurden.
-        #self.dividendsEUR:list = None # Dividenden in EUR, die im Lauf von history_period ausgeschüttet wurden.
-        self.dividend_period = 0.0 # Summe der Dividenden PRO STÜCK, die während history_period ausgeschüttet wurden
-        self.dividend_yield = 0.0 # Dividenden-Rendite
-        # self.dividend_vj = 0  # Die Summe der Dividenden, die für diese Depotposition im Vorjahr ausbezahlt wurde
-        self.dividend_paid_period = 0  # Die Summe der Dividenden, die für diese Depotposition in der eingestellten
-                                       # Periode ausbezahlt wurde
-        self.dividend_paid_lfd_jahr = 0 # Summe der Dividendenzahlungen, die für diese Depotposition im lfd. Jahr
-                                        # ausbezahlt wurden
-        self.stueck = 0 # Restbestand (Käufe und Verkäufe saldiert)
-        self.einstandswert_restbestand = 0 # Einstandswert des (Rest-)Bestandes, ermittelt nach der Formel:
-                                      # Stückzahl * durchschnittlicher Stück-Kaufpreis
-        self.preisprostueck = 0.0 # durchschnittl. Preis pro Stück nach der Formel: Gesamtkaufpreis / Stück
-        self.maxKaufpreis = 0.0 # Max. Kaufpreis / Stück
-        self.minKaufpreis = 0.0 # Min. Kaufpreis / Stück
-        self.erster_kauf = "" # DAtum des ersten Kaufs
-        self.letzter_kauf = "" # Datum des letzten Kaufs
-        self.allDeltas:List[XDelta] = None # enthält ALLE Käufe/Verkäufe dieses Wertpapiers, unabhängig von der
-                                            # eingestellten Periode
-        self.kaeufe:list = None # enthält alle Käufe (in EUR) dieses Wertpapiers in der eingestellten period.
-        self.verkaeufe: list = None  # enthält alle Verkäufe (in EUR) dieses Wertpapiers in der eingestellten period.
-        self.gesamtwert_aktuell = 0 # Stück * kurs_aktuell
-        self.anteil_an_summe_gesamtwerte = 0  # wie hoch der Anteil dieser Depotposition an der Gesamtsumme der
-                                              # im IMON befindlichen Positionen ist (in Prozent)
-        self.kurs_aktuell = 0.0
-        self.delta_proz = 0.0 #prozentualer Unterschied zwischen preisprostueck und kurs_aktuell
-        self.fastInfo:FastInfo = None # fast_info aus yfinance.Ticker
-        self.delta_kurs_percent = 0.0 # Kursentwicklung seit letztem Close in Prozent
-        self.depot_id = ""
-        self.bank = ""
-        self.depot_nr = ""
-        self.depot_vrrkto = ""
-        if valuedict:
-            self.setFromDict( valuedict )
+class XMatch(XBase):
+    def __init__(self, wkn, isin, ticker, name ):
+        XBase.__init__(self)
+        self.wkn = wkn
+        self.isin = isin
+        self.ticker = ticker
+        self.name = name
 
 class XDateValueItem( XBase ):
     def __init__( self, dateIso:str, value:Any ):
@@ -110,7 +57,7 @@ class XDepotPosition( XBase ):
         self.name = ""
         self.gattung = ""
         self.ter = 0.0  # annual total expense ratio
-        self.waehrung = "" # EUR, USD, etc.
+        self.waehrung = "" # EUR, USD, etc. => immer die Original-Währung, außer: GBp wird GBP
         self.flag_acc = False
         self.beschreibung = ""
         # self.toplaender = "" # deprecated
@@ -118,6 +65,7 @@ class XDepotPosition( XBase ):
         # self.topsektoren = "" # deprecated
         self.allokationen:List[XAllocation] = None # neu: Liste der Allokationen (Länder, Sektoren, Firmen)
         self.anteil_usa = 0  # Anteil von US-Firmen
+        self.letzte_aktualisierung = "" # Datum, wann die letzte Detail-Aktualisierung erfolgt ist.
         self.period = Period.unknown
         self.interval = Interval.unknown
         self.tradingDaysPeriod:pandas.DatetimeIndex = None # trading days in der eingestellten period, sortiert ASC
@@ -214,6 +162,7 @@ class XDetail(XBase):
         self.toplaender = ""
         self.topfirmen = ""
         self.topsektoren = ""
+        self.letzte_aktualisierung = ""
         self.bank = ""
         self.depot_nr = ""
         self.depot_vrrkto = ""
