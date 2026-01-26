@@ -1109,10 +1109,10 @@ class IntDisplay( IntEdit ):
         IntEdit.__init__( self, parent, showNegativNumbersRed, isReadOnly=True )
         intval = QIntValidator()
         self.setValidator( intval )
-        font = QFont( "Times New Roman", 12, QFont.Bold )
+        font = QFont( "Times New Roman", 12, QFont.Weight.Bold )
         self.setFont( font )
         # self.setStyleSheet( "color: red;" )
-        self.setAlignment( Qt.AlignRight )
+        self.setAlignment( Qt.AlignmentFlag.AlignRight )
 # class IntDisplay( BaseEdit ):
 #     def __init__( self, parent=None ):
 #         BaseEdit.__init__( self, parent )
@@ -1395,11 +1395,11 @@ class VLine(QFrame):
 
 class FontTimesBold12( QFont ):
     def __init__( self ):
-        QFont.__init__( self, "Times New Roman", 12, weight=QFont.Bold )
+        QFont.__init__( self, "Times New Roman", 12, weight=QFont.Weight.Bold )
 
 class FontArialBold12( QFont ):
     def __init__( self ):
-        QFont.__init__( self, "Arial", 12, weight=QFont.Bold )
+        QFont.__init__( self, "Arial", 12, weight=QFont.Weight.Bold )
 
 
 class BaseBoldEdit( BaseEdit ):
@@ -1420,7 +1420,7 @@ class LabelTimes12( BaseLabel ):
 class LabelTimesBold12( BaseLabel ):
     def __init__( self, text:str="", parent=None ):
         BaseLabel.__init__( self, text, parent )
-        self.setFont( QFont( "Times New Roman", 12, weight=QFont.Bold ) )
+        self.setFont( QFont( "Times New Roman", 12, weight=QFont.Weight.Bold ) )
         if text:
             self.setText( text )
 
@@ -1433,14 +1433,14 @@ class LabelArialBold12( BaseLabel ):
     def __init__( self, text:str="", background:str=None, parent=None ):
         # background in der Form "solid white"
         BaseLabel.__init__( self, text. parent )
-        self.setFont( QFont( "Arial", 12, weight=QFont.Bold ) )
+        self.setFont( QFont( "Arial", 12, weight=QFont.Weight.Bold ) )
         if background:
             self.setBackground( background )
 
 class FatLabel( BaseLabel ):
     def __init__( self, text:str="", parent=None ):
         BaseLabel.__init__( self, text, parent )
-        self._font = QFont( "Arial", 12, weight=QFont.Bold )
+        self._font = QFont( "Arial", 12, weight=QFont.Weight.Bold )
         self.setFont( self._font )
 
 class AttributeDialog( QDialog ):

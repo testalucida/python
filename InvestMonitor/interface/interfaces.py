@@ -6,6 +6,7 @@ from pandas import DataFrame, Series
 from yfinance.scrapers.quote import FastInfo
 
 import datehelper
+from base.basetablemodel import SumTableModel
 from base.interfaces import XBase
 from imon.enums import Period, Interval
 
@@ -45,6 +46,33 @@ class XAllocation(XBase):
         self.prozent = 0.0  # Anteil dieser Allokation an wkn
         if valuedict:
             self.setFromDict( valuedict )
+
+class XAllocationAmount(XBase):
+    """
+    Daten für den Überblick nach Depot-Allokationen nach Ländern, Sektoren, Firmen.
+    Es gibt also z.B. genau 1 XAllocationAmount-Objekt für das Land UK,
+    dessen .wert entspricht der Summe aller prozentualen Werte derjenigen
+    Depot-Positionen, die in UK investiert sind.
+    Beispiel: Wenn der Wert einer solchen deppos 10000 Euro ist und die UK-Allokation mit
+    10% ausgewiesen ist, dann geht der Wert dieser deppos mit
+    1000 Euro in das UK-XAllocationAmount-Objekt ein.
+    """
+    def __init__( self ):
+        XBase.__init__( self )
+        self.name = "" # z.B. "Japan", "Technology", "Sony"
+        self.wert = 0 # mit welchem Betrag in EUR das Depot in dieses Land/Sektor/Firma investiert ist
+        self.prozent = 0.0 # Prozentsatz, der sich errechnet zu Wert dieser Allokation / Gesamt-Depotwert
+
+class XAllocationViewModel( XBase ):
+    """
+    Ein Model, das die statistischen Daten für die AllocationView-Anzeige enthält.
+    """
+    def __init__( self ):
+        XBase.__init__( self )
+        self.depot_gesamtwert = 0
+        self.stmLaender:SumTableModel = None
+        self.stmSektoren:SumTableModel = None
+        self.stmFirmen:SumTableModel = None
 
 class XDepotPosition( XBase ):
     def __init__( self, valuedict:Dict=None ):

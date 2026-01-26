@@ -241,6 +241,8 @@ class BaseTableView( QTableView ):
         self.btvDoubleClicked.emit( index )
 
     def getPreferredHeight( self ) -> int:
+        if not self.model():
+            return 50
         rowcount = self.model().rowCount()
         h = self.horizontalHeader().height()
         #h = 0
@@ -249,6 +251,8 @@ class BaseTableView( QTableView ):
         return h + 25
 
     def getPreferredWidth( self ) -> int:
+        if not self.model():
+            return 100
         colcount = self.model().columnCount()
         w = 0
         for col in range( 0, colcount ):

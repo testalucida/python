@@ -196,6 +196,7 @@ class IMonMenuBar( QMenuBar ):
     show_dividends_period = Signal()
     show_dividends_curr_year = Signal()
     show_currencies_history = Signal()
+    show_allocation_view = Signal()
 
     def __init__(self):
         QMenuBar.__init__( self )
@@ -225,8 +226,12 @@ class IMonMenuBar( QMenuBar ):
         self._actionShowOrders = self._menuExtras.addAction( "Summen je Wertpapiergattung anzeigen..." )
         self._actionShowOrders.triggered.connect( self.show_sum_categories.emit )
         self._menuExtras.addSeparator()
+        self._actionShowAllocations = self._menuExtras.addAction("Übersicht der Allokationen nach Typ...")
+        self._actionShowAllocations.triggered.connect(self.show_allocation_view.emit)
+        self._menuExtras.addSeparator()
         self._actionShowCurrenciesHistory = self._menuExtras.addAction( "Währungsverläufe anzeigen..." )
         self._actionShowCurrenciesHistory.triggered.connect( self.show_currencies_history.emit )
+
 
         self.addMenu( self._menuExtras )
         #---
@@ -243,6 +248,7 @@ class MainWindow( QMainWindow ):
     show_dividends_period = Signal()
     show_dividends_curr_year = Signal()
     show_currencies_history = Signal()
+    show_allocation_view = Signal()
 
     def __init__( self ):
         QMainWindow.__init__( self )
@@ -254,6 +260,7 @@ class MainWindow( QMainWindow ):
         self._menuBar.show_dividends_period.connect( self.show_dividends_period.emit )
         self._menuBar.show_dividends_curr_year.connect( self.show_dividends_curr_year.emit )
         self._menuBar.show_currencies_history.connect(self.show_currencies_history.emit)
+        self._menuBar.show_allocation_view.connect(self.show_allocation_view.emit)
         self.setMenuBar( self._menuBar )
         self._toolBar = IMonToolBar()
         self.addToolBar( self._toolBar )

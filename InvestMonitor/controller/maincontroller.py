@@ -16,12 +16,13 @@ from base.messagebox import InfoBox, ErrorBox, QuestionBox
 from controller.currencyhistorycontroller import CurrencyHistoryController
 from controller.infopanelcontroller import InfoPanelController
 from generictable_stuff.okcanceldialog import OkDialog, OkCancelDialog
+from gui.allocationview import AllocationView
 from gui.currenciespanel import CurrenciesPanel
 from gui.infopanel import InfoPanel
 from gui.mainwindow import MainWindow
 from imon.definitions import DEFAULT_PERIOD, DEFAULT_INTERVAL, DEFAULT_INFOPANEL_ORDER
 from imon.enums import InfoPanelOrder, Period, Interval, SortDirection
-from interface.interfaces import XDepotPosition, XDelta, XMatch
+from interface.interfaces import XDepotPosition, XDelta, XMatch, XAllocationViewModel
 from logic.imonlogic import ImonLogic
 #from logic.investmonitorlogic import InvestMonitorLogic
 from utfsymbols import symDELTA, symAVG
@@ -161,6 +162,7 @@ class MainController( QObject ):
         self._currHistCtrl:CurrencyHistoryController = None
         self._dlgGattungen:OkCancelDialog = None
         self._dlgMatches:OkCancelDialog = None
+        self._dlgAllocations:OkCancelDialog = None
 
     def createMainWindow( self ) -> MainWindow:
         self._mainWin = MainWindow()
@@ -177,6 +179,7 @@ class MainController( QObject ):
         self._mainWin.show_dividends_curr_year.connect( lambda: self.onShowDividends( Period.currentYear ) )
         self._mainWin.show_currencies_history.connect(self.onShowCurrenciesHistory)
         self._mainWin.show_sum_categories.connect(self.onShowSumCategories)
+        self._mainWin.show_allocation_view.connect(self.onShowAllocations)
         try:
             poslist = self._logic.getDepotPositions( DEFAULT_PERIOD, DEFAULT_INTERVAL, MainController.IS_TEST )
             for xdepotpos in poslist:
@@ -368,6 +371,14 @@ class MainController( QObject ):
         self._dlgGattungen.resize( self._dlgGattungen.sizeHint() )
         self._dlgGattungen.show()
 
+    def onShowAllocations( self ):
+        allocViewModel:XAllocationViewModel = ImonLogic.getAllocationViewModel()
+        v = AllocationView()
+        v.setAllocationViewModel(allocViewModel)
+        self._dlgAllocations = OkCancelDialog( title="Allokationen nach Typen" )
+        self._dlgAllocations.addWidget( v, 0 )
+        self._dlgAllocations.resize( self._dlgAllocations.sizeHint() )
+        self._dlgAllocations.show()
 
         ###################  Wenn das MainWindow aufgemacht wurde, ermitteln wir in einem separaten Thread
         ###################  die Summe der im laufenden Jahr gezahlten Dividenden  #######################
@@ -478,7 +489,7 @@ class MainController( QObject ):
         self._mainWin.clear()
         for ip in infopanels:
             dp = ip.getModel()
-            print(dp.wkn, ": ", dp.anteil_usa, " -- sortfield: ", dp.__dict__["__sortfield__"])
+            #print(dp.wkn, ": ", dp.anteil_usa, " -- sortfield: ", dp.__dict__["__sortfield__"])
             self._mainWin.addInfoPanel( ip )
 
     def _setSortKeyAndDirection( self, x:XDepotPosition, order:InfoPanelOrder ) -> str:

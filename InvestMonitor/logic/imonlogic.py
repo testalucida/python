@@ -18,7 +18,7 @@ from data.db.investmonitordata import InvestMonitorData
 from data.finance.tickerhistory import TickerHistory, PriceInfo
 from imon.enums import Period, Interval
 from interface.interfaces import XDepotPosition, XDelta, XDateValueItem, XDetail, XDividend, XWpGattung, XAllocation, \
-    XMatch
+    XMatch, XAllocationViewModel, XAllocationAmount
 from logic.exchangerates import ExchangeRates
 
 
@@ -45,7 +45,7 @@ class ImonLogic:
         self._db = InvestMonitorData()
         self._exchangeRates = ExchangeRates( self._db )
         self._tickerHist = TickerHistory()  # Wrapper um die yfinance-Schnittstelle
-        self._threadpool = QThreadPool()
+        #self._threadpool = QThreadPool()
 
     def _ensureDataLoaded(self):
         if not ImonLogic.all_deppos:
@@ -80,6 +80,91 @@ class ImonLogic:
                 anteil = land.prozent
                 break
         return round(anteil)
+
+    @staticmethod
+    def getDepotGesamtWert() -> int:
+        gesamtWert = 0
+        for deppos in ImonLogic.all_deppos:
+            gesamtWert += deppos.gesamtwert_aktuell
+        return gesamtWert
+
+    @staticmethod
+    def getAllocationViewModel() -> XAllocationViewModel:
+        """
+        Ermittelt die Allokationen im Depot in einer Darstellung wie folgt:
+             Summe Investitionen:  2.400.500 Euro.
+             Verteilung nach Ländern:
+                USA         200.000 Euro  8%
+                UK          150.000 Euro  6%
+                Frankreich  100.000 Euro  5%
+                ....
+            Verteilung nach Sektoren:
+                Technologie 400.000 Euro  15%
+                Finanzen    300.000 Euro  12%
+                ...
+            Verteilung nach Firmen:
+                Siemens       50.000 Euro  2%
+                ...
+        Jede Verteilung entspricht einem SumTableModel, es werden also 3 SumTableModel erzeugt.
+        Jedes SumTableModel besteht aus n XAllocationAmount - Objekten.
+        @return: ein XAllocationViewModel, das den Gesamtwert und die 3 SumTableModel enthält.
+        """
+        def checkAllocation(alloc_:XAllocation):
+            """
+            prüft, ob alloc_ schon in einer der 3 Listen laender, sektoren, firmen vorhanden ist; wenn
+            nein, wird eine XAllocationAmount angelegt und der passenden Liste hinzugefügt
+            """
+            if alloc_.typ == "Land":
+                liste = laender
+            elif alloc_.typ == "Sektor":
+                liste = sektoren
+            else:
+                liste = firmen
+
+            checkAlloc = [a for a in liste if a.name == alloc_.name]
+            if len(checkAlloc) < 1:
+                allocAmount = XAllocationAmount()
+                liste.append(allocAmount)
+                allocAmount.name = alloc_.name
+            else:
+                # todo
+                allocAmount = checkAlloc[0]
+            print( deppos.wkn, "=?", alloc_.wkn, " typ:", alloc_.typ, " name:", alloc_.name, " gesamtwert: ", deppos.gesamtwert_aktuell,
+                   "=", alloc_.prozent, "%")
+            if alloc_.prozent:
+                allocAmount.wert += ((deppos.gesamtwert_aktuell * alloc_.prozent)/100)
+
+        def computeAllocProzent(*allocListen):
+            for allocListe in allocListen:
+                for alloc_ in allocListe:
+                    #print("computeAllocProzent(): wert=", alloc_.wert, "model.depot_gesamtwert=", model.depot_gesamtwert)
+                    alloc_.prozent = alloc_.wert * 100 / model.depot_gesamtwert
+
+        def createSumTableModel(allocAmountList:List[XAllocationAmount], typ:str) -> SumTableModel:
+            allocAmountList = [allocAmount for allocAmount in allocAmountList if allocAmount.prozent >= 0.01]
+            allocAmountList = sorted(allocAmountList, key=lambda allocAmount:allocAmount.wert, reverse=True)
+            stm = SumTableModel(allocAmountList, jahr=None, colsToSum=("wert", "prozent"))
+            stm.setKeyHeaderMappings2(("name", "wert", "prozent"), (typ, "Invest (Euro)", "Prozent"))
+            return stm
+
+        ########### End subfunctions
+
+        model = XAllocationViewModel()
+        model.depot_gesamtwert = ImonLogic.getDepotGesamtWert()
+
+        laender:List[XAllocationAmount] = list()
+        sektoren: List[XAllocationAmount] = list()
+        firmen: List[XAllocationAmount] = list()
+
+        for deppos in ImonLogic.all_deppos:
+            for alloc in deppos.allokationen:
+                checkAllocation(alloc)
+
+        computeAllocProzent( laender, sektoren, firmen )
+        model.stmLaender = createSumTableModel(laender, "Land")
+        model.stmSektoren = createSumTableModel(sektoren, "Sektor")
+        model.stmFirmen = createSumTableModel(firmen, "Firma")
+        return model
 
     def saveAllocations( self, deppos:XDepotPosition, detail:XDetail ):
         """
@@ -125,6 +210,7 @@ class ImonLogic:
         ...in XAllocation-Objekte um.
         Achtung: die Prozent-Angabe kann auch fehlen - dann wird ein ValueError geworfen.
         Achtung: der letzte Zeilentrenner auch fehlen!
+        @param typ: "Land", "Sektor" oder "Firma".
         @param alloctext: Allokationen, wie im Textfeld vom User erfasst.
                           Die Allokationen müssen durch "\n" getrennt sein.
         @return: Eine Liste mit XAllocation-Objekten; für jede Zeile von <alloctext> ein XAllocation-Objekt.
@@ -1049,6 +1135,21 @@ class ImonLogic:
 
 
 ###################    T E S T   ##########################################################
+def getAllocations():
+    pass
+
+def testGetAllocationViewModel() -> XAllocationViewModel:
+    wkn = "911950"
+    logic = ImonLogic()
+    deppos = XDepotPosition()
+    deppos.wkn = wkn
+    deppos.allokationen = logic._db.getAllocations(wkn)
+    deppos.gesamtwert_aktuell = 10000
+    ImonLogic.all_deppos = [deppos,]
+    allocViewModel = logic.getAllocationViewModel()
+    print(allocViewModel)
+    return allocViewModel
+
 def testGetAllocations():
     logic = ImonLogic()
     alloctext = "Japan 90.1%" + "\n" + "Grönland 9,2%" + "\n" + " "
@@ -1097,4 +1198,5 @@ if __name__ == "__main__":
     # print(fridays)
     #testDatetime()
     # test()
-    testGetAllocations()
+    #testGetAllocations()
+    testGetAllocationViewModel()
