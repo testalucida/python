@@ -576,6 +576,7 @@ class MainController( QObject ):
             elif x.gattung == "ETF": sortfield = 2
             elif x.gattung == "Fonds": sortfield = 3
             elif x.gattung == "Geldmarkt": sortfield = 4
+            elif x.gattung == "ETC": sortfield = 5
             else: sortfield = 9
             sortfieldInfo = x.gattung
             self._sortDirection = SortDirection.ASC

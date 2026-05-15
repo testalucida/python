@@ -78,7 +78,8 @@ class InfoPanelController( QObject ):
             VisibleAttribute( "depot_vrrkto", BaseEdit, "Vrr.-Konto: ", editable=False, nextRow=True )
         )
         detailsUI.addVisibleAttributes( vislist )
-        self._detailDlg = DynamicAttributeDialog( detailsUI, title="Details zur Depotposition '%s'" % self._x.name,
+        self._detailDlg = DynamicAttributeDialog( detailsUI,
+                                                  title="Details zur Depotposition '%s:' '%s'" % (self._x.wkn, self._x.name),
                                                   okButton=True, applyButton=False, cancelButton=True )
         self._detailDlg.setCallbacks( beforeAcceptCallback=self.onSaveAllocations,
                                       applyCallback=None,

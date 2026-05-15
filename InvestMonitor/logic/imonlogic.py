@@ -18,7 +18,7 @@ from data.db.investmonitordata import InvestMonitorData
 from data.finance.tickerhistory import TickerHistory, PriceInfo
 from imon.enums import Period, Interval
 from interface.interfaces import XDepotPosition, XDelta, XDateValueItem, XDetail, XDividend, XWpGattung, XAllocation, \
-    XMatch, XAllocationViewModel, XAllocationAmount
+    XMatch, XAllocationViewModel, XAllocationAmount, XEtf
 from logic.exchangerates import ExchangeRates
 
 
@@ -64,6 +64,9 @@ class ImonLogic:
             ImonLogic.tradingDaysASC = alltickershistories.index
             ImonLogic.tradingDaysIsoASC = [str(dtix)[:10] for dtix in ImonLogic.tradingDaysASC]
             self._provideDepposListWithPeriodIndependentData( alltickershistories )
+            # todo: aktuellen Gesamtwert der beobachteten Depot-Positionen ermitteln und in die DB schreiben.
+            gesamtwert = self.getDepotGesamtWert()
+            # ...
             end = time.time()
             print("ImonLogic._ensureDataLoaded(): ", end-start, " sec elapsed time")
 
@@ -700,7 +703,9 @@ class ImonLogic:
         if deppos.kurs_aktuell and previous_close and previous_close > 0:
             deltaPrice = deppos.kurs_aktuell - previous_close
             # Verhältnis des akt. Kurses zum Schlusskurs des Vortages:
-            deppos.delta_kurs_percent = round( deltaPrice / previous_close * 100, 2 )
+            deppos.delta_kurs_percent = round( (deltaPrice * 100) / previous_close, 2 )
+            # print(deppos.wkn, ": previous_close=", previous_close, ", kurs_aktuell=", deppos.kurs_aktuell,
+            #       ", deltaPrice=", deltaPrice, ", delta_kurs_percent=", deppos.delta_kurs_percent )
         else:
             deppos.delta_kurs_percent = 0
 
@@ -977,7 +982,7 @@ class ImonLogic:
             return 0
         deltaPrice = last_price - previous_close
         # Verhältnis des akt. Kurses zum Schlusskurs des Vortages:
-        delta_kurs_percent = round( deltaPrice / previous_close * 100, 2 )
+        delta_kurs_percent = round( (deltaPrice * 100) / previous_close, 2 )
         return delta_kurs_percent
 
     def getSimulatedDividendYield( self, deppos:XDepotPosition ) -> float: #, kurs_aktuell: float, dividends: Series ) -> float:
@@ -1050,6 +1055,18 @@ class ImonLogic:
         x.depot_nr = deppos.depot_nr
         x.depot_vrrkto = deppos.depot_vrrkto
         return x
+
+    def getEtfModelByAllocName( self, alloc_name:str ) -> SumTableModel:
+        """
+        Liefert ein SumTableModel bestehend aus XEtf-Objekten.
+        Ermittelt werden diejenigen Etf, in deren Allokationen der gewünschte <alloc_name> gefunden wird.
+        Dabei ist unerheblich, ob <alloc_name> in einer Land-, Sektor- oder Firmen-Allokation gefunden wird.
+        Gesucht wird mit Wildcard am Ende von <alloc_name>.
+        """
+        etflist:List[XEtf] = self._db.getFondsByAllocationName(alloc_name)
+        # todo: ETF mit best. Allokationen
+        # for etf in etflist:
+        #     etf.
 
     def insertOrderAndUpdateDepotData( self, delta:XDelta, deppos:XDepotPosition ):
         """

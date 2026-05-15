@@ -47,6 +47,22 @@ class XAllocation(XBase):
         if valuedict:
             self.setFromDict( valuedict )
 
+class XEtf(XBase):
+    def __init__( self, valuedict: Dict = None ):
+        XBase.__init__( self )
+        self.id = 0
+        self.wkn = ""
+        self.alloc_typ = "" # Land, Sektor, Firma
+        self.alloc_name = "" # z.B. "Japan", "Technology", "Sony"
+        self.anteil_alloc_wkn = 0.0  # Anteil dieser Allokation an wkn
+        self.etf_name = "" # z.B. Amundi Index MSCI Europe SRI PAB UCITS ETF DR (C)
+        self.etf_gattung = "" # ETF, Fonds, Aktie, Anleihe, Geldmarkt
+        self.basic_index = "" # z.B. MSCI Europe SRI Filtered PAB
+        self.waehrung = ""
+        self.letzte_aktualisierung = ""
+        if valuedict:
+            self.setFromDict( valuedict )
+
 class XAllocationAmount(XBase):
     """
     Daten für den Überblick nach Depot-Allokationen nach Ländern, Sektoren, Firmen.

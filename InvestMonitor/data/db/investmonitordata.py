@@ -1,7 +1,7 @@
 from typing import List, Dict, Tuple
 
 from base.databasecommon2 import DatabaseCommon
-from interface.interfaces import XDepotPosition, XDelta, XWpGattung, XAllocation
+from interface.interfaces import XDepotPosition, XDelta, XWpGattung, XAllocation, XEtf
 from imon.definitions import DATABASE
 
 
@@ -161,6 +161,20 @@ class InvestMonitorData( DatabaseCommon ):
         alloclist = self.readAllGetObjectList( sql, XAllocation )
         return alloclist
 
+    def getFondsByAllocationName( self, name:str ) -> List[XEtf]:
+        """
+        Liefert eine Liste der Allokationen vom Typ <typ> und dem Namen <name>
+        """
+        name = name + "%"
+        sql = ("select a.id, a.wkn, a.typ as alloc_typ, a.name as alloc_name, a.prozent as anteil_alloc_wkn,  "
+               "dp.name as etf_name, dp.gattung as etf_gattung, dp.basic_index, dp.waehrung,"
+               "dp.letzte_aktualisierung "
+               "from allokation a "
+               "INNER join depotposition dp on a.wkn = dp.wkn "
+               "where a.name like '%s' " % name)
+        etflist = self.readAllGetObjectList( sql, XEtf )
+        return etflist
+
     def insertAllocation( self, wkn:str, typ:str, name:str, prozent:float ):
         if prozent == 0:
             sProz = "NULL"
@@ -182,6 +196,11 @@ class InvestMonitorData( DatabaseCommon ):
                "set letzte_aktualisierung = '%s' "
                "where wkn = '%s' " % (datum, wkn))
         self.write(sql)
+
+def test5():
+    data = InvestMonitorData()
+    etflist = data.getFondsByAllocationName("USA")
+    print( etflist )
 
 def test3():
     data = InvestMonitorData()
@@ -208,4 +227,4 @@ def test():
     print( deltalist )
 
 if __name__ == "__main__":
-    test3()
+    test5()

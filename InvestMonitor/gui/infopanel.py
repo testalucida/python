@@ -191,7 +191,8 @@ class InfoPanel( QFrame ):
         self._borderstyle = None
         self._bordercolorAnleihe = "green"
         self._bordercolorFonds = "blue"
-        self._bordercolorGeldmarkt = "yellow"
+        self._bordercolorGeldmarkt = "black"
+        self._bordercolorEtc = "yellow"
         self._borderthicknessNormal = "2px"
         self._borderthicknessSelected = "6px"
         #self._borderstyle = "InfoPanel {border: 2px solid darkblue; }"
@@ -566,6 +567,8 @@ class InfoPanel( QFrame ):
             self._setBorderstyle( self._bordercolorAnleihe )
         elif x.gattung == "Geldmarkt":
             self._setBorderstyle( self._bordercolorGeldmarkt )
+        elif x.gattung == "ETC":
+            self._setBorderstyle(self._bordercolorEtc)
         else:
             self._setBorderstyle( self._bordercolorFonds )
 

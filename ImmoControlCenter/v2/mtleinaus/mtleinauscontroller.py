@@ -310,7 +310,8 @@ class MtlEinAusController( IccController ):
         try:
             # Datenbank-Insert
             x:XMtlZahlung = model.getElement( row ) # das OBjekt, in das die neue Monatszahlung eingetragen werden soll
-            self._newEinAus = self.getLogic().addMonatsZahlung( x, selectedYear, selectedMonthIdx, value, bemerkung )
+            logic = self.getLogic()
+            self._newEinAus = logic.addMonatsZahlung( x, selectedYear, selectedMonthIdx, value, bemerkung )
             # EinAusWriteDispatcher informieren, damit die tableview "Alle Zahlungen" und die Summenfelder
             # aktualisiert werden
             EinAusWriteDispatcher.inst().einaus_inserted( self._newEinAus )
