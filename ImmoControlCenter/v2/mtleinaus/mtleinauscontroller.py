@@ -746,7 +746,7 @@ class AbschlagController( MtlEinAusController ):
         smallW = 85
         vislist = (VisibleAttribute( "sab_id", IntEdit, "sab_id: ", widgetWidth=smallW, editable=False, nextRow=True ),
                    VisibleAttribute( "master_name", BaseComboBox, "Haus: ", nextRow=False,
-                                     comboValues=masternames, comboCallback=onMasterChangedCallback ),
+                                     comboValues=masternames, callback=onMasterChangedCallback ),
                    VisibleAttribute( "mobj_id", BaseComboBox, "Wohnung: ", widgetWidth=150, comboValues=mietobjekte ),
                    VisibleAttribute( "kreditor", BaseEdit, "Kreditor: ", editable=True, nextRow=True ),
                    VisibleAttribute( "vnr", BaseEdit, "Vertragsnummer o.ä.: ", editable=True, columnspan=4 ),

@@ -24,6 +24,8 @@ class XEinAus( XBase ):
         self.jahr = 0
         self.monat = ""
         self.betrag = 0.0
+        self.rg_nr = ""
+        self.rg_datum = ""
         self.ea_art = ""
         self.verteilt_auf:int = 1
         self.umlegbar = ""

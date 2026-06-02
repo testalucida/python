@@ -266,7 +266,7 @@ def test():
     xui = XEinAusUI( x )
     vislist = (
                 VisibleAttribute( "master_name", BaseComboBox, "Master: ",  nextRow=False,
-                                  comboValues=["ABC", "DEF"], comboCallback=onMasterChanged),
+                                  comboValues=["ABC", "DEF"], callback=onMasterChanged),
                 VisibleAttribute( "mobj_id", BaseComboBox, "Wohnung: ", comboValues=["abc1", "abc2"] ),
                 VisibleAttribute( "debi_kredi", BaseEdit, "Debi/Kredi: "),
                 VisibleAttribute( "betrag", FloatEdit, "Betrag: " )
