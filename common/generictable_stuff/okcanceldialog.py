@@ -2,6 +2,8 @@
 from PySide6.QtCore import Qt, Signal, QModelIndex
 from PySide6.QtWidgets import QDialog, QPushButton, QGridLayout, QApplication, QHBoxLayout, QLabel, QMessageBox, QWidget
 
+from base.baseqtderivates import BaseLabel
+
 
 class OkCancelDialog( QDialog ):
     def __init__( self, title=None, parent=None ):
@@ -115,9 +117,13 @@ class OkCancelDialog2( QDialog ):
     def setOkButtonText( self, text:str ):
         self._okButton.setText( text )
 
-    def addWidget( self, widget:QWidget, row:int ) -> None:
+    def addWidget( self, widget:QWidget, row:int, label:str="" ) -> None:
         if row > 2: raise Exception( "OkCancelDialog.addWidget() -- invalid row index: %d" % ( row ) )
-        self._layout.addWidget( widget, row, 0 )
+        col = 0
+        if label:
+            self._layout.addWidget(BaseLabel(label), row, col)
+            col += 1
+        self._layout.addWidget( widget, row, col )
         self._widgetsDic[row] = widget
 
     def getWidget( self, row:int ) -> QWidget:

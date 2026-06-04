@@ -7,8 +7,9 @@ from PySide6.QtWidgets import QDialog, QApplication
 import datehelper
 from base.baseqtderivates import BaseComboBox, BaseEdit, FloatEdit, IntEdit, BaseCheckBox, SmartDateEdit, MultiLineEdit, \
     EditableComboBox, ButtonIdent, SignedNumEdit
-from base.interfaces import VisibleAttribute
+from base.interfaces import VisibleAttribute, ButtonDefinition
 from base.messagebox import ErrorBox
+from generictable_stuff.okcanceldialog import OkCancelDialog2
 from v2.einaus.einauslogic import EinAusLogic
 from v2.einaus.einausview import EinAusTableView, EinAusTableViewFrame, XEinAusUI, EinAusDialog
 from v2.einaus.einauswritedispatcher import EinAusWriteDispatcher
@@ -84,8 +85,8 @@ class EinAusDialogController( QObject ):
         self._dlg = dlg
         return dlg
 
-    @staticmethod
-    def _createVisibleAttributeList( masterobjekte:List[str], mietobjekte:List[str], kreditoren:List[str],
+    #@staticmethod
+    def _createVisibleAttributeList( self, masterobjekte:List[str], mietobjekte:List[str], kreditoren:List[str],
                                      onMasterChangedCallback:Callable, onKreditorChangedCallback:Callable,
                                      onLeistungChangedCallback:Callable,
                                      onEinAusArtChangedCallback:Callable ) \
@@ -100,7 +101,13 @@ class EinAusDialogController( QObject ):
             VisibleAttribute( "leistung", EditableComboBox, "Art d. Leistung: ",
                               callback=onLeistungChangedCallback ),
             # VisibleAttribute( "betrag", FloatEdit, "Betrag: ", widgetWidth=smallW ),
-            VisibleAttribute( "betrag", SignedNumEdit, "Betrag: ", widgetWidth=smallW+20 ),
+            VisibleAttribute( "betrag", SignedNumEdit, "Betrag: ", widgetWidth=smallW+20,
+                              trailingButton=ButtonDefinition(
+                                  "...", callback=self.onEditRechnungDetails, tooltip="Rechnungsdaten erfassen / ändern",
+                                  ident="rg", maxW=30, maxH=30
+                              )),
+            # VisibleAttribute("rg_nr", BaseEdit, "Rg.-Nr.: ", widgetWidth=smallW, nextRow=False),
+            # VisibleAttribute("rg_datum", SmartDateEdit, "Rg.-Datum: ", widgetWidth=smallW),
             VisibleAttribute( "ea_art", BaseComboBox, "Art d. Zahlung: ", comboValues=EinAusArt.getEinAusDialogOptions(),
                               callback=onEinAusArtChangedCallback ),
             VisibleAttribute( "verteilt_auf", IntEdit, "vert. auf Jahre: ", widgetWidth=smallW ),
@@ -114,6 +121,22 @@ class EinAusDialogController( QObject ):
         )
         return vislist
 
+    def onEditRechnungDetails(self):
+        def onOk():
+            print("OK")
+            x.rg_nr = "0"
+            x.rg_datum = ""
+            dlg.close()
+        def onCancel():
+            print("Cancel")
+            dlg.close()
+        x = self._x
+        print(x.master_name, x.ea_id, x.mobj_id)
+        dlg = RechnungDetailDialog(x.rg_nr, x.rg_datum)
+        dlg.ok_pressed.connect(onOk)
+        dlg.cancel_pressed.connect(onCancel)
+        dlg.exec()
+        print("Dialog closed")
 
     def _resetDialog( self ):
         self._sneBetrag.setValue( 0.0 )
@@ -134,7 +157,7 @@ class EinAusDialogController( QObject ):
         self._x.verteilt_auf = VERTEILT_AUF_DEFAULT
         self._x.umlegbar = UMLEGBAR_DEFAULT
         dlg = self._createGui()
-        rc = dlg.exec_()
+        rc = dlg.exec()
         if rc == QDialog.DialogCode.Accepted:
             EinAusWriteDispatcher.inst().einaus_inserted( self._x )
 
@@ -274,6 +297,22 @@ class EinAusDialogController( QObject ):
             # self._cboKreditoren.setCurrentText( currentKreditor )
             # self._cboLeistungen.setCurrentText( currentLeistung )
 
+
+class RechnungDetailDialog(OkCancelDialog2):
+    def __init__(self, rg_nr:str, rg_datum:str):
+        OkCancelDialog2.__init__(self)
+        self.beRgNr = BaseEdit()
+        self.beRgNr.setValue(rg_nr)
+        self.sdeRgDatum = SmartDateEdit()
+        if rg_datum:
+            self.sdeRgDatum.setValue(rg_datum)
+        else:
+            currDate = datehelper.getCurrentDateIso()
+            self.sdeRgDatum.setValue(currDate)
+        self.addWidget(self.beRgNr, 0, "Rechnungsnummer: ")
+        self.addWidget(self.sdeRgDatum, 1, "Rechnungsdatum: ")
+        self.resize(self.sizeHint())
+        self.beRgNr.setFocus()
 
 # #####################   TEST   TEST   TEST   ##################
 

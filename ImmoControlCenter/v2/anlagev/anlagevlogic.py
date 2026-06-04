@@ -139,6 +139,9 @@ class AnlageVLogic:
             aufwJahr = aufw.jahr
             aufwBetrag = aufw.betrag
             aufwVerteiltAuf = aufw.verteilt_auf
+            if aufwJahr + aufwVerteiltAuf <= self._vj: #z.B. aufwJahr = 2021; aufwVerteiltAuf = 3 ==>
+                # darf nur in den Jahren 2021, 2022, 2023 berücksichtigt werden
+                continue
             aufwAnteilig = int(round(aufwBetrag/aufwVerteiltAuf, 0))
             diff = self._vj - aufwJahr
             if diff < 0:
