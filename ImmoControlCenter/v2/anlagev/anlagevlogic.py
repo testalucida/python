@@ -361,15 +361,15 @@ class AnlageVLogic:
         #    - die aus einem Jahr > Vj stammen, die erst nächstes Vj berücksichtigt werden dürfen
         #    - die aus einem ganz alten Jahr stammen, die nicht mehr berücksichtigt werden dürfen
         if vertAufwaende and len( vertAufwaende ) > 0:
-            ealist = [ea for ea in vertAufwaende if ea.jahr <= self._vj <= ea.jahr + 4]
+            ealist = [ea for ea in vertAufwaende if ea.jahr <= self._vj <= ea.jahr + (ea.verteilt_auf-1)]
             if ealist and len( ealist ) > 0:
                 # den anteiligen Jahresbetrag ausrechnen und XEinAus-Objekte vergewaltigen:
                 for ea in ealist:
                     ea.__dict__["anteilig"] = int( round( ea.betrag / ea.verteilt_auf, 0 ) )
                 stm = SumTableModel( ealist, self._vj, ["betrag", "anteilig"] )
                 stm.setKeyHeaderMappings2(
-                    ("mobj_id", "debi_kredi", "leistung", "jahr", "verteilt_auf", "buchungsdatum", "buchungstext", "betrag", "anteilig"),
-                    ("Wohnung", "Kreditor", "Leistung", "Jahr", "vert.\nauf", "Datum", "Buchungstext", "Betrag", "anteilig") )
+                    ("master_name", "jahr", "betrag", "verteilt_auf", "anteilig"),
+                    ("Haus", "Jahr", "Betrag", "vert.auf J.", "anteilig") )
                 return stm
         return None
 
