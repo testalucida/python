@@ -87,6 +87,22 @@ class InvestMonitorData( DatabaseCommon ):
         gattunglist = self.readAllGetObjectList( sql, XWpGattung )
         return gattunglist
 
+    def getLaender( self ) -> List[str]:
+        sql = ("select distinct  name from allokation "
+               "where typ = 'Land' "
+               "order by name")
+        dictlist = self.readAllGetDict(sql)
+        llist = [d["name"] for d in dictlist]
+        return llist
+
+    def getSektoren( self ) -> List[str]:
+        sql = ("select distinct  name from allokation "
+               "where typ = 'Sektor' "
+               "order by name")
+        dictlist = self.readAllGetDict(sql)
+        slist = [d["name"] for d in dictlist]
+        return slist
+
     def insertDelta( self, delta:XDelta ):
         """
         Der Insert ist entweder ein Kauf oder ein Verkauf.
@@ -175,6 +191,17 @@ class InvestMonitorData( DatabaseCommon ):
         etflist = self.readAllGetObjectList( sql, XEtf )
         return etflist
 
+    def getAllocatedCountries( self ) -> List[str]:
+        """
+        Liefert eine Liste der Länder, in denen investiert wurde
+        """
+        sql = ("select distinct name "
+               "from allokation where typ = 'Land'"
+               "order by name")
+        laenderdict = self.readAllGetDict(sql)
+        laenderlist = [d["name"] for d in laenderdict]
+        return laenderlist
+
     def insertAllocation( self, wkn:str, typ:str, name:str, prozent:float ):
         if prozent == 0:
             sProz = "NULL"
@@ -196,6 +223,14 @@ class InvestMonitorData( DatabaseCommon ):
                "set letzte_aktualisierung = '%s' "
                "where wkn = '%s' " % (datum, wkn))
         self.write(sql)
+
+######################################################################################
+######################################################################################
+def test6():
+    data = InvestMonitorData()
+    ll = data.getAllocatedCountries()
+    print(ll)
+
 
 def test5():
     data = InvestMonitorData()
@@ -227,4 +262,4 @@ def test():
     print( deltalist )
 
 if __name__ == "__main__":
-    test5()
+    test6()

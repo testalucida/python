@@ -6,6 +6,8 @@ from base.baseqtderivates import BaseLabel
 
 
 class OkCancelDialog( QDialog ):
+    okclosed = Signal()
+    cancelclosed = Signal()
     def __init__( self, title=None, parent=None ):
         QDialog.__init__( self, parent )
         self.title = title
@@ -42,6 +44,7 @@ class OkCancelDialog( QDialog ):
             rc = self._beforeAcceptFnc()
         if rc:
             self.accept()
+            self.okclosed.emit()
 
     def onRejected( self ):
         rc = True
@@ -49,6 +52,7 @@ class OkCancelDialog( QDialog ):
             rc = self._cancellationFnc()
         if rc:
             self.reject()
+            self.cancelclosed.emit()
 
     def setOkButtonText( self, text:str ):
         self._okButton.setText( text )

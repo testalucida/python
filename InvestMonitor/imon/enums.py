@@ -99,6 +99,57 @@ class Interval( Enum ):
             l.append( Interval.__dict__[name].value )
         return l
 
+class FilterSpec( Enum ):
+    gattung = "gattung"
+    land = "land"
+    sektor = "sektor"
+    gattungEtc = "gattungetc"
+    deppos = "deppos"
+    unknown = "unk"
+
+class Land(Enum):
+    AUS = "Australien"
+    BRA = "Brasilien"
+    CHN = "China"
+    D = "Deutschland"
+    F = "Frankreich"
+    HK = "Hong Kong"
+    IND = "Indien"
+    I = "Italien"
+    JPN = "Japan"
+    CDN = "Kanada"
+    SGP = "Singapur"
+    E = "Spanien"
+    KOR = "Südkorea"
+    TWN = "Taiwan"
+    GB = "UK"
+    USA = "USA"
+    not_spec = "not specified"
+
+    @staticmethod
+    def getLaender() -> List[str]:
+        return sorted([land.value for land in Land])
+
+class Sektor(Enum):
+    energy = "Energie"
+    finance = "Finanzen"
+    health = "Gesundheit"
+    basmat = "Grund - u.Rohstoffe"
+    basfood = "Grundnahrungsmittel"
+    realest = "Immobilien"
+    industry = "Industrie"
+    commod = "Rohstoffe"
+    govbonds = "Staatsanleihen"
+    tech = "Technologie"
+    corpbonds = "Unternehmensanleihen"
+    utils = "Versorgungswirtschaft"
+    consumercycl = "Zyklische Konsumgüter"
+    not_spec = "not specified"
+
+
 def test():
     p = Period.oneYear
     print( p.value )
+
+if __name__ == "__main__":
+    print(Land.getLaender())

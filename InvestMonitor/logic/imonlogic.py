@@ -699,10 +699,19 @@ class ImonLogic:
 
     @staticmethod
     def _provideDeltaKursPercent(deppos:XDepotPosition):
-        previous_close = deppos.closePricesEUR[-1]
+        # previous_close ermitteln: das kann der vorletzte Eintrag in der Tabelle tradingDays sein
+        # (wenn "heute" ein Börsentag ist)
+        # oder aber der letzte, wenn "heute" ein Samstag, Sonn- oder Feiertag ist.
+        today = datehelper.getTodayAsIsoString()
+        lastTradingDay = ImonLogic._getLastTradingDayIso()
+        if today == lastTradingDay:
+            idx = -2
+        else:
+            idx = -1
+        previous_close = deppos.closePricesEUR[idx]
         if deppos.kurs_aktuell and previous_close and previous_close > 0:
             deltaPrice = deppos.kurs_aktuell - previous_close
-            # Verhältnis des akt. Kurses zum Schlusskurs des Vortages:
+            # Verhältnis des akt. Kurses zum Schlusskurs des letzten abgeschlossenen Börsentages:
             deppos.delta_kurs_percent = round( (deltaPrice * 100) / previous_close, 2 )
             # print(deppos.wkn, ": previous_close=", previous_close, ", kurs_aktuell=", deppos.kurs_aktuell,
             #       ", deltaPrice=", deltaPrice, ", delta_kurs_percent=", deppos.delta_kurs_percent )

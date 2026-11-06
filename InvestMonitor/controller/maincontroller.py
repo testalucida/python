@@ -1,3 +1,4 @@
+import pickle
 import sys
 import traceback
 from functools import cmp_to_key
@@ -18,10 +19,11 @@ from controller.infopanelcontroller import InfoPanelController
 from generictable_stuff.okcanceldialog import OkDialog, OkCancelDialog
 from gui.allocationview import AllocationView
 from gui.currenciespanel import CurrenciesPanel
+from gui.filterstuff import FilterController
 from gui.infopanel import InfoPanel
 from gui.mainwindow import MainWindow
 from imon.definitions import DEFAULT_PERIOD, DEFAULT_INTERVAL, DEFAULT_INFOPANEL_ORDER
-from imon.enums import InfoPanelOrder, Period, Interval, SortDirection
+from imon.enums import InfoPanelOrder, Period, Interval, SortDirection, FilterSpec
 from interface.interfaces import XDepotPosition, XDelta, XMatch, XAllocationViewModel
 from logic.imonlogic import ImonLogic
 #from logic.investmonitorlogic import InvestMonitorLogic
@@ -163,6 +165,7 @@ class MainController( QObject ):
         self._dlgGattungen:OkCancelDialog = None
         self._dlgMatches:OkCancelDialog = None
         self._dlgAllocations:OkCancelDialog = None
+        self._filterController:FilterController = None
 
     def createMainWindow( self ) -> MainWindow:
         self._mainWin = MainWindow()
@@ -180,6 +183,7 @@ class MainController( QObject ):
         self._mainWin.show_currencies_history.connect(self.onShowCurrenciesHistory)
         self._mainWin.show_sum_categories.connect(self.onShowSumCategories)
         self._mainWin.show_allocation_view.connect(self.onShowAllocations)
+        self._mainWin.filter.connect(self.onFilter)
         try:
             poslist = self._logic.getDepotPositions( DEFAULT_PERIOD, DEFAULT_INTERVAL, MainController.IS_TEST )
             for xdepotpos in poslist:
@@ -214,6 +218,32 @@ class MainController( QObject ):
         self._mainWin.resize( QSize( w, h ) )
         self._mainWin.setInfoPanelOrder( DEFAULT_INFOPANEL_ORDER )
         return self._mainWin
+
+    def onFilter( self, arg:str ):
+        if arg == "gattunglandsektor":
+            """
+            Den Dialog mit den Filterkriterien zeigen
+            """
+            depposlist:List[XDepotPosition] = [ipctrl.getInfoPanel().getModel() for ipctrl in self._infoPanelCtrlList]
+            self._filterController = FilterController(depposlist)
+            self._filterController.filter("gattunglandsektor")
+        elif arg == "firmen":
+            pass
+        else:
+            # Filtern nach einzelnen Depotpositionen
+            pass
+
+    def saveDepotPositions( self ):
+        dplist:List[XDepotPosition] = list()
+        for ipCtrl in self._infoPanelCtrlList:
+            dplist.append(ipCtrl.getModel())
+        with open("depposlist.pickle", "wb") as file:
+            pickle.dump(dplist, file)
+
+    def readDepotPositions( self ) -> List[XDepotPosition]:
+        with open("depposlist.pickle", "rb") as file:
+            dplist = pickle.load(file)
+        return dplist
 
     def onSummeGesamtwerteChanged( self, delta:int ):
         """
@@ -622,8 +652,10 @@ def test():
     app = QApplication()
     ctrl = MainController()
     win = ctrl.createMainWindow()
+    ctrl.saveDepotPositions()
+    #ctrl.readDepotPositions()
     win.show()
-    app.exec_()
+    app.exec()
 
 def testAllOrdersTableView():
     from PySide6.QtWidgets import QApplication
@@ -658,6 +690,7 @@ def testOuterFunc():
     outerFunc('Hello tutorialspoint python')
 
 if __name__ == "__main__":
-    pass
+    test()
+    #pass
     #testOnShowCurrenciesHistory()
     #testOnPeriodIntervalChanged()

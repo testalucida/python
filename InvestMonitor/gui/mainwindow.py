@@ -10,7 +10,7 @@ from base.dragndrop import DragWidgetsContainer
 from base.enumhelper import getEnumValues, getEnumFromValue
 from gui.infopanel import InfoPanel
 from imon.definitions import DEFAULT_PERIOD, DEFAULT_INTERVAL
-from imon.enums import InfoPanelOrder, Period, Interval
+from imon.enums import InfoPanelOrder, Period, Interval, FilterSpec
 from utfsymbols import symSUM, symDELTA
 
 ############################################################
@@ -197,6 +197,7 @@ class IMonMenuBar( QMenuBar ):
     show_dividends_curr_year = Signal()
     show_currencies_history = Signal()
     show_allocation_view = Signal()
+    filter = Signal( str )
 
     def __init__(self):
         QMenuBar.__init__( self )
@@ -215,6 +216,22 @@ class IMonMenuBar( QMenuBar ):
                                         "Dividendenzahlungen im lfd. Jahr..." )
         self._actionDividendsCurrYear.triggered.connect( self.show_dividends_curr_year.emit )
         self.addMenu( self._menuDividends )
+        #----
+        self._menuFilter = QMenu("Filter")
+        self._actionFilterGattung = self._menuFilter.addAction("Nach Gattung, Land, Sektor...")
+        self._actionFilterGattung.triggered.connect( lambda x: self.filter.emit( "gattunglandsektor" ) )
+        self._actionFilterGattung = self._menuFilter.addAction( "Nach Firmen..." )
+        # Zeigt eine Liste mit allen Firmen, die über mehrere Depotpositionen verteilt sind
+        self._actionFilterGattung.triggered.connect( lambda x: self.filter.emit( "firmen" ) )
+        self._menuFilter.addSeparator()
+        # self._actionFilterAllokLand = self._menuFilter.addAction("Nach Land-Allokation...")
+        # self._actionFilterAllokLand.triggered.connect( lambda x: self.filter.emit( Filter.land ) )
+        # self._actionFilterAllokSektor = self._menuFilter.addAction( "Nach Sektor-Allokation..." )
+        # self._actionFilterAllokSektor.triggered.connect( lambda x: self.filter.emit( Filter.sektor ) )
+        # self._menuFilter.addSeparator()
+        self._actionFilterDeppos = self._menuFilter.addAction( "Nach Depotposition..." )
+        self._actionFilterDeppos.triggered.connect( lambda x: self.filter.emit( FilterSpec.deppos ) )
+        self.addMenu(self._menuFilter)
         #----
         self._menuExtras = QMenu( "Extras" )
         self._actionUndock = self._menuExtras.addAction( "Markierte InfoPanels in separatem Dialog anzeigen..." )
@@ -249,6 +266,8 @@ class MainWindow( QMainWindow ):
     show_dividends_curr_year = Signal()
     show_currencies_history = Signal()
     show_allocation_view = Signal()
+    #show_allocation_selection = Signal()
+    filter = Signal( str )
 
     def __init__( self ):
         QMainWindow.__init__( self )
@@ -261,6 +280,8 @@ class MainWindow( QMainWindow ):
         self._menuBar.show_dividends_curr_year.connect( self.show_dividends_curr_year.emit )
         self._menuBar.show_currencies_history.connect(self.show_currencies_history.emit)
         self._menuBar.show_allocation_view.connect(self.show_allocation_view.emit)
+        #self._menuBar.filter.connect(self.onFilter)
+        self._menuBar.filter.connect( self.filter.emit )
         self.setMenuBar( self._menuBar )
         self._toolBar = IMonToolBar()
         self.addToolBar( self._toolBar )
@@ -303,12 +324,22 @@ class MainWindow( QMainWindow ):
         super().show()
         self.showing_now.emit()
 
+    def onFilter( self, arg:str ):
+        print("onFilter: ", str(arg))
+
+
 #####################################################################################################
 def test():
     def changeOrder( newOrder:InfoPanelOrder ):
         print( "new Order: ", newOrder.value )
+    def onFilter(arg:str):
+        print("onFilter", arg)
+        from gui.subsetdialog import SubsetDialog
+        win2 = SubsetDialog()
+        win2.show()
     app = QApplication()
     win = MainWindow()
+    win.filter.connect(onFilter)
     win.show()
     win.change_infopanel_order.connect( changeOrder )
     #rect = QDesktopWidget().screenGeometry()

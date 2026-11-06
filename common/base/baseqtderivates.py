@@ -730,7 +730,8 @@ class BaseLabel( QLabel, AutoWidth, GetSetValue ):
         self.setStyleSheet( "background: " + color + ";" )
 
     def setTextAndBackgroundColor( self, textcolor, backgroundcolor ):
-        self.setStyleSheet( "QLabel { background-color : red; color : blue; }" )
+        #self.setStyleSheet( "QLabel { background-color : red; color : blue; }" )
+        self.setStyleSheet( "QLabel { background-color : " + backgroundcolor + "; color : " + textcolor + "; }" )
 
     def setFixedWidthAuto( self ):
         w = self.getTextWidth( self.text() )
