@@ -119,6 +119,7 @@ class XDepotPosition( XBase ):
         self.closePricesEUR: List[float] = None  # dto
         self.closePricesPeriod:List[float] = None
         self.closePricesEURPeriod:List[float] = None
+        self.previous_close_EUR:float = None
         self.dividends:List[float] = None   # bezahlte Dividenden in Orig.währung pro Stück über 5 Jahre, börsentäglich
         self.dividendsEUR:List[float] = None # dto, aber in EUR
         #self.dividendsEURPeriod:List[float] = None # bezahlte Dividenden in EUR pro Stück in der gewählten Periode

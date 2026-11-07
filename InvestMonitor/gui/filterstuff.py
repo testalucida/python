@@ -39,7 +39,7 @@ class FilterResultModel:
     def __init__( self ):
         self._matchList:List[FilterMatch] = list()
 
-    def addMatch( self, dp:XDepotPosition, allok_typ:str, allok_name:str, allok_prozent ):
+    def addMatch( self, dp:XDepotPosition, allok_typ:str=None, allok_name:str=None, allok_prozent=None ):
         for match in self._matchList:
             if match.deppos == dp:
                 match.addAllokation(allok_typ, allok_name, allok_prozent)
@@ -71,8 +71,10 @@ class FilterResultModel:
 
 ##########################################################################
 class FilterLogic:
-    def __init__(self):
+    def __init__(self, depposlist:List[XDepotPosition]):
         self._db = InvestMonitorData()
+        self._depposlist:List[XDepotPosition] = depposlist
+        self._identSeparator = " ("
 
     def getGattungen( self ) -> List[str]:
         gattungen:List[XWpGattung] = self._db.getGattungen()
@@ -86,16 +88,21 @@ class FilterLogic:
         sektoren:List[str] = self._db.getSektoren()
         return sektoren
 
-    @staticmethod
-    def getFilterResult( depposlist: List[XDepotPosition], dic: Dict ) -> FilterResultModel:
+    def getDepposIdentList( self ) -> List[str]:
+        deppos_ident_list = list()
+        for deppos in self._depposlist:
+            deppos_ident = deppos.wkn + self._identSeparator + deppos.isin + "): " + deppos.name
+            deppos_ident_list.append( deppos_ident )
+        return sorted( deppos_ident_list )
+
+    def getFilterResult1( self, dic: Dict ) -> FilterResultModel:
         """
         Liefert eine Liste von Depotpositionen, die den Filterkriterien entsprechen
-        @param depposlist: alle Depotpositionen im InvestMonitor
         @param dic: Die vom Anwender gesetzten Filter.
                     Keys: gattung, land, sektor
         """
         model = FilterResultModel()
-        for dp in depposlist:
+        for dp in self._depposlist:
             if not dp.gattung in dic["gattung"]:
                 # dp.gattung: einer von (ETF, Anleihe, ...)
                 continue
@@ -129,6 +136,25 @@ class FilterLogic:
             if nmatches == 0:
                 # der gruppenletzte Allok.typ wird von keinem Filter erfasst
                 model.removeMatches(dp)
+        return model
+
+    def getFilterResult2( self, deppos_ident_dic:Dict ) -> FilterResultModel:
+        """
+        Liefert ein FilterResultModel, die den Filterkriterien entsprechen
+        @param deppos_ident_dict: Die vom Anwender gesetzten Filter in einem Dictionary.
+                                  Key = "deppos", Value ist eine Liste mit Strings - bestehend aus WKN und Name -, die die gewünschten
+                                  Depotpositionen identifizieren.
+                                  Der Dictionary hat also genau 1 Key-Eintrag.
+        """
+        model = FilterResultModel()
+        dp_ident_list = list(deppos_ident_dic.values())[0]
+        for dp in self._depposlist:
+            for dp_ident in dp_ident_list:
+                reslist = dp_ident.split(self._identSeparator)
+                wkn = reslist[0]
+                if wkn == dp.wkn:
+                    model.addMatch(dp)
+                    break
         return model
 
 #########################################################################
@@ -321,7 +347,7 @@ class FilterController:
     """
     def __init__( self, depposlist:List[XDepotPosition] ):
         self._depposlist = depposlist
-        self._logic = FilterLogic()
+        self._logic = FilterLogic(self._depposlist)
         self._filterPanel = FilterPanel()
         self._filterAuswahlDlg:FilterAuswahlDialog = None
         self._filterResultWindow:FilterResultWindow = None
@@ -336,6 +362,8 @@ class FilterController:
         """
         if whatfilter == "gattunglandsektor":
             self._specifyGattungLandSektorFilter()
+        elif whatfilter == "deppos":
+            self._specifyDepposFilter()
 
     def _specifyGattungLandSektorFilter( self ):
         gattungen = self._logic.getGattungen()
@@ -347,11 +375,19 @@ class FilterController:
         filtergrp = self._filterPanel.addFilterGroup( "Sektoren", "sektor", sektoren, 0, 2 )
         filtergrp.setCheckedAll()
 
+        self._doFilter("gattunglandsektor")
+
+    def _doFilter( self, whatfilter:str ):
         self._filterAuswahlDlg = FilterAuswahlDialog()
         self._filterAuswahlDlg.setBeforeAcceptFunction(self.check_selection)
-        self._filterAuswahlDlg.okclosed.connect( self.showResult )
+        self._filterAuswahlDlg.okclosed.connect( lambda: self.showResult(whatfilter) )
         self._filterAuswahlDlg.setFilterPanel( self._filterPanel )
         self._filterAuswahlDlg.exec()
+
+    def _specifyDepposFilter( self ):
+        deppos_ident_list = self._logic.getDepposIdentList()
+        filtergrp = self._filterPanel.addFilterGroup( "Depotpositionen", "deppos", deppos_ident_list, 0, 0 )
+        self._doFilter("deppos")
 
     def check_selection( self ) -> bool:
         #filtergrp = self._filterPanel.getFilterGroup("gattung")
@@ -363,15 +399,20 @@ class FilterController:
                 return False
         return True
 
-    def showResult( self ):
+    def showResult( self, whatfilter:str ):
         """
         Ermittelt die gecheckten FilterCheckBoxes, um damit die passenden XDepotPosition-Objekte zu ermitteln
         """
         di: Dict = self._filterPanel.getCheckedFilters()
-        for k, v in di.items():
-            print(k, ": ", v)
+        # for k, v in di.items():
+        #     print(k, ": ", v)
 
-        model:FilterResultModel = self._logic.getFilterResult(self._depposlist, di)
+        if whatfilter == "gattunglandsektor":
+            model:FilterResultModel = self._logic.getFilterResult1( di )
+        elif whatfilter == "deppos":
+            model:FilterResultModel = self._logic.getFilterResult2( di )
+        else: raise Exception("Ein Filter namens " + whatfilter + " ist unbekannt." )
+
         if not model.hasResults():
             box = InfoBox("Filter ohne Ergebnis", "Keine Depotpositionen gefunden, die den gewählten Filtern entsprechen.", "")
             box.exec()
@@ -425,7 +466,7 @@ def test2():
     f = {'gattung': ['ETF'], 'land': ['China'], 'sektor': ['Finanzen']}
     with open( "../controller/depposlist.pickle", "rb" ) as file:
         dplist = pickle.load( file )
-    filtered_list = FilterLogic.getFilterResult(dplist, f)
+    filtered_list = FilterLogic.getFilterResult1( dplist, f )
     print(filtered_list)
 
 def test():

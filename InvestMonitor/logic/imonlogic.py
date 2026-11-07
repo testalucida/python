@@ -708,7 +708,7 @@ class ImonLogic:
             idx = -2
         else:
             idx = -1
-        previous_close = deppos.closePricesEUR[idx]
+        previous_close = deppos.previous_close_EUR = deppos.closePricesEUR[idx]
         if deppos.kurs_aktuell and previous_close and previous_close > 0:
             deltaPrice = deppos.kurs_aktuell - previous_close
             # Verhältnis des akt. Kurses zum Schlusskurs des letzten abgeschlossenen Börsentages:

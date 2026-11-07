@@ -230,7 +230,7 @@ class IMonMenuBar( QMenuBar ):
         # self._actionFilterAllokSektor.triggered.connect( lambda x: self.filter.emit( Filter.sektor ) )
         # self._menuFilter.addSeparator()
         self._actionFilterDeppos = self._menuFilter.addAction( "Nach Depotposition..." )
-        self._actionFilterDeppos.triggered.connect( lambda x: self.filter.emit( FilterSpec.deppos ) )
+        self._actionFilterDeppos.triggered.connect( lambda x: self.filter.emit( "deppos" ) )
         self.addMenu(self._menuFilter)
         #----
         self._menuExtras = QMenu( "Extras" )

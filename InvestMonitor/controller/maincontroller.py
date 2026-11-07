@@ -220,18 +220,15 @@ class MainController( QObject ):
         return self._mainWin
 
     def onFilter( self, arg:str ):
+        depposlist: List[XDepotPosition] = [ipctrl.getInfoPanel().getModel() for ipctrl in self._infoPanelCtrlList]
+        self._filterController = FilterController( depposlist )
         if arg == "gattunglandsektor":
-            """
-            Den Dialog mit den Filterkriterien zeigen
-            """
-            depposlist:List[XDepotPosition] = [ipctrl.getInfoPanel().getModel() for ipctrl in self._infoPanelCtrlList]
-            self._filterController = FilterController(depposlist)
             self._filterController.filter("gattunglandsektor")
         elif arg == "firmen":
             pass
         else:
             # Filtern nach einzelnen Depotpositionen
-            pass
+            self._filterController.filter("deppos")
 
     def saveDepotPositions( self ):
         dplist:List[XDepotPosition] = list()
@@ -593,7 +590,9 @@ class MainController( QObject ):
             self._sortDirection = SortDirection.DESC
         elif order == InfoPanelOrder.DeltaKursAsc:
             sortfield = x.delta_kurs_percent
-            sortfieldInfo = symDELTA + " Kurs seit letztem Close: %.2f" % x.delta_kurs_percent
+            sortfieldInfo = symDELTA + " Kurs (%.2f) seit letztem Close (%.2f): %.2f" % (x.kurs_aktuell,
+                                                                                         x.previous_close_EUR,
+                                                                                         x.delta_kurs_percent)
             sortfieldInfo += "%"
             self._sortDirection = SortDirection.ASC
         elif order == InfoPanelOrder.RelKursAvgKp:
