@@ -1,30 +1,36 @@
 import copy
 import pickle
 from math import ceil
-from typing import Any, List, Dict
+from typing import List, Dict, Iterable
 
-import PySide6
-from PySide6 import QtWidgets
-from PySide6.QtCore import Signal, Qt, QSize
-from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QFrame, QMainWindow, QVBoxLayout, QSpacerItem, QSizePolicy
+from PySide6.QtCore import Qt, QSize
+from PySide6.QtWidgets import QFrame, QMainWindow, QVBoxLayout, QSpacerItem
 
 from base.baseqtderivates import BaseGridLayout, BaseCheckBox, BaseWidget, BaseLabel
 from base.basetablemodel import SumTableModel
+from base.basetableview import BaseTableView
 from base.messagebox import ErrorBox, InfoBox
 from controller.infopanelcontroller import InfoPanelController
 from data.db.investmonitordata import InvestMonitorData
 from generictable_stuff.okcanceldialog import OkCancelDialog
 from gui.infopanel import InfoPanel
 from gui.mainwindow import AllInfoPanelsScrollArea
-from imon.enums import FilterSpec, Land, Sektor
-from interface.interfaces import XWpGattung, XDepotPosition, XAllocation
+from imon.enums import AllocTyp
+from interface.interfaces import XWpGattung, XDepotPosition, XAllocation, XAllocReport
+from logic.imonlogic import ImonLogic
 
+
+class ReportTableModel(SumTableModel):
+    def __init__( self, allocTyp:AllocTyp, allocReportList:List[XAllocReport] ):
+        SumTableModel.__init__(self, allocReportList, jahr=None, colsToSum=["wert",])
+        self.setKeyHeaderMappings2( ("gattung", "alloc", "alloc_name", "wkn", "deppos_name", "prozent", "wert", "delta_kurs"),
+                                    ("Gattung", allocTyp.value, "Allokation", "WKN", "Name", "Proz.in WKN", "Wert Dep.pos.", "Δ Kurs" ) )
+        self._allocTyp = allocTyp
 
 ##########################################################################
 class FilterMatch:
-    def __init__( self ):
-        self.deppos: XDepotPosition = None
+    def __init__( self, deppos:XDepotPosition ):
+        self.deppos: XDepotPosition = deppos
         self.allokationen:List[XAllocation] = list()
 
     def addAllokation( self, allok_typ, allok_name, allok_prozent ):
@@ -45,8 +51,7 @@ class FilterResultModel:
                 match.addAllokation(allok_typ, allok_name, allok_prozent)
                 return
         # dp ist noch nicht in der Match-Liste enthalten, neuen Match anlegen
-        match = FilterMatch()
-        match.deppos = dp
+        match = FilterMatch(dp)
         match.addAllokation( allok_typ, allok_name, allok_prozent )
 
         self._matchList.append(match)
@@ -156,6 +161,57 @@ class FilterLogic:
                     model.addMatch(dp)
                     break
         return model
+
+    def getReportTableModels( self, checkedFiltersDict:Dict, matches:List[FilterMatch] ) -> List[ReportTableModel]:
+        """
+        Erzeugt aus <checkedFiltersDict> und <matches> eine Liste von XAllocReport-Objekten, mit denen eine Liste von
+        ReportTableModel-Objekten erzeugt wird.
+        Eine Zeile des ReportTableModels hat folgenden Aufbau:
+        Gattung | Land od. Sektor | WKN | WP-Name | Anteil d. Allok. | Wert d. Position | Delta Kurs 14 Tg
+        Näheres siehe unterhalb dere Parameter-Erklärungen.
+        @param allocTyp: Ein Wert von AllocTyp: "Land" oder "Sektor". Er bestimmt, ob nach Länder-  oder Sektoren-
+                        Allokation ausgewertet wird und wird für die Überschrift der zweiten Spalte verwendet ("Land"
+                        oder "Sektor").
+                         verwendet.
+        @param checkedFiltersDict: ein Dictionary mit den Keys "gattung", "land", "sektor".
+                        Die Values sind Listen mit den entsprechenden Werten, z.B. ['ETF'] (key=gattung),
+                        ['Australien', 'Brasilien', 'China'] (key=land) oder
+                        ['Basiskonsumgüter', 'Cash', 'Energie', 'Finanzen', 'Gesundheit'] (key=sektor)
+                        Die values entsprechen den Filterkriterien, die der User ausgewählt hat.
+                        BEACHTE: *Immer* berücksichtigt werden die values des Keys "gattung".
+                        Für die anderen beiden Keys gilt: Berücksichtigt werden nur die values desjeniges Keys,
+                        der gem. <allocTyp> ausgewertet wird.
+                        Wenn allocTyp == AllocTyp.land werden nur die values des Keys "land" berücksichtigt.
+                        Die values des Keys "sektor" bleiben unberücksichtigt.
+        @param matches: Eine Liste von FilterMatch-Objekten, die zu den ausgewählten Filterkriterien in
+                        <checkedFiltersDict> passen.
+                        Ein FilterMatch enthält eine Depot-Position und eine Liste von XAllokation-Objekten.
+                        Nicht zu jedem Filterkriterium gibt es matches.
+        Je Value wird ein ReportTableModel erstellt, also wenn allocTyp == AllocTyp.land und die values sind
+        ["Australien", "Brasilien"], dann werden 2 ReportTableModel-Objekte initiiert.
+        """
+        tmlist:List[ReportTableModel] = list()
+        laender = sorted(list(checkedFiltersDict["land"]))
+        gattungen = list(checkedFiltersDict["gattung"])
+        for land in laender:
+            alloclist:List[XAllocReport] = list()
+            for match in matches:
+                for allok in match.allokationen:
+                    if match.deppos.gattung in gattungen and allok.typ == "land" and allok.name == land:
+                        allocrep = XAllocReport()
+                        allocrep.gattung = match.deppos.gattung
+                        allocrep.alloc = allok.typ.capitalize()
+                        allocrep.alloc_name = land
+                        allocrep.wkn = match.deppos.wkn
+                        allocrep.deppos_name = match.deppos.name
+                        allocrep.prozent = allok.prozent
+                        allocrep.wert = match.deppos.gesamtwert_aktuell
+                        allocrep.delta_kurs = ImonLogic.getDeltaKursPercent(match.deppos, 14)
+                        alloclist.append(allocrep)
+            tm = ReportTableModel(AllocTyp.land, alloclist)
+            tmlist.append(tm)
+        return tmlist
+
 
 #########################################################################
 class FilterCheckBox(BaseCheckBox):
@@ -419,6 +475,8 @@ class FilterController:
             return
 
         self._filterResultWindow = FilterResultWindow()
+        self._filterResultWindow.setWindowTitle("Filter nach Gattung, Land, Sektor" if whatfilter == "gattunglandsektor"
+                                                else "Filter nach Depot-Position")
         self._infoPanelControllerList = list()
         matches = model.getMatches()
 
@@ -430,7 +488,6 @@ class FilterController:
             infopanel = infopanelctrl.createInfoPanel( dp )
             self._filterResultWindow.addInfoPanel(infopanel)
             size = infopanel.sizeHint()
-            print("size: ", size)
             w += size.width()
             h = size.height()
 
@@ -438,30 +495,25 @@ class FilterController:
         h = h*rows + 50
         self._filterResultWindow.resize( QSize(w, h) )
         self._filterResultWindow.show()
+        # Ergebnis tabellarisch darstellen:
+        self._presentInTableForm(di, matches)
+
+
+    def _presentInTableForm( self, checkedFiltersDict:Dict, matches:List[FilterMatch] ):
+        """
+        Ergebnis summarisch in SumTableModels darstellen:
+        Es gibt 2 OkDialoge, der eine enthält die Verdichtung auf Länder (ohne Sektoren),
+        der andere die Verdichtung auf Sektoren (ohne Länder).
+        Jeder Dialog hat einen ScrollPane als Hauptwidget, jeder ScrollPane enthält
+        soviele SumTableModels, wie es Länder bzw. Sektoren gibt.
+        """
+        models:List[ReportTableModel] = self._logic.getReportTableModels(checkedFiltersDict, matches)
+        for model in models:
+            tv = BaseTableView()
+            tv.setModel(model)
 
 
 ##########################################################################
-def test2():
-    l = list()
-    d1 = dict()
-    d1["gattung"] = ["Anleihe", "ETF"]
-    l.append( d1 )
-
-    d2 = dict()
-    d2["land"] = ["Frankreich", "USA", "Italien"]
-    l.append( d2 )
-
-    d3 = dict()
-    d3["sektor"] = ["Energie", "Finanzen"]
-    l.append( d3 )
-
-    print( l )
-
-    for e in l:
-        for key, value in e.items():
-            print( key, ": ", value )
-
-
 def test2():
     f = {'gattung': ['ETF'], 'land': ['China'], 'sektor': ['Finanzen']}
     with open( "../controller/depposlist.pickle", "rb" ) as file:

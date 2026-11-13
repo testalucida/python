@@ -146,10 +146,14 @@ class Sektor(Enum):
     consumercycl = "Zyklische Konsumgüter"
     not_spec = "not specified"
 
+class AllocTyp(Enum):
+    land = "Land"
+    sektor = "Sektor"
 
 def test():
     p = Period.oneYear
     print( p.value )
 
 if __name__ == "__main__":
+    v = AllocTyp.land.value
     print(Land.getLaender())

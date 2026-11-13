@@ -709,14 +709,45 @@ class ImonLogic:
         else:
             idx = -1
         previous_close = deppos.previous_close_EUR = deppos.closePricesEUR[idx]
-        if deppos.kurs_aktuell and previous_close and previous_close > 0:
-            deltaPrice = deppos.kurs_aktuell - previous_close
-            # Verhältnis des akt. Kurses zum Schlusskurs des letzten abgeschlossenen Börsentages:
-            deppos.delta_kurs_percent = round( (deltaPrice * 100) / previous_close, 2 )
-            # print(deppos.wkn, ": previous_close=", previous_close, ", kurs_aktuell=", deppos.kurs_aktuell,
-            #       ", deltaPrice=", deltaPrice, ", delta_kurs_percent=", deppos.delta_kurs_percent )
-        else:
-            deppos.delta_kurs_percent = 0
+        deppos.delta_kurs_percent = ImonLogic.getPercent(previous_close, deppos.kurs_aktuell)
+
+        # if deppos.kurs_aktuell and previous_close and previous_close > 0:
+        #     deltaPrice = deppos.kurs_aktuell - previous_close
+        #     # Verhältnis des akt. Kurses zum Schlusskurs des letzten abgeschlossenen Börsentages:
+        #     deppos.delta_kurs_percent = round( (deltaPrice * 100) / previous_close, 2 )
+        #     # print(deppos.wkn, ": previous_close=", previous_close, ", kurs_aktuell=", deppos.kurs_aktuell,
+        #     #       ", deltaPrice=", deltaPrice, ", delta_kurs_percent=", deppos.delta_kurs_percent )
+        # else:
+        #     deppos.delta_kurs_percent = 0
+
+    @staticmethod
+    def getPercent( base:float, val:float, dec:int=2 ) -> float:
+        """
+        Liefert die Veränderung zwischen den Werten base und val in Prozent.
+        In ImonLogic ist <base> typischerweise ein Close-Kurs in der Vergangenheit, <val> der aktuelle Kurs.
+        Lies also: Im Verhältnis zum Close-Kurs hat der aktuelle Kurs um x,y Prozent zugelegt/abgenommen.
+                    Oder: Um wieviel Prozent ist <val> größer/kleiner als <base>.
+                    Nicht: Wieviel Prozent von <base> ist <val>.
+        Beispiel:
+        base = 4, val = 6
+        Returnwert delta = 50 (%)
+        @param base: der Basiswert
+        @param val: der Wert, dessen Wertunterschied zu <base> in Prozent ausgedrückt wird.
+        @param dec: Anzahl der Dezimalstellen, auf die gerundet wird
+        @return: Unterschied zwischen <base> und <val> in Prozent. Ist positiv, wenn val > base, sonst negativ.
+        """
+        if base == 0: raise ValueError("ImonLogic.getPercent(): Der Basiswert darf nicht 0 sein.")
+        delta_percent = val / base * 100 - 100
+        return round(delta_percent, dec)
+
+    @staticmethod
+    def getDeltaKursPercent( deppos: XDepotPosition, days:int ) -> float:
+        """
+        Liefert die Wertentwicklung des Kurses von deppos.wkn in den letzten <days> Tagen in Prozent.
+        Basis ist der Kurs von vor 14 Tagen; er wird ins Verhältnis gesetzt zum aktuellen Kurs.
+        """
+        base_price = deppos.closePricesEUR[-14]
+        return ImonLogic.getPercent(base_price, deppos.kurs_aktuell)
 
     @staticmethod
     def _getSumDividends( dividends:List[float] ) -> float:
@@ -987,12 +1018,14 @@ class ImonLogic:
 
     @staticmethod
     def _getDeltaKursPercent( last_price: float, previous_close: float ) -> float:
-        if not previous_close or previous_close == 0:
-            return 0
-        deltaPrice = last_price - previous_close
-        # Verhältnis des akt. Kurses zum Schlusskurs des Vortages:
-        delta_kurs_percent = round( (deltaPrice * 100) / previous_close, 2 )
-        return delta_kurs_percent
+        return ImonLogic.getPercent(previous_close, last_price)
+
+        # if not previous_close or previous_close == 0:
+        #     return 0
+        # deltaPrice = last_price - previous_close
+        # # Verhältnis des akt. Kurses zum Schlusskurs des Vortages:
+        # delta_kurs_percent = round( (deltaPrice * 100) / previous_close, 2 )
+        # return delta_kurs_percent
 
     def getSimulatedDividendYield( self, deppos:XDepotPosition ) -> float: #, kurs_aktuell: float, dividends: Series ) -> float:
         """
@@ -1218,6 +1251,14 @@ def allfridays2():
 
     print("")
 
+def testPercent():
+    b = 36.56
+    a = 35.88
+    q = a/b
+    print("q = ", q)
+    d = round(q * 100 - 100, 2)
+    print("d = ", d)
+
 
 if __name__ == "__main__":
     #fridays = allfridays2()
@@ -1225,4 +1266,5 @@ if __name__ == "__main__":
     #testDatetime()
     # test()
     #testGetAllocations()
-    testGetAllocationViewModel()
+    #testGetAllocationViewModel()
+    testPercent()

@@ -228,7 +228,23 @@ class XAllokation(XBase):
         self.id:int = 0 # DB-ID
         self.wkn:str = ""
         self.typ:str = "" # "Land", "Sektor", "Firma"
-        self.name:str = ""
+        self.name:str = "" # "Argentinien" o.ä. oder "Finanzen" o.ä. oder "SK Hynix" o.ä.
         self.prozent:float = 0.0
         if valuedict:
             self.setFromDict( valuedict )
+
+class XAllocReport(XBase):
+    """
+    Enthält die Daten für eine Zeile im ReportTableModel
+    """
+    def __init__( self ):
+        XBase.__init__( self )
+        self.gattung = "" # "ETF", "Anleihe",...
+        self.alloc:str = "" # "Land", "Sektor"
+        self.alloc_name = "" # "Australien" etc. oder "Pharma" etc.
+        self.wkn: str = ""
+        self.deppos_name:str = "" # Name des Wertpapiers
+        self.prozent:float = 0.0 # wie stark dieses Land (dieser Sektor) in wkn vertreten ist
+        self.wert:int = 0 # Stück * akt. Kurs
+        self.delta_kurs:float = 0.0 # Kursentwicklung in den letzten 14 Tagen
+
