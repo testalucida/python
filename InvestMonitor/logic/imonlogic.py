@@ -30,6 +30,7 @@ class XOrderData:
         self.minKaufpreis = 0
         self.erster_kauf = ""
         self.letzter_kauf = ""
+        self.preis_letzter_kauf = 0.0
         self.preisprostueck = 0
 
 class ImonLogic:
@@ -406,7 +407,9 @@ class ImonLogic:
         kaeufelist: List[XDelta] = self.getKaeufe( wkn )  # sortiert nach delta_datum aufsteigend
         if len( kaeufelist ) > 0:
             orderData.erster_kauf = kaeufelist[0].delta_datum
-            orderData.letzter_kauf = kaeufelist[-1].delta_datum
+            letzter_kauf:XDelta = kaeufelist[-1]
+            orderData.letzter_kauf = letzter_kauf.delta_datum
+            orderData.preis_letzter_kauf = letzter_kauf.preis_stck
 
         for kauf_ in kaeufelist:
             restbestand_stck = kauf_.delta_stck - kauf_.verkauft_stck
@@ -432,6 +435,7 @@ class ImonLogic:
         deppos.maxKaufpreis = orderData.maxKaufpreis
         deppos.erster_kauf = orderData.erster_kauf
         deppos.letzter_kauf = orderData.letzter_kauf
+        deppos.preis_letzter_kauf = orderData.preis_letzter_kauf
         deppos.preisprostueck = orderData.preisprostueck
         deppos.gesamtwert_aktuell = int( round( deppos.stueck * deppos.kurs_aktuell, 2 ) )
         # print(deppos.ticker, ": stueck= ", deppos.stueck, " kurs_aktuell = ", deppos.kurs_aktuell,
@@ -702,13 +706,14 @@ class ImonLogic:
         # previous_close ermitteln: das kann der vorletzte Eintrag in der Tabelle tradingDays sein
         # (wenn "heute" ein Börsentag ist)
         # oder aber der letzte, wenn "heute" ein Samstag, Sonn- oder Feiertag ist.
-        today = datehelper.getTodayAsIsoString()
-        lastTradingDay = ImonLogic._getLastTradingDayIso()
-        if today == lastTradingDay:
-            idx = -2
-        else:
-            idx = -1
-        previous_close = deppos.previous_close_EUR = deppos.closePricesEUR[idx]
+        # today = datehelper.getTodayAsIsoString()
+        # lastTradingDay = ImonLogic._getLastTradingDayIso()
+        # if today == lastTradingDay:
+        #     idx = -2
+        # else:
+        #     idx = -1
+        # previous_close = deppos.previous_close_EUR = deppos.closePricesEUR[idx]
+        previous_close = deppos.previous_close_EUR = deppos.closePricesEUR[-2]
         deppos.delta_kurs_percent = ImonLogic.getPercent(previous_close, deppos.kurs_aktuell)
 
         # if deppos.kurs_aktuell and previous_close and previous_close > 0:
@@ -1020,13 +1025,6 @@ class ImonLogic:
     def _getDeltaKursPercent( last_price: float, previous_close: float ) -> float:
         return ImonLogic.getPercent(previous_close, last_price)
 
-        # if not previous_close or previous_close == 0:
-        #     return 0
-        # deltaPrice = last_price - previous_close
-        # # Verhältnis des akt. Kurses zum Schlusskurs des Vortages:
-        # delta_kurs_percent = round( (deltaPrice * 100) / previous_close, 2 )
-        # return delta_kurs_percent
-
     def getSimulatedDividendYield( self, deppos:XDepotPosition ) -> float: #, kurs_aktuell: float, dividends: Series ) -> float:
         """
         Berechnet die theoretische Dividendenrendite auf Basis des aktuellen Kurses und der Summe der Dividendenzahlungen
@@ -1259,6 +1257,10 @@ def testPercent():
     d = round(q * 100 - 100, 2)
     print("d = ", d)
 
+def testGetPercent():
+    p = ImonLogic.getPercent(6, 9, 2)
+    print(p)
+
 
 if __name__ == "__main__":
     #fridays = allfridays2()
@@ -1267,4 +1269,4 @@ if __name__ == "__main__":
     # test()
     #testGetAllocations()
     #testGetAllocationViewModel()
-    testPercent()
+    testGetPercent()

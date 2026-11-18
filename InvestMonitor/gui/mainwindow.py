@@ -47,8 +47,8 @@ class AllInfoPanelsScrollArea( QScrollArea ):
         self.setWidget( self._allPanels )
         # self._layout = BaseGridLayout()
         # self.setLayout( self._layout )
-        self.setVerticalScrollBarPolicy( Qt.ScrollBarAlwaysOn )
-        self.setHorizontalScrollBarPolicy( Qt.ScrollBarAlwaysOn )
+        self.setVerticalScrollBarPolicy( Qt.ScrollBarPolicy.ScrollBarAlwaysOn )
+        self.setHorizontalScrollBarPolicy( Qt.ScrollBarPolicy.ScrollBarAlwaysOn )
         self.setWidgetResizable( True )
 
     def addInfoPanel( self, infoPanel:InfoPanel ):

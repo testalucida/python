@@ -138,13 +138,18 @@ class XDepotPosition( XBase ):
         self.minKaufpreis = 0.0 # Min. Kaufpreis / Stück
         self.erster_kauf = "" # DAtum des ersten Kaufs
         self.letzter_kauf = "" # Datum des letzten Kaufs
+        self.preis_letzter_kauf = 0.0 # Kaufpreis pro Stück beim letzten Kauf
         self.kaufKurse:List[float] = None # enthält die Kurse ALLER Käufe (in EUR) dieses Wertpapiers
                                 # Die Reihenfolge entspricht der in tradingDays, d.h., die Liste hat genauso viele
                                 # Einträge wie tradingDays. Eine 0 Steht für kein Kauf, ein Wert > 0 steht für den
                                 # Kurs, zu dem gekauft wurde
+                                # ACHTUNG: scheint nicht zu stimmen. Enthalten sind nur die Käufe, die in der
+                                #          eingestellten Periode getätigt wurden.
         self.kauf_dtix:List[datetime.datetime] = None # enthält die datetimes ALLER Käufe dieses Wertpapiers
         self.verkaufKurse:List[float] = None  # enthält die Kurse ALLER Verkäufe (in EUR) dieses Wertpapiers,
                                        # Form wie kaeufe
+                                        # ACHTUNG: scheint nicht zu stimmen. Enthalten sind nur die Verkäufe, die in der
+                                        #          eingestellten Periode getätigt wurden.
         self.verkauf_dtix:List[datetime.datetime] = None # enthält die datetimes ALLER Verkäufe dieses Wertpapiers
         self.gesamtwert_aktuell = 0 # Stück * kurs_aktuell
         self.anteil_an_summe_gesamtwerte = 0  # wie hoch der Anteil dieser Depotposition an der Gesamtsumme der
@@ -244,7 +249,7 @@ class XAllocReport(XBase):
         self.alloc_name = "" # "Australien" etc. oder "Pharma" etc.
         self.wkn: str = ""
         self.deppos_name:str = "" # Name des Wertpapiers
-        self.prozent:float = 0.0 # wie stark dieses Land (dieser Sektor) in wkn vertreten ist
-        self.wert:int = 0 # Stück * akt. Kurs
+        self.prozent: int = 0 # wie stark dieses Land (dieser Sektor) in wkn vertreten ist
+        self.wert:int = 0 # Stück * akt. Kurs * self.prozent/100
         self.delta_kurs:float = 0.0 # Kursentwicklung in den letzten 14 Tagen
 

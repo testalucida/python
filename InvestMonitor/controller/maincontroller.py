@@ -4,9 +4,9 @@ import traceback
 from functools import cmp_to_key
 from typing import List, Any, Dict
 
-from PySide6.QtCore import QSize, QObject, Signal, QRunnable, Slot, QThreadPool, Qt
+from PySide6.QtCore import QSize, QObject, Signal, QRunnable, Slot, QThreadPool, Qt, QEvent
 from PySide6.QtGui import QAction, QScreen
-from PySide6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox, QWidget, QApplication
 
 # from PySide6.QtGui import QScreen
 
@@ -29,7 +29,27 @@ from logic.imonlogic import ImonLogic
 #from logic.investmonitorlogic import InvestMonitorLogic
 from utfsymbols import symDELTA, symAVG
 
+###############################################################
+class ShutDownFilter( QObject ):
+    closingApp = Signal()
+    def __init__( self, win: QWidget ):
+        QObject.__init__( self )
+        self._win = win
+        self._app = QApplication.instance()
 
+    def eventFilter( self, obj, event ) -> bool:
+        if obj is self._win and event.type() == QEvent.Type.Close:
+            self.closingApp.emit()
+            self.quit_app()
+            event.ignore()
+            return True
+        return super( ShutDownFilter, self ).eventFilter( obj, event )
+
+    def quit_app( self ):
+        self._win.removeEventFilter( self )
+        self._app.quit()
+
+##############################################################
 class WorkerSignals( QObject ):
     finished = Signal()
     error = Signal( tuple )
@@ -165,11 +185,16 @@ class MainController( QObject ):
         self._dlgGattungen:OkCancelDialog = None
         self._dlgMatches:OkCancelDialog = None
         self._dlgAllocations:OkCancelDialog = None
-        self._filterController:FilterController = None
+        #self._filterController:FilterController = None
+        self._filterControllerList:List[FilterController] = list()
+        self._shutDownFilter:ShutDownFilter = None
 
     def createMainWindow( self ) -> MainWindow:
         self._mainWin = MainWindow()
         self._mainWin.setWindowTitle( "Investment-Monitor" )
+        self._shutDownFilter = ShutDownFilter( self._mainWin )
+        self._mainWin.installEventFilter( self._shutDownFilter )
+        self._shutDownFilter.closingApp.connect(self.onQuitApplication)
         self._mainWin.export_database.connect( self.onExportDatabase )
         self._mainWin.showing_now.connect( self.onMainWindowShowing )
         self._mainWin.period_interval_changed.connect( self.onPeriodIntervalChanged )
@@ -221,14 +246,20 @@ class MainController( QObject ):
 
     def onFilter( self, arg:str ):
         depposlist: List[XDepotPosition] = [ipctrl.getInfoPanel().getModel() for ipctrl in self._infoPanelCtrlList]
-        self._filterController = FilterController( depposlist )
+        filterController = FilterController( depposlist )
+        self._filterControllerList.append(filterController)
         if arg == "gattunglandsektor":
-            self._filterController.filter("gattunglandsektor")
+            filterController.filter("gattunglandsektor")
         elif arg == "firmen":
             pass
         else:
             # Filtern nach einzelnen Depotpositionen
-            self._filterController.filter("deppos")
+            filterController.filter("deppos")
+
+    def onQuitApplication( self ):
+        pass
+        # for filterController in self._filterControllerList:
+        #     filterController.closeWindows()
 
     def saveDepotPositions( self ):
         dplist:List[XDepotPosition] = list()
@@ -596,8 +627,20 @@ class MainController( QObject ):
             sortfieldInfo += "%"
             self._sortDirection = SortDirection.ASC
         elif order == InfoPanelOrder.RelKursAvgKp:
-            sortfield = ((x.kurs_aktuell - x.preisprostueck) / x.preisprostueck) * 100
+            sortfield = ImonLogic.getPercent(x.preisprostueck, x.kurs_aktuell, 2)
             sortfieldInfo = "Vh. Kurs / " + symAVG + (" Kaufpr.: %.2f" % sortfield) + "%"
+            self._sortDirection = SortDirection.ASC
+        elif order == InfoPanelOrder.RelKursLastKp:
+            sortfield = ImonLogic.getPercent(x.preis_letzter_kauf, x.kurs_aktuell, 2)
+            sortfieldInfo = "Vh. Kurs / letztem" + (" Kaufpr.: %.2f" % sortfield) + "%"
+            self._sortDirection = SortDirection.ASC
+        elif order == InfoPanelOrder.RelKursMinKp:
+            sortfield = ImonLogic.getPercent(x.minKaufpreis, x.kurs_aktuell, 2)
+            sortfieldInfo = "Vh. Kurs / billigstem" + (" Kaufpr.: %.2f" % sortfield) + "%"
+            self._sortDirection = SortDirection.ASC
+        elif order == InfoPanelOrder.RelKursMaxKp:
+            sortfield = ImonLogic.getPercent(x.maxKaufpreis, x.kurs_aktuell, 2)
+            sortfieldInfo = "Vh. Kurs / teuerstem" + (" Kaufpr.: %.2f" % sortfield) + "%"
             self._sortDirection = SortDirection.ASC
         elif order == InfoPanelOrder.Gattung:
             if x.gattung == "Anleihe": sortfield = 0
@@ -651,7 +694,7 @@ def test():
     app = QApplication()
     ctrl = MainController()
     win = ctrl.createMainWindow()
-    ctrl.saveDepotPositions()
+    #ctrl.saveDepotPositions()
     #ctrl.readDepotPositions()
     win.show()
     app.exec()

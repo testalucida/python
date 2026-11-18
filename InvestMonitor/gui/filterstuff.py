@@ -3,8 +3,10 @@ import pickle
 from math import ceil
 from typing import List, Dict, Iterable
 
-from PySide6.QtCore import Qt, QSize
-from PySide6.QtWidgets import QFrame, QMainWindow, QVBoxLayout, QSpacerItem
+from PySide6 import QtCore
+from PySide6.QtCore import Qt, QSize, QEvent, QObject, Signal
+from PySide6.QtWidgets import QFrame, QMainWindow, QVBoxLayout, QSpacerItem, QScrollArea, QWidget, QHeaderView, \
+    QApplication
 
 from base.baseqtderivates import BaseGridLayout, BaseCheckBox, BaseWidget, BaseLabel
 from base.basetablemodel import SumTableModel
@@ -23,8 +25,8 @@ from logic.imonlogic import ImonLogic
 class ReportTableModel(SumTableModel):
     def __init__( self, allocTyp:AllocTyp, allocReportList:List[XAllocReport] ):
         SumTableModel.__init__(self, allocReportList, jahr=None, colsToSum=["wert",])
-        self.setKeyHeaderMappings2( ("gattung", "alloc", "alloc_name", "wkn", "deppos_name", "prozent", "wert", "delta_kurs"),
-                                    ("Gattung", allocTyp.value, "Allokation", "WKN", "Name", "Proz.in WKN", "Wert Dep.pos.", "Δ Kurs" ) )
+        self.setKeyHeaderMappings2( ("gattung", "alloc_name", "wkn", "deppos_name", "prozent", "wert", "delta_kurs"),
+                                    ("Gattung", allocTyp.value, "WKN", "Name", "Wert(%) im WP", "Wert(€) im WP", "Δ Kurs 2 Wo.(%)" ) )
         self._allocTyp = allocTyp
 
 ##########################################################################
@@ -204,14 +206,83 @@ class FilterLogic:
                         allocrep.alloc_name = land
                         allocrep.wkn = match.deppos.wkn
                         allocrep.deppos_name = match.deppos.name
-                        allocrep.prozent = allok.prozent
-                        allocrep.wert = match.deppos.gesamtwert_aktuell
+                        allocrep.wert = int(match.deppos.gesamtwert_aktuell * (allok.prozent/100))
+                        allocrep.prozent = int(round(allok.prozent, 0))
+
                         allocrep.delta_kurs = ImonLogic.getDeltaKursPercent(match.deppos, 14)
                         alloclist.append(allocrep)
             tm = ReportTableModel(AllocTyp.land, alloclist)
             tmlist.append(tm)
         return tmlist
 
+##########################################################################
+class AllocTableView(BaseTableView):
+    def __init__( self ):
+        BaseTableView.__init__(self)
+
+###########################################################################
+class AllTableViews(QWidget):
+    """
+    Ein Widget, das alle AllocTableView-Objekte enthält.
+    AllTableViews wird in die AllTableViewsScrollArea platziert.
+    """
+    def __init__(self):
+        QWidget.__init__(self)
+        self._layout = BaseGridLayout()
+        self.setLayout(self._layout)
+        self._tvList:List[AllocTableView] = list()
+
+    def addTableView( self, tv:AllocTableView, row:int, col:int ):
+        self._layout.addWidget(tv, row, col)
+        self._tvList.append(tv)
+
+##############################################################
+class AllTableViewsScrollArea( QScrollArea ):
+    def __init__(self):
+        QScrollArea.__init__( self )
+        self._allTableViews = AllTableViews()
+        self.setWidget( self._allTableViews )
+        self.setVerticalScrollBarPolicy( Qt.ScrollBarPolicy.ScrollBarAlwaysOn )
+        self.setHorizontalScrollBarPolicy( Qt.ScrollBarPolicy.ScrollBarAlwaysOn )
+        self.setWidgetResizable( True )
+
+    def addAllocTableView( self, tv:AllocTableView, row:int, col:int ):
+        self._allTableViews.addTableView(tv, row, col)
+
+##########################################################################
+class AllocReportWindow(QMainWindow):
+    def __init__(self):
+        QMainWindow.__init__(self)
+        self._scrollArea = AllTableViewsScrollArea()
+        self.setCentralWidget( self._scrollArea )
+        self._tableViews:List[AllocTableView] = list()
+
+    def getTableViewCount( self ) -> int:
+        return len(self._tableViews)
+
+    def resizeToFitTables( self ):
+        cnt = len(self._tableViews)
+        if cnt < 1: return
+        tv = self._tableViews[0]
+        vh:QHeaderView = tv.verticalHeader()
+        hh:QHeaderView = tv.horizontalHeader()
+        # Start with the total length of all columns and all rows.
+        size = QSize( hh.length(), vh.length() )
+        # The headers overlap in the top-left corner. We need to add the
+        # width contributed by the vertical header, and the height
+        # contributed by the horizontal header.
+        size += QSize( vh.size().width(), hh.size().height() )
+        # Add a small margin so scrollbars aren't triggered.
+        size += QSize( 30, 30 )
+        if cnt > 1: # wir haben 2 Spalten mit TableViews
+            size.setWidth(size.width() * 2 + 30) # doppelte Breite plus Zwischenraum zwischen erster und zweiter Spalte
+        if cnt > 2: # wir haben mind. 2 Rows mit TableViews
+            size.setHeight(500)
+        self.resize( size )
+
+    def addAllocTableView( self, tv:AllocTableView, row:int, col:int ):
+        self._scrollArea.addAllocTableView(tv, row, col)
+        self._tableViews.append(tv)
 
 #########################################################################
 class FilterCheckBox(BaseCheckBox):
@@ -232,12 +303,6 @@ class FilterCheckBox(BaseCheckBox):
     #     #print("onFilterSpecChanged: ", state)
     #     isChecked = state == Qt.CheckState.Checked.value
     #     self.filterStateChanged.emit( self.text(), isChecked )
-
-
-# class WknCheckBox(FilterCheckBox):
-#     def __init__( self, text:str, wkn:str, isChecked:bool=False ):
-#         FilterCheckBox.__init__(self, text, isChecked)
-#         self._wkn = wkn
 
 ########################################################################
 
@@ -332,8 +397,6 @@ class FilterGroup( QFrame ):
         for cb in self._cbList:
             cb.setChecked(checked)
 
-
-
 ##########################################################################
 class FilterPanel(BaseWidget):
     """
@@ -379,20 +442,39 @@ class FilterAuswahlDialog( OkCancelDialog ):
         self.addWidget(filterPanel, 0)
         self.resize( self.sizeHint() )
 
+##########################################################################
+class ShutDownSignalSender( QObject ):
+    closingWindow = Signal()
+    def __init__( self, win: QWidget ):
+        QObject.__init__( self )
+        self._win = win
+        # self._app = app
+
+    def eventFilter( self, obj, event ) -> bool:
+        if obj is self._win and event.type() == QEvent.Type.Close:
+            self.sendCloseSignal()
+            #event.ignore()
+            return True
+        return super( ShutDownSignalSender, self ).eventFilter( obj, event )
+
+    def sendCloseSignal(self):
+        print("sending Close Signal")
+        self._win.removeEventFilter( self )
+        self.closingWindow.emit()
 
 ##########################################################################
 class FilterResultWindow(QMainWindow):
+    closingWindow = Signal()
     def __init__(self):
         QMainWindow.__init__(self)
         self._panelsScroll = AllInfoPanelsScrollArea()
         self.setCentralWidget(self._panelsScroll)
+        self._shutDownSignalSender = ShutDownSignalSender( self )
+        self.installEventFilter(self._shutDownSignalSender)
+        self._shutDownSignalSender.closingWindow.connect(self.closingWindow.emit)
 
     def addInfoPanel( self, infopanel:InfoPanel ):
         self._panelsScroll.addInfoPanel( infopanel )
-
-    # def getPreferredSize( self ) -> QSize:
-    #     size = self._panelsScroll.sizeHint()
-    #     return size
 
 ##########################################################################
 class FilterController:
@@ -408,6 +490,7 @@ class FilterController:
         self._filterAuswahlDlg:FilterAuswahlDialog = None
         self._filterResultWindow:FilterResultWindow = None
         self._infoPanelControllerList:List[InfoPanelController] = None
+        self._allocReportWindow:AllocReportWindow = None
 
     def filter( self, whatfilter:str ):
         """
@@ -498,7 +581,6 @@ class FilterController:
         # Ergebnis tabellarisch darstellen:
         self._presentInTableForm(di, matches)
 
-
     def _presentInTableForm( self, checkedFiltersDict:Dict, matches:List[FilterMatch] ):
         """
         Ergebnis summarisch in SumTableModels darstellen:
@@ -507,10 +589,34 @@ class FilterController:
         Jeder Dialog hat einen ScrollPane als Hauptwidget, jeder ScrollPane enthält
         soviele SumTableModels, wie es Länder bzw. Sektoren gibt.
         """
+        def onCloseFilterResultWindow():
+            self._allocReportWindow.close()
+
+        self._allocReportWindow = AllocReportWindow()
+        self._allocReportWindow.setWindowTitle("Tabellarische Darstellung der selektierten Allokationen")
+        # todo: hier müssen wir irgendwie das close-Signal vom _filterResultWindow connecten
+        self._filterResultWindow.closingWindow.connect(onCloseFilterResultWindow)
         models:List[ReportTableModel] = self._logic.getReportTableModels(checkedFiltersDict, matches)
+        row = col = w = 0
         for model in models:
-            tv = BaseTableView()
+            tv = AllocTableView()
             tv.setModel(model)
+            self._allocReportWindow.addAllocTableView(tv, row, col)
+            if col == 1:
+                row += 1
+                col = 0
+            else:
+                col += 1
+        self._allocReportWindow.resizeToFitTables()
+        #self._allocReportWindow.resize(QSize(2000,1000))
+        self._allocReportWindow.show()
+
+    # def closeWindows( self ):
+    #     """
+    #     Wird vom MainController aufgerufen, wenn die Application beendet wird.
+    #     """
+    #     print("FilterController.closeWindows()")
+
 
 
 ##########################################################################
@@ -534,5 +640,14 @@ def test3():
     r = ceil(0/3)
     print(r)
 
+def test4():
+    from PySide6.QtWidgets import QApplication
+    app = QApplication()
+    win = FilterResultWindow()
+    # handler = OnShutDownSignal( win, app )
+    # win.installEventFilter(handler)
+    win.show()
+    app.exec()
+
 if __name__ == "__main__":
-    test()
+    test4()
