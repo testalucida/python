@@ -1261,7 +1261,6 @@ def testGetPercent():
     p = ImonLogic.getPercent(6, 9, 2)
     print(p)
 
-
 if __name__ == "__main__":
     #fridays = allfridays2()
     # print(fridays)

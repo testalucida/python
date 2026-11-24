@@ -15,11 +15,10 @@ from base.basetablemodel import SumTableModel, BaseTableModel
 from base.basetableview import BaseTableView
 from base.messagebox import InfoBox, ErrorBox, QuestionBox
 from controller.currencyhistorycontroller import CurrencyHistoryController
+from controller.filtercontroller import FilterController
 from controller.infopanelcontroller import InfoPanelController
 from generictable_stuff.okcanceldialog import OkDialog, OkCancelDialog
 from gui.allocationview import AllocationView
-from gui.currenciespanel import CurrenciesPanel
-from gui.filterstuff import FilterController
 from gui.infopanel import InfoPanel
 from gui.mainwindow import MainWindow
 from imon.definitions import DEFAULT_PERIOD, DEFAULT_INTERVAL, DEFAULT_INFOPANEL_ORDER
